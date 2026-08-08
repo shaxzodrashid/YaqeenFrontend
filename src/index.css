@@ -1,0 +1,367 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@theme {
+  --color-brand-royal: #0F2D5C;
+  --color-brand-royal-hover: #173E77;
+  --color-brand-navy: #11213D;
+  --color-brand-navy-hover: #1A3157;
+  --color-brand-gold: #C8A96A;
+  --color-brand-gold-soft: #F2E9D8;
+  --color-neutral-ivory: #F7F5F0;
+  --color-neutral-100: #E6E7EB;
+  --color-neutral-300: #B7C2D1;
+  --color-neutral-600: #6B7280;
+
+  /* Soft Night palette (dark theme foundations) */
+  --color-night-canvas: #12161F;
+  --color-night-surface: #1A2030;
+  --color-night-elevated: #222A3C;
+  --color-night-field: #161C28;
+  --color-night-border: #2A3347;
+  --color-night-muted: #9AA8BC;
+  --color-night-text: #F0EDE6;
+  --color-night-royal: #5B8FD4;
+  --color-night-royal-hover: #6C9CDB;
+  --color-night-gold: #D4B87A;
+  --color-night-sidebar: #151B28;
+
+  /* Sidebar layout */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+
+  /* Status colors */
+  --color-status-active: #10B981;
+  --color-status-inactive: #EF4444;
+  --color-status-pending: #F59E0B;
+  --color-status-banned: #DC2626;
+  
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  :root,
+  .light,
+  [data-theme="light"] {
+    color-scheme: light;
+    --background: #F7F5F0;
+    --foreground: #11213D;
+    --surface: #FFFFFF;
+    --surface-foreground: #11213D;
+    --overlay: #FFFFFF;
+    --overlay-foreground: #11213D;
+    
+    --accent: #0F2D5C;
+    --accent-foreground: #FFFFFF;
+    
+    --default: #E6E7EB;
+    --default-foreground: #11213D;
+    
+    --muted: #6B7280;
+    --border: #B7C2D1;
+    --focus: #0F2D5C;
+    --link: #0F2D5C;
+    
+    --radius: 8px;
+    --field-radius: 8px;
+    --field-background: #FFFFFF;
+    --field-foreground: #11213D;
+    --field-border: #B7C2D1;
+
+    /* Semantic helpers used by components */
+    --sidebar-bg: #11213D;
+    --sidebar-border: rgba(15, 45, 92, 0.4);
+    --shadow-color: rgba(17, 33, 61, 0.10);
+  }
+
+  /*
+   * Soft Night dark theme
+   * Quiet charcoal canvas, gentle elevation, royal as action color,
+   * gold reserved for premium accents only.
+   */
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --background: #12161F;
+    --foreground: #F0EDE6;
+    --surface: #1A2030;
+    --surface-foreground: #F0EDE6;
+    --overlay: #222A3C;
+    --overlay-foreground: #F0EDE6;
+    
+    /* Softened royal — primary actions stay blue, not gold */
+    --accent: #5B8FD4;
+    --accent-foreground: #0B1528;
+    
+    --default: #252D3F;
+    --default-foreground: #E8E4DC;
+    
+    --muted: #9AA8BC;
+    --border: #2A3347;
+    --focus: #8FA9CF;
+    --link: #8FB4E8;
+    
+    --radius: 8px;
+    --field-radius: 8px;
+    --field-background: #161C28;
+    --field-foreground: #F0EDE6;
+    --field-border: #2E384E;
+
+    --sidebar-bg: #151B28;
+    --sidebar-border: rgba(183, 194, 209, 0.10);
+    --shadow-color: rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* Custom global styles */
+body {
+  font-family: var(--font-ui);
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-display);
+}
+
+/* Scrollbar styles to match design system */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Hide scrollbar for horizontal pill containers */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Progress bar fill animation */
+@keyframes progressFill {
+  from { width: 0%; }
+}
+.animate-progress-fill {
+  animation: progressFill 0.8s ease-out forwards;
+}
+
+/* Soft Night utility helpers */
+.dark .surface-elevated {
+  background-color: var(--overlay);
+  border-color: var(--border);
+}
+
+.dark .field-night {
+  background-color: var(--field-background);
+  border-color: var(--field-border);
+  color: var(--field-foreground);
+}
+
+/* 3D Flip Card Utilities */
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 3-Layer Localization Blurry Wave Animation */
+.yaqeen-blur-char-base {
+  display: inline-block;
+  will-change: filter, opacity, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.yaqeen-blur-char-sharp {
+  filter: blur(0px);
+  opacity: 1;
+  transform: scale(1) translateZ(0);
+}
+
+.yaqeen-blur-char-blur-old {
+  filter: blur(4px);
+  opacity: 0.5;
+  transform: scale(1.04) translateZ(0);
+  text-shadow: 0 0 6px rgba(15, 45, 92, 0.4);
+  color: inherit;
+}
+
+.dark .yaqeen-blur-char-blur-old {
+  text-shadow: 0 0 8px rgba(91, 143, 212, 0.6);
+}
+
+.yaqeen-blur-char-blur-new {
+  filter: blur(3.5px);
+  opacity: 0.65;
+  transform: scale(1.02) translateZ(0);
+  text-shadow: 0 0 8px rgba(200, 169, 106, 0.5);
+  color: inherit;
+}
+
+.dark .yaqeen-blur-char-blur-new {
+  text-shadow: 0 0 8px rgba(212, 184, 122, 0.7);
+}
+
+.yaqeen-blur-char-gap {
+  filter: blur(8px);
+  opacity: 0;
+  transform: scale(0.9) translateZ(0);
+  pointer-events: none;
+}
+
+/* Styling for RichTextEditor contenteditable area */
+.rich-text-editor-content {
+  outline: none;
+  min-height: inherit;
+}
+
+.rich-text-editor-content h1 {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 700; /* font-bold */
+  color: var(--color-brand-gold);
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+  font-family: var(--font-display);
+}
+
+.rich-text-editor-content h2 {
+  font-size: 1rem; /* text-base */
+  font-weight: 700;
+  color: var(--foreground);
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-display);
+}
+
+.rich-text-editor-content h3 {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600;
+  color: var(--color-brand-gold);
+  margin-top: 0.25rem;
+  margin-bottom: 0.125rem;
+  font-family: var(--font-display);
+}
+
+.rich-text-editor-content blockquote {
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(200, 169, 106, 0.6); /* --color-brand-gold */
+  font-style: italic;
+  color: var(--muted);
+  margin: 0.25rem 0;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  background-color: rgba(200, 169, 106, 0.05);
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.rich-text-editor-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.rich-text-editor-content ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.rich-text-editor-content li {
+  margin: 0.125rem 0;
+  color: var(--foreground);
+}
+
+.rich-text-editor-content code {
+  font-family: monospace;
+  background-color: var(--default);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.rich-text-editor-content a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.rich-text-editor-content strong {
+  font-weight: 700;
+}
+
+.rich-text-editor-content em {
+  font-style: italic;
+}
+
+.rich-text-editor-content del {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+/* Task Checkbox Styling */
+.rich-text-editor-content .task-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.125rem 0;
+}
+
+.rich-text-editor-content .task-item-row[data-task-status="done"] {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.rich-text-editor-content .task-checkbox-input {
+  border-radius: 4px;
+  accent-color: var(--color-brand-gold);
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+/* Placeholder support for contenteditable */
+.rich-text-editor-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  opacity: 0.6;
+  pointer-events: none;
+  display: block;
+}
+
+/* Reusable Appearance Change View Transitions (Circular Ripple Reveal) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  will-change: clip-path;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+

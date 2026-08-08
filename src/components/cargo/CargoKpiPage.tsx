@@ -1,0 +1,178 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Package,
+  Calculator,
+  Truck,
+  Crown,
+  Target,
+  Receipt,
+  RotateCcw,
+  Award,
+} from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
+import { T } from '../T';
+import { useNotification } from '../../context/NotificationContext';
+import { usePermissions } from '../../context/PermissionsContext';
+import { cargoKpiApi } from '../../services/cargoKpi.service';
+import { LtlCalcTab } from './LtlCalcTab';
+import { LtlModuleTab } from './LtlModuleTab';
+import { FtlModuleTab } from './FtlModuleTab';
+import { RopSeoModuleTab } from './RopSeoModuleTab';
+import { EmployeePlansTab } from './EmployeePlansTab';
+import { CargoTransactionsTab } from './CargoTransactionsTab';
+import { ContainerTrackingTab } from './ContainerTrackingTab';
+import { SalesManagerKpiTab } from './SalesManagerKpiTab';
+import { GlobalResetModal } from './GlobalResetModal';
+
+export type CargoTabId =
+  | 'container-tracking'
+  | 'ltl-calc'
+  | 'ltl-kpi'
+  | 'ftl-kpi'
+  | 'rop-seo'
+  | 'sales-manager'
+  | 'plans'
+  | 'transactions';
+
+export function CargoKpiPage() {
+  const { t } = useTranslation();
+  const { showNotification } = useNotification();
+  const { canDelete } = usePermissions();
+
+  const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
+  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+
+  const tabs: { id: CargoTabId; labelKey: string; icon: React.ReactNode }[] = [
+    { id: 'container-tracking', labelKey: 'tabContainerTracking', icon: <Truck className="size-4" /> },
+    { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
+    { id: 'ltl-kpi', labelKey: 'tabLtlKpi', icon: <Package className="size-4" /> },
+    { id: 'ftl-kpi', labelKey: 'tabFtlKpi', icon: <Truck className="size-4" /> },
+    { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
+    { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
+    { id: 'plans', labelKey: 'tabPlans', icon: <Target className="size-4" /> },
+    { id: 'transactions', labelKey: 'tabTransactions', icon: <Receipt className="size-4" /> },
+  ];
+
+  const handleGlobalReset = async () => {
+    try {
+      await cargoKpiApi.resetAll();
+      showNotification(t('successResetCompleted') || 'Global reset completed successfully', 'success');
+      // Trigger re-render of current tab by re-setting active tab or triggering window event
+      window.dispatchEvent(new Event('yaqeen_cargo_reset'));
+    } catch (err: any) {
+      showNotification(err?.message || 'Failed to perform global reset', 'error');
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'container-tracking':
+        return <ContainerTrackingTab />;
+      case 'ltl-calc':
+        return <LtlCalcTab />;
+      case 'ltl-kpi':
+        return <LtlModuleTab />;
+      case 'ftl-kpi':
+        return <FtlModuleTab />;
+      case 'rop-seo':
+        return <RopSeoModuleTab />;
+      case 'sales-manager':
+        return <SalesManagerKpiTab />;
+      case 'plans':
+        return <EmployeePlansTab />;
+      case 'transactions':
+        return <CargoTransactionsTab />;
+      default:
+        return <ContainerTrackingTab />;
+    }
+  };
+
+  return (
+    <div className="space-y-6 pb-12 min-w-0 max-w-full">
+      {/* Top Banner Header */}
+      <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-brand-navy to-brand-royal text-brand-gold border border-brand-gold/30 shadow-sm shrink-0">
+            <Package className="size-5 sm:size-6" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              <T k="navCargoKpi" />
+            </h1>
+          </div>
+        </div>
+
+        {/* Global Reset Action */}
+        {canDelete('cargo_kpi') && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer"
+              title={t('btnResetAll') || 'Global reset'}
+            >
+              <RotateCcw className="size-3.5 sm:size-4 shrink-0" />
+              <span className="hidden sm:inline"><T k="btnResetAll" /></span>
+              <span className="sm:hidden">Reset</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Animated Framer Motion Tab Switcher */}
+      <div className="border-b border-border bg-surface/50 dark:bg-surface/50 p-1 sm:p-1.5 rounded-2xl backdrop-blur-md overflow-x-auto scrollbar-none">
+        <nav className="flex space-x-1 min-w-max">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 sm:gap-2 select-none ${
+                  isActive
+                    ? 'text-brand-navy dark:text-brand-gold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="active-cargo-tab-bg"
+                    className="absolute inset-0 bg-brand-gold/20 dark:bg-brand-gold/15 rounded-xl border border-brand-gold/40 shadow-sm"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className={`relative z-10 ${isActive ? 'text-brand-gold' : ''}`}>
+                  {tab.icon}
+                </span>
+                <span className="relative z-10 whitespace-nowrap">
+                  <T k={tab.labelKey} />
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content Display Pane */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          className="w-full"
+        >
+          {renderTabContent()}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Global Reset Modal Dialog */}
+      <GlobalResetModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onConfirm={handleGlobalReset}
+      />
+    </div>
+  );
+}
