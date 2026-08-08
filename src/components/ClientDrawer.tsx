@@ -1,8 +1,22 @@
 import { useEffect, useState, useRef } from 'react';
 import { Button, Drawer, Spinner } from '@heroui/react';
 import {
-  User, Building, Phone, MapPin, Palette, Paperclip, Download,
-  Trash2, Pencil, Plus, FileText, Check, Copy, ShieldAlert, X, Image as ImageIcon
+  User,
+  Building,
+  Phone,
+  MapPin,
+  Palette,
+  Paperclip,
+  Download,
+  Trash2,
+  Pencil,
+  Plus,
+  FileText,
+  Check,
+  Copy,
+  ShieldAlert,
+  X,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
@@ -175,9 +189,7 @@ export function ClientDrawer({
                   </Drawer.Heading>
                   <div className="flex items-center gap-2 mt-1">
                     <Building className="size-3.5 text-brand-gold" />
-                    <span className="text-sm font-semibold text-muted">
-                      {client.company_name}
-                    </span>
+                    <span className="text-sm font-semibold text-muted">{client.company_name}</span>
                   </div>
                 </div>
               </div>
@@ -227,15 +239,21 @@ export function ClientDrawer({
                 onClick={() => handleCopyPhone(client.phone)}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-border/20 hover:bg-border/35 text-foreground font-semibold text-sm transition-colors cursor-pointer"
               >
-                {copiedPhone ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+                {copiedPhone ? (
+                  <Check className="size-4 text-emerald-500" />
+                ) : (
+                  <Copy className="size-4" />
+                )}
                 <span>{copiedPhone ? 'Copied!' : 'Copy Phone'}</span>
               </button>
             </div>
 
             {/* Contact Details Card */}
             <div className="p-4 rounded-2xl bg-default-100/50 dark:bg-default-50/10 border border-border/30 space-y-3">
-              <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Contact Information</h4>
-              
+              <h4 className="text-xs font-bold text-muted uppercase tracking-wider">
+                Contact Information
+              </h4>
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted flex items-center gap-2">
                   <Phone className="size-4 text-brand-gold" />
@@ -265,8 +283,10 @@ export function ClientDrawer({
 
             {/* Responsible Employee Card */}
             <div className="p-4 rounded-2xl bg-default-100/50 dark:bg-default-50/10 border border-border/30 space-y-3">
-              <h4 className="text-xs font-bold text-muted uppercase tracking-wider">{t('clientAssignedTo')}</h4>
-              
+              <h4 className="text-xs font-bold text-muted uppercase tracking-wider">
+                {t('clientAssignedTo')}
+              </h4>
+
               {client.assigned_employee ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -281,7 +301,9 @@ export function ClientDrawer({
                       <p className="text-sm font-bold">
                         {client.assigned_employee.first_name} {client.assigned_employee.last_name}
                       </p>
-                      <p className="text-xs font-mono text-muted">{client.assigned_employee.phone}</p>
+                      <p className="text-xs font-mono text-muted">
+                        {client.assigned_employee.phone}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -310,9 +332,19 @@ export function ClientDrawer({
               </div>
               <p className="text-muted leading-relaxed">
                 {client.assigned_employee ? (
-                  <>This client is <strong>inheriting color tag</strong> ({client.assigned_employee.color}) from responsible employee <strong>{client.assigned_employee.first_name} {client.assigned_employee.last_name}</strong>.</>
+                  <>
+                    This client is <strong>inheriting color tag</strong> (
+                    {client.assigned_employee.color}) from responsible employee{' '}
+                    <strong>
+                      {client.assigned_employee.first_name} {client.assigned_employee.last_name}
+                    </strong>
+                    .
+                  </>
                 ) : (
-                  <>No responsible employee assigned. Automatically defaulted to <strong>Unassigned Gray (#808080)</strong>.</>
+                  <>
+                    No responsible employee assigned. Automatically defaulted to{' '}
+                    <strong>Unassigned Gray (#808080)</strong>.
+                  </>
                 )}
               </p>
             </div>
@@ -322,7 +354,9 @@ export function ClientDrawer({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Paperclip className="size-4 text-brand-gold" />
-                  <h4 className="text-sm font-bold">{t('clientAttachments') || 'Attachments & Documents'}</h4>
+                  <h4 className="text-sm font-bold">
+                    {t('clientAttachments') || 'Attachments & Documents'}
+                  </h4>
                   <span className="px-2 py-0.5 rounded-full bg-brand-gold/15 text-brand-gold text-xs font-bold">
                     {attachments.length}
                   </span>
@@ -366,8 +400,12 @@ export function ClientDrawer({
               ) : attachments.length === 0 ? (
                 <div className="p-6 rounded-2xl border border-dashed border-border/40 text-center space-y-2 bg-default-50/20">
                   <FileText className="size-8 mx-auto text-muted opacity-50" />
-                  <p className="text-xs text-muted font-medium">No attached documents or passports</p>
-                  <p className="text-[11px] text-muted/70">Click 'Upload File' above to attach client identity cards, contracts, or photos.</p>
+                  <p className="text-xs text-muted font-medium">
+                    No attached documents or passports
+                  </p>
+                  <p className="text-[11px] text-muted/70">
+                    Click 'Upload File' above to attach client identity cards, contracts, or photos.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -380,11 +418,19 @@ export function ClientDrawer({
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                           <div className="p-2 rounded-lg bg-brand-gold/15 text-brand-gold shrink-0">
-                            {isImg ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}
+                            {isImg ? (
+                              <ImageIcon className="size-4" />
+                            ) : (
+                              <FileText className="size-4" />
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold truncate text-foreground">{att.file_name}</p>
-                            <p className="text-[10px] text-muted uppercase tracking-wider">{att.mime_type || 'Document'}</p>
+                            <p className="text-xs font-semibold truncate text-foreground">
+                              {att.file_name}
+                            </p>
+                            <p className="text-[10px] text-muted uppercase tracking-wider">
+                              {att.mime_type || 'Document'}
+                            </p>
                           </div>
                         </div>
 
@@ -434,7 +480,8 @@ export function ClientDrawer({
                   <span>{t('clientDeleteTitle') || 'Delete Client Record'}</span>
                 </div>
                 <p className="text-xs text-muted leading-relaxed">
-                  {t('clientDeleteDesc') || 'Are you sure you want to delete this client? Attached documents and history will be permanently removed.'}
+                  {t('clientDeleteDesc') ||
+                    'Are you sure you want to delete this client? Attached documents and history will be permanently removed.'}
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <Button
@@ -470,15 +517,12 @@ export function ClientDrawer({
                 <Trash2 className="size-4 mr-1" />
                 Delete
               </Button>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onPress={onClose}
-                className="font-semibold"
-              >
+              <Button variant="ghost" size="sm" onPress={onClose} className="font-semibold">
                 Close
               </Button>
               {canUpdate('clients') && (

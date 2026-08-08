@@ -49,7 +49,8 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     validity: 'Validity Period',
     validityDays: '30 Days from Issue',
     companySubtitle: 'INTERNATIONAL LOGISTICS & FREIGHT FORWARDING',
-    companyAddress: '14 A. Temur Avenue, Tashkent 100000, Uzbekistan • Tel: +998 71 200 00 00 • info@wedef.uz',
+    companyAddress:
+      '14 A. Temur Avenue, Tashkent 100000, Uzbekistan • Tel: +998 71 200 00 00 • info@wedef.uz',
     routeTitle: 'FREIGHT ROUTE PROPOSAL',
     originLabel: 'Origin Location',
     destinationLabel: 'Destination Location',
@@ -87,7 +88,8 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     sigCompanyRole: 'Commercial Operations Department',
     sigClient: 'Client Representative',
     sigClientRole: 'Authorized Client Representative',
-    footerText: 'Wedef Logistics & Freight Operations • Tashkent, Uzbekistan • Official Commercial Proposal',
+    footerText:
+      'Wedef Logistics & Freight Operations • Tashkent, Uzbekistan • Official Commercial Proposal',
   },
   ru: {
     docTitle: 'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ',
@@ -96,7 +98,8 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     validity: 'Срок действия',
     validityDays: '30 дней с даты выдачи',
     companySubtitle: 'МЕЖДУНАРОДНАЯ ЛОГИСТИКА И ГРУЗОПЕРЕВОЗКИ',
-    companyAddress: 'Узбекистан, г. Ташкент, пр. А. Темура 14 • Тел: +998 71 200 00 00 • info@wedef.uz',
+    companyAddress:
+      'Узбекистан, г. Ташкент, пр. А. Темура 14 • Тел: +998 71 200 00 00 • info@wedef.uz',
     routeTitle: 'МАРШРУТ И ПАРАМЕТРЫ ТРАНСПОРТИРОВКИ',
     originLabel: 'Пункт отправления',
     destinationLabel: 'Пункт назначения',
@@ -143,7 +146,8 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     validity: 'Amal qilish muddati',
     validityDays: 'Berilgan sanadan 30 kun',
     companySubtitle: 'XALQARO LOGISTIKA VA YUK TASHISH',
-    companyAddress: "O'zbekiston, Toshkent sh., A. Temur shoh ko'chasi 14 • Tel: +998 71 200 00 00 • info@wedef.uz",
+    companyAddress:
+      "O'zbekiston, Toshkent sh., A. Temur shoh ko'chasi 14 • Tel: +998 71 200 00 00 • info@wedef.uz",
     routeTitle: "YUK TASHISH YO'NALISHI VA TAKLIF",
     originLabel: "Jo'nash manzili",
     destinationLabel: 'Yetib borish manzili',
@@ -177,7 +181,7 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     termsTitle: "To'lov shartlari va tartibi",
     defaultTerms:
       "To'lov hisob-faktura taqdim etilgandan so'ng 5 bank kuni ichida amalga oshiriladi. Narxlar 30 kalendar kun davomida amal qiladi. Bekorga turib qolish vaqti tashuvchi tariflariga muvofiq to'lanadi.",
-    sigRepresentative: 'Wedef Logistics mas\'ul vakili',
+    sigRepresentative: "Wedef Logistics mas'ul vakili",
     sigCompanyRole: 'Tijorat operatsiyalari departamenti',
     sigClient: 'Mijoz vakili',
     sigClientRole: "Mijozning mas'ul vakili",
@@ -190,10 +194,16 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
  * wedef_logo.jpg, authentic signature and stamp (nokk_signature_and_stamp.png), pricing tables,
  * inclusions, exclusions, terms, and signature blocks in UZ, RU, or EN.
  */
-export function generateCommercialOfferPdfHtml(offer: CommercialOffer, lang: PdfLanguage = 'ru'): string {
+export function generateCommercialOfferPdfHtml(
+  offer: CommercialOffer,
+  lang: PdfLanguage = 'ru'
+): string {
   const t = PDF_TRANSLATIONS[lang] || PDF_TRANSLATIONS.ru;
 
-  const formattedUsd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(offer.price_usd);
+  const formattedUsd = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(offer.price_usd);
   const formattedLocal = new Intl.NumberFormat('uz-UZ', {
     style: 'currency',
     currency: 'UZS',
@@ -206,11 +216,14 @@ export function generateCommercialOfferPdfHtml(offer: CommercialOffer, lang: Pdf
     uz: 'uz-UZ',
   };
 
-  const dateStr = new Date(offer.created_at || Date.now()).toLocaleDateString(dateLocaleMap[lang] || 'ru-RU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const dateStr = new Date(offer.created_at || Date.now()).toLocaleDateString(
+    dateLocaleMap[lang] || 'ru-RU',
+    {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }
+  );
 
   const inclusionsList =
     offer.inclusions && offer.inclusions.length > 0 ? offer.inclusions : t.defaultInclusions;
@@ -218,11 +231,17 @@ export function generateCommercialOfferPdfHtml(offer: CommercialOffer, lang: Pdf
     offer.exclusions && offer.exclusions.length > 0 ? offer.exclusions : t.defaultExclusions;
 
   const inclusionsHtml = inclusionsList
-    .map((inc) => `<li style="margin-bottom: 6px; font-size: 12px; color: #0f172a; line-height: 1.4;"><span style="color: #10b981; font-weight: bold; margin-right: 6px;">✓</span>${escapeHtml(inc)}</li>`)
+    .map(
+      (inc) =>
+        `<li style="margin-bottom: 6px; font-size: 12px; color: #0f172a; line-height: 1.4;"><span style="color: #10b981; font-weight: bold; margin-right: 6px;">✓</span>${escapeHtml(inc)}</li>`
+    )
     .join('');
 
   const exclusionsHtml = exclusionsList
-    .map((exc) => `<li style="margin-bottom: 6px; font-size: 12px; color: #64748b; line-height: 1.4;"><span style="color: #ef4444; font-weight: bold; margin-right: 6px;">✗</span>${escapeHtml(exc)}</li>`)
+    .map(
+      (exc) =>
+        `<li style="margin-bottom: 6px; font-size: 12px; color: #64748b; line-height: 1.4;"><span style="color: #ef4444; font-weight: bold; margin-right: 6px;">✗</span>${escapeHtml(exc)}</li>`
+    )
     .join('');
 
   const termsText = offer.terms ? offer.terms : t.defaultTerms;
@@ -669,7 +688,10 @@ function escapeHtml(text?: string | null): string {
  * Triggers a direct browser download of the commercial offer as an HTML printable file
  * in the requested language (uz, ru, or en).
  */
-export function downloadCommercialOfferPdfBlob(offer: CommercialOffer, lang: PdfLanguage = 'ru'): void {
+export function downloadCommercialOfferPdfBlob(
+  offer: CommercialOffer,
+  lang: PdfLanguage = 'ru'
+): void {
   const htmlContent = generateCommercialOfferPdfHtml(offer, lang);
   const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -685,7 +707,10 @@ export function downloadCommercialOfferPdfBlob(offer: CommercialOffer, lang: Pdf
 /**
  * Opens a print dialog window for the commercial offer in the requested language
  */
-export function openCommercialOfferPdfPrintWindow(offer: CommercialOffer, lang: PdfLanguage = 'ru'): void {
+export function openCommercialOfferPdfPrintWindow(
+  offer: CommercialOffer,
+  lang: PdfLanguage = 'ru'
+): void {
   const htmlContent = generateCommercialOfferPdfHtml(offer, lang);
   const printWindow = window.open('', '_blank');
   if (printWindow) {

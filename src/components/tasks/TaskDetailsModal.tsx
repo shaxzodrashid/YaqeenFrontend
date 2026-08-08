@@ -21,13 +21,7 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { api, getImageUrl, tokenStore } from '../../services/api';
-import type {
-  Task,
-  KanbanColumn,
-  Employee,
-  TaskPriority,
-  TaskChecklist,
-} from '../../services/api';
+import type { Task, KanbanColumn, Employee, TaskPriority, TaskChecklist } from '../../services/api';
 import { RichTextEditor } from './RichTextEditor';
 import { getColumnColor } from '../../utils/columnColor';
 
@@ -55,7 +49,9 @@ export function TaskDetailsModal({
   const currentUser = tokenStore.getUser();
 
   const [task, setTask] = useState<Task | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'attachments' | 'logs'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'attachments' | 'logs'>(
+    'details'
+  );
 
   // Task form state
   const [title, setTitle] = useState('');
@@ -99,7 +95,8 @@ export function TaskDetailsModal({
       setDueDate(data.dueDate ? new Date(data.dueDate).toISOString().slice(0, 16) : '');
       setTargetTime(data.targetTime ? new Date(data.targetTime).toISOString().slice(0, 16) : '');
 
-      const assigneeIds = data.assignees?.map((a) => a.id) || (data.assigneeId ? [data.assigneeId] : []);
+      const assigneeIds =
+        data.assignees?.map((a) => a.id) || (data.assigneeId ? [data.assigneeId] : []);
       setSelectedAssigneeIds(assigneeIds);
     } catch (err) {
       console.error('Failed to load task details:', err);
@@ -126,7 +123,10 @@ export function TaskDetailsModal({
     };
   };
 
-  const handleSaveMainDetails = async (overrides?: { columnId?: string; priority?: TaskPriority }) => {
+  const handleSaveMainDetails = async (overrides?: {
+    columnId?: string;
+    priority?: TaskPriority;
+  }) => {
     if (!taskId || !title.trim()) return;
     const targetColumnId = overrides?.columnId ?? columnId;
     const targetPriority = overrides?.priority ?? priority;
@@ -156,7 +156,7 @@ export function TaskDetailsModal({
       await api.tasks.addChecklistItem(taskId, {
         title: newChecklistTitle.trim(),
         is_completed: false,
-        position: (task?.checklists?.length || 0),
+        position: task?.checklists?.length || 0,
       });
       setNewChecklistTitle('');
       await fetchTaskDetails(taskId);
@@ -299,7 +299,8 @@ export function TaskDetailsModal({
   // Helper calculations
   const totalChecklists = task?.checklists?.length || 0;
   const completedChecklists = task?.checklists?.filter((c) => c.isCompleted).length || 0;
-  const checklistPercent = totalChecklists > 0 ? Math.round((completedChecklists / totalChecklists) * 100) : 0;
+  const checklistPercent =
+    totalChecklists > 0 ? Math.round((completedChecklists / totalChecklists) * 100) : 0;
 
   const currentColumn = columns.find((c) => c.id === (columnId || task?.columnId));
   const isDoneColumn = currentColumn?.is_done_status || currentColumn?.isDoneStatus;
@@ -321,7 +322,8 @@ export function TaskDetailsModal({
   const getFileIcon = (mime: string, filename: string) => {
     if (mime?.startsWith('image/')) return <ImageIcon className="size-4 text-emerald-400" />;
     if (mime?.includes('pdf')) return <FileText className="size-4 text-rose-400" />;
-    if (mime?.includes('zip') || mime?.includes('rar')) return <FileArchive className="size-4 text-amber-400" />;
+    if (mime?.includes('zip') || mime?.includes('rar'))
+      return <FileArchive className="size-4 text-amber-400" />;
     if (filename?.endsWith('.js') || filename?.endsWith('.ts') || filename?.endsWith('.json')) {
       return <FileCode className="size-4 text-sky-400" />;
     }
@@ -370,10 +372,18 @@ export function TaskDetailsModal({
                       priority
                     )}`}
                   >
-                    <option value="LOW" className="bg-surface text-foreground">LOW Priority</option>
-                    <option value="MEDIUM" className="bg-surface text-foreground">MEDIUM Priority</option>
-                    <option value="HIGH" className="bg-surface text-foreground">HIGH Priority</option>
-                    <option value="URGENT" className="bg-surface text-foreground">URGENT Priority</option>
+                    <option value="LOW" className="bg-surface text-foreground">
+                      LOW Priority
+                    </option>
+                    <option value="MEDIUM" className="bg-surface text-foreground">
+                      MEDIUM Priority
+                    </option>
+                    <option value="HIGH" className="bg-surface text-foreground">
+                      HIGH Priority
+                    </option>
+                    <option value="URGENT" className="bg-surface text-foreground">
+                      URGENT Priority
+                    </option>
                   </select>
 
                   {isDoneColumn && task?.completedAt && (
@@ -388,7 +398,9 @@ export function TaskDetailsModal({
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    onBlur={() => { handleSaveMainDetails(); }}
+                    onBlur={() => {
+                      handleSaveMainDetails();
+                    }}
                     placeholder="Task Title..."
                     className="w-full text-base md:text-lg font-bold text-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-brand-gold/50 rounded px-1 -ml-1"
                   />
@@ -491,7 +503,9 @@ export function TaskDetailsModal({
                     {canUpdate('tasks') && (
                       <div className="mt-2 flex justify-end">
                         <Button
-                          onClick={() => { handleSaveMainDetails(); }}
+                          onClick={() => {
+                            handleSaveMainDetails();
+                          }}
                           className="px-4 py-1.5 rounded-xl bg-brand-gold text-brand-navy font-bold text-xs cursor-pointer"
                         >
                           Save Specs
@@ -569,7 +583,9 @@ export function TaskDetailsModal({
                           type="text"
                           value={newChecklistTitle}
                           onChange={(e) => setNewChecklistTitle(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddChecklist())}
+                          onKeyDown={(e) =>
+                            e.key === 'Enter' && (e.preventDefault(), handleAddChecklist())
+                          }
                           placeholder="Add a checklist item..."
                           className="flex-1 px-3 py-1.5 rounded-xl text-xs bg-surface text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
                         />
@@ -695,7 +711,8 @@ export function TaskDetailsModal({
                           {uploadingFile ? 'Uploading File...' : 'Click to Upload Document / File'}
                         </span>
                         <span className="text-[10px] text-muted">
-                          Maximum file size allowed is 50MB. Executables (.exe, .dll, .sh) strictly rejected.
+                          Maximum file size allowed is 50MB. Executables (.exe, .dll, .sh) strictly
+                          rejected.
                         </span>
                       </button>
                       {uploadError && (
@@ -781,9 +798,7 @@ export function TaskDetailsModal({
                               {new Date(log.createdAt).toLocaleString()}
                             </span>
                           </div>
-                          <p className="text-xs text-muted leading-relaxed">
-                            {log.details}
-                          </p>
+                          <p className="text-xs text-muted leading-relaxed">{log.details}</p>
                         </div>
                       </div>
                     ))
@@ -828,7 +843,8 @@ export function TaskDetailsModal({
                 </label>
                 <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1">
                   {employees.map((emp) => {
-                    const empName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone;
+                    const empName =
+                      `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone;
                     const isAssigned = selectedAssigneeIds.includes(emp.id);
 
                     return (
@@ -869,7 +885,9 @@ export function TaskDetailsModal({
                     type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    onBlur={() => { handleSaveMainDetails(); }}
+                    onBlur={() => {
+                      handleSaveMainDetails();
+                    }}
                     disabled={!canUpdate('tasks')}
                     className="w-full bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground font-mono cursor-pointer focus:outline-none"
                   />
@@ -884,7 +902,9 @@ export function TaskDetailsModal({
                     type="datetime-local"
                     value={targetTime}
                     onChange={(e) => setTargetTime(e.target.value)}
-                    onBlur={() => { handleSaveMainDetails(); }}
+                    onBlur={() => {
+                      handleSaveMainDetails();
+                    }}
                     disabled={!canUpdate('tasks')}
                     className="w-full bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground font-mono cursor-pointer focus:outline-none"
                   />
@@ -893,9 +913,16 @@ export function TaskDetailsModal({
 
               {/* Metadata Timestamps */}
               <div className="border-t border-border/40 pt-4 text-[10px] text-muted flex flex-col gap-1 font-mono">
-                <div>Created: {task?.createdAt ? new Date(task.createdAt).toLocaleString() : 'N/A'}</div>
-                <div>Started: {task?.startedAt ? new Date(task.startedAt).toLocaleString() : 'N/A'}</div>
-                <div>Completed: {task?.completedAt ? new Date(task.completedAt).toLocaleString() : 'Not yet'}</div>
+                <div>
+                  Created: {task?.createdAt ? new Date(task.createdAt).toLocaleString() : 'N/A'}
+                </div>
+                <div>
+                  Started: {task?.startedAt ? new Date(task.startedAt).toLocaleString() : 'N/A'}
+                </div>
+                <div>
+                  Completed:{' '}
+                  {task?.completedAt ? new Date(task.completedAt).toLocaleString() : 'Not yet'}
+                </div>
               </div>
             </div>
           </div>

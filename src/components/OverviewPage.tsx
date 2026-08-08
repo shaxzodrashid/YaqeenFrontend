@@ -37,8 +37,6 @@ interface OverviewPageProps {
   onNavigate: (page: PageId) => void;
 }
 
-
-
 export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProps) {
   const { canRead } = usePermissions();
 
@@ -53,10 +51,16 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
 
   // API Data State
   const [loading, setLoading] = useState(true);
-  const [salesProgressData, setSalesProgressData] = useState<DashboardSalesProgressResponse | null>(null);
+  const [salesProgressData, setSalesProgressData] = useState<DashboardSalesProgressResponse | null>(
+    null
+  );
   const [summaryData, setSummaryData] = useState<DashboardSummaryResponse | null>(null);
-  const [cargoDistData, setCargoDistData] = useState<DashboardCargoDistributionResponse | null>(null);
-  const [topPerformersData, setTopPerformersData] = useState<DashboardTopPerformersResponse | null>(null);
+  const [cargoDistData, setCargoDistData] = useState<DashboardCargoDistributionResponse | null>(
+    null
+  );
+  const [topPerformersData, setTopPerformersData] = useState<DashboardTopPerformersResponse | null>(
+    null
+  );
 
   // Lists for dropdown options
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -193,7 +197,13 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border text-muted transition-colors duration-200">
             <Calendar className="size-3.5 text-brand-gold" />
-            <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span>
+              {new Date().toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
           </div>
         </div>
       </div>
@@ -237,9 +247,13 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold font-serif text-foreground dark:text-night-text flex items-center gap-2">
               <Sparkles className="size-4.5 text-brand-gold" />
-              <span><T k="ovShortcutsTitle" /></span>
+              <span>
+                <T k="ovShortcutsTitle" />
+              </span>
             </h2>
-            <span className="text-xs text-muted"><T k="ovShortcutsSubtitle" /></span>
+            <span className="text-xs text-muted">
+              <T k="ovShortcutsSubtitle" />
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

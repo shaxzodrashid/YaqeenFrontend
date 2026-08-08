@@ -12,7 +12,11 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 import { CATEGORY_CONFIG } from './ExpenseModal';
-import type { FinanceSummaryResponse, ExpenseCategory, SupportedCurrency } from '../../services/api';
+import type {
+  FinanceSummaryResponse,
+  ExpenseCategory,
+  SupportedCurrency,
+} from '../../services/api';
 import { formatMoney } from '../../services/api';
 
 interface FinanceSummaryTabProps {
@@ -27,7 +31,10 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-36 rounded-2xl bg-border/20 dark:bg-night-surface border border-border/40 dark:border-night-border" />
+          <div
+            key={i}
+            className="h-36 rounded-2xl bg-border/20 dark:bg-night-surface border border-border/40 dark:border-night-border"
+          />
         ))}
       </div>
     );
@@ -36,7 +43,9 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
   if (!summaryData) {
     return (
       <div className="p-12 text-center bg-surface dark:bg-night-surface rounded-2xl border border-border dark:border-night-border">
-        <p className="text-sm text-muted dark:text-night-muted">No summary data available for this period.</p>
+        <p className="text-sm text-muted dark:text-night-muted">
+          No summary data available for this period.
+        </p>
       </div>
     );
   }
@@ -65,7 +74,13 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               Financial Summary Normalized Currency:
             </span>
             <span className="ml-2 text-xs font-extrabold text-brand-gold uppercase">
-              {activeCurrency} ({activeCurrency === 'UZS' ? "O'zbek so'mi" : activeCurrency === 'USD' ? 'US Dollar' : 'Russian Ruble'})
+              {activeCurrency} (
+              {activeCurrency === 'UZS'
+                ? "O'zbek so'mi"
+                : activeCurrency === 'USD'
+                  ? 'US Dollar'
+                  : 'Russian Ruble'}
+              )
             </span>
           </div>
         </div>
@@ -171,9 +186,15 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               {formatMoney(summary.total_expenses || 0, activeCurrency)}
             </h3>
             <div className="flex items-center gap-2 mt-2 text-[10px] text-muted dark:text-night-muted flex-wrap">
-              <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">Op: {formatMoney(summary.operational_expenses || 0, activeCurrency)}</span>
-              <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">Sal: {formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)}</span>
-              <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">KPI: {formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)}</span>
+              <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">
+                Op: {formatMoney(summary.operational_expenses || 0, activeCurrency)}
+              </span>
+              <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">
+                Sal: {formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)}
+              </span>
+              <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">
+                KPI: {formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)}
+              </span>
             </div>
           </div>
         </motion.div>
@@ -190,8 +211,16 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               <T k="finNetProfit" />
             </span>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-              {isGrowthPositive ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
-              <span>{isGrowthPositive ? `+${netProfitGrowth.toFixed(1)}%` : `${netProfitGrowth.toFixed(1)}%`}</span>
+              {isGrowthPositive ? (
+                <TrendingUp className="size-3.5" />
+              ) : (
+                <TrendingDown className="size-3.5" />
+              )}
+              <span>
+                {isGrowthPositive
+                  ? `+${netProfitGrowth.toFixed(1)}%`
+                  : `${netProfitGrowth.toFixed(1)}%`}
+              </span>
             </div>
           </div>
           <div className="mt-4">
@@ -292,8 +321,12 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
           {/* Payroll & Operational Expense Breakdown Bar */}
           <div className="mt-4 pt-4 border-t border-border/40 dark:border-night-border">
             <div className="flex items-center justify-between text-xs mb-2">
-              <span className="font-semibold text-foreground dark:text-night-text">All-In Expense Breakdown</span>
-              <span className="text-muted dark:text-night-muted">{formatMoney(summary.total_expenses || 0, activeCurrency)} Total</span>
+              <span className="font-semibold text-foreground dark:text-night-text">
+                All-In Expense Breakdown
+              </span>
+              <span className="text-muted dark:text-night-muted">
+                {formatMoney(summary.total_expenses || 0, activeCurrency)} Total
+              </span>
             </div>
 
             {/* Multi-segmented Progress Bar */}
@@ -318,15 +351,21 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             <div className="flex items-center justify-between text-[11px] text-muted dark:text-night-muted mt-2">
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-amber-500 inline-block" />
-                <span>Op Expenses ({formatMoney(summary.operational_expenses || 0, activeCurrency)})</span>
+                <span>
+                  Op Expenses ({formatMoney(summary.operational_expenses || 0, activeCurrency)})
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-blue-500 inline-block" />
-                <span>Salaries ({formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)})</span>
+                <span>
+                  Salaries ({formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)})
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-purple-500 inline-block" />
-                <span>KPI Bonuses ({formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)})</span>
+                <span>
+                  KPI Bonuses ({formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)})
+                </span>
               </div>
             </div>
           </div>
@@ -350,16 +389,23 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             <div className="flex flex-col gap-4">
               <div className="p-3 rounded-xl bg-background/50 dark:bg-night-field border border-border/50 dark:border-night-border flex items-center justify-between">
                 <span className="text-xs text-muted dark:text-night-muted">Net Profit Change:</span>
-                <span className={`text-sm font-bold ${comparison?.net_profit_change_amount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                <span
+                  className={`text-sm font-bold ${comparison?.net_profit_change_amount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
+                >
                   {comparison?.net_profit_change_amount >= 0 ? '+' : ''}
                   {formatMoney(comparison?.net_profit_change_amount || 0, activeCurrency)}
                 </span>
               </div>
 
               <div className="p-3 rounded-xl bg-background/50 dark:bg-night-field border border-border/50 dark:border-night-border flex items-center justify-between">
-                <span className="text-xs text-muted dark:text-night-muted">Net Profit Growth %:</span>
-                <span className={`text-sm font-bold ${netProfitGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {netProfitGrowth >= 0 ? '+' : ''}{netProfitGrowth.toFixed(2)}%
+                <span className="text-xs text-muted dark:text-night-muted">
+                  Net Profit Growth %:
+                </span>
+                <span
+                  className={`text-sm font-bold ${netProfitGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
+                >
+                  {netProfitGrowth >= 0 ? '+' : ''}
+                  {netProfitGrowth.toFixed(2)}%
                 </span>
               </div>
 
@@ -367,7 +413,8 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
                 <span className="text-xs text-muted dark:text-night-muted">Expenses Change:</span>
                 <span className="text-sm font-bold text-foreground dark:text-night-text">
                   {comparison?.expenses_change_amount >= 0 ? '+' : ''}
-                  {formatMoney(comparison?.expenses_change_amount || 0, activeCurrency)} ({comparison?.expenses_change_percentage?.toFixed(1)}%)
+                  {formatMoney(comparison?.expenses_change_amount || 0, activeCurrency)} (
+                  {comparison?.expenses_change_percentage?.toFixed(1)}%)
                 </span>
               </div>
             </div>
@@ -385,7 +432,8 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             const cfg = CATEGORY_CONFIG[catKey];
             const Icon = cfg.icon;
             const catAmount = expense_breakdown[catKey] || 0;
-            const sharePercent = totalExpenses > 0 ? Math.round((catAmount / totalExpenses) * 100) : 0;
+            const sharePercent =
+              totalExpenses > 0 ? Math.round((catAmount / totalExpenses) * 100) : 0;
 
             return (
               <div

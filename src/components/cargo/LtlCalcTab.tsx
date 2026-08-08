@@ -12,8 +12,8 @@ const RATE_TABLE_TIERS = [
   { minD: 300, maxD: 400, basis: 'hajm', rate: 140, unit: 'USD/m³', desc: '300 < D ≤ 400 kg/m³' },
   { minD: 400, maxD: 500, basis: 'hajm', rate: 160, unit: 'USD/m³', desc: '400 < D ≤ 500 kg/m³' },
   { minD: 500, maxD: 700, basis: 'hajm', rate: 180, unit: 'USD/m³', desc: '500 < D ≤ 700 kg/m³' },
-  { minD: 700, maxD: 1000, basis: 'vazn', rate: 0.40, unit: 'USD/kg', desc: '700 < D ≤ 1000 kg/m³' },
-  { minD: 1000, maxD: Infinity, basis: 'vazn', rate: 0.30, unit: 'USD/kg', desc: 'D > 1000 kg/m³' },
+  { minD: 700, maxD: 1000, basis: 'vazn', rate: 0.4, unit: 'USD/kg', desc: '700 < D ≤ 1000 kg/m³' },
+  { minD: 1000, maxD: Infinity, basis: 'vazn', rate: 0.3, unit: 'USD/kg', desc: 'D > 1000 kg/m³' },
 ];
 
 export function LtlCalcTab() {
@@ -46,9 +46,7 @@ export function LtlCalcTab() {
               <Calculator className="size-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-white">
-                {t('tabLtlCalc')}
-              </h2>
+              <h2 className="text-xl font-bold tracking-tight text-white">{t('tabLtlCalc')}</h2>
               <p className="text-xs text-neutral-300 mt-1">
                 Density-based automated LTL tariff & price evaluation system
               </p>
@@ -123,7 +121,9 @@ export function LtlCalcTab() {
 
           {/* Quick preset buttons */}
           <div>
-            <span className="text-xs text-muted-foreground mb-2 block font-medium">Quick Presets</span>
+            <span className="text-xs text-muted-foreground mb-2 block font-medium">
+              Quick Presets
+            </span>
             <div className="flex flex-wrap gap-2">
               {[
                 { label: 'Small Box', v: '0.5', w: '40' },
@@ -170,14 +170,20 @@ export function LtlCalcTab() {
             <div className="py-6 my-auto">
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl md:text-5xl font-black tracking-tight text-white">
-                  ${calcResult.total_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {calcResult.total_price.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
                 <span className="text-sm font-semibold text-brand-gold">USD</span>
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-neutral-300">
                 <CheckCircle className="size-4 text-emerald-400" />
                 <span>
-                  Basis: <strong className="text-white uppercase">{calcResult.basis}</strong> ({calcResult.basis === 'vazn' ? 'Weight-based' : 'Volume-based'}) @ ${calcResult.rate} {calcResult.unit}
+                  Basis: <strong className="text-white uppercase">{calcResult.basis}</strong> (
+                  {calcResult.basis === 'vazn' ? 'Weight-based' : 'Volume-based'}) @ $
+                  {calcResult.rate} {calcResult.unit}
                 </span>
               </div>
             </div>
@@ -187,7 +193,8 @@ export function LtlCalcTab() {
               <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-[11px] text-neutral-400 block">{t('cargoDensity')}</span>
                 <span className="text-base font-bold text-white mt-0.5 block">
-                  {calcResult.density} <span className="text-xs font-normal text-neutral-400">kg/m³</span>
+                  {calcResult.density}{' '}
+                  <span className="text-xs font-normal text-neutral-400">kg/m³</span>
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-white/5 border border-white/10">
@@ -243,7 +250,9 @@ export function LtlCalcTab() {
               {RATE_TABLE_TIERS.map((tier, idx) => {
                 const isActive =
                   calcResult.density >= tier.minD &&
-                  (tier.maxD === Infinity ? calcResult.density > 1000 : calcResult.density <= tier.maxD);
+                  (tier.maxD === Infinity
+                    ? calcResult.density > 1000
+                    : calcResult.density <= tier.maxD);
 
                 return (
                   <tr
@@ -256,17 +265,17 @@ export function LtlCalcTab() {
                   >
                     <td className="px-4 py-3 font-mono">{tier.desc}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase ${
-                        tier.basis === 'vazn'
-                          ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase ${
+                          tier.basis === 'vazn'
+                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                        }`}
+                      >
                         {tier.basis} ({tier.basis === 'vazn' ? 'Weight' : 'Volume'})
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-bold">
-                      ${tier.rate}
-                    </td>
+                    <td className="px-4 py-3 font-bold">${tier.rate}</td>
                     <td className="px-4 py-3">{tier.unit}</td>
                     <td className="px-4 py-3 font-mono text-muted-foreground">
                       {tier.basis === 'vazn' ? `W × $${tier.rate}` : `V × $${tier.rate}`}

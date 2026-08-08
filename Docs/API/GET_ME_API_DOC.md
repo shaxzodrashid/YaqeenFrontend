@@ -8,11 +8,11 @@ This document provides the complete API specifications for the unified user prof
 
 Retrieve the complete profile details of the currently authenticated user session. This endpoint powers the initial app boot flow on the frontend by supplying identity, display avatar presigned URLs, and active permissions.
 
-* **Route:** `/employees/me` (Alias: `/emloyees/me`)
-* **Method:** `GET`
-* **Access:** `Private (Requires Bearer JWT token)`
-* **Permitted Roles:** Any valid authenticated user (`CEO`, `ROP`, `EMPLOYEE`, or custom roles)
-* **Success HTTP Status:** `200 OK`
+- **Route:** `/employees/me` (Alias: `/emloyees/me`)
+- **Method:** `GET`
+- **Access:** `Private (Requires Bearer JWT token)`
+- **Permitted Roles:** Any valid authenticated user (`CEO`, `ROP`, `EMPLOYEE`, or custom roles)
+- **Success HTTP Status:** `200 OK`
 
 ---
 
@@ -122,6 +122,7 @@ The endpoint returns a unified JSON payload supporting both flat fields (for bac
 ## 3. Response Fields Description
 
 ### 3.1. Primary & Compatibility Fields
+
 - `id` (string, UUID): Employee profile unique identifier.
 - `first_name` (string): Employee's first name.
 - `last_name` (string): Employee's last name.
@@ -143,6 +144,7 @@ The endpoint returns a unified JSON payload supporting both flat fields (for bac
 - `permissions` (object): Normalized map of module CRUD permission flags for the authenticated user.
 
 ### 3.2. Nested Structured Fields
+
 - `user` (object): Complete user security details, status flags, assigned `role_id`, nested `role_details`, and normalized `permissions`.
 - `employee` (object): Complete employee data with their nested department metadata and `picture_url`.
 
@@ -156,11 +158,13 @@ The `permissions` object returned in both the root payload and under `user.permi
 > For users assigned the **`CEO`** role, the backend automatically overrides all module actions (`create`, `read`, `update`, `delete`) to `true`.
 
 ### Permission Structure Format
+
 Every module key contains four explicit boolean flags:
+
 ```typescript
 interface ModulePermissionAction {
   create: boolean; // Permission to perform POST operations
-  read: boolean;   // Permission to perform GET operations
+  read: boolean; // Permission to perform GET operations
   update: boolean; // Permission to perform PUT/PATCH operations
   delete: boolean; // Permission to perform DELETE operations
 }
@@ -169,70 +173,90 @@ interface ModulePermissionAction {
 ### Complete System Modules & Definitions
 
 #### 1. `clients` (Clients Management)
+
 Controls access to client catalog, company records, contact numbers, and client tags.
+
 - **`create`**: Add new client entries (`POST /clients`).
 - **`read`**: View client directory and individual client profiles (`GET /clients`, `GET /clients/:id`).
 - **`update`**: Modify existing client information or client status (`PUT /clients/:id`).
 - **`delete`**: Remove or soft-archive client records (`DELETE /clients/:id`).
 
 #### 2. `employees` (Employee Management)
+
 Controls access to staff member records, salaries, department assignments, and employee profiles.
+
 - **`create`**: Register new employees and trigger auto-linking of user accounts (`POST /employees`).
 - **`read`**: View employee lists, staff directory, and salary details (`GET /employees`, `GET /employees/:id`).
 - **`update`**: Update staff details, salaries, or deactivate employees (`PUT /employees/:id`).
 - **`delete`**: Remove employee records (`DELETE /employees/:id`).
 
 #### 3. `departments` (Department Management)
+
 Controls access to company department listings and structural organization.
+
 - **`create`**: Create new operational departments (`POST /departments`).
 - **`read`**: View department list (`GET /departments`).
 - **`update`**: Edit department names or display labels (`PUT /departments/:id`).
 - **`delete`**: Delete empty departments (`DELETE /departments/:id`).
 
 #### 4. `cargo_kpi` (Cargo KPI & Shipment Operations)
+
 Controls access to shipment tracking, cargo transactions, weight/volume metrics, and KPI targets.
+
 - **`create`**: Log new cargo shipments or add KPI target entries (`POST /cargo-kpi`).
 - **`read`**: View cargo transaction dashboards, analytics, and target progress (`GET /cargo-kpi`).
 - **`update`**: Modify shipment parameters, weights, or KPI values (`PUT /cargo-kpi/:id`).
 - **`delete`**: Delete cargo transaction entries (`DELETE /cargo-kpi/:id`).
 
 #### 5. `finance` (Finance & Expenses)
+
 Controls access to company financial ledgers, expense logs, and financial statistics.
+
 - **`create`**: Log financial expenses or revenue entries (`POST /finance/expenses`).
 - **`read`**: View financial reports, expense categories, and monthly summaries (`GET /finance`).
 - **`update`**: Modify expense amounts or description details (`PUT /finance/expenses/:id`).
 - **`delete`**: Void or delete expense entries (`DELETE /finance/expenses/:id`).
 
 #### 6. `commercial_offers` (Commercial Offers & Quotes)
+
 Controls access to client price quotes, commercial offer generators, and PDF document rendering.
+
 - **`create`**: Draft and issue new commercial offers (`POST /commercial-offers`).
 - **`read`**: Access commercial offer repository and download PDFs (`GET /commercial-offers`).
 - **`update`**: Update offer details, terms, or pricing (`PUT /commercial-offers/:id`).
 - **`delete`**: Cancel or remove commercial offers (`DELETE /commercial-offers/:id`).
 
 #### 7. `tasks` (Kanban Tasks & Workflows)
+
 Controls access to task management boards, Kanban columns, card assignments, and task comments.
+
 - **`create`**: Create new tasks or task columns (`POST /tasks`).
 - **`read`**: View Kanban board cards, task details, and activity logs (`GET /tasks`).
 - **`update`**: Move task cards across columns, edit task fields, or post comments (`PUT /tasks/:id`).
 - **`delete`**: Delete tasks or task columns (`DELETE /tasks/:id`).
 
 #### 8. `currency` (Currency Rates & Settings)
+
 Controls access to foreign currency exchange rates (USD, EUR, RUB to UZS) and Central Bank auto-sync integration.
+
 - **`create`**: Add manual currency rate entries (`POST /currency`).
 - **`read`**: View current exchange rates and rate conversion history (`GET /currency`).
 - **`update`**: Update conversion rates or toggle auto-sync settings (`PUT /currency/:id`).
 - **`delete`**: Delete historical rate entries (`DELETE /currency/:id`).
 
 #### 9. `attachments` (Attachments & Documents)
+
 Controls access to document uploads, MinIO presigned URL file streaming, and file management.
+
 - **`create`**: Upload document files (passport, contracts, receipts) (`POST /attachments/upload`).
 - **`read`**: Fetch temporary presigned view/download URLs for attachments (`GET /attachments/:id`).
 - **`update`**: Update attachment metadata or re-upload files (`PUT /attachments/:id`).
 - **`delete`**: Delete attachment files from MinIO storage and clear database references (`DELETE /attachments/:id`).
 
 #### 10. `roles` (Role & Permissions Management)
+
 Controls administrative access to defining custom roles and managing user permissions.
+
 - **`create`**: Create new custom system roles with tailored permission matrices (`POST /roles`).
 - **`read`**: View roles listing, single role details, and system module taxonomy (`GET /roles`, `GET /roles/modules`).
 - **`update`**: Update custom or system role display names and permission matrices (`PUT /roles/:id`).
@@ -243,27 +267,29 @@ Controls administrative access to defining custom roles and managing user permis
 ## 5. Profile Picture Management Endpoints
 
 ### Upload Profile Picture (`POST /employees/me/picture`)
+
 Upload or update the authenticated user's profile picture avatar image.
 
-* **Route:** `/employees/me/picture`
-* **Method:** `POST`
-* **Content-Type:** `multipart/form-data`
-* **Payload:** `file` (binary, max 5MB, JPEG/PNG/WEBP/GIF)
-* **Success HTTP Status:** `201 Created`
+- **Route:** `/employees/me/picture`
+- **Method:** `POST`
+- **Content-Type:** `multipart/form-data`
+- **Payload:** `file` (binary, max 5MB, JPEG/PNG/WEBP/GIF)
+- **Success HTTP Status:** `201 Created`
 
 ### Delete Profile Picture (`DELETE /employees/me/picture`)
+
 Remove the authenticated user's profile picture avatar from MinIO and clear DB reference.
 
-* **Route:** `/employees/me/picture`
-* **Method:** `DELETE`
-* **Success HTTP Status:** `200 OK`
+- **Route:** `/employees/me/picture`
+- **Method:** `DELETE`
+- **Success HTTP Status:** `200 OK`
 
 ---
 
 ## 6. Error Responses & Security Exceptions
 
-| Location Key | HTTP Code | Scenario |
-| :--- | :--- | :--- |
-| `auth_header_missing` | `401 Unauthorized` | Authorization header is absent or is not formatted as `Bearer <token>`. |
-| `invalid_token` | `401 Unauthorized` | Access token signature verification failed or token has expired. |
-| `employee_profile_missing` | `404 Not Found` | No employee details or user record could be resolved for the active session. |
+| Location Key               | HTTP Code          | Scenario                                                                     |
+| :------------------------- | :----------------- | :--------------------------------------------------------------------------- |
+| `auth_header_missing`      | `401 Unauthorized` | Authorization header is absent or is not formatted as `Bearer <token>`.      |
+| `invalid_token`            | `401 Unauthorized` | Access token signature verification failed or token has expired.             |
+| `employee_profile_missing` | `404 Not Found`    | No employee details or user record could be resolved for the active session. |

@@ -27,7 +27,17 @@ import { T } from './T';
 import { api, getImageUrl } from '../services/api';
 import type { AuthUser, Employee } from '../services/api';
 
-export type PageId = 'overview' | 'commercial' | 'employees' | 'clients' | 'departments' | 'profile' | 'cargo' | 'finance' | 'roles' | 'tasks';
+export type PageId =
+  | 'overview'
+  | 'commercial'
+  | 'employees'
+  | 'clients'
+  | 'departments'
+  | 'profile'
+  | 'cargo'
+  | 'finance'
+  | 'roles'
+  | 'tasks';
 
 interface SidebarProps {
   user: AuthUser | null;
@@ -45,7 +55,14 @@ const sidebarVariants = {
   collapsed: { width: 72 },
 };
 
-export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = false, onMobileClose }: SidebarProps) {
+export function Sidebar({
+  user,
+  currentPage,
+  onNavigate,
+  onLogout,
+  mobileOpen = false,
+  onMobileClose,
+}: SidebarProps) {
   const { t, locale, setLocale } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { canRead } = usePermissions();
@@ -56,7 +73,8 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
   useEffect(() => {
     let isMounted = true;
     const loadProfile = () => {
-      api.employees.me()
+      api.employees
+        .me()
         .then((data) => {
           if (isMounted && data) {
             setProfile(data);
@@ -75,13 +93,14 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
     };
   }, []);
 
-  const displayName = profile?.first_name || profile?.last_name
-    ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-    : user?.first_name || user?.last_name
-      ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-      : user?.name
-        ? user.name
-        : user?.phone_number || 'User';
+  const displayName =
+    profile?.first_name || profile?.last_name
+      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+      : user?.first_name || user?.last_name
+        ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+        : user?.name
+          ? user.name
+          : user?.phone_number || 'User';
 
   const getUserInitials = () => {
     const fn = profile?.first_name || user?.first_name;
@@ -105,8 +124,12 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
   const userInitials = getUserInitials();
 
   // ── Responsive: detect screen size ────────────────────
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  const [isTablet, setIsTablet] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 && window.innerWidth < 1024 : false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  const [isTablet, setIsTablet] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 && window.innerWidth < 1024 : false
+  );
 
   const handleResize = useCallback(() => {
     const w = window.innerWidth;
@@ -134,15 +157,59 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
   };
 
   const allNavItems: { id: PageId; icon: React.ReactNode; label: string; moduleKey?: string }[] = [
-    { id: 'overview', icon: <LayoutDashboard className="size-5 shrink-0" />, label: t('navOverview') },
-    { id: 'commercial', icon: <FileText className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />, label: t('navCommercialOffers'), moduleKey: 'commercial_offers' },
-    { id: 'tasks', icon: <CheckSquare className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />, label: t('navTasks'), moduleKey: 'tasks' },
-    { id: 'finance', icon: <DollarSign className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />, label: t('navFinance'), moduleKey: 'finance' },
-    { id: 'cargo', icon: <Package className="size-5 shrink-0" />, label: t('navCargoKpi'), moduleKey: 'cargo_kpi' },
-    { id: 'roles', icon: <ShieldCheck className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />, label: t('navRoles'), moduleKey: 'roles' },
-    { id: 'employees', icon: <Users className="size-5 shrink-0" />, label: t('navEmployees'), moduleKey: 'employees' },
-    { id: 'clients', icon: <UserCheck className="size-5 shrink-0" />, label: t('navClients'), moduleKey: 'clients' },
-    { id: 'departments', icon: <Building2 className="size-5 shrink-0" />, label: t('navDepartments'), moduleKey: 'departments' },
+    {
+      id: 'overview',
+      icon: <LayoutDashboard className="size-5 shrink-0" />,
+      label: t('navOverview'),
+    },
+    {
+      id: 'commercial',
+      icon: <FileText className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />,
+      label: t('navCommercialOffers'),
+      moduleKey: 'commercial_offers',
+    },
+    {
+      id: 'tasks',
+      icon: <CheckSquare className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />,
+      label: t('navTasks'),
+      moduleKey: 'tasks',
+    },
+    {
+      id: 'finance',
+      icon: <DollarSign className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />,
+      label: t('navFinance'),
+      moduleKey: 'finance',
+    },
+    {
+      id: 'cargo',
+      icon: <Package className="size-5 shrink-0" />,
+      label: t('navCargoKpi'),
+      moduleKey: 'cargo_kpi',
+    },
+    {
+      id: 'roles',
+      icon: <ShieldCheck className="size-5 shrink-0 text-amber-500/90 dark:text-brand-gold" />,
+      label: t('navRoles'),
+      moduleKey: 'roles',
+    },
+    {
+      id: 'employees',
+      icon: <Users className="size-5 shrink-0" />,
+      label: t('navEmployees'),
+      moduleKey: 'employees',
+    },
+    {
+      id: 'clients',
+      icon: <UserCheck className="size-5 shrink-0" />,
+      label: t('navClients'),
+      moduleKey: 'clients',
+    },
+    {
+      id: 'departments',
+      icon: <Building2 className="size-5 shrink-0" />,
+      label: t('navDepartments'),
+      moduleKey: 'departments',
+    },
   ];
 
   const navItems = allNavItems.filter((item) => !item.moduleKey || canRead(item.moduleKey));
@@ -158,9 +225,10 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
           <button
             onClick={() => handleNavigate(item.id)}
             className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer focus:outline-none relative overflow-hidden
-              ${isActive
-                ? 'bg-brand-gold/15 text-brand-gold dark:text-brand-gold'
-                : 'text-neutral-300 dark:text-neutral-300 hover:bg-white/5 hover:text-white'
+              ${
+                isActive
+                  ? 'bg-brand-gold/15 text-brand-gold dark:text-brand-gold'
+                  : 'text-neutral-300 dark:text-neutral-300 hover:bg-white/5 hover:text-white'
               }`}
           >
             {/* Active indicator bar */}
@@ -171,7 +239,9 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
                 transition={{ type: 'spring', stiffness: 350, damping: 30 }}
               />
             )}
-            <span className={`transition-colors duration-200 ${isActive ? 'text-brand-gold' : 'text-neutral-300 group-hover:text-white'}`}>
+            <span
+              className={`transition-colors duration-200 ${isActive ? 'text-brand-gold' : 'text-neutral-300 group-hover:text-white'}`}
+            >
               {item.icon}
             </span>
             <AnimatePresence initial={false}>
@@ -190,7 +260,9 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
           </button>
         </Tooltip.Trigger>
         {effectiveCollapsed && (
-          <Tooltip.Content placement="right"><T text={item.label} /></Tooltip.Content>
+          <Tooltip.Content placement="right">
+            <T text={item.label} />
+          </Tooltip.Content>
         )}
       </Tooltip>
     );
@@ -211,7 +283,12 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
           </button>
         )}
         {!effectiveCollapsed ? (
-          <YaqeenHorizontalLogo height={30} markVariant="gold" textVariant="gold" className="transition-all duration-300" />
+          <YaqeenHorizontalLogo
+            height={30}
+            markVariant="gold"
+            textVariant="gold"
+            className="transition-all duration-300"
+          />
         ) : (
           <div className="size-9 rounded-xl bg-brand-gold/15 flex items-center justify-center border border-brand-gold/30 shrink-0">
             <YaqeenMark size={22} variant="gold" />
@@ -240,7 +317,9 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
                 {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
               </button>
             </Tooltip.Trigger>
-            <Tooltip.Content placement="right">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</Tooltip.Content>
+            <Tooltip.Content placement="right">
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </Tooltip.Content>
           </Tooltip>
 
           {/* Language Selector */}
@@ -252,7 +331,9 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
               >
                 <Globe className="size-3.5 text-brand-gold shrink-0" />
                 <span>{locale === 'uz' ? "O'zbek" : locale === 'ru' ? 'Русский' : 'English'}</span>
-                <ChevronDown className={`size-3 ml-auto transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`size-3 ml-auto transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`}
+                />
               </button>
               <AnimatePresence>
                 {isLangOpen && (
@@ -266,14 +347,20 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
                     {(['uz', 'ru', 'en'] as const).map((lang) => (
                       <button
                         key={lang}
-                        onClick={() => { setLocale(lang); setIsLangOpen(false); }}
+                        onClick={() => {
+                          setLocale(lang);
+                          setIsLangOpen(false);
+                        }}
                         className={`flex items-center justify-between w-full px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer focus:outline-none
-                          ${locale === lang
-                            ? 'bg-brand-gold/15 text-brand-gold'
-                            : 'text-neutral-300 hover:bg-white/5 hover:text-white'
+                          ${
+                            locale === lang
+                              ? 'bg-brand-gold/15 text-brand-gold'
+                              : 'text-neutral-300 hover:bg-white/5 hover:text-white'
                           }`}
                       >
-                        <span>{lang === 'uz' ? "O'zbek" : lang === 'ru' ? 'Русский' : 'English'}</span>
+                        <span>
+                          {lang === 'uz' ? "O'zbek" : lang === 'ru' ? 'Русский' : 'English'}
+                        </span>
                         <span className="text-[9px] opacity-60">{lang.toUpperCase()}</span>
                       </button>
                     ))}
@@ -303,25 +390,20 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
 
           <Tooltip delay={0} closeDelay={0}>
             <Tooltip.Trigger>
-              <Avatar
-                className="size-9 border border-brand-gold/30 bg-brand-royal text-brand-gold shrink-0 group-hover:scale-105 transition-transform"
-              >
+              <Avatar className="size-9 border border-brand-gold/30 bg-brand-royal text-brand-gold shrink-0 group-hover:scale-105 transition-transform">
                 {profile?.picture_url && (
-                  <Avatar.Image
-                    src={getImageUrl(profile.picture_url)}
-                    alt={displayName}
-                  />
+                  <Avatar.Image src={getImageUrl(profile.picture_url)} alt={displayName} />
                 )}
-                <Avatar.Fallback className="text-xs font-bold">
-                  {userInitials}
-                </Avatar.Fallback>
+                <Avatar.Fallback className="text-xs font-bold">{userInitials}</Avatar.Fallback>
               </Avatar>
             </Tooltip.Trigger>
             {effectiveCollapsed && (
               <Tooltip.Content placement="right">
                 <div className="flex flex-col gap-0.5">
                   <span className="font-semibold text-xs">{displayName}</span>
-                  <span className="text-[10px] text-brand-gold"><T k="navMyProfile" /></span>
+                  <span className="text-[10px] text-brand-gold">
+                    <T k="navMyProfile" />
+                  </span>
                 </div>
               </Tooltip.Content>
             )}
@@ -358,18 +440,29 @@ export function Sidebar({ user, currentPage, onNavigate, onLogout, mobileOpen = 
                 <LogOut className="size-4" />
               </button>
             </Tooltip.Trigger>
-            <Tooltip.Content placement="right"><T k="logout" /></Tooltip.Content>
+            <Tooltip.Content placement="right">
+              <T k="logout" />
+            </Tooltip.Content>
           </Tooltip>
         </div>
 
         {/* Collapse Toggle — hidden on mobile (sidebar is overlay there) */}
         {!isMobile && (
           <button
-            onClick={() => { setCollapsed(!collapsed); setIsLangOpen(false); }}
+            onClick={() => {
+              setCollapsed(!collapsed);
+              setIsLangOpen(false);
+            }}
             className="flex items-center justify-center gap-2 w-full py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-300/60 hover:text-neutral-300 transition-colors cursor-pointer focus:outline-none"
           >
-            <ChevronLeft className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
-            {!collapsed && <span><T k="navCollapse" /></span>}
+            <ChevronLeft
+              className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+            />
+            {!collapsed && (
+              <span>
+                <T k="navCollapse" />
+              </span>
+            )}
           </button>
         )}
       </div>

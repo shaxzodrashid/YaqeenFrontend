@@ -28,7 +28,7 @@ Required:
 Recommended focus style:
 
 ```css
-outline: 3px solid #8FA9CF;
+outline: 3px solid #8fa9cf;
 outline-offset: 2px;
 ```
 

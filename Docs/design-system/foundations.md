@@ -10,62 +10,62 @@
 
 The following colors are **board-defined**.
 
-| Token | Name | Hex | Primary Use |
-|---|---|---:|---|
-| `brand.royal` | Royal Blue | `#0F2D5C` | Primary actions, active navigation, branded panels |
-| `brand.navy` | Deep Navy | `#11213D` | High-contrast surfaces, text, sidebars, premium cards |
-| `brand.gold` | Champagne Gold | `#C8A96A` | Premium accents, logo, selected highlights |
-| `neutral.ivory` | Ivory | `#F7F5F0` | Main background and warm light surfaces |
-| `neutral.100` | Light Gray | `#E6E7EB` | Dividers, disabled surfaces, subtle fills |
-| `neutral.300` | Cool Blue Gray | `#B7C2D1` | Borders, inactive icons, secondary surfaces |
-| `neutral.600` | Slate Gray | `#6B7280` | Secondary text, metadata, inactive labels |
+| Token           | Name           |       Hex | Primary Use                                           |
+| --------------- | -------------- | --------: | ----------------------------------------------------- |
+| `brand.royal`   | Royal Blue     | `#0F2D5C` | Primary actions, active navigation, branded panels    |
+| `brand.navy`    | Deep Navy      | `#11213D` | High-contrast surfaces, text, sidebars, premium cards |
+| `brand.gold`    | Champagne Gold | `#C8A96A` | Premium accents, logo, selected highlights            |
+| `neutral.ivory` | Ivory          | `#F7F5F0` | Main background and warm light surfaces               |
+| `neutral.100`   | Light Gray     | `#E6E7EB` | Dividers, disabled surfaces, subtle fills             |
+| `neutral.300`   | Cool Blue Gray | `#B7C2D1` | Borders, inactive icons, secondary surfaces           |
+| `neutral.600`   | Slate Gray     | `#6B7280` | Secondary text, metadata, inactive labels             |
 
 ## Semantic Color Roles
 
 Use semantic names in implementation. Components should not reference raw palette values directly unless the color is intentionally decorative.
 
-| Semantic Token | Value | Usage |
-|---|---:|---|
-| `color.background.canvas` | `#F7F5F0` | Main application background |
-| `color.background.surface` | `#FFFFFF` | Cards, menus, fields |
-| `color.background.brand` | `#0F2D5C` | Primary branded surfaces |
-| `color.background.brand-strong` | `#11213D` | Sidebar, elevated premium panels |
-| `color.text.primary` | `#11213D` | Primary text |
-| `color.text.secondary` | `#6B7280` | Supporting text |
-| `color.text.inverse` | `#FFFFFF` | Text on blue surfaces |
-| `color.text.brand` | `#0F2D5C` | Links and active labels |
-| `color.text.premium` | `#C8A96A` | Decorative headings on dark surfaces |
-| `color.border.default` | `#B7C2D1` | Inputs and standard borders |
-| `color.border.subtle` | `#E6E7EB` | Cards and dividers |
-| `color.border.brand` | `#0F2D5C` | Focused controls |
-| `color.icon.default` | `#0F2D5C` | Standard icons |
-| `color.icon.muted` | `#6B7280` | Inactive icons |
-| `color.icon.inverse` | `#FFFFFF` | Icons on dark surfaces |
-| `color.accent.premium` | `#C8A96A` | Premium status and decorative detail |
+| Semantic Token                  |     Value | Usage                                |
+| ------------------------------- | --------: | ------------------------------------ |
+| `color.background.canvas`       | `#F7F5F0` | Main application background          |
+| `color.background.surface`      | `#FFFFFF` | Cards, menus, fields                 |
+| `color.background.brand`        | `#0F2D5C` | Primary branded surfaces             |
+| `color.background.brand-strong` | `#11213D` | Sidebar, elevated premium panels     |
+| `color.text.primary`            | `#11213D` | Primary text                         |
+| `color.text.secondary`          | `#6B7280` | Supporting text                      |
+| `color.text.inverse`            | `#FFFFFF` | Text on blue surfaces                |
+| `color.text.brand`              | `#0F2D5C` | Links and active labels              |
+| `color.text.premium`            | `#C8A96A` | Decorative headings on dark surfaces |
+| `color.border.default`          | `#B7C2D1` | Inputs and standard borders          |
+| `color.border.subtle`           | `#E6E7EB` | Cards and dividers                   |
+| `color.border.brand`            | `#0F2D5C` | Focused controls                     |
+| `color.icon.default`            | `#0F2D5C` | Standard icons                       |
+| `color.icon.muted`              | `#6B7280` | Inactive icons                       |
+| `color.icon.inverse`            | `#FFFFFF` | Icons on dark surfaces               |
+| `color.accent.premium`          | `#C8A96A` | Premium status and decorative detail |
 
 ## Interaction Extensions
 
 These are **standardized extensions** derived from the core palette.
 
-| Token | Hex | Use |
-|---|---:|---|
-| `brand.royal-hover` | `#173E77` | Hovered primary action |
-| `brand.royal-pressed` | `#0B2348` | Pressed primary action |
-| `brand.navy-hover` | `#1A3157` | Hovered dark navigation item |
-| `brand.gold-soft` | `#F2E9D8` | Gold-tinted background |
-| `focus.ring` | `#8FA9CF` | Accessible focus halo |
-| `overlay.scrim` | `rgba(17, 33, 61, 0.56)` | Modal backdrop |
+| Token                 |                      Hex | Use                          |
+| --------------------- | -----------------------: | ---------------------------- |
+| `brand.royal-hover`   |                `#173E77` | Hovered primary action       |
+| `brand.royal-pressed` |                `#0B2348` | Pressed primary action       |
+| `brand.navy-hover`    |                `#1A3157` | Hovered dark navigation item |
+| `brand.gold-soft`     |                `#F2E9D8` | Gold-tinted background       |
+| `focus.ring`          |                `#8FA9CF` | Accessible focus halo        |
+| `overlay.scrim`       | `rgba(17, 33, 61, 0.56)` | Modal backdrop               |
 
 ## Functional State Extensions
 
 Functional colors are necessary for complete product behavior but are not explicitly named in the board.
 
-| Token | Hex | Background | Use |
-|---|---:|---:|---|
-| `success.600` | `#167A4A` | `#E8F5EE` | Completed, positive balance, success |
-| `warning.700` | `#8A5A00` | `#FFF4D8` | Pending, caution, needs review |
-| `danger.600` | `#B42318` | `#FDECEA` | Error, destructive, failed |
-| `info.600` | `#245EA8` | `#EAF2FC` | Informational status |
+| Token         |       Hex | Background | Use                                  |
+| ------------- | --------: | ---------: | ------------------------------------ |
+| `success.600` | `#167A4A` |  `#E8F5EE` | Completed, positive balance, success |
+| `warning.700` | `#8A5A00` |  `#FFF4D8` | Pending, caution, needs review       |
+| `danger.600`  | `#B42318` |  `#FDECEA` | Error, destructive, failed           |
+| `info.600`    | `#245EA8` |  `#EAF2FC` | Informational status                 |
 
 Functional color must never be the only indicator. Pair it with text, an icon, shape, or sign.
 
@@ -73,18 +73,18 @@ Functional color must never be the only indicator. Pair it with text, an icon, s
 
 Approximate WCAG contrast ratios for key palette combinations:
 
-| Foreground | Background | Ratio | Guidance |
-|---|---|---:|---|
-| Royal Blue | Ivory | 12.43:1 | AAA for normal text |
-| Deep Navy | Ivory | 14.73:1 | AAA for normal text |
-| Royal Blue | White | 13.55:1 | AAA for normal text |
-| Deep Navy | White | 16.05:1 | AAA for normal text |
-| Champagne Gold | Deep Navy | 7.14:1 | AAA for normal text |
-| Champagne Gold | Royal Blue | 6.02:1 | AA for normal text |
-| Champagne Gold | Ivory | 2.06:1 | Decorative only; not body text |
-| Slate Gray | Ivory | 4.44:1 | Large text only; darken for small text |
-| Slate Gray | White | 4.83:1 | AA for normal text |
-| Cool Blue Gray | Deep Navy | 8.90:1 | AAA for normal text |
+| Foreground     | Background |   Ratio | Guidance                               |
+| -------------- | ---------- | ------: | -------------------------------------- |
+| Royal Blue     | Ivory      | 12.43:1 | AAA for normal text                    |
+| Deep Navy      | Ivory      | 14.73:1 | AAA for normal text                    |
+| Royal Blue     | White      | 13.55:1 | AAA for normal text                    |
+| Deep Navy      | White      | 16.05:1 | AAA for normal text                    |
+| Champagne Gold | Deep Navy  |  7.14:1 | AAA for normal text                    |
+| Champagne Gold | Royal Blue |  6.02:1 | AA for normal text                     |
+| Champagne Gold | Ivory      |  2.06:1 | Decorative only; not body text         |
+| Slate Gray     | Ivory      |  4.44:1 | Large text only; darken for small text |
+| Slate Gray     | White      |  4.83:1 | AA for normal text                     |
+| Cool Blue Gray | Deep Navy  |  8.90:1 | AAA for normal text                    |
 
 ### Critical Rule
 
@@ -178,7 +178,7 @@ The board defines:
 ### Latin Heading Family
 
 ```css
-font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
 ```
 
 Use for:
@@ -199,7 +199,12 @@ Do not use for:
 ### Latin UI Family
 
 ```css
-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+font-family:
+  'Inter',
+  -apple-system,
+  BlinkMacSystemFont,
+  'Segoe UI',
+  sans-serif;
 ```
 
 Use for:
@@ -226,34 +231,34 @@ Arabic fonts must be reviewed with native readers before release. Never stretch 
 
 ### Desktop Scale
 
-| Token | Font | Weight | Size | Line Height | Letter Spacing | Use |
-|---|---|---:|---:|---:|---:|---|
-| `display-lg` | Playfair Display | 600 | 64 px | 72 px | `-0.02em` | Brand hero |
-| `display-md` | Playfair Display | 600 | 56 px | 64 px | `-0.02em` | Major landing title |
-| `heading-1` | Playfair Display | 600 | 48 px | 56 px | `-0.015em` | Page title |
-| `heading-2` | Playfair Display | 600 | 36 px | 44 px | `-0.01em` | Major section |
-| `heading-3` | Playfair Display | 600 | 28 px | 36 px | `-0.005em` | Card group title |
-| `heading-4` | Playfair Display | 600 | 22 px | 30 px | `0` | Card or panel title |
-| `subtitle-lg` | Inter | 600 | 18 px | 26 px | `-0.01em` | Section subtitle |
-| `subtitle-sm` | Inter | 600 | 16 px | 24 px | `-0.005em` | Component title |
-| `body-lg` | Inter | 400 | 18 px | 28 px | `0` | Introductory body |
-| `body-md` | Inter | 400 | 16 px | 24 px | `0` | Default body |
-| `body-sm` | Inter | 400 | 14 px | 22 px | `0` | Secondary body |
-| `label-lg` | Inter | 600 | 14 px | 20 px | `0` | Buttons, fields |
-| `label-sm` | Inter | 600 | 12 px | 18 px | `0.01em` | Metadata labels |
-| `caption` | Inter | 500 | 12 px | 18 px | `0` | Supporting context |
-| `overline` | Inter | 600 | 11 px | 16 px | `0.08em` | Small section label |
+| Token         | Font             | Weight |  Size | Line Height | Letter Spacing | Use                 |
+| ------------- | ---------------- | -----: | ----: | ----------: | -------------: | ------------------- |
+| `display-lg`  | Playfair Display |    600 | 64 px |       72 px |      `-0.02em` | Brand hero          |
+| `display-md`  | Playfair Display |    600 | 56 px |       64 px |      `-0.02em` | Major landing title |
+| `heading-1`   | Playfair Display |    600 | 48 px |       56 px |     `-0.015em` | Page title          |
+| `heading-2`   | Playfair Display |    600 | 36 px |       44 px |      `-0.01em` | Major section       |
+| `heading-3`   | Playfair Display |    600 | 28 px |       36 px |     `-0.005em` | Card group title    |
+| `heading-4`   | Playfair Display |    600 | 22 px |       30 px |            `0` | Card or panel title |
+| `subtitle-lg` | Inter            |    600 | 18 px |       26 px |      `-0.01em` | Section subtitle    |
+| `subtitle-sm` | Inter            |    600 | 16 px |       24 px |     `-0.005em` | Component title     |
+| `body-lg`     | Inter            |    400 | 18 px |       28 px |            `0` | Introductory body   |
+| `body-md`     | Inter            |    400 | 16 px |       24 px |            `0` | Default body        |
+| `body-sm`     | Inter            |    400 | 14 px |       22 px |            `0` | Secondary body      |
+| `label-lg`    | Inter            |    600 | 14 px |       20 px |            `0` | Buttons, fields     |
+| `label-sm`    | Inter            |    600 | 12 px |       18 px |       `0.01em` | Metadata labels     |
+| `caption`     | Inter            |    500 | 12 px |       18 px |            `0` | Supporting context  |
+| `overline`    | Inter            |    600 | 11 px |       16 px |       `0.08em` | Small section label |
 
 ### Mobile Adjustments
 
-| Desktop Token | Mobile Size / Line Height |
-|---|---|
-| `display-lg` | 44 / 52 px |
-| `display-md` | 40 / 48 px |
-| `heading-1` | 34 / 42 px |
-| `heading-2` | 28 / 36 px |
-| `heading-3` | 24 / 32 px |
-| `heading-4` | 20 / 28 px |
+| Desktop Token   | Mobile Size / Line Height                       |
+| --------------- | ----------------------------------------------- |
+| `display-lg`    | 44 / 52 px                                      |
+| `display-md`    | 40 / 48 px                                      |
+| `heading-1`     | 34 / 42 px                                      |
+| `heading-2`     | 28 / 36 px                                      |
+| `heading-3`     | 24 / 32 px                                      |
+| `heading-4`     | 20 / 28 px                                      |
 | Body and labels | unchanged unless space is extremely constrained |
 
 ## Weight Usage
@@ -303,20 +308,20 @@ The board defines an **8-point base scale**:
 
 Production implementation may use 4 px and 12 px as controlled half-step values.
 
-| Token | Value | Typical Use |
-|---|---:|---|
-| `space-0` | 0 px | Reset |
-| `space-0-5` | 4 px | Icon optical correction, compact internal gap |
-| `space-1` | 8 px | Icon-label gap, small stack |
-| `space-1-5` | 12 px | Compact field or chip padding |
-| `space-2` | 16 px | Mobile page padding, standard card gap |
-| `space-3` | 24 px | Card padding, desktop grid gutter |
-| `space-4` | 32 px | Section separation |
-| `space-5` | 40 px | Large component separation |
-| `space-6` | 48 px | Page section spacing |
-| `space-8` | 64 px | Major section spacing |
-| `space-10` | 80 px | Marketing layout only |
-| `space-12` | 96 px | Large hero spacing only |
+| Token       | Value | Typical Use                                   |
+| ----------- | ----: | --------------------------------------------- |
+| `space-0`   |  0 px | Reset                                         |
+| `space-0-5` |  4 px | Icon optical correction, compact internal gap |
+| `space-1`   |  8 px | Icon-label gap, small stack                   |
+| `space-1-5` | 12 px | Compact field or chip padding                 |
+| `space-2`   | 16 px | Mobile page padding, standard card gap        |
+| `space-3`   | 24 px | Card padding, desktop grid gutter             |
+| `space-4`   | 32 px | Section separation                            |
+| `space-5`   | 40 px | Large component separation                    |
+| `space-6`   | 48 px | Page section spacing                          |
+| `space-8`   | 64 px | Major section spacing                         |
+| `space-10`  | 80 px | Marketing layout only                         |
+| `space-12`  | 96 px | Large hero spacing only                       |
 
 ## Spacing Rules
 
@@ -390,14 +395,14 @@ The board defines:
 
 `4 px, 8 px, 12 px, 16 px, 24 px`
 
-| Token | Value | Use |
-|---|---:|---|
-| `radius-xs` | 4 px | Checkbox, small badge |
-| `radius-sm` | 8 px | Buttons, inputs, tabs |
-| `radius-md` | 12 px | Standard cards, menus |
-| `radius-lg` | 16 px | Dashboard panels, mobile cards |
-| `radius-xl` | 24 px | Hero cards, premium panels |
-| `radius-full` | 9999 px | Pills, avatars, toggles |
+| Token         |   Value | Use                            |
+| ------------- | ------: | ------------------------------ |
+| `radius-xs`   |    4 px | Checkbox, small badge          |
+| `radius-sm`   |    8 px | Buttons, inputs, tabs          |
+| `radius-md`   |   12 px | Standard cards, menus          |
+| `radius-lg`   |   16 px | Dashboard panels, mobile cards |
+| `radius-xl`   |   24 px | Hero cards, premium panels     |
+| `radius-full` | 9999 px | Pills, avatars, toggles        |
 
 ### Radius Rules
 
@@ -408,13 +413,13 @@ The board defines:
 
 ## Borders
 
-| Token | Value | Use |
-|---|---|---|
-| `border-subtle` | `1px solid #E6E7EB` | Cards, dividers |
+| Token            | Value               | Use                       |
+| ---------------- | ------------------- | ------------------------- |
+| `border-subtle`  | `1px solid #E6E7EB` | Cards, dividers           |
 | `border-default` | `1px solid #B7C2D1` | Inputs, inactive controls |
-| `border-strong` | `1px solid #6B7280` | Hovered neutral controls |
-| `border-focus` | `2px solid #0F2D5C` | Focused fields |
-| `border-premium` | `1px solid #C8A96A` | Premium secondary action |
+| `border-strong`  | `1px solid #6B7280` | Hovered neutral controls  |
+| `border-focus`   | `2px solid #0F2D5C` | Focused fields            |
+| `border-premium` | `1px solid #C8A96A` | Premium secondary action  |
 
 Avoid heavy borders around every section. Prefer surface separation and spacing.
 
@@ -422,11 +427,11 @@ Avoid heavy borders around every section. Prefer surface separation and spacing.
 
 The board defines four levels: None, Soft, Medium, Elevated.
 
-| Token | CSS Shadow | Use |
-|---|---|---|
-| `elevation-0` | `none` | Flat surfaces |
-| `elevation-1` | `0 1px 2px rgba(17,33,61,.06), 0 2px 8px rgba(17,33,61,.04)` | Standard card |
-| `elevation-2` | `0 4px 12px rgba(17,33,61,.10), 0 1px 3px rgba(17,33,61,.08)` | Menu, sticky panel |
+| Token         | CSS Shadow                                                      | Use                     |
+| ------------- | --------------------------------------------------------------- | ----------------------- |
+| `elevation-0` | `none`                                                          | Flat surfaces           |
+| `elevation-1` | `0 1px 2px rgba(17,33,61,.06), 0 2px 8px rgba(17,33,61,.04)`    | Standard card           |
+| `elevation-2` | `0 4px 12px rgba(17,33,61,.10), 0 1px 3px rgba(17,33,61,.08)`   | Menu, sticky panel      |
 | `elevation-3` | `0 12px 32px rgba(17,33,61,.16), 0 4px 10px rgba(17,33,61,.08)` | Modal, elevated overlay |
 
 ### Elevation Rules
@@ -450,12 +455,12 @@ The board defines:
 
 ### Standard Icon Sizes
 
-| Size | Use |
-|---:|---|
-| 16 px | Dense metadata, table action |
-| 20 px | Inputs, buttons, navigation |
-| 24 px | Default standalone icon |
-| 32 px | Feature card |
+|     Size | Use                                 |
+| -------: | ----------------------------------- |
+|    16 px | Dense metadata, table action        |
+|    20 px | Inputs, buttons, navigation         |
+|    24 px | Default standalone icon             |
+|    32 px | Feature card                        |
 | 40–48 px | Empty state or premium illustration |
 
 ### Rules

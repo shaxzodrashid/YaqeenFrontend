@@ -35,29 +35,32 @@ export function ClientSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch clients from backend GET /clients with backend search capability
-  const fetchClients = useCallback(async (query: string) => {
-    setLoading(true);
-    try {
-      const res = await clientsApi.list({
-        search: query.trim() || undefined,
-        limit: 20,
-      });
-      const items = res?.data || (Array.isArray(res) ? res : []);
-      setClients(items);
+  const fetchClients = useCallback(
+    async (query: string) => {
+      setLoading(true);
+      try {
+        const res = await clientsApi.list({
+          search: query.trim() || undefined,
+          limit: 20,
+        });
+        const items = res?.data || (Array.isArray(res) ? res : []);
+        setClients(items);
 
-      // Resolve selected client if we have UUID but not the client object
-      if (value && !selectedClient) {
-        const found = items.find((c) => c.id === value);
-        if (found) {
-          setSelectedClient(found);
+        // Resolve selected client if we have UUID but not the client object
+        if (value && !selectedClient) {
+          const found = items.find((c) => c.id === value);
+          if (found) {
+            setSelectedClient(found);
+          }
         }
+      } catch (err) {
+        console.error('Failed to fetch clients for selector:', err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Failed to fetch clients for selector:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [value, selectedClient]);
+    },
+    [value, selectedClient]
+  );
 
   // Sync selectedClient with value prop
   useEffect(() => {
@@ -94,10 +97,13 @@ export function ClientSelect({
       return;
     }
 
-    const timer = setTimeout(() => {
-      fetchClients(searchQuery);
-      lastFetchedQueryRef.current = searchQuery;
-    }, searchQuery ? 250 : 0);
+    const timer = setTimeout(
+      () => {
+        fetchClients(searchQuery);
+        lastFetchedQueryRef.current = searchQuery;
+      },
+      searchQuery ? 250 : 0
+    );
 
     return () => clearTimeout(timer);
   }, [searchQuery, isOpen, fetchClients, clients.length]);
@@ -163,7 +169,9 @@ export function ClientSelect({
               </div>
             </>
           ) : (
-            <span className="text-muted-foreground text-xs font-medium truncate">{displayPlaceholder}</span>
+            <span className="text-muted-foreground text-xs font-medium truncate">
+              {displayPlaceholder}
+            </span>
           )}
         </div>
 
@@ -178,7 +186,9 @@ export function ClientSelect({
               <X className="size-3.5" />
             </button>
           )}
-          <ChevronDown className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180 text-brand-gold' : ''}`} />
+          <ChevronDown
+            className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180 text-brand-gold' : ''}`}
+          />
         </div>
       </div>
 

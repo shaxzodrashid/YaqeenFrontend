@@ -13,7 +13,12 @@ interface BatchSalaryModalProps {
   initialData: FixedSalariesResponse | null;
 }
 
-export function BatchSalaryModal({ isOpen, onClose, onSuccess, initialData }: BatchSalaryModalProps) {
+export function BatchSalaryModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialData,
+}: BatchSalaryModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
 
@@ -110,7 +115,8 @@ export function BatchSalaryModal({ isOpen, onClose, onSuccess, initialData }: Ba
                     {t('finBatchUpdateSalaries')}
                   </h3>
                   <p className="text-xs text-muted dark:text-night-muted">
-                    Update fixed monthly salaries across all active employees in a single transaction
+                    Update fixed monthly salaries across all active employees in a single
+                    transaction
                   </p>
                 </div>
               </div>
@@ -127,29 +133,46 @@ export function BatchSalaryModal({ isOpen, onClose, onSuccess, initialData }: Ba
               <div className="flex items-center gap-4 text-xs">
                 <div>
                   <span className="text-muted dark:text-night-muted">Current Payroll: </span>
-                  <span className="font-semibold text-foreground dark:text-night-text">${originalTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-semibold text-foreground dark:text-night-text">
+                    ${originalTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <ArrowRight className="size-4 text-muted" />
                 <div>
                   <span className="text-muted dark:text-night-muted">New Payroll: </span>
-                  <span className="font-semibold text-brand-gold">${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-semibold text-brand-gold">
+                    ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
 
               {diff !== 0 && (
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                  diff > 0
-                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                }`}>
-                  {diff > 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
-                  <span>{diff > 0 ? `+${diff.toFixed(2)} Payroll Expense` : `${diff.toFixed(2)} Payroll Expense`}</span>
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                    diff > 0
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                  }`}
+                >
+                  {diff > 0 ? (
+                    <TrendingUp className="size-3.5" />
+                  ) : (
+                    <TrendingDown className="size-3.5" />
+                  )}
+                  <span>
+                    {diff > 0
+                      ? `+${diff.toFixed(2)} Payroll Expense`
+                      : `${diff.toFixed(2)} Payroll Expense`}
+                  </span>
                 </div>
               )}
             </div>
 
             {/* Body list of employees grouped by department */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 overflow-y-auto p-6 flex flex-col gap-6"
+            >
               {initialData.departments.map((dept) => (
                 <div key={dept.department_id} className="flex flex-col gap-3">
                   <div className="flex items-center justify-between pb-1 border-b border-border/40 dark:border-night-border">
@@ -157,7 +180,10 @@ export function BatchSalaryModal({ isOpen, onClose, onSuccess, initialData }: Ba
                       {dept.department_name} ({dept.employee_count} employees)
                     </h4>
                     <span className="text-xs font-semibold text-muted dark:text-night-muted">
-                      Dept Total: ${dept.total_fixed_salary.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      Dept Total: $
+                      {dept.total_fixed_salary.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
 
@@ -177,7 +203,7 @@ export function BatchSalaryModal({ isOpen, onClose, onSuccess, initialData }: Ba
                         </div>
                         <div className="relative w-32 shrink-0">
                           <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-muted text-xs font-bold font-mono">
-                            {emp.currency === 'UZS' ? 'so\'m' : emp.currency === 'RUB' ? '₽' : '$'}
+                            {emp.currency === 'UZS' ? "so'm" : emp.currency === 'RUB' ? '₽' : '$'}
                           </div>
                           <input
                             type="number"

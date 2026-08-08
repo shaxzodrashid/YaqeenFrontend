@@ -106,7 +106,11 @@ export const tokenStore = {
   getUser: (): AuthUser | null => {
     const raw = localStorage.getItem('yaqeen_user') || localStorage.getItem('user');
     if (!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   },
   save: (accessToken: string, refreshToken: string, user?: AuthUser) => {
     localStorage.setItem('yaqeen_access_token', accessToken);
@@ -125,7 +129,7 @@ export const tokenStore = {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
-  }
+  },
 };
 
 export const getAccessToken = tokenStore.getAccessToken;
@@ -135,14 +139,24 @@ export const setTokens = (accessToken: string, refreshToken: string, user?: Auth
 export const clearTokens = tokenStore.clear;
 
 // Helper to create standardized ApiError object
-export function makeApiError(path: string, status: number, location: string, message: string): ApiError {
+export function makeApiError(
+  path: string,
+  status: number,
+  location: string,
+  message: string
+): ApiError {
   return {
     statusCode: status,
     message,
-    error: status === 401 ? 'UnauthorizedException' : status === 404 ? 'NotFoundException' : 'BadRequestException',
+    error:
+      status === 401
+        ? 'UnauthorizedException'
+        : status === 404
+          ? 'NotFoundException'
+          : 'BadRequestException',
     timestamp: new Date().toISOString(),
     location,
-    path
+    path,
   };
 }
 
@@ -174,7 +188,7 @@ export function handleUnauthorizedFailure(errorPayload?: any): ApiError {
       error: 'UnauthorizedException',
       location: 'invalid_refresh_token',
       timestamp: new Date().toISOString(),
-      path: '/auth/refresh'
+      path: '/auth/refresh',
     }
   );
 }
@@ -191,7 +205,10 @@ export function isAuthBypassPath(path: string): boolean {
 }
 
 // Core fetch engine with interceptor & refresh token rotation queue
-export async function fetchWithInterceptors(path: string, options: RequestInit = {}): Promise<Response> {
+export async function fetchWithInterceptors(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const url = path.startsWith('http') ? path : `${BASE_URL}${path}`;
   const headers = new Headers(options.headers || {});
 
@@ -237,7 +254,7 @@ export async function fetchWithInterceptors(path: string, options: RequestInit =
       const refreshRes = await fetch(refreshUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken })
+        body: JSON.stringify({ refreshToken }),
       });
 
       if (!refreshRes.ok) {
@@ -251,7 +268,7 @@ export async function fetchWithInterceptors(path: string, options: RequestInit =
             error: 'UnauthorizedException',
             location: 'invalid_refresh_token',
             timestamp: new Date().toISOString(),
-            path: '/auth/refresh'
+            path: '/auth/refresh',
           };
         }
         const authErr = handleUnauthorizedFailure(errorBody);
@@ -286,7 +303,11 @@ export async function fetchWithInterceptors(path: string, options: RequestInit =
 }
 
 // Registerable Demo Handlers
-export type DemoHandler = (path: string, options: RequestInit, body: any) => { handled: true; result: any } | null;
+export type DemoHandler = (
+  path: string,
+  options: RequestInit,
+  body: any
+) => { handled: true; result: any } | null;
 
 const demoHandlers: DemoHandler[] = [];
 
@@ -296,8 +317,8 @@ export function registerDemoHandler(handler: DemoHandler) {
 
 export async function handleDemoRequest<T>(path: string, options: RequestInit): Promise<T> {
   await new Promise((resolve) => setTimeout(resolve, 800)); // Simulating network lag
-  
-  const body = (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : {};
+
+  const body = options.body && typeof options.body === 'string' ? JSON.parse(options.body) : {};
 
   for (const handler of demoHandlers) {
     const res = handler(path, options, body);
@@ -309,7 +330,7 @@ export async function handleDemoRequest<T>(path: string, options: RequestInit): 
   if (path === '/health') {
     return {
       status: 'ok',
-      info: { database: { status: 'up' }, redis: { status: 'up' } }
+      info: { database: { status: 'up' }, redis: { status: 'up' } },
     } as unknown as T;
   }
 
@@ -347,7 +368,9 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   } catch (err: any) {
     // If network connection failed (e.g. backend server at localhost:3000 is offline), fallback to demo mode handler
     if (err instanceof TypeError || err?.name === 'TypeError' || err?.message?.includes('fetch')) {
-      console.warn(`[API] Backend offline or unreachable at ${path}. Falling back to simulated offline DB mode.`);
+      console.warn(
+        `[API] Backend offline or unreachable at ${path}. Falling back to simulated offline DB mode.`
+      );
       return handleDemoRequest<T>(path, options);
     }
     throw err;
@@ -375,7 +398,9 @@ export async function requestNoContent(path: string, options: RequestInit = {}):
     }
   } catch (err: any) {
     if (err instanceof TypeError || err?.name === 'TypeError' || err?.message?.includes('fetch')) {
-      console.warn(`[API] Backend offline or unreachable at ${path}. Falling back to simulated offline DB mode.`);
+      console.warn(
+        `[API] Backend offline or unreachable at ${path}. Falling back to simulated offline DB mode.`
+      );
       await handleDemoRequest<void>(path, options);
       return;
     }

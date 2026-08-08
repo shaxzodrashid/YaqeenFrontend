@@ -51,7 +51,20 @@ function formatDateShort(dateStr?: string): string {
     const cleanStr = dateStr.slice(0, 10);
     const parts = cleanStr.split('-');
     if (parts.length === 3) {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       const mIdx = parseInt(parts[1], 10) - 1;
       const day = parts[2];
       if (mIdx >= 0 && mIdx < 12) {
@@ -60,7 +73,20 @@ function formatDateShort(dateStr?: string): string {
     }
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return cleanStr;
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
   } catch {
     return dateStr.slice(0, 10);
@@ -216,7 +242,12 @@ export function ContainerTrackingTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(t('confirmDeleteShipment') || 'Are you sure you want to delete this shipment?')) return;
+    if (
+      !window.confirm(
+        t('confirmDeleteShipment') || 'Are you sure you want to delete this shipment?'
+      )
+    )
+      return;
     try {
       await cargoKpiApi.deleteShipment(id);
       showNotification(t('successShipmentDeleted') || 'Shipment deleted successfully', 'success');
@@ -228,10 +259,18 @@ export function ContainerTrackingTab() {
   };
 
   const handleResetDemoData = async () => {
-    if (!window.confirm(t('confirmResetDemo') || 'Reset all shipment tracking data to default demo entries?')) return;
+    if (
+      !window.confirm(
+        t('confirmResetDemo') || 'Reset all shipment tracking data to default demo entries?'
+      )
+    )
+      return;
     try {
       await cargoKpiApi.resetShipments();
-      showNotification(t('successShipmentsReset') || 'Shipments reset to default demo state', 'success');
+      showNotification(
+        t('successShipmentsReset') || 'Shipments reset to default demo state',
+        'success'
+      );
       setSelectedIds([]);
       loadShipments();
     } catch (err: any) {
@@ -243,13 +282,20 @@ export function ContainerTrackingTab() {
     e.preventDefault();
     const rate = parseFloat(globalRmbRate);
     if (isNaN(rate) || rate <= 0) {
-      showNotification(t('warnRmbRatePositive') || 'Please enter a valid positive RMB exchange rate.', 'warning');
+      showNotification(
+        t('warnRmbRatePositive') || 'Please enter a valid positive RMB exchange rate.',
+        'warning'
+      );
       return;
     }
 
     try {
       await cargoKpiApi.updateRmbRate(rate);
-      showNotification(t('successRmbRateUpdated', { rate }) || `RMB rate updated to ${rate} across active shipments`, 'success');
+      showNotification(
+        t('successRmbRateUpdated', { rate }) ||
+          `RMB rate updated to ${rate} across active shipments`,
+        'success'
+      );
       setIsRateModalOpen(false);
       loadShipments();
     } catch (err: any) {
@@ -302,16 +348,17 @@ export function ContainerTrackingTab() {
   };
 
   const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   };
 
   const handleBatchStatusUpdate = async (newStatus: ShipmentStatus) => {
     if (selectedIds.length === 0) return;
     try {
       await cargoKpiApi.batchUpdateStatus(selectedIds, newStatus);
-      showNotification(`Updated ${selectedIds.length} container(s) to ${getStatusLabel(newStatus)}`, 'success');
+      showNotification(
+        `Updated ${selectedIds.length} container(s) to ${getStatusLabel(newStatus)}`,
+        'success'
+      );
       setSelectedIds([]);
       loadShipments();
     } catch (err: any) {
@@ -367,11 +414,16 @@ export function ContainerTrackingTab() {
       `"${s.status}"`,
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Yaqeen_Container_Shipments_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute(
+      'download',
+      `Yaqeen_Container_Shipments_${new Date().toISOString().split('T')[0]}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -388,7 +440,8 @@ export function ContainerTrackingTab() {
         s.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.cargoType.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || s.status.toLowerCase() === statusFilter.toLowerCase();
+      const matchesStatus =
+        statusFilter === 'all' || s.status.toLowerCase() === statusFilter.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
@@ -405,7 +458,10 @@ export function ContainerTrackingTab() {
   // Analytics Metrics
   const analyticsMetrics = useMemo(() => {
     if (!data?.shipments) return { agents: [], totalSell: 0, totalBuyUSD: 0, avgMarginPct: 0 };
-    const agentMap: Record<string, { count: number; buyUSD: number; sellUSD: number; profitUSD: number }> = {};
+    const agentMap: Record<
+      string,
+      { count: number; buyUSD: number; sellUSD: number; profitUSD: number }
+    > = {};
     let totalSell = 0;
     let totalBuyUSD = 0;
 
@@ -414,7 +470,7 @@ export function ContainerTrackingTab() {
       if (!agentMap[agent]) {
         agentMap[agent] = { count: 0, buyUSD: 0, sellUSD: 0, profitUSD: 0 };
       }
-      const buyUSD = s.buyCostCurrency === 'RMB' ? (s.buyCost / (s.rmbRate || 7.25)) : s.buyCost;
+      const buyUSD = s.buyCostCurrency === 'RMB' ? s.buyCost / (s.rmbRate || 7.25) : s.buyCost;
       agentMap[agent].count += 1;
       agentMap[agent].buyUSD += buyUSD;
       agentMap[agent].sellUSD += s.sellPrice;
@@ -450,7 +506,9 @@ export function ContainerTrackingTab() {
             }`}
           >
             <LayoutGrid className="size-3.5 text-brand-gold shrink-0" />
-            <span><T k="viewGridView" /></span>
+            <span>
+              <T k="viewGridView" />
+            </span>
           </button>
           <button
             onClick={() => setViewMode('kanban')}
@@ -461,7 +519,9 @@ export function ContainerTrackingTab() {
             }`}
           >
             <Kanban className="size-3.5 text-blue-500 shrink-0" />
-            <span><T k="viewKanbanPipeline" /></span>
+            <span>
+              <T k="viewKanbanPipeline" />
+            </span>
           </button>
           <button
             onClick={() => setViewMode('analytics')}
@@ -472,7 +532,9 @@ export function ContainerTrackingTab() {
             }`}
           >
             <BarChart3 className="size-3.5 text-emerald-500 shrink-0" />
-            <span><T k="viewInsightsBi" /></span>
+            <span>
+              <T k="viewInsightsBi" />
+            </span>
           </button>
         </div>
 
@@ -495,7 +557,9 @@ export function ContainerTrackingTab() {
             title={t('exportCsv') || 'Export CSV'}
           >
             <FileSpreadsheet className="size-3.5 text-emerald-500 shrink-0" />
-            <span><T k="exportCsv" /></span>
+            <span>
+              <T k="exportCsv" />
+            </span>
           </button>
 
           {/* Refresh */}
@@ -514,7 +578,9 @@ export function ContainerTrackingTab() {
             className="px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-brand-navy shadow-md transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
           >
             <Plus className="size-4 shrink-0" />
-            <span><T k="addShipment" /></span>
+            <span>
+              <T k="addShipment" />
+            </span>
           </button>
         </div>
       </div>
@@ -528,13 +594,19 @@ export function ContainerTrackingTab() {
               <Truck className="size-5" />
             </div>
             <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 border border-blue-500/20 truncate shrink-0">
-              {data?.shipments?.filter((s) => s.status === 'In Transit').length ?? 0} <T k="lblTransit" />
+              {data?.shipments?.filter((s) => s.status === 'In Transit').length ?? 0}{' '}
+              <T k="lblTransit" />
             </span>
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-medium text-muted-foreground block truncate"><T k="lblActiveContainers" /></span>
+            <span className="text-xs font-medium text-muted-foreground block truncate">
+              <T k="lblActiveContainers" />
+            </span>
             <h3 className="text-xl sm:text-2xl font-black text-foreground mt-1 truncate">
-              {data?.total_active_shipments ?? 0} <span className="text-xs font-medium text-muted-foreground"><T k="lblUnits" /></span>
+              {data?.total_active_shipments ?? 0}{' '}
+              <span className="text-xs font-medium text-muted-foreground">
+                <T k="lblUnits" />
+              </span>
             </h3>
           </div>
         </div>
@@ -551,9 +623,15 @@ export function ContainerTrackingTab() {
             </span>
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-medium text-muted-foreground block truncate"><T k="lblCalculatedNetYield" /></span>
+            <span className="text-xs font-medium text-muted-foreground block truncate">
+              <T k="lblCalculatedNetYield" />
+            </span>
             <h3 className="text-xl sm:text-2xl font-black text-emerald-500 mt-1 truncate font-mono">
-              ${(data?.total_net_margin ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              $
+              {(data?.total_net_margin ?? 0).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </h3>
           </div>
         </div>
@@ -569,7 +647,9 @@ export function ContainerTrackingTab() {
             </span>
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-medium text-muted-foreground block truncate"><T k="lblGrossSalesRevenue" /></span>
+            <span className="text-xs font-medium text-muted-foreground block truncate">
+              <T k="lblGrossSalesRevenue" />
+            </span>
             <h3 className="text-xl sm:text-2xl font-black text-foreground mt-1 truncate font-mono">
               ${Math.round(analyticsMetrics.totalSell).toLocaleString()}
             </h3>
@@ -587,9 +667,14 @@ export function ContainerTrackingTab() {
             </span>
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-medium text-muted-foreground block truncate"><T k="lblActionRequired" /></span>
+            <span className="text-xs font-medium text-muted-foreground block truncate">
+              <T k="lblActionRequired" />
+            </span>
             <h3 className="text-xl sm:text-2xl font-black text-foreground mt-1 truncate">
-              {delayedShipmentsCount} <span className="text-xs font-medium text-muted-foreground"><T k="lblEnRoute" /></span>
+              {delayedShipmentsCount}{' '}
+              <span className="text-xs font-medium text-muted-foreground">
+                <T k="lblEnRoute" />
+              </span>
             </h3>
           </div>
         </div>
@@ -614,7 +699,9 @@ export function ContainerTrackingTab() {
             </div>
 
             <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none min-w-0">
-              <span className="text-[11px] font-semibold text-neutral-300 mr-1 shrink-0 hidden sm:inline"><T k="lblSetStage" /></span>
+              <span className="text-[11px] font-semibold text-neutral-300 mr-1 shrink-0 hidden sm:inline">
+                <T k="lblSetStage" />
+              </span>
               {STATUS_CONFIG.map((opt) => (
                 <button
                   key={opt.key}
@@ -631,7 +718,9 @@ export function ContainerTrackingTab() {
                 className="ml-auto lg:ml-2 px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0"
               >
                 <Trash2 className="size-3.5" />
-                <span><T k="btnDeleteContainer" /> ({selectedIds.length})</span>
+                <span>
+                  <T k="btnDeleteContainer" /> ({selectedIds.length})
+                </span>
               </button>
 
               <button
@@ -681,7 +770,10 @@ export function ContainerTrackingTab() {
             All ({data?.shipments?.length ?? 0})
           </button>
           {STATUS_CONFIG.map((opt) => {
-            const count = data?.status_counts?.[opt.key] ?? data?.shipments?.filter((s) => s.status === opt.key).length ?? 0;
+            const count =
+              data?.status_counts?.[opt.key] ??
+              data?.shipments?.filter((s) => s.status === opt.key).length ??
+              0;
             return (
               <button
                 key={opt.key}
@@ -704,7 +796,9 @@ export function ContainerTrackingTab() {
           {/* Density Toggle (Grid Mode - Desktop only) */}
           {viewMode === 'grid' && (
             <button
-              onClick={() => setDensity((prev) => (prev === 'comfortable' ? 'compact' : 'comfortable'))}
+              onClick={() =>
+                setDensity((prev) => (prev === 'comfortable' ? 'compact' : 'comfortable'))
+              }
               className="hidden lg:flex ml-2 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-border hover:bg-muted text-muted-foreground items-center gap-1 cursor-pointer shrink-0"
               title={t('titleToggleRowDensity') || 'Toggle Row Density'}
             >
@@ -731,7 +825,9 @@ export function ContainerTrackingTab() {
                 <tr>
                   <th className="p-3 w-10 text-center">
                     <button
-                      onClick={() => handleSelectAll(selectedIds.length !== (data?.shipments?.length ?? 0))}
+                      onClick={() =>
+                        handleSelectAll(selectedIds.length !== (data?.shipments?.length ?? 0))
+                      }
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                     >
                       {selectedIds.length > 0 && selectedIds.length === data?.shipments?.length ? (
@@ -741,17 +837,33 @@ export function ContainerTrackingTab() {
                       )}
                     </button>
                   </th>
-                  <th className="px-4 py-3 min-w-[150px]">{t('colContainerNo') || 'Container ID'}</th>
+                  <th className="px-4 py-3 min-w-[150px]">
+                    {t('colContainerNo') || 'Container ID'}
+                  </th>
                   <th className="px-4 py-3 min-w-[150px]">{t('colClientName') || 'Client'}</th>
                   <th className="px-4 py-3 min-w-[150px]">{t('colCargo') || 'Cargo'}</th>
-                  <th className="px-4 py-3 min-w-[200px]"><T k="colMilestoneProgress" /></th>
+                  <th className="px-4 py-3 min-w-[200px]">
+                    <T k="colMilestoneProgress" />
+                  </th>
                   <th className="px-3 py-3 min-w-[90px]">{t('colRmbRate') || 'RMB Rate'}</th>
-                  <th className="px-4 py-3 min-w-[130px]"><T k="colAgentName" /></th>
-                  <th className="px-4 py-3 min-w-[120px]"><T k="colBuyPrice" /></th>
-                  <th className="px-4 py-3 min-w-[110px]"><T k="colSellPrice" /></th>
-                  <th className="px-4 py-3 min-w-[130px]"><T k="colNetYield" /></th>
-                  <th className="px-4 py-3 min-w-[140px]"><T k="colStatusStage" /></th>
-                  <th className="px-3 py-3 text-right min-w-[90px]">{t('colActions') || 'Actions'}</th>
+                  <th className="px-4 py-3 min-w-[130px]">
+                    <T k="colAgentName" />
+                  </th>
+                  <th className="px-4 py-3 min-w-[120px]">
+                    <T k="colBuyPrice" />
+                  </th>
+                  <th className="px-4 py-3 min-w-[110px]">
+                    <T k="colSellPrice" />
+                  </th>
+                  <th className="px-4 py-3 min-w-[130px]">
+                    <T k="colNetYield" />
+                  </th>
+                  <th className="px-4 py-3 min-w-[140px]">
+                    <T k="colStatusStage" />
+                  </th>
+                  <th className="px-3 py-3 text-right min-w-[90px]">
+                    {t('colActions') || 'Actions'}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -766,18 +878,27 @@ export function ContainerTrackingTab() {
                   <tr>
                     <td colSpan={12} className="px-4 py-12 text-center text-muted-foreground">
                       <Truck className="size-8 mx-auto mb-2 text-muted-foreground/40" />
-                      <p className="font-bold text-foreground text-sm">{t('noShipmentsFound') || 'No containers found'}</p>
-                      <p className="text-xs mt-1">{t('noShipmentsDesc') || 'Try adjusting your search query or status filters'}</p>
+                      <p className="font-bold text-foreground text-sm">
+                        {t('noShipmentsFound') || 'No containers found'}
+                      </p>
+                      <p className="text-xs mt-1">
+                        {t('noShipmentsDesc') ||
+                          'Try adjusting your search query or status filters'}
+                      </p>
                     </td>
                   </tr>
                 ) : (
                   filteredShipments.map((shp) => {
                     const isSelected = selectedIds.includes(shp.id);
                     const isInlineEditing = inlineEditingId === shp.id;
-                    const currentStatusOpt = STATUS_CONFIG.find((o) => o.key === shp.status) || STATUS_CONFIG[0];
+                    const currentStatusOpt =
+                      STATUS_CONFIG.find((o) => o.key === shp.status) || STATUS_CONFIG[0];
                     const py = density === 'compact' ? 'py-2' : 'py-3.5';
 
-                    const buyCostUSD = shp.buyCostCurrency === 'RMB' ? (shp.buyCost / (shp.rmbRate || 7.25)) : shp.buyCost;
+                    const buyCostUSD =
+                      shp.buyCostCurrency === 'RMB'
+                        ? shp.buyCost / (shp.rmbRate || 7.25)
+                        : shp.buyCost;
                     const marginPct = shp.sellPrice > 0 ? (shp.profit / shp.sellPrice) * 100 : 0;
 
                     return (
@@ -807,7 +928,9 @@ export function ContainerTrackingTab() {
                             <input
                               type="text"
                               value={inlineDraft.containerNo ?? shp.containerNo}
-                              onChange={(e) => setInlineDraft({ ...inlineDraft, containerNo: e.target.value })}
+                              onChange={(e) =>
+                                setInlineDraft({ ...inlineDraft, containerNo: e.target.value })
+                              }
                               className="w-full px-2 py-1 rounded border border-brand-gold bg-background font-mono text-xs"
                             />
                           ) : (
@@ -815,7 +938,9 @@ export function ContainerTrackingTab() {
                               <span className="p-1 rounded-md bg-brand-gold/15 text-brand-gold shrink-0">
                                 <Truck className="size-3.5" />
                               </span>
-                              <span className="tracking-tight whitespace-nowrap">{shp.containerNo}</span>
+                              <span className="tracking-tight whitespace-nowrap">
+                                {shp.containerNo}
+                              </span>
                               <button
                                 onClick={() => handleCopyContainerId(shp.containerNo)}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-foreground cursor-pointer ml-auto"
@@ -837,7 +962,9 @@ export function ContainerTrackingTab() {
                             <input
                               type="text"
                               value={inlineDraft.clientName ?? shp.clientName}
-                              onChange={(e) => setInlineDraft({ ...inlineDraft, clientName: e.target.value })}
+                              onChange={(e) =>
+                                setInlineDraft({ ...inlineDraft, clientName: e.target.value })
+                              }
                               className="w-full px-2 py-1 rounded border border-brand-gold bg-background text-xs"
                             />
                           ) : (
@@ -854,7 +981,9 @@ export function ContainerTrackingTab() {
                             <input
                               type="text"
                               value={inlineDraft.cargoType ?? shp.cargoType}
-                              onChange={(e) => setInlineDraft({ ...inlineDraft, cargoType: e.target.value })}
+                              onChange={(e) =>
+                                setInlineDraft({ ...inlineDraft, cargoType: e.target.value })
+                              }
                               className="w-full px-2 py-1 rounded border border-brand-gold bg-background text-xs"
                             />
                           ) : (
@@ -876,8 +1005,8 @@ export function ContainerTrackingTab() {
                                         isCurrent
                                           ? `${st.dotClass} ring-4 ring-${st.dotClass}/20 scale-110`
                                           : isPassed
-                                          ? st.dotClass
-                                          : 'bg-muted-foreground/30'
+                                            ? st.dotClass
+                                            : 'bg-muted-foreground/30'
                                       }`}
                                       title={st.key}
                                     />
@@ -895,8 +1024,12 @@ export function ContainerTrackingTab() {
                               })}
                             </div>
                             <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                              <span><T k="lblConfShort" />: {formatDateShort(shp.confirmedDate)}</span>
-                              <span><T k="lblArrShort" />: {formatDateShort(shp.arrivedDate)}</span>
+                              <span>
+                                <T k="lblConfShort" />: {formatDateShort(shp.confirmedDate)}
+                              </span>
+                              <span>
+                                <T k="lblArrShort" />: {formatDateShort(shp.arrivedDate)}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -929,7 +1062,9 @@ export function ContainerTrackingTab() {
                             <input
                               type="text"
                               value={inlineDraft.agentName ?? shp.agentName}
-                              onChange={(e) => setInlineDraft({ ...inlineDraft, agentName: e.target.value })}
+                              onChange={(e) =>
+                                setInlineDraft({ ...inlineDraft, agentName: e.target.value })
+                              }
                               className="w-full px-2 py-1 rounded border border-brand-gold bg-background text-xs"
                             />
                           ) : (
@@ -974,7 +1109,9 @@ export function ContainerTrackingTab() {
                         </td>
 
                         {/* Sell Price */}
-                        <td className={`px-4 ${py} font-bold text-foreground whitespace-nowrap text-sm`}>
+                        <td
+                          className={`px-4 ${py} font-bold text-foreground whitespace-nowrap text-sm`}
+                        >
                           {isInlineEditing ? (
                             <input
                               type="number"
@@ -996,7 +1133,11 @@ export function ContainerTrackingTab() {
                         <td className={`px-4 ${py} whitespace-nowrap`}>
                           <div className="inline-flex flex-col">
                             <span className="font-black text-emerald-500 text-sm">
-                              +${shp.profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              +$
+                              {shp.profit.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
                             </span>
                             <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
                               {marginPct.toFixed(1)}% <T k="lblYieldMargin" />
@@ -1008,11 +1149,17 @@ export function ContainerTrackingTab() {
                         <td className={`px-4 ${py}`}>
                           <select
                             value={shp.status}
-                            onChange={(e) => handleStatusChangeInline(shp.id, e.target.value as ShipmentStatus)}
+                            onChange={(e) =>
+                              handleStatusChangeInline(shp.id, e.target.value as ShipmentStatus)
+                            }
                             className={`px-3 py-1 rounded-full text-[11px] font-extrabold border focus:outline-none cursor-pointer ${currentStatusOpt.badgeClass}`}
                           >
                             {STATUS_CONFIG.map((opt) => (
-                              <option key={opt.key} value={opt.key} className="bg-background text-foreground font-semibold">
+                              <option
+                                key={opt.key}
+                                value={opt.key}
+                                className="bg-background text-foreground font-semibold"
+                              >
                                 {getStatusLabel(opt.key)}
                               </option>
                             ))}
@@ -1101,11 +1248,16 @@ export function ContainerTrackingTab() {
                     {colShipments.length === 0 ? (
                       <div className="py-12 text-center text-muted-foreground border border-dashed border-border rounded-xl">
                         <Truck className="size-6 mx-auto mb-1 opacity-40" />
-                        <span className="text-xs font-semibold"><T k="noContainersInStage" /></span>
+                        <span className="text-xs font-semibold">
+                          <T k="noContainersInStage" />
+                        </span>
                       </div>
                     ) : (
                       colShipments.map((shp) => {
-                        const buyUSD = shp.buyCostCurrency === 'RMB' ? shp.buyCost / (shp.rmbRate || 7.25) : shp.buyCost;
+                        const buyUSD =
+                          shp.buyCostCurrency === 'RMB'
+                            ? shp.buyCost / (shp.rmbRate || 7.25)
+                            : shp.buyCost;
                         return (
                           <motion.div
                             key={shp.id}
@@ -1129,8 +1281,12 @@ export function ContainerTrackingTab() {
 
                             {/* Client & Cargo */}
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-foreground truncate">{shp.clientName}</p>
-                              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{shp.cargoType}</p>
+                              <p className="text-xs font-bold text-foreground truncate">
+                                {shp.clientName}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
+                                {shp.cargoType}
+                              </p>
                             </div>
 
                             {/* Agent & FX Rate */}
@@ -1149,7 +1305,9 @@ export function ContainerTrackingTab() {
                               <span className="text-muted-foreground">
                                 <T k="colBuyPrice" />: ${Math.round(buyUSD).toLocaleString()}
                               </span>
-                              <span className="font-bold text-foreground"><T k="colSellPrice" />: ${shp.sellPrice.toLocaleString()}</span>
+                              <span className="font-bold text-foreground">
+                                <T k="colSellPrice" />: ${shp.sellPrice.toLocaleString()}
+                              </span>
                             </div>
 
                             {/* Stage Transition Quick Buttons */}
@@ -1213,12 +1371,24 @@ export function ContainerTrackingTab() {
                 <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                   <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border uppercase">
                     <tr>
-                      <th className="px-3 py-2.5"><T k="colAgentName" /></th>
-                      <th className="px-3 py-2.5 text-center"><T k="colContainers" /></th>
-                      <th className="px-3 py-2.5"><T k="colTotalBuyCost" /></th>
-                      <th className="px-3 py-2.5"><T k="colTotalRevenue" /></th>
-                      <th className="px-3 py-2.5"><T k="colNetYield" /></th>
-                      <th className="px-3 py-2.5 text-right"><T k="colYieldPct" /></th>
+                      <th className="px-3 py-2.5">
+                        <T k="colAgentName" />
+                      </th>
+                      <th className="px-3 py-2.5 text-center">
+                        <T k="colContainers" />
+                      </th>
+                      <th className="px-3 py-2.5">
+                        <T k="colTotalBuyCost" />
+                      </th>
+                      <th className="px-3 py-2.5">
+                        <T k="colTotalRevenue" />
+                      </th>
+                      <th className="px-3 py-2.5">
+                        <T k="colNetYield" />
+                      </th>
+                      <th className="px-3 py-2.5 text-right">
+                        <T k="colYieldPct" />
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -1230,9 +1400,15 @@ export function ContainerTrackingTab() {
                             {ag.count}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-muted-foreground font-mono">${Math.round(ag.buyUSD).toLocaleString()}</td>
-                        <td className="px-3 py-3 font-bold text-foreground font-mono">${Math.round(ag.sellUSD).toLocaleString()}</td>
-                        <td className="px-3 py-3 font-black text-emerald-500 font-mono">${Math.round(ag.profitUSD).toLocaleString()}</td>
+                        <td className="px-3 py-3 text-muted-foreground font-mono">
+                          ${Math.round(ag.buyUSD).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-3 font-bold text-foreground font-mono">
+                          ${Math.round(ag.sellUSD).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-3 font-black text-emerald-500 font-mono">
+                          ${Math.round(ag.profitUSD).toLocaleString()}
+                        </td>
                         <td className="px-3 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -1263,14 +1439,22 @@ export function ContainerTrackingTab() {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                <T k="lblCurrentRmbBaseline" /> <strong className="text-foreground">{data?.current_rmb_rate || 7.25} RMB / USD</strong>.
+                <T k="lblCurrentRmbBaseline" />{' '}
+                <strong className="text-foreground">
+                  {data?.current_rmb_rate || 7.25} RMB / USD
+                </strong>
+                .
               </p>
 
               <div className="space-y-3 pt-1">
                 <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between text-xs gap-2">
                   <div>
-                    <span className="font-bold text-foreground block"><T k="lblRmbRatePlus" /></span>
-                    <span className="text-[11px] text-muted-foreground"><T k="lblCheaperRmbCost" /></span>
+                    <span className="font-bold text-foreground block">
+                      <T k="lblRmbRatePlus" />
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      <T k="lblCheaperRmbCost" />
+                    </span>
                   </div>
                   <span className="font-black text-emerald-500 text-sm whitespace-nowrap">
                     +${Math.round((analyticsMetrics.totalBuyUSD * 0.1) / 7.25).toLocaleString()}
@@ -1279,8 +1463,12 @@ export function ContainerTrackingTab() {
 
                 <div className="p-3 sm:p-3.5 rounded-xl bg-rose-500/5 border border-rose-500/20 flex items-center justify-between text-xs gap-2">
                   <div>
-                    <span className="font-bold text-foreground block"><T k="lblRmbRateMinus" /></span>
-                    <span className="text-[11px] text-muted-foreground"><T k="lblStrongerRmbCost" /></span>
+                    <span className="font-bold text-foreground block">
+                      <T k="lblRmbRateMinus" />
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      <T k="lblStrongerRmbCost" />
+                    </span>
                   </div>
                   <span className="font-black text-rose-500 text-sm whitespace-nowrap">
                     -${Math.round((analyticsMetrics.totalBuyUSD * 0.1) / 7.25).toLocaleString()}
@@ -1294,7 +1482,9 @@ export function ContainerTrackingTab() {
                   className="w-full py-2.5 rounded-xl text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-brand-navy shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <TrendingUp className="size-4 shrink-0" />
-                  <span><T k="btnAdjustGlobalRmbEngine" /></span>
+                  <span>
+                    <T k="btnAdjustGlobalRmbEngine" />
+                  </span>
                 </button>
               </div>
             </div>

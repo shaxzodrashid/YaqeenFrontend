@@ -48,7 +48,9 @@ export function FtlModuleTab() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   // Form state
-  const [selectedManagerId, setSelectedManagerId] = useState<string>('b1a2c3d4-e5f6-7890-abcd-ef1234567890');
+  const [selectedManagerId, setSelectedManagerId] = useState<string>(
+    'b1a2c3d4-e5f6-7890-abcd-ef1234567890'
+  );
   const [agentPriceStr, setAgentPriceStr] = useState<string>('1000');
   const [sellPriceStr, setSellPriceStr] = useState<string>('2000');
   const [plannedDaysStr, setPlannedDaysStr] = useState<string>('20');
@@ -179,7 +181,8 @@ export function FtlModuleTab() {
       {/* Read-Only Notice Banner */}
       <div className="p-3 px-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-600 dark:text-indigo-400 font-medium flex items-center justify-between gap-3">
         <span>
-          <strong>Read-Only View:</strong> FTL cargo registrations are registered exclusively in the <strong>Cargo Transactions</strong> tab.
+          <strong>Read-Only View:</strong> FTL cargo registrations are registered exclusively in the{' '}
+          <strong>Cargo Transactions</strong> tab.
         </span>
       </div>
 
@@ -191,8 +194,12 @@ export function FtlModuleTab() {
               <Truck className="size-6" />
             </div>
             <div>
-              <span className="text-xs text-muted-foreground font-medium">{t('ftlTruckCount')}</span>
-              <h4 className="text-2xl font-black text-foreground mt-0.5">{data.total_trucks} Fura</h4>
+              <span className="text-xs text-muted-foreground font-medium">
+                {t('ftlTruckCount')}
+              </span>
+              <h4 className="text-2xl font-black text-foreground mt-0.5">
+                {data.total_trucks} Fura
+              </h4>
             </div>
           </div>
 
@@ -201,7 +208,9 @@ export function FtlModuleTab() {
               <DollarSign className="size-6" />
             </div>
             <div>
-              <span className="text-xs text-muted-foreground font-medium">Total Monthly Profit</span>
+              <span className="text-xs text-muted-foreground font-medium">
+                Total Monthly Profit
+              </span>
               <h4 className="text-2xl font-black text-foreground mt-0.5">
                 ${(data.total_profit ?? 0).toLocaleString()}
               </h4>
@@ -224,10 +233,15 @@ export function FtlModuleTab() {
 
       {/* Monthly Rate Tiers Reference */}
       <div className="p-4 rounded-xl bg-muted/40 border border-border text-xs">
-        <span className="font-bold text-foreground mb-2 block">Monthly Profit Tiers (Monthly_rate)</span>
+        <span className="font-bold text-foreground mb-2 block">
+          Monthly Profit Tiers (Monthly_rate)
+        </span>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {MONTHLY_RATE_TIERS.map((tier, idx) => (
-            <div key={idx} className="p-2 rounded-lg bg-surface border border-border/60 text-center">
+            <div
+              key={idx}
+              className="p-2 rounded-lg bg-surface border border-border/60 text-center"
+            >
               <span className="text-muted-foreground block text-[10px]">{tier.range}</span>
               <span className="text-xs font-bold text-brand-gold mt-0.5 block">{tier.rate}</span>
             </div>
@@ -267,22 +281,34 @@ export function FtlModuleTab() {
                     <h3 className="text-base font-bold text-white">{mgr.manager_name}</h3>
                   </div>
                   <p className="text-xs text-neutral-300 mt-1">
-                    {mgr.truck_count} Truck{mgr.truck_count !== 1 ? 's' : ''} • Agent Total: ${(mgr.total_agent_price ?? 0).toLocaleString()} • Sell Total: ${(mgr.total_sell_price ?? 0).toLocaleString()}
+                    {mgr.truck_count} Truck{mgr.truck_count !== 1 ? 's' : ''} • Agent Total: $
+                    {(mgr.total_agent_price ?? 0).toLocaleString()} • Sell Total: $
+                    {(mgr.total_sell_price ?? 0).toLocaleString()}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs">
                   <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/10">
                     <span className="text-neutral-400 block text-[10px]">{t('ftlProfit')}</span>
-                    <strong className="text-white text-sm">${(mgr.total_profit ?? 0).toLocaleString()}</strong>
+                    <strong className="text-white text-sm">
+                      ${(mgr.total_profit ?? 0).toLocaleString()}
+                    </strong>
                   </div>
                   <div className="px-3 py-1.5 rounded-xl bg-brand-gold/20 border border-brand-gold/30 text-brand-gold">
-                    <span className="text-brand-gold/80 block text-[10px]">{t('ftlMonthlyRate')}</span>
-                    <strong className="text-brand-gold text-sm">{mgr.monthly_rate_percentage}</strong>
+                    <span className="text-brand-gold/80 block text-[10px]">
+                      {t('ftlMonthlyRate')}
+                    </span>
+                    <strong className="text-brand-gold text-sm">
+                      {mgr.monthly_rate_percentage}
+                    </strong>
                   </div>
                   <div className="px-4 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-                    <span className="text-emerald-300/80 block text-[10px]">{t('ftlKpiAmount')}</span>
-                    <strong className="text-emerald-400 text-base font-black">${mgr.total_ftl_kpi}</strong>
+                    <span className="text-emerald-300/80 block text-[10px]">
+                      {t('ftlKpiAmount')}
+                    </span>
+                    <strong className="text-emerald-400 text-base font-black">
+                      ${mgr.total_ftl_kpi}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -304,32 +330,48 @@ export function FtlModuleTab() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {mgr.items.map((item: FtlTruckItem) => (
-                      <tr key={item.id} className="hover:bg-muted/20 text-foreground transition-colors">
-                        <td className="px-4 py-3 font-semibold text-muted-foreground">${item.agent_price}</td>
+                      <tr
+                        key={item.id}
+                        className="hover:bg-muted/20 text-foreground transition-colors"
+                      >
+                        <td className="px-4 py-3 font-semibold text-muted-foreground">
+                          ${item.agent_price}
+                        </td>
                         <td className="px-4 py-3 font-semibold">${item.sell_price}</td>
                         <td className="px-4 py-3 font-bold text-emerald-500">${item.profit}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
                             <Clock className="size-3.5 text-muted-foreground" />
-                            <span>{item.planned_days}d / <strong>{item.actual_days}d</strong></span>
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
-                              item.day_difference <= 0
-                                ? 'bg-emerald-500/10 text-emerald-500'
-                                : 'bg-amber-500/10 text-amber-500'
-                            }`}>
-                              ({item.day_difference > 0 ? `+${item.day_difference}` : item.day_difference}d)
+                            <span>
+                              {item.planned_days}d / <strong>{item.actual_days}d</strong>
+                            </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                                item.day_difference <= 0
+                                  ? 'bg-emerald-500/10 text-emerald-500'
+                                  : 'bg-amber-500/10 text-amber-500'
+                              }`}
+                            >
+                              (
+                              {item.day_difference > 0
+                                ? `+${item.day_difference}`
+                                : item.day_difference}
+                              d)
                             </span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                            item.time_multiplier >= 1.0
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                              : item.time_multiplier >= 0.85
-                                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                          }`}>
-                            {item.time_multiplier_percentage || `${Math.round(item.time_multiplier * 100)}%`}
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                              item.time_multiplier >= 1.0
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                : item.time_multiplier >= 0.85
+                                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                                  : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {item.time_multiplier_percentage ||
+                              `${Math.round(item.time_multiplier * 100)}%`}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-extrabold text-brand-gold">
@@ -513,7 +555,10 @@ export function FtlModuleTab() {
                     onChange={(e) => setKpiReceived(e.target.checked)}
                     className="size-4 rounded border-border text-brand-gold focus:ring-brand-gold cursor-pointer"
                   />
-                  <label htmlFor="kpiReceived" className="text-xs font-medium text-foreground cursor-pointer">
+                  <label
+                    htmlFor="kpiReceived"
+                    className="text-xs font-medium text-foreground cursor-pointer"
+                  >
                     Mark KPI as Paid / Received
                   </label>
                 </div>

@@ -3,13 +3,9 @@ import {
   normalizePhone,
   tokenStore,
   makeApiError,
-  registerDemoHandler
+  registerDemoHandler,
 } from './httpClient';
-import type {
-  AuthUser,
-  LoginResponse,
-  RefreshResponse
-} from './httpClient';
+import type { AuthUser, LoginResponse, RefreshResponse } from './httpClient';
 
 // Dedicated Auth Mock Database
 export const demoAuthDb = {
@@ -18,7 +14,7 @@ export const demoAuthDb = {
   tempTokens: new Map<string, string>(),
   otps: new Map<string, string>(),
   bannedPhones: new Set<string>(['998906666666']),
-  pendingPhones: new Set<string>(['998905555555'])
+  pendingPhones: new Set<string>(['998905555555']),
 };
 
 // Dedicated Auth Mock Database Handler
@@ -34,7 +30,7 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
     if (demoAuthDb.pendingPhones.has(phone)) {
       throw makeApiError(path, 401, 'account_pending', 'Account is pending registration.');
     }
-    
+
     if (password === 'wrongpass' || phone.length < 9) {
       throw makeApiError(path, 401, 'invalid_login', 'Invalid credentials');
     }
@@ -43,13 +39,13 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
       id: 'demo-user-id-12345',
       phone_number: phone,
       role: path.includes('admin') ? 'ROP' : 'EMPLOYEE',
-      status: 'Open'
+      status: 'Open',
     };
 
     const res: LoginResponse = {
       accessToken: 'demo-jwt-access-token',
       refreshToken: 'demo-refresh-token-hex-80-chars-very-secure',
-      user
+      user,
     };
 
     tokenStore.save(res.accessToken, res.refreshToken, user);
@@ -63,7 +59,7 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
     }
     const res: RefreshResponse = {
       accessToken: 'demo-jwt-new-access-token-' + Math.random(),
-      refreshToken: 'demo-new-refresh-token-' + Math.random()
+      refreshToken: 'demo-new-refresh-token-' + Math.random(),
     };
     tokenStore.save(res.accessToken, res.refreshToken);
     return { handled: true, result: res };
@@ -82,7 +78,12 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
     const phone = normalizePhone(body.phone_number || '');
 
     if (!demoAuthDb.telegramLinkedPhones.has(phone)) {
-      throw makeApiError(path, 400, 'telegram_not_registered', 'Phone number not registered in Telegram OTP bot.');
+      throw makeApiError(
+        path,
+        400,
+        'telegram_not_registered',
+        'Phone number not registered in Telegram OTP bot.'
+      );
     }
 
     if (phone === '998906666666') {
@@ -126,7 +127,10 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
     demoAuthDb.tempTokens.delete(token);
     demoAuthDb.registeredPhones.add(phone);
 
-    return { handled: true, result: { message: 'Registration completed successfully. Your account is now active.' } };
+    return {
+      handled: true,
+      result: { message: 'Registration completed successfully. Your account is now active.' },
+    };
   }
 
   // Password Reset Step 1: Send OTP
@@ -134,9 +138,14 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
     const phone = normalizePhone(body.phone_number || '');
 
     if (!demoAuthDb.telegramLinkedPhones.has(phone)) {
-      throw makeApiError(path, 400, 'telegram_not_registered', 'Phone number not linked in Telegram.');
+      throw makeApiError(
+        path,
+        400,
+        'telegram_not_registered',
+        'Phone number not linked in Telegram.'
+      );
     }
-    
+
     demoAuthDb.otps.set(phone, '123456');
     return { handled: true, result: { message: 'OTP message sent successfully.' } };
   }
@@ -207,13 +216,12 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
 });
 
 export const authApi = {
-  me: () =>
-    request<any>('/auth/me', { method: 'GET' }),
+  me: () => request<any>('/auth/me', { method: 'GET' }),
 
   login: async (phone_number: string, password: string, isAdmin = false) => {
     const res = await request<LoginResponse>(isAdmin ? '/auth/admin/login' : '/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ phone_number, password })
+      body: JSON.stringify({ phone_number, password }),
     });
     if (res && res.accessToken && res.refreshToken) {
       tokenStore.save(res.accessToken, res.refreshToken, res.user);
@@ -227,7 +235,7 @@ export const authApi = {
       if (tokenToInvalidate) {
         await request<{ message: string }>('/auth/logout', {
           method: 'POST',
-          body: JSON.stringify({ refreshToken: tokenToInvalidate })
+          body: JSON.stringify({ refreshToken: tokenToInvalidate }),
         });
       }
     } finally {
@@ -239,36 +247,36 @@ export const authApi = {
   registerSendOtp: (phone_number: string) =>
     request<{ message: string }>('/auth/register/send-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone_number })
+      body: JSON.stringify({ phone_number }),
     }),
 
   registerVerifyOtp: (phone_number: string, otp: string) =>
     request<{ token: string }>('/auth/register/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone_number, otp })
+      body: JSON.stringify({ phone_number, otp }),
     }),
 
   registerSetPassword: (token: string, password: string, password_confirmation: string) =>
     request<{ message: string }>('/auth/register/set-password', {
       method: 'POST',
-      body: JSON.stringify({ token, password, password_confirmation })
+      body: JSON.stringify({ token, password, password_confirmation }),
     }),
 
   resetSendOtp: (phone_number: string) =>
     request<{ message: string }>('/auth/password-reset/send-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone_number })
+      body: JSON.stringify({ phone_number }),
     }),
 
   resetVerifyOtp: (phone_number: string, otp: string) =>
     request<{ token: string }>('/auth/password-reset/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone_number, otp })
+      body: JSON.stringify({ phone_number, otp }),
     }),
 
   resetSetPassword: (token: string, password: string, password_confirmation: string) =>
     request<{ message: string }>('/auth/password-reset/set-password', {
       method: 'POST',
-      body: JSON.stringify({ token, password, password_confirmation })
-    })
+      body: JSON.stringify({ token, password, password_confirmation }),
+    }),
 };

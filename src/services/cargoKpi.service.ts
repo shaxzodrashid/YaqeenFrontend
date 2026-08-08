@@ -1,9 +1,4 @@
-import {
-  request,
-  requestNoContent,
-  registerDemoHandler,
-  makeApiError,
-} from './httpClient';
+import { request, requestNoContent, registerDemoHandler, makeApiError } from './httpClient';
 import type { SupportedCurrency } from '../types/currency';
 import { demoEmployeesDb, demoDepartmentsDb, employeesApi } from './employees.service';
 import { demoClientsDb } from './clients.service';
@@ -368,12 +363,12 @@ export function calculateLtlPrice(volume: number, weight: number): LtlCalculateR
 
   if (density > 1000) {
     basis = 'vazn';
-    rate = 0.30;
+    rate = 0.3;
     unit = 'USD/kg';
     totalPrice = w * rate;
   } else if (density > 700) {
     basis = 'vazn';
-    rate = 0.40;
+    rate = 0.4;
     unit = 'USD/kg';
     totalPrice = w * rate;
   } else if (density <= 100) {
@@ -444,17 +439,17 @@ export function calculateLtlItemBaseRate(density: number, cargoType: string): nu
 
 export function getVolumeCoefficient(totalVolume: number): number {
   if (totalVolume < 21) return 0.0;
-  if (totalVolume <= 40) return 0.50;
-  if (totalVolume <= 60) return 0.80;
-  if (totalVolume <= 74) return 0.90;
-  if (totalVolume <= 80) return 1.00;
-  return 1.20;
+  if (totalVolume <= 40) return 0.5;
+  if (totalVolume <= 60) return 0.8;
+  if (totalVolume <= 74) return 0.9;
+  if (totalVolume <= 80) return 1.0;
+  return 1.2;
 }
 
 export function getFtlMonthlyRate(totalProfit: number): number {
   if (totalProfit < 1500) return 0;
   if (totalProfit < 4000) return 0.08;
-  if (totalProfit < 5000) return 0.10;
+  if (totalProfit < 5000) return 0.1;
   if (totalProfit < 6000) return 0.12;
   if (totalProfit < 7000) return 0.14;
   if (totalProfit < 8000) return 0.16;
@@ -466,12 +461,12 @@ export function getFtlTimeMultiplier(actualDays: number, plannedDays: number): n
   const y = actualDays;
   const diff = y - plannedDays;
 
-  if (y <= 5) return 1.10;
-  if (diff <= 2) return 1.00;
-  if (diff <= 10) return 0.90;
+  if (y <= 5) return 1.1;
+  if (diff <= 2) return 1.0;
+  if (diff <= 10) return 0.9;
   if (diff <= 15) return 0.85;
   if (diff <= 20) return 0.75;
-  return 0.50;
+  return 0.5;
 }
 
 export function getRopTeamBonusRate(totalLtlProfit: number): number {
@@ -520,7 +515,10 @@ export function parseShipmentContainerAndCargo(
   let cargoType = rawCargoType && rawCargoType !== 'General Cargo' ? rawCargoType : '';
 
   if (cleaned.includes(' - ')) {
-    const parts = cleaned.split(' - ').map((p) => p.trim()).filter(Boolean);
+    const parts = cleaned
+      .split(' - ')
+      .map((p) => p.trim())
+      .filter(Boolean);
     containerNo = parts[0] || 'CONT-000';
     if (!cargoType && parts.length > 1) {
       cargoType = parts.slice(1).join(' - ');
@@ -649,7 +647,8 @@ const INITIAL_DEMO_SHIPMENTS: Shipment[] = [
 
 function getStoredDemoShipments(): Shipment[] {
   try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem('yaqeen_demo_shipments') : null;
+    const raw =
+      typeof window !== 'undefined' ? localStorage.getItem('yaqeen_demo_shipments') : null;
     if (raw) return JSON.parse(raw);
   } catch {
     // Ignore
@@ -903,7 +902,8 @@ function buildRopSummaryResponse(reqMonth?: string): RopSummaryResponse {
   const truck_rate_percentage = `${(truck_rate * 100).toFixed(1)}%`;
   const truck_kpi_amount = Math.round(ftlData.total_profit * truck_rate * 100) / 100;
 
-  const rop_total_kpi = Math.round((worker_1pct_total + team_bonus_amount + truck_kpi_amount) * 100) / 100;
+  const rop_total_kpi =
+    Math.round((worker_1pct_total + team_bonus_amount + truck_kpi_amount) * 100) / 100;
 
   return {
     month: currentMonth,
@@ -926,7 +926,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   const method = (options.method || 'GET').toUpperCase();
 
   // Standardize path matchers
-  const isPath = (p: string) => path === p || path === `/api${p}` || path.startsWith(`${p}?`) || path.startsWith(`/api${p}?`);
+  const isPath = (p: string) =>
+    path === p || path === `/api${p}` || path.startsWith(`${p}?`) || path.startsWith(`/api${p}?`);
   const startsWith = (p: string) => path.startsWith(p) || path.startsWith(`/api${p}`);
 
   // 1. LTL Calc
@@ -1068,11 +1069,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const current = demoFtlItems[index];
-    const agentPrice = body.agent_price !== undefined ? Number(body.agent_price) : current.agent_price;
+    const agentPrice =
+      body.agent_price !== undefined ? Number(body.agent_price) : current.agent_price;
     const sellPrice = body.sell_price !== undefined ? Number(body.sell_price) : current.sell_price;
     const profit = Math.max(0, sellPrice - agentPrice);
-    const plannedDays = body.planned_days !== undefined ? Number(body.planned_days) : current.planned_days;
-    const actualDays = body.actual_days !== undefined ? Number(body.actual_days) : current.actual_days;
+    const plannedDays =
+      body.planned_days !== undefined ? Number(body.planned_days) : current.planned_days;
+    const actualDays =
+      body.actual_days !== undefined ? Number(body.actual_days) : current.actual_days;
     const dayDiff = actualDays - plannedDays;
     const timeMult = getFtlTimeMultiplier(actualDays, plannedDays);
 
@@ -1088,7 +1092,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       day_difference: dayDiff,
       time_multiplier: timeMult,
       time_multiplier_percentage: `${Math.round(timeMult * 100)}%`,
-      kpi_received: body.kpi_received !== undefined ? Boolean(body.kpi_received) : current.kpi_received,
+      kpi_received:
+        body.kpi_received !== undefined ? Boolean(body.kpi_received) : current.kpi_received,
       updated_at: new Date().toISOString(),
     };
 
@@ -1118,7 +1123,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // 6. Employee Plans & Progress
   if (isPath('/cargo-kpi/plans') && method === 'GET') {
     const urlObj = new URL(path, 'http://localhost');
-    const reqMonth = urlObj.searchParams.get('period') || urlObj.searchParams.get('month') || '2026-07';
+    const reqMonth =
+      urlObj.searchParams.get('period') || urlObj.searchParams.get('month') || '2026-07';
     const empId = urlObj.searchParams.get('employee_id');
 
     let filtered = demoEmployeePlans.filter((p) => p.month === reqMonth);
@@ -1128,7 +1134,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     const total_target = filtered.reduce((s, p) => s + p.target_sales, 0);
     const total_actual = filtered.reduce((s, p) => s + p.actual_sales, 0);
-    const overall_completion_percentage = total_target > 0 ? Math.round((total_actual / total_target) * 100) : 0;
+    const overall_completion_percentage =
+      total_target > 0 ? Math.round((total_actual / total_target) * 100) : 0;
 
     const result: EmployeePlansResponse = {
       month: reqMonth,
@@ -1176,12 +1183,18 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const current = demoEmployeePlans[index];
-    const target = body.target_amount !== undefined ? Number(body.target_amount) : (body.target_sales !== undefined ? Number(body.target_sales) : current.target_sales);
+    const target =
+      body.target_amount !== undefined
+        ? Number(body.target_amount)
+        : body.target_sales !== undefined
+          ? Number(body.target_sales)
+          : current.target_sales;
     const actual = current.actual_sales;
     const remaining = Math.max(0, target - actual);
     const compPct = target > 0 ? Math.round((actual / target) * 100) : 0;
     const period = body.period || body.month || current.month;
-    const currency = body.currency !== undefined ? (body.currency as SupportedCurrency) : current.currency;
+    const currency =
+      body.currency !== undefined ? (body.currency as SupportedCurrency) : current.currency;
 
     const updated: EmployeePlanProgress = {
       ...current,
@@ -1210,7 +1223,13 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // 7. Cargo Transactions Ledger
   if (isPath('/cargo-kpi/transactions/viewable') && method === 'GET') {
-    const statuses: ShipmentStatus[] = ['Waiting', 'In Transit', 'Border', 'At Station', 'Delivered'];
+    const statuses: ShipmentStatus[] = [
+      'Waiting',
+      'In Transit',
+      'Border',
+      'At Station',
+      'Delivered',
+    ];
     const groupedData: Record<string, ViewableStatusGroup> = {};
     const status_counts: Record<string, number> = {};
 
@@ -1276,11 +1295,15 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       filtered = filtered.filter((t) => t.employee_id === empId);
     }
     if (statusParam) {
-      filtered = filtered.filter((t) => (t.status || 'Waiting').toLowerCase() === statusParam.toLowerCase());
+      filtered = filtered.filter(
+        (t) => (t.status || 'Waiting').toLowerCase() === statusParam.toLowerCase()
+      );
     }
     if (statusesParam.length > 0) {
       const normalizedStatuses = statusesParam.map((s) => s.toLowerCase());
-      filtered = filtered.filter((t) => normalizedStatuses.includes((t.status || 'Waiting').toLowerCase()));
+      filtered = filtered.filter((t) =>
+        normalizedStatuses.includes((t.status || 'Waiting').toLowerCase())
+      );
     }
     if (search) {
       filtered = filtered.filter(
@@ -1292,11 +1315,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const status_counts: Record<string, number> = {
-      'Waiting': 0,
+      Waiting: 0,
       'In Transit': 0,
-      'Border': 0,
+      Border: 0,
       'At Station': 0,
-      'Delivered': 0,
+      Delivered: 0,
     };
 
     demoTransactions.forEach((t) => {
@@ -1309,11 +1332,15 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const startIndex = (page - 1) * limit;
     const paginatedItems = filtered.slice(startIndex, startIndex + limit).map((t) => {
       const emp = t.employee_id ? demoEmployeesDb.get(t.employee_id) : null;
-      const empName = emp ? `${emp.first_name} ${emp.last_name}`.trim() : (t.employee_name || 'Employee');
-      const deptName = emp ? emp.department_name : (t.department_name || null);
-      const client = t.client_id ? demoClientsDb.find(c => c.id === t.client_id) : null;
-      const clientName = client ? `${client.first_name} ${client.last_name}`.trim() : (t.client_name || null);
-      const clientCompany = client ? client.company_name : (t.client_company || null);
+      const empName = emp
+        ? `${emp.first_name} ${emp.last_name}`.trim()
+        : t.employee_name || 'Employee';
+      const deptName = emp ? emp.department_name : t.department_name || null;
+      const client = t.client_id ? demoClientsDb.find((c) => c.id === t.client_id) : null;
+      const clientName = client
+        ? `${client.first_name} ${client.last_name}`.trim()
+        : t.client_name || null;
+      const clientCompany = client ? client.company_name : t.client_company || null;
 
       return {
         ...t,
@@ -1358,7 +1385,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     if (!body.client_id) {
       throw makeApiError(path, 404, 'client_not_found', 'Client ID is required');
     }
-    const client = demoClientsDb.find(c => c.id === body.client_id);
+    const client = demoClientsDb.find((c) => c.id === body.client_id);
     if (!client) {
       throw makeApiError(path, 404, 'client_not_found', 'Client not found');
     }
@@ -1377,7 +1404,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     // Resolved dynamically on mock backend matching updated backend rules
     const deptName = dept.name.toLowerCase();
-    const kpiPct = (deptName === 'sborniy' || deptName === 'sales' || deptName === 'groupage') ? 10 : 0;
+    const kpiPct =
+      deptName === 'sborniy' || deptName === 'sales' || deptName === 'groupage' ? 10 : 0;
     const kpiBonus = Math.round(margin * (kpiPct / 100) * 100) / 100;
 
     const newTx: CargoTransaction = {
@@ -1467,23 +1495,45 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     return { handled: true, result: newShipment };
   }
 
-  if ((startsWith('/cargo-kpi/shipments/') || startsWith('/cargo-kpi/transactions/')) && method === 'PUT') {
-    const id = (path.includes('/shipments/') ? path.split('/shipments/')[1] : path.split('/transactions/')[1])?.split('?')[0];
+  if (
+    (startsWith('/cargo-kpi/shipments/') || startsWith('/cargo-kpi/transactions/')) &&
+    method === 'PUT'
+  ) {
+    const id = (
+      path.includes('/shipments/') ? path.split('/shipments/')[1] : path.split('/transactions/')[1]
+    )?.split('?')[0];
     const idx = demoShipments.findIndex((s) => s.id === id);
     if (idx !== -1) {
       const current = demoShipments[idx];
       const rmbRate = body.rmbRate !== undefined ? Number(body.rmbRate) : current.rmbRate;
-      const buyCost = body.buyCost !== undefined ? Number(body.buyCost) : (body.buy_price !== undefined ? Number(body.buy_price) : current.buyCost);
-      const sellPrice = body.sellPrice !== undefined ? Number(body.sellPrice) : (body.sell_price !== undefined ? Number(body.sell_price) : current.sellPrice);
-      const buyCostCurrency = body.buyCostCurrency || body.currency || current.buyCostCurrency || 'RMB';
+      const buyCost =
+        body.buyCost !== undefined
+          ? Number(body.buyCost)
+          : body.buy_price !== undefined
+            ? Number(body.buy_price)
+            : current.buyCost;
+      const sellPrice =
+        body.sellPrice !== undefined
+          ? Number(body.sellPrice)
+          : body.sell_price !== undefined
+            ? Number(body.sell_price)
+            : current.sellPrice;
+      const buyCostCurrency =
+        body.buyCostCurrency || body.currency || current.buyCostCurrency || 'RMB';
       const profit = calculateShipmentProfit(buyCost, sellPrice, rmbRate, buyCostCurrency);
 
       const updated: Shipment = {
         ...current,
-        containerNo: body.containerNo !== undefined ? body.containerNo : (body.description || current.containerNo),
+        containerNo:
+          body.containerNo !== undefined
+            ? body.containerNo
+            : body.description || current.containerNo,
         clientName: body.clientName !== undefined ? body.clientName : current.clientName,
         cargoType: body.cargoType !== undefined ? body.cargoType : current.cargoType,
-        confirmedDate: body.confirmedDate !== undefined ? body.confirmedDate : (body.transaction_date || current.confirmedDate),
+        confirmedDate:
+          body.confirmedDate !== undefined
+            ? body.confirmedDate
+            : body.transaction_date || current.confirmedDate,
         loadedDate: body.loadedDate !== undefined ? body.loadedDate : current.loadedDate,
         arrivedDate: body.arrivedDate !== undefined ? body.arrivedDate : current.arrivedDate,
         rmbRate,
@@ -1519,7 +1569,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         ...current,
         buy_price: body.buy_price !== undefined ? Number(body.buy_price) : current.buy_price,
         sell_price: body.sell_price !== undefined ? Number(body.sell_price) : current.sell_price,
-        margin: (body.sell_price !== undefined ? Number(body.sell_price) : current.sell_price) - (body.buy_price !== undefined ? Number(body.buy_price) : current.buy_price),
+        margin:
+          (body.sell_price !== undefined ? Number(body.sell_price) : current.sell_price) -
+          (body.buy_price !== undefined ? Number(body.buy_price) : current.buy_price),
         status: body.status !== undefined ? body.status : current.status,
         currency: body.currency || current.currency,
         description: body.description !== undefined ? body.description : current.description,
@@ -1532,30 +1584,50 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     throw makeApiError(path, 404, 'transaction_not_found', 'Transaction / shipment not found');
   }
 
-  if ((startsWith('/cargo-kpi/shipments/') || startsWith('/cargo-kpi/transactions/')) && method === 'DELETE') {
-    const id = (path.includes('/shipments/') ? path.split('/shipments/')[1] : path.split('/transactions/')[1])?.split('?')[0];
+  if (
+    (startsWith('/cargo-kpi/shipments/') || startsWith('/cargo-kpi/transactions/')) &&
+    method === 'DELETE'
+  ) {
+    const id = (
+      path.includes('/shipments/') ? path.split('/shipments/')[1] : path.split('/transactions/')[1]
+    )?.split('?')[0];
     demoShipments = demoShipments.filter((s) => s.id !== id);
     demoTransactions = demoTransactions.filter((t) => t.id !== id);
     saveStoredDemoShipments(demoShipments);
     return { handled: true, result: {} };
   }
 
-  if ((isPath('/cargo-kpi/shipments/reset') || isPath('/cargo-kpi/transactions/reset')) && method === 'POST') {
+  if (
+    (isPath('/cargo-kpi/shipments/reset') || isPath('/cargo-kpi/transactions/reset')) &&
+    method === 'POST'
+  ) {
     demoShipments = [...INITIAL_DEMO_SHIPMENTS];
     saveStoredDemoShipments(demoShipments);
     return { handled: true, result: { message: 'Shipments reset to default.' } };
   }
 
-  if ((isPath('/cargo-kpi/shipments/batch-update-status') || isPath('/cargo-kpi/transactions/batch-update-status')) && method === 'POST') {
+  if (
+    (isPath('/cargo-kpi/shipments/batch-update-status') ||
+      isPath('/cargo-kpi/transactions/batch-update-status')) &&
+    method === 'POST'
+  ) {
     const ids: string[] = body.ids || [];
     const newStatus: ShipmentStatus = body.status;
-    demoShipments = demoShipments.map((s) => (ids.includes(s.id) ? { ...s, status: newStatus, updated_at: new Date().toISOString() } : s));
-    demoTransactions = demoTransactions.map((t) => (ids.includes(t.id) ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t));
+    demoShipments = demoShipments.map((s) =>
+      ids.includes(s.id) ? { ...s, status: newStatus, updated_at: new Date().toISOString() } : s
+    );
+    demoTransactions = demoTransactions.map((t) =>
+      ids.includes(t.id) ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t
+    );
     saveStoredDemoShipments(demoShipments);
     return { handled: true, result: { message: 'Batch status updated successfully.' } };
   }
 
-  if ((isPath('/cargo-kpi/shipments/batch-delete') || isPath('/cargo-kpi/transactions/batch-delete')) && method === 'POST') {
+  if (
+    (isPath('/cargo-kpi/shipments/batch-delete') ||
+      isPath('/cargo-kpi/transactions/batch-delete')) &&
+    method === 'POST'
+  ) {
     const ids: string[] = body.ids || [];
     demoShipments = demoShipments.filter((s) => !ids.includes(s.id));
     demoTransactions = demoTransactions.filter((t) => !ids.includes(t.id));
@@ -1563,7 +1635,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     return { handled: true, result: { message: 'Batch deletion complete.' } };
   }
 
-  if ((isPath('/cargo-kpi/shipments/update-rmb-rate') || isPath('/cargo-kpi/transactions/update-rmb-rate')) && method === 'POST') {
+  if (
+    (isPath('/cargo-kpi/shipments/update-rmb-rate') ||
+      isPath('/cargo-kpi/transactions/update-rmb-rate')) &&
+    method === 'POST'
+  ) {
     const rate = Number(body.rate) || 7.25;
     demoShipments = demoShipments.map((s) => {
       const p = calculateShipmentProfit(s.buyCost, s.sellPrice, rate, s.buyCostCurrency);
@@ -1665,8 +1741,7 @@ export const cargoKpiApi = {
     }),
 
   // LTL Items
-  getLtlItems: () =>
-    request<LtlItemsResponse>('/cargo-kpi/ltl/items', { method: 'GET' }),
+  getLtlItems: () => request<LtlItemsResponse>('/cargo-kpi/ltl/items', { method: 'GET' }),
 
   createLtlItem: (dto: CreateLtlItemDto) => {
     const { employee_name, ...cleanDto } = dto as any;
@@ -1687,14 +1762,13 @@ export const cargoKpiApi = {
   deleteLtlItem: (id: string) =>
     requestNoContent(`/cargo-kpi/ltl/items/${id}`, { method: 'DELETE' }),
 
-  resetLtlItems: () =>
-    request<{ message: string }>('/cargo-kpi/ltl/reset', { method: 'POST' }),
+  resetLtlItems: () => request<{ message: string }>('/cargo-kpi/ltl/reset', { method: 'POST' }),
 
   // FTL Module
   getFtlSummary: async (month?: string): Promise<FtlSummaryResponse> => {
     const query = month ? `?month=${encodeURIComponent(month)}` : '';
     const raw: any = await request<any>(`/cargo-kpi/ftl/summary${query}`, { method: 'GET' });
-    
+
     const managers = (raw?.managers || raw?.summaries || []).map((m: any) => ({
       manager_id: m.manager_id || null,
       manager_name: m.manager_name || 'Manager',
@@ -1704,10 +1778,15 @@ export const cargoKpiApi = {
       total_sell_price: Number(m.total_sell_price ?? 0),
       total_profit: Number(m.total_profit ?? 0),
       monthly_rate: Number(m.monthly_rate ?? m.monthly_kpi_rate ?? 0),
-      monthly_rate_percentage: m.monthly_rate_percentage || m.monthly_kpi_rate_percentage || `${Math.round(Number(m.monthly_rate ?? m.monthly_kpi_rate ?? 0) * 100)}%`,
+      monthly_rate_percentage:
+        m.monthly_rate_percentage ||
+        m.monthly_kpi_rate_percentage ||
+        `${Math.round(Number(m.monthly_rate ?? m.monthly_kpi_rate ?? 0) * 100)}%`,
       total_ftl_kpi: Number(m.total_ftl_kpi ?? 0),
       received_ftl_kpi: Number(m.received_ftl_kpi ?? 0),
-      pending_ftl_kpi: Number(m.pending_ftl_kpi ?? (Number(m.total_ftl_kpi ?? 0) - Number(m.received_ftl_kpi ?? 0))),
+      pending_ftl_kpi: Number(
+        m.pending_ftl_kpi ?? Number(m.total_ftl_kpi ?? 0) - Number(m.received_ftl_kpi ?? 0)
+      ),
       items: (m.items || []).map((item: any) => {
         const ap = Number(item.agent_price ?? 0);
         const sp = Number(item.sell_price ?? 0);
@@ -1721,10 +1800,10 @@ export const cargoKpiApi = {
           month: item.month || m.month,
           agent_price: ap,
           sell_price: sp,
-          profit: Number(item.profit ?? (sp - ap)),
+          profit: Number(item.profit ?? sp - ap),
           planned_days: pd,
           actual_days: ad,
-          day_difference: Number(item.day_difference ?? (ad - pd)),
+          day_difference: Number(item.day_difference ?? ad - pd),
           time_multiplier: tm,
           time_multiplier_percentage: item.time_multiplier_percentage || `${Math.round(tm * 100)}%`,
           kpi_received: Boolean(item.kpi_received),
@@ -1737,9 +1816,19 @@ export const cargoKpiApi = {
 
     return {
       month: raw?.month || month || '2026-07',
-      total_trucks: Number(raw?.total_trucks ?? managers.reduce((s: number, m: any) => s + (m.truck_count || 0), 0)),
-      total_profit: Number(raw?.total_profit ?? raw?.grand_total_profit ?? managers.reduce((s: number, m: any) => s + (m.total_profit || 0), 0)),
-      total_ftl_kpi: Number(raw?.total_ftl_kpi ?? raw?.grand_total_ftl_kpi ?? managers.reduce((s: number, m: any) => s + (m.total_ftl_kpi || 0), 0)),
+      total_trucks: Number(
+        raw?.total_trucks ?? managers.reduce((s: number, m: any) => s + (m.truck_count || 0), 0)
+      ),
+      total_profit: Number(
+        raw?.total_profit ??
+          raw?.grand_total_profit ??
+          managers.reduce((s: number, m: any) => s + (m.total_profit || 0), 0)
+      ),
+      total_ftl_kpi: Number(
+        raw?.total_ftl_kpi ??
+          raw?.grand_total_ftl_kpi ??
+          managers.reduce((s: number, m: any) => s + (m.total_ftl_kpi || 0), 0)
+      ),
       managers,
     };
   },
@@ -1774,7 +1863,9 @@ export const cargoKpiApi = {
     const rawWorkers = raw?.workers_breakdown || raw?.workers || [];
     const normalizedWorkers: RopWorkerShare[] = rawWorkers.map((w: any) => {
       const baseKpi = Number(w.base_kpi ?? w.sales_amount ?? 0);
-      const worker1pct = Number(w.worker_1pct_kpi ?? w.worker_kpi_1pc ?? Math.round(baseKpi * 0.01 * 100) / 100);
+      const worker1pct = Number(
+        w.worker_1pct_kpi ?? w.worker_kpi_1pc ?? Math.round(baseKpi * 0.01 * 100) / 100
+      );
       return {
         employee_name: w.employee_name || w.worker_name || 'Employee',
         base_kpi: baseKpi,
@@ -1782,16 +1873,30 @@ export const cargoKpiApi = {
       };
     });
 
-    const worker_1pct_total = Number(raw?.worker_1pct_total ?? raw?.worker_1pc_kpi ?? normalizedWorkers.reduce((s, w) => s + w.worker_1pct_kpi, 0));
-    const team_bonus_profit = Number(raw?.team_bonus_profit ?? raw?.total_team_sales ?? raw?.total_ltl_profit ?? 0);
+    const worker_1pct_total = Number(
+      raw?.worker_1pct_total ??
+        raw?.worker_1pc_kpi ??
+        normalizedWorkers.reduce((s, w) => s + w.worker_1pct_kpi, 0)
+    );
+    const team_bonus_profit = Number(
+      raw?.team_bonus_profit ?? raw?.total_team_sales ?? raw?.total_ltl_profit ?? 0
+    );
     const team_bonus_rate = Number(raw?.team_bonus_rate ?? 0);
-    const team_bonus_percentage = raw?.team_bonus_percentage || raw?.team_bonus_rate_percentage || `${(team_bonus_rate * 100).toFixed(1)}%`;
+    const team_bonus_percentage =
+      raw?.team_bonus_percentage ||
+      raw?.team_bonus_rate_percentage ||
+      `${(team_bonus_rate * 100).toFixed(1)}%`;
     const team_bonus_amount = Number(raw?.team_bonus_amount ?? raw?.team_bonus_kpi ?? 0);
     const truck_count = Number(raw?.truck_count ?? 0);
     const truck_rate = Number(raw?.truck_rate ?? raw?.truck_count_rate ?? 0);
-    const truck_rate_percentage = raw?.truck_rate_percentage || raw?.truck_count_rate_percentage || `${(truck_rate * 100).toFixed(1)}%`;
+    const truck_rate_percentage =
+      raw?.truck_rate_percentage ||
+      raw?.truck_count_rate_percentage ||
+      `${(truck_rate * 100).toFixed(1)}%`;
     const truck_kpi_amount = Number(raw?.truck_kpi_amount ?? raw?.truck_kpi ?? 0);
-    const rop_total_kpi = Number(raw?.rop_total_kpi ?? (worker_1pct_total + team_bonus_amount + truck_kpi_amount));
+    const rop_total_kpi = Number(
+      raw?.rop_total_kpi ?? worker_1pct_total + team_bonus_amount + truck_kpi_amount
+    );
 
     return {
       month: raw?.month || month || '2026-07',
@@ -1818,7 +1923,11 @@ export const cargoKpiApi = {
     }),
 
   // Employee Plans & Progress
-  getPlans: async (params?: { month?: string; period?: string; employee_id?: string }): Promise<EmployeePlansResponse> => {
+  getPlans: async (params?: {
+    month?: string;
+    period?: string;
+    employee_id?: string;
+  }): Promise<EmployeePlansResponse> => {
     const searchParams = new URLSearchParams();
     const period = params?.period || params?.month;
     if (period) {
@@ -1827,21 +1936,36 @@ export const cargoKpiApi = {
     }
     if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
     const query = searchParams.toString();
-    const raw: any = await request<any>(`/cargo-kpi/plans${query ? `?${query}` : ''}`, { method: 'GET' });
+    const raw: any = await request<any>(`/cargo-kpi/plans${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
 
     const rawPlans = raw?.plans || raw?.leaderboard || raw?.data || [];
     const normalizedPlans: EmployeePlanProgress[] = rawPlans.map((p: any, idx: number) => {
       const target = Number(p.target_amount ?? p.target_sales ?? 0);
       const actual = Number(p.actual_sales ?? p.actual_amount ?? 0);
-      const remaining = Number(p.remaining_target ?? p.remaining_amount ?? Math.max(0, target - actual));
-      const compPct = Number(p.completion_percentage ?? (target > 0 ? Math.round((actual / target) * 100) : 0));
-      const status = p.status || (p.is_completed ? 'completed' : compPct >= 100 ? 'completed' : compPct >= 50 ? 'on_track' : 'behind');
+      const remaining = Number(
+        p.remaining_target ?? p.remaining_amount ?? Math.max(0, target - actual)
+      );
+      const compPct = Number(
+        p.completion_percentage ?? (target > 0 ? Math.round((actual / target) * 100) : 0)
+      );
+      const status =
+        p.status ||
+        (p.is_completed
+          ? 'completed'
+          : compPct >= 100
+            ? 'completed'
+            : compPct >= 50
+              ? 'on_track'
+              : 'behind');
       const currency = (p.currency as SupportedCurrency) || 'UZS';
 
       return {
         id: String(p.id || `plan-${idx + 1}`),
         employee_id: p.employee_id || '',
-        employee_name: p.employee_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Employee',
+        employee_name:
+          p.employee_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Employee',
         department_id: p.department_id || null,
         department_name: p.department_name || null,
         month: p.period || p.month || period || '2026-07',
@@ -1857,9 +1981,16 @@ export const cargoKpiApi = {
       };
     });
 
-    const total_target = Number(raw?.total_target ?? normalizedPlans.reduce((s, p) => s + p.target_sales, 0));
-    const total_actual = Number(raw?.total_actual ?? normalizedPlans.reduce((s, p) => s + p.actual_sales, 0));
-    const overall_completion_percentage = Number(raw?.overall_completion_percentage ?? (total_target > 0 ? Math.round((total_actual / total_target) * 100) : 0));
+    const total_target = Number(
+      raw?.total_target ?? normalizedPlans.reduce((s, p) => s + p.target_sales, 0)
+    );
+    const total_actual = Number(
+      raw?.total_actual ?? normalizedPlans.reduce((s, p) => s + p.actual_sales, 0)
+    );
+    const overall_completion_percentage = Number(
+      raw?.overall_completion_percentage ??
+        (total_target > 0 ? Math.round((total_actual / total_target) * 100) : 0)
+    );
 
     return {
       month: raw?.period || raw?.month || period || '2026-07',
@@ -1890,7 +2021,12 @@ export const cargoKpiApi = {
   updatePlan: (id: string, dto: UpdateEmployeePlanDto) => {
     const { employee_id, employee_name, month, target_sales, ...cleanDto } = dto as any;
     const period = dto.period || dto.month;
-    const target_amount = dto.target_amount !== undefined ? Number(dto.target_amount) : (dto.target_sales !== undefined ? Number(dto.target_sales) : undefined);
+    const target_amount =
+      dto.target_amount !== undefined
+        ? Number(dto.target_amount)
+        : dto.target_sales !== undefined
+          ? Number(dto.target_sales)
+          : undefined;
 
     const bodyObj: any = {
       ...cleanDto,
@@ -1906,11 +2042,12 @@ export const cargoKpiApi = {
     });
   },
 
-  deletePlan: (id: string) =>
-    requestNoContent(`/cargo-kpi/plans/${id}`, { method: 'DELETE' }),
+  deletePlan: (id: string) => requestNoContent(`/cargo-kpi/plans/${id}`, { method: 'DELETE' }),
 
   // Cargo Transactions Ledger
-  getTransactions: async (params?: CargoTransactionListParams): Promise<CargoTransactionPaginatedResponse> => {
+  getTransactions: async (
+    params?: CargoTransactionListParams
+  ): Promise<CargoTransactionPaginatedResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
@@ -1924,20 +2061,25 @@ export const cargoKpiApi = {
       params.statuses.forEach((st) => searchParams.append('statuses', st));
     }
     const query = searchParams.toString();
-    const raw: any = await request<any>(`/cargo-kpi/transactions${query ? `?${query}` : ''}`, { method: 'GET' });
+    const raw: any = await request<any>(`/cargo-kpi/transactions${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
 
     const rawData = raw?.data || (Array.isArray(raw) ? raw : []);
     const normalizedData: CargoTransaction[] = rawData.map((t: any) => {
       const bp = Number(t.buy_price ?? 0);
       const sp = Number(t.sell_price ?? 0);
-      const margin = Number(t.margin ?? (sp - bp));
+      const margin = Number(t.margin ?? sp - bp);
       const kpiPct = Number(t.kpi_percentage ?? 10);
       const kpiBonus = Number(t.kpi_bonus ?? Math.round(margin * (kpiPct / 100) * 100) / 100);
 
       return {
         id: String(t.id),
         employee_id: t.employee_id || '',
-        employee_name: t.employee_name || `${t.employee_first_name || ''} ${t.employee_last_name || ''}`.trim() || 'Employee',
+        employee_name:
+          t.employee_name ||
+          `${t.employee_first_name || ''} ${t.employee_last_name || ''}`.trim() ||
+          'Employee',
         department_id: t.department_id || null,
         department_name: t.department_name || null,
         client_id: t.client_id || null,
@@ -1956,9 +2098,15 @@ export const cargoKpiApi = {
       };
     });
 
-    const total_sell_price = Number(raw?.summary?.total_sell_price ?? normalizedData.reduce((s, t) => s + t.sell_price, 0));
-    const total_margin = Number(raw?.summary?.total_margin ?? normalizedData.reduce((s, t) => s + t.margin, 0));
-    const total_kpi_bonus = Number(raw?.summary?.total_kpi_bonus ?? normalizedData.reduce((s, t) => s + t.kpi_bonus, 0));
+    const total_sell_price = Number(
+      raw?.summary?.total_sell_price ?? normalizedData.reduce((s, t) => s + t.sell_price, 0)
+    );
+    const total_margin = Number(
+      raw?.summary?.total_margin ?? normalizedData.reduce((s, t) => s + t.margin, 0)
+    );
+    const total_kpi_bonus = Number(
+      raw?.summary?.total_kpi_bonus ?? normalizedData.reduce((s, t) => s + t.kpi_bonus, 0)
+    );
 
     const meta: ResponseMeta | undefined = raw?.meta
       ? {
@@ -1974,9 +2122,11 @@ export const cargoKpiApi = {
 
     const pagination = raw?.pagination || {
       total: meta ? meta.total : normalizedData.length,
-      page: meta ? meta.page : (params?.page || 1),
-      limit: meta ? meta.limit : (params?.limit || 20),
-      totalPages: meta ? meta.totalPages : (Math.ceil(normalizedData.length / (params?.limit || 20)) || 1),
+      page: meta ? meta.page : params?.page || 1,
+      limit: meta ? meta.limit : params?.limit || 20,
+      totalPages: meta
+        ? meta.totalPages
+        : Math.ceil(normalizedData.length / (params?.limit || 20)) || 1,
     };
 
     return {
@@ -1991,7 +2141,9 @@ export const cargoKpiApi = {
     };
   },
 
-  getViewableTransactions: async (params?: CargoTransactionListParams): Promise<ViewableTransactionsResponse> => {
+  getViewableTransactions: async (
+    params?: CargoTransactionListParams
+  ): Promise<ViewableTransactionsResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
@@ -2005,7 +2157,10 @@ export const cargoKpiApi = {
       params.statuses.forEach((st) => searchParams.append('statuses', st));
     }
     const query = searchParams.toString();
-    const raw: any = await request<any>(`/cargo-kpi/transactions/viewable${query ? `?${query}` : ''}`, { method: 'GET' });
+    const raw: any = await request<any>(
+      `/cargo-kpi/transactions/viewable${query ? `?${query}` : ''}`,
+      { method: 'GET' }
+    );
 
     const rawData = raw?.data || {};
     const normalizedData: Record<string, ViewableStatusGroup> = {};
@@ -2015,7 +2170,10 @@ export const cargoKpiApi = {
       const txs: CargoTransaction[] = (group?.transactions || []).map((t: any) => ({
         id: String(t.id),
         employee_id: t.employee_id || '',
-        employee_name: t.employee_name || `${t.employee_first_name || ''} ${t.employee_last_name || ''}`.trim() || 'Employee',
+        employee_name:
+          t.employee_name ||
+          `${t.employee_first_name || ''} ${t.employee_last_name || ''}`.trim() ||
+          'Employee',
         department_id: t.department_id || null,
         department_name: t.department_name || null,
         client_id: t.client_id || null,
@@ -2037,10 +2195,18 @@ export const cargoKpiApi = {
         metrics: {
           total_transactions: Number(group?.metrics?.total_transactions ?? txs.length),
           loaded_transactions: Number(group?.metrics?.loaded_transactions ?? txs.length),
-          total_sell_price: Number(group?.metrics?.total_sell_price ?? txs.reduce((s, t) => s + t.sell_price, 0)),
-          total_buy_price: Number(group?.metrics?.total_buy_price ?? txs.reduce((s, t) => s + t.buy_price, 0)),
-          total_margin: Number(group?.metrics?.total_margin ?? txs.reduce((s, t) => s + t.margin, 0)),
-          total_kpi_bonus: Number(group?.metrics?.total_kpi_bonus ?? txs.reduce((s, t) => s + t.kpi_bonus, 0)),
+          total_sell_price: Number(
+            group?.metrics?.total_sell_price ?? txs.reduce((s, t) => s + t.sell_price, 0)
+          ),
+          total_buy_price: Number(
+            group?.metrics?.total_buy_price ?? txs.reduce((s, t) => s + t.buy_price, 0)
+          ),
+          total_margin: Number(
+            group?.metrics?.total_margin ?? txs.reduce((s, t) => s + t.margin, 0)
+          ),
+          total_kpi_bonus: Number(
+            group?.metrics?.total_kpi_bonus ?? txs.reduce((s, t) => s + t.kpi_bonus, 0)
+          ),
         },
         transactions: txs,
       };
@@ -2104,7 +2270,9 @@ export const cargoKpiApi = {
       const buyCost = Number(s.purchase_price?.amount ?? 0);
       const sellPrice = Number(s.sell_price?.amount ?? 0);
       const buyCostCurrency = (s.purchase_price?.currency || 'RMB') as 'RMB' | 'USD';
-      const profit = Number(s.net_yield?.amount ?? calculateShipmentProfit(buyCost, sellPrice, rmbRate, buyCostCurrency));
+      const profit = Number(
+        s.net_yield?.amount ?? calculateShipmentProfit(buyCost, sellPrice, rmbRate, buyCostCurrency)
+      );
 
       return {
         id: String(s.id),
@@ -2180,8 +2348,7 @@ export const cargoKpiApi = {
     return cargoRegistrationsApi.update(id, payload) as any;
   },
 
-  deleteShipment: (id: string) =>
-    cargoRegistrationsApi.delete(id) as any,
+  deleteShipment: (id: string) => cargoRegistrationsApi.delete(id) as any,
 
   resetShipments: () =>
     request<{ message: string }>('/cargo-kpi/transactions/reset', { method: 'POST' }),

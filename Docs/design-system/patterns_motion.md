@@ -228,13 +228,13 @@ Avoid vague titles such as “Are you sure?”
 
 ## Breakpoints
 
-| Token | Range | Typical Behavior |
-|---|---|---|
-| `xs` | 0–479 px | Single-column mobile |
-| `sm` | 480–767 px | Wide mobile / small tablet |
-| `md` | 768–1023 px | Tablet; condensed navigation |
-| `lg` | 1024–1439 px | Desktop application |
-| `xl` | 1440 px and above | Wide desktop with max-width content |
+| Token | Range             | Typical Behavior                    |
+| ----- | ----------------- | ----------------------------------- |
+| `xs`  | 0–479 px          | Single-column mobile                |
+| `sm`  | 480–767 px        | Wide mobile / small tablet          |
+| `md`  | 768–1023 px       | Tablet; condensed navigation        |
+| `lg`  | 1024–1439 px      | Desktop application                 |
+| `xl`  | 1440 px and above | Wide desktop with max-width content |
 
 Use content-driven breakpoints when a component requires earlier adaptation.
 
@@ -296,23 +296,23 @@ Motion should explain change, not decorate routine interactions.
 
 ## Duration Tokens
 
-| Token | Duration | Use |
-|---|---:|---|
-| `motion-instant` | 80 ms | Press feedback |
-| `motion-fast` | 120 ms | Hover, icon change |
-| `motion-standard` | 180 ms | Dropdown, tooltip, small transition |
-| `motion-emphasis` | 240 ms | Drawer, card expansion |
-| `motion-slow` | 320 ms | Page-level branded transition |
-| `motion-brand` | 480–700 ms | Splash or logo reveal only |
+| Token             |   Duration | Use                                 |
+| ----------------- | ---------: | ----------------------------------- |
+| `motion-instant`  |      80 ms | Press feedback                      |
+| `motion-fast`     |     120 ms | Hover, icon change                  |
+| `motion-standard` |     180 ms | Dropdown, tooltip, small transition |
+| `motion-emphasis` |     240 ms | Drawer, card expansion              |
+| `motion-slow`     |     320 ms | Page-level branded transition       |
+| `motion-brand`    | 480–700 ms | Splash or logo reveal only          |
 
 ## Easing
 
-| Token | Value | Use |
-|---|---|---|
-| `ease-standard` | `cubic-bezier(0.2, 0, 0, 1)` | General UI |
-| `ease-enter` | `cubic-bezier(0, 0, 0.2, 1)` | Element entering |
-| `ease-exit` | `cubic-bezier(0.4, 0, 1, 1)` | Element exiting |
-| `ease-emphasis` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | Brand reveal |
+| Token           | Value                            | Use              |
+| --------------- | -------------------------------- | ---------------- |
+| `ease-standard` | `cubic-bezier(0.2, 0, 0, 1)`     | General UI       |
+| `ease-enter`    | `cubic-bezier(0, 0, 0.2, 1)`     | Element entering |
+| `ease-exit`     | `cubic-bezier(0.4, 0, 1, 1)`     | Element exiting  |
+| `ease-emphasis` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | Brand reveal     |
 
 ## Component Motion
 

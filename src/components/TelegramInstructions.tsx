@@ -6,7 +6,7 @@ interface TelegramInstructionsProps {
   botUsername?: string;
 }
 
-export function TelegramInstructions({ botUsername = "YaqeenOtpBot" }: TelegramInstructionsProps) {
+export function TelegramInstructions({ botUsername = 'YaqeenOtpBot' }: TelegramInstructionsProps) {
   const { t } = useTranslation();
 
   return (
@@ -32,11 +32,11 @@ export function TelegramInstructions({ botUsername = "YaqeenOtpBot" }: TelegramI
             @{botUsername}
           </span>
         </div>
-        
+
         <p className="text-neutral-600 dark:text-neutral-300 leading-normal">
           {t('telegramGuideStep2')}
         </p>
-        
+
         <p className="text-neutral-600 dark:text-neutral-300 leading-normal">
           {t('telegramGuideStep3')}
         </p>

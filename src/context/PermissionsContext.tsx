@@ -22,14 +22,23 @@ export type ModuleKey =
   | 'attachments'
   | 'roles';
 
-export type UserPermissions = Record<string, ModulePermissionAction & { register_for_everyone?: boolean }>;
+export type UserPermissions = Record<
+  string,
+  ModulePermissionAction & { register_for_everyone?: boolean }
+>;
 
 export const FULL_PERMISSIONS: UserPermissions = {
   clients: { create: true, read: true, update: true, delete: true },
   employees: { create: true, read: true, update: true, delete: true },
   departments: { create: true, read: true, update: true, delete: true },
   cargo_kpi: { create: true, read: true, update: true, delete: true },
-  cargo_registrations: { create: true, read: true, update: true, delete: true, register_for_everyone: true },
+  cargo_registrations: {
+    create: true,
+    read: true,
+    update: true,
+    delete: true,
+    register_for_everyone: true,
+  },
   finance: { create: true, read: true, update: true, delete: true },
   commercial_offers: { create: true, read: true, update: true, delete: true },
   tasks: { create: true, read: true, update: true, delete: true },
@@ -111,7 +120,10 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const isCeo = userRole === 'CEO';
   const isRop = userRole === 'ROP';
 
-  const hasPermission = (module: ModuleKey | string, action: keyof ModulePermissionAction): boolean => {
+  const hasPermission = (
+    module: ModuleKey | string,
+    action: keyof ModulePermissionAction
+  ): boolean => {
     if (isCeo) return true;
     const mod = permissions[module];
     if (!mod) return false;

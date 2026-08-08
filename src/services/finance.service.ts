@@ -151,16 +151,24 @@ export interface BatchUpdateSalariesDto {
 
 export const financeApi = {
   // A. Summary & Analytics
-  getSummary: (params?: { period?: string; start_date?: string; end_date?: string; currency?: SupportedCurrency }) => {
+  getSummary: (params?: {
+    period?: string;
+    start_date?: string;
+    end_date?: string;
+    currency?: SupportedCurrency;
+  }) => {
     const q = new URLSearchParams();
     if (params?.period) q.set('period', params.period);
     if (params?.start_date) q.set('start_date', params.start_date);
     if (params?.end_date) q.set('end_date', params.end_date);
     if (params?.currency) q.set('currency', params.currency);
     const queryString = q.toString();
-    return request<FinanceSummaryResponse>(`/finance/summary${queryString ? `?${queryString}` : ''}`, {
-      method: 'GET',
-    });
+    return request<FinanceSummaryResponse>(
+      `/finance/summary${queryString ? `?${queryString}` : ''}`,
+      {
+        method: 'GET',
+      }
+    );
   },
 
   // B. Expense Management (CRUD)
@@ -182,9 +190,12 @@ export const financeApi = {
     if (params?.sort_by) q.set('sort_by', params.sort_by);
     if (params?.order) q.set('order', params.order);
     const queryString = q.toString();
-    return request<ExpensePaginatedResponse>(`/finance/expenses${queryString ? `?${queryString}` : ''}`, {
-      method: 'GET',
-    });
+    return request<ExpensePaginatedResponse>(
+      `/finance/expenses${queryString ? `?${queryString}` : ''}`,
+      {
+        method: 'GET',
+      }
+    );
   },
 
   getCategoryBreakdown: (params?: { period?: string; start_date?: string; end_date?: string }) => {
@@ -220,9 +231,12 @@ export const financeApi = {
     const q = new URLSearchParams();
     if (department_id) q.set('department_id', department_id);
     const queryString = q.toString();
-    return request<FixedSalariesResponse>(`/finance/salaries${queryString ? `?${queryString}` : ''}`, {
-      method: 'GET',
-    });
+    return request<FixedSalariesResponse>(
+      `/finance/salaries${queryString ? `?${queryString}` : ''}`,
+      {
+        method: 'GET',
+      }
+    );
   },
 
   updateEmployeeSalary: (employee_id: string, fixed_salary: number) =>

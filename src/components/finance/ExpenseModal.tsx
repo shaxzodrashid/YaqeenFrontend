@@ -20,7 +20,13 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { api } from '../../services/api';
-import type { Expense, ExpenseCategory, CreateExpenseDto, UpdateExpenseDto, SupportedCurrency } from '../../services/api';
+import type {
+  Expense,
+  ExpenseCategory,
+  CreateExpenseDto,
+  UpdateExpenseDto,
+  SupportedCurrency,
+} from '../../services/api';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -31,7 +37,14 @@ interface ExpenseModalProps {
 
 export const CATEGORY_CONFIG: Record<
   ExpenseCategory,
-  { labelKey: string; defaultLabel: string; icon: any; colorClass: string; bgClass: string; borderClass: string }
+  {
+    labelKey: string;
+    defaultLabel: string;
+    icon: any;
+    colorClass: string;
+    bgClass: string;
+    borderClass: string;
+  }
 > = {
   tax: {
     labelKey: 'finCatTax',
@@ -94,9 +107,13 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
   const [currency, setCurrency] = useState<SupportedCurrency>('UZS');
   const [amount, setAmount] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [expenseDate, setExpenseDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [expenseDate, setExpenseDate] = useState<string>(
+    () => new Date().toISOString().split('T')[0]
+  );
   const [employeeId, setEmployeeId] = useState<string>('');
-  const [employees, setEmployees] = useState<{ id: string; name: string; department?: string }[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; name: string; department?: string }[]>(
+    []
+  );
   const [loadingEmployees, setLoadingEmployees] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -257,7 +274,9 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                     {expenseToEdit ? t('finEditExpense') : t('finAddExpense')}
                   </h3>
                   <p className="text-xs text-muted dark:text-night-muted">
-                    {expenseToEdit ? 'Modify existing expense entry' : 'Log a new operational business expense'}
+                    {expenseToEdit
+                      ? 'Modify existing expense entry'
+                      : 'Log a new operational business expense'}
                   </p>
                 </div>
               </div>
@@ -295,15 +314,14 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                       );
                     })()}
                   </div>
-                  <ChevronDown className={`size-4 text-muted transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`size-4 text-muted transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
 
                 {/* Click-away backdrop */}
                 {isCatDropdownOpen && (
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setIsCatDropdownOpen(false)}
-                  />
+                  <div className="fixed inset-0 z-10" onClick={() => setIsCatDropdownOpen(false)} />
                 )}
 
                 {/* Dropdown Menu */}
@@ -440,7 +458,9 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
 
                 {/* Preset Chips */}
                 <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
-                  <span className="text-[11px] text-muted dark:text-night-muted mr-1 font-medium">Quick:</span>
+                  <span className="text-[11px] text-muted dark:text-night-muted mr-1 font-medium">
+                    Quick:
+                  </span>
                   {PRESET_AMOUNTS.map((val) => (
                     <button
                       key={val}

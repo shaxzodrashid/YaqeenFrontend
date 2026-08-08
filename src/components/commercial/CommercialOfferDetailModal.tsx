@@ -57,8 +57,15 @@ export function CommercialOfferDetailModal({
 
   if (!isOpen || !offer) return null;
 
-  const formattedUsd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(offer.price_usd);
-  const formattedLocal = new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS', maximumFractionDigits: 0 }).format(offer.price_local);
+  const formattedUsd = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(offer.price_usd);
+  const formattedLocal = new Intl.NumberFormat('uz-UZ', {
+    style: 'currency',
+    currency: 'UZS',
+    maximumFractionDigits: 0,
+  }).format(offer.price_local);
 
   const dateStr = new Date(offer.created_at || Date.now()).toLocaleDateString('en-GB', {
     day: '2-digit',
@@ -107,7 +114,9 @@ export function CommercialOfferDetailModal({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold font-serif text-foreground">{offer.offer_number}</h2>
+                  <h2 className="text-xl font-bold font-serif text-foreground">
+                    {offer.offer_number}
+                  </h2>
                   <CommercialOfferStatusBadge status={offer.status} size="sm" />
                 </div>
                 <p className="text-xs text-muted flex items-center gap-2 mt-0.5">
@@ -128,7 +137,9 @@ export function CommercialOfferDetailModal({
                 <button
                   onClick={() => setPdfLang('uz')}
                   className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
-                    pdfLang === 'uz' ? 'bg-brand-gold text-brand-navy shadow-sm' : 'text-muted hover:text-foreground'
+                    pdfLang === 'uz'
+                      ? 'bg-brand-gold text-brand-navy shadow-sm'
+                      : 'text-muted hover:text-foreground'
                   }`}
                   title="O'zbekcha Taklif"
                 >
@@ -137,7 +148,9 @@ export function CommercialOfferDetailModal({
                 <button
                   onClick={() => setPdfLang('ru')}
                   className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
-                    pdfLang === 'ru' ? 'bg-brand-gold text-brand-navy shadow-sm' : 'text-muted hover:text-foreground'
+                    pdfLang === 'ru'
+                      ? 'bg-brand-gold text-brand-navy shadow-sm'
+                      : 'text-muted hover:text-foreground'
                   }`}
                   title="Русское Предложение"
                 >
@@ -146,7 +159,9 @@ export function CommercialOfferDetailModal({
                 <button
                   onClick={() => setPdfLang('en')}
                   className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
-                    pdfLang === 'en' ? 'bg-brand-gold text-brand-navy shadow-sm' : 'text-muted hover:text-foreground'
+                    pdfLang === 'en'
+                      ? 'bg-brand-gold text-brand-navy shadow-sm'
+                      : 'text-muted hover:text-foreground'
                   }`}
                   title="English Offer"
                 >
@@ -180,13 +195,20 @@ export function CommercialOfferDetailModal({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 hover:bg-muted text-foreground border border-border transition-colors text-xs font-bold cursor-pointer disabled:opacity-50"
                 title="Duplicate proposal into new draft"
               >
-                {duplicating ? <Loader2 className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
+                {duplicating ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
                 <span>{t('actionDuplicate')}</span>
               </button>
 
               {canUpdate && (
                 <button
-                  onClick={() => { onClose(); onEdit(offer); }}
+                  onClick={() => {
+                    onClose();
+                    onEdit(offer);
+                  }}
                   className="p-2 rounded-xl text-muted hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
                   title="Edit Offer"
                 >
@@ -196,7 +218,10 @@ export function CommercialOfferDetailModal({
 
               {canDelete && (
                 <button
-                  onClick={() => { onClose(); onDelete(offer.id); }}
+                  onClick={() => {
+                    onClose();
+                    onDelete(offer.id);
+                  }}
                   className="p-2 rounded-xl text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                   title="Delete Offer"
                 >
@@ -215,7 +240,6 @@ export function CommercialOfferDetailModal({
 
           {/* Modal Body / Proposal Sheet */}
           <div className="p-6 overflow-y-auto flex-1 space-y-6">
-            
             {/* Status Lifecycle Transition Action Bar */}
             {canUpdate && (
               <div className="p-4 rounded-xl bg-muted/20 border border-border flex flex-wrap items-center justify-between gap-3">
@@ -225,52 +249,56 @@ export function CommercialOfferDetailModal({
 
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Transition: Draft -> Sent */}
-                  {validateOfferStatusTransition(offer.status, 'sent') && offer.status !== 'sent' && (
-                    <button
-                      onClick={() => handleStatusChange('sent')}
-                      disabled={updatingStatus}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 text-xs font-bold hover:bg-sky-500/25 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <Send className="size-3.5" />
-                      <span>{t('btnMarkSent')}</span>
-                    </button>
-                  )}
+                  {validateOfferStatusTransition(offer.status, 'sent') &&
+                    offer.status !== 'sent' && (
+                      <button
+                        onClick={() => handleStatusChange('sent')}
+                        disabled={updatingStatus}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 text-xs font-bold hover:bg-sky-500/25 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Send className="size-3.5" />
+                        <span>{t('btnMarkSent')}</span>
+                      </button>
+                    )}
 
                   {/* Transition: Draft/Sent -> Accepted */}
-                  {validateOfferStatusTransition(offer.status, 'accepted') && offer.status !== 'accepted' && (
-                    <button
-                      onClick={() => handleStatusChange('accepted')}
-                      disabled={updatingStatus}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/25 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="size-3.5" />
-                      <span>{t('btnMarkAccepted')}</span>
-                    </button>
-                  )}
+                  {validateOfferStatusTransition(offer.status, 'accepted') &&
+                    offer.status !== 'accepted' && (
+                      <button
+                        onClick={() => handleStatusChange('accepted')}
+                        disabled={updatingStatus}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/25 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                        <span>{t('btnMarkAccepted')}</span>
+                      </button>
+                    )}
 
                   {/* Transition: Draft/Sent -> Rejected */}
-                  {validateOfferStatusTransition(offer.status, 'rejected') && offer.status !== 'rejected' && (
-                    <button
-                      onClick={() => handleStatusChange('rejected')}
-                      disabled={updatingStatus}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <XCircle className="size-3.5" />
-                      <span>{t('btnMarkRejected')}</span>
-                    </button>
-                  )}
+                  {validateOfferStatusTransition(offer.status, 'rejected') &&
+                    offer.status !== 'rejected' && (
+                      <button
+                        onClick={() => handleStatusChange('rejected')}
+                        disabled={updatingStatus}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle className="size-3.5" />
+                        <span>{t('btnMarkRejected')}</span>
+                      </button>
+                    )}
 
                   {/* Transition: Sent/Accepted/Rejected -> Reopen Draft */}
-                  {validateOfferStatusTransition(offer.status, 'draft') && offer.status !== 'draft' && (
-                    <button
-                      onClick={() => handleStatusChange('draft')}
-                      disabled={updatingStatus}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/25 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <RotateCcw className="size-3.5" />
-                      <span>{t('btnReopenDraft')}</span>
-                    </button>
-                  )}
+                  {validateOfferStatusTransition(offer.status, 'draft') &&
+                    offer.status !== 'draft' && (
+                      <button
+                        onClick={() => handleStatusChange('draft')}
+                        disabled={updatingStatus}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/25 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <RotateCcw className="size-3.5" />
+                        <span>{t('btnReopenDraft')}</span>
+                      </button>
+                    )}
 
                   {updatingStatus && <Loader2 className="size-4 animate-spin text-brand-gold" />}
                 </div>
@@ -288,7 +316,9 @@ export function CommercialOfferDetailModal({
                     <MapPin className="size-5" />
                   </div>
                   <div>
-                    <span className="text-xs text-neutral-400 uppercase font-medium block">Origin</span>
+                    <span className="text-xs text-neutral-400 uppercase font-medium block">
+                      Origin
+                    </span>
                     <span className="text-lg font-bold text-white">{offer.origin}</span>
                   </div>
                 </div>
@@ -303,7 +333,9 @@ export function CommercialOfferDetailModal({
 
                 <div className="flex items-center gap-3 text-right">
                   <div>
-                    <span className="text-xs text-neutral-400 uppercase font-medium block">Destination</span>
+                    <span className="text-xs text-neutral-400 uppercase font-medium block">
+                      Destination
+                    </span>
                     <span className="text-lg font-bold text-white">{offer.destination}</span>
                   </div>
                   <div className="size-10 rounded-xl bg-brand-gold/20 border border-brand-gold/40 flex items-center justify-center text-brand-gold">
@@ -342,18 +374,24 @@ export function CommercialOfferDetailModal({
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Cargo Description:</span>
-                    <span className="font-bold text-foreground">{offer.cargo_description || 'General Freight'}</span>
+                    <span className="font-bold text-foreground">
+                      {offer.cargo_description || 'General Freight'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Weight:</span>
                     <span className="font-bold text-foreground">
-                      {offer.cargo_weight !== null && offer.cargo_weight !== undefined ? `${offer.cargo_weight} kg` : 'N/A'}
+                      {offer.cargo_weight !== null && offer.cargo_weight !== undefined
+                        ? `${offer.cargo_weight} kg`
+                        : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Volume:</span>
                     <span className="font-bold text-foreground">
-                      {offer.cargo_volume !== null && offer.cargo_volume !== undefined ? `${offer.cargo_volume} m³` : 'N/A'}
+                      {offer.cargo_volume !== null && offer.cargo_volume !== undefined
+                        ? `${offer.cargo_volume} m³`
+                        : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -366,7 +404,9 @@ export function CommercialOfferDetailModal({
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-gold block">
                   Total Proposal Price
                 </span>
-                <span className="text-2xl font-bold font-serif text-foreground">{formattedUsd}</span>
+                <span className="text-2xl font-bold font-serif text-foreground">
+                  {formattedUsd}
+                </span>
               </div>
               <div className="text-right">
                 <span className="text-xs text-muted-foreground block">Equivalent Local Price</span>

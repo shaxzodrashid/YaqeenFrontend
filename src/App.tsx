@@ -12,10 +12,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { T } from './components/T';
 
 const quotes = [
-  { text: "A visual language of clarity and confidence—rooted in heritage, designed for today.", tagline: "Our Mission" },
-  { text: "Yaqeen communicates certainty, confidence, calm, and trust in every interaction.", tagline: "Core attribute" },
-  { text: "Premium quality comes from precision, not visual excess.", tagline: "Design Principle" },
-  { text: "Calm rather than cold. Trustworthy rather than corporate.", tagline: "Brand Essence" }
+  {
+    text: 'A visual language of clarity and confidence—rooted in heritage, designed for today.',
+    tagline: 'Our Mission',
+  },
+  {
+    text: 'Yaqeen communicates certainty, confidence, calm, and trust in every interaction.',
+    tagline: 'Core attribute',
+  },
+  { text: 'Premium quality comes from precision, not visual excess.', tagline: 'Design Principle' },
+  { text: 'Calm rather than cold. Trustworthy rather than corporate.', tagline: 'Brand Essence' },
 ];
 
 function AppContent() {
@@ -102,26 +108,22 @@ function AppContent() {
     setAuthMethod('');
   };
 
-
   if (isAuthenticated) {
-    return (
-      <Dashboard 
-        userPhone={userPhone} 
-        authMethod={authMethod} 
-        onLogout={handleLogout} 
-      />
-    );
+    return <Dashboard userPhone={userPhone} authMethod={authMethod} onLogout={handleLogout} />;
   }
 
   return (
-    <div className={`${theme} min-h-screen flex w-full bg-[#FDFBF7] dark:bg-background text-[#2D3238] dark:text-foreground transition-colors duration-300 font-ui`} data-theme={theme}>
-      
+    <div
+      className={`${theme} min-h-screen flex w-full bg-[#FDFBF7] dark:bg-background text-[#2D3238] dark:text-foreground transition-colors duration-300 font-ui`}
+      data-theme={theme}
+    >
       {/* LEFT SIDE: Brand Cover Panel (hidden on mobile, visible on desktop) */}
-      <section 
+      <section
         className="hidden md:flex md:w-[38%] bg-[#F5EFEB] dark:bg-night-sidebar flex-col justify-between p-10 relative overflow-hidden select-none transition-colors duration-300 border-r border-neutral-200/40 dark:border-border"
         style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(197, 168, 110, 0.15) 1.5px, transparent 0)',
-          backgroundSize: '28px 28px'
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, rgba(197, 168, 110, 0.15) 1.5px, transparent 0)',
+          backgroundSize: '28px 28px',
         }}
       >
         <div className="absolute -top-12 -left-12 w-64 h-64 bg-[#C5A86E]/10 rounded-full blur-3xl pointer-events-none" />
@@ -129,7 +131,9 @@ function AppContent() {
         {/* Top Header */}
         <div className="flex items-center gap-2.5 z-10">
           <ShieldCheck className="size-5.5 text-[#C5A86E] dark:text-[#C8A96A]" />
-          <span className="text-[10px] font-bold tracking-widest text-[#A88C52] dark:text-brand-gold uppercase">Yaqeen Shield Protected</span>
+          <span className="text-[10px] font-bold tracking-widest text-[#A88C52] dark:text-brand-gold uppercase">
+            Yaqeen Shield Protected
+          </span>
         </div>
 
         {/* Center Logo & Quotes */}
@@ -143,7 +147,7 @@ function AppContent() {
             <span className="text-[10px] font-bold text-[#A88C52] dark:text-brand-gold tracking-widest uppercase mb-3 bg-[#EAE1DA] dark:bg-default px-2.5 py-0.5 rounded-full border border-[#C5A86E]/20 dark:border-brand-gold/20">
               {quotes[currentQuoteIndex].tagline}
             </span>
-            <p 
+            <p
               className={`text-base font-serif text-[#2D3238] dark:text-neutral-ivory leading-relaxed transition-opacity duration-500 italic
                 ${fadeState === 'in' ? 'opacity-90' : 'opacity-0'}`}
             >
@@ -159,14 +163,15 @@ function AppContent() {
           </p>
           <div className="flex items-center gap-1.5 text-[9px] text-[#6B7280] dark:text-muted font-bold uppercase tracking-wider">
             <Calendar className="size-3 text-[#C5A86E] dark:text-[#C8A96A]" />
-            <span><T k="updatedDate" /></span>
+            <span>
+              <T k="updatedDate" />
+            </span>
           </div>
         </div>
       </section>
 
       {/* RIGHT SIDE: Auth Form Panel */}
       <section className="flex-1 flex flex-col justify-between items-center p-6 relative overflow-y-auto min-h-screen bg-[#FDFBF7] dark:bg-background transition-colors duration-300">
-        
         {/* Floating controls in top right */}
         <div className="w-full flex justify-between sm:justify-end items-center gap-3.5 z-20 max-w-md select-none mt-2">
           {/* Theme switcher */}
@@ -197,7 +202,9 @@ function AppContent() {
               >
                 <Globe className="size-3.5 text-[#C5A86E] dark:text-[#C8A96A]" />
                 <span>{locale}</span>
-                <ChevronDown className={`size-3 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''} text-[#6B7280] dark:text-muted`} />
+                <ChevronDown
+                  className={`size-3 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''} text-[#6B7280] dark:text-muted`}
+                />
               </button>
 
               <AnimatePresence>
@@ -217,11 +224,15 @@ function AppContent() {
                           setIsLangOpen(false);
                         }}
                         className={`flex items-center justify-between w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-neutral-50 dark:hover:bg-night-elevated cursor-pointer focus:outline-none
-                          ${locale === lang 
-                            ? 'bg-[#F2ECE1]/50 dark:bg-default text-[#A88C52] dark:text-brand-gold font-extrabold' 
-                            : 'text-[#2D3238] dark:text-neutral-ivory'}`}
+                          ${
+                            locale === lang
+                              ? 'bg-[#F2ECE1]/50 dark:bg-default text-[#A88C52] dark:text-brand-gold font-extrabold'
+                              : 'text-[#2D3238] dark:text-neutral-ivory'
+                          }`}
                       >
-                        <span>{lang === 'uz' ? 'Oʻzbek' : lang === 'ru' ? 'Русский' : 'English'}</span>
+                        <span>
+                          {lang === 'uz' ? 'Oʻzbek' : lang === 'ru' ? 'Русский' : 'English'}
+                        </span>
                         <span className="text-[9px] text-[#6B7280] dark:text-muted">{lang}</span>
                       </button>
                     ))}
@@ -245,9 +256,7 @@ function AppContent() {
         <div className="md:hidden text-[9px] text-[#6B7280] dark:text-muted select-none pb-2 z-10">
           {t('copyright')}
         </div>
-
       </section>
-
     </div>
   );
 }

@@ -20,7 +20,12 @@ import { BatchSalaryModal } from './BatchSalaryModal';
 import { CbuRatesWidget } from '../currency/CbuRatesWidget';
 import { T } from '../T';
 import { api } from '../../services/api';
-import type { FinanceSummaryResponse, FixedSalariesResponse, Expense, SupportedCurrency } from '../../services/api';
+import type {
+  FinanceSummaryResponse,
+  FixedSalariesResponse,
+  Expense,
+  SupportedCurrency,
+} from '../../services/api';
 
 type FinanceTabId = 'summary' | 'expenses' | 'salaries';
 
@@ -96,8 +101,18 @@ export function FinancePage() {
   };
 
   const tabItems: { id: FinanceTabId; labelKey: string; defaultLabel: string; icon: any }[] = [
-    { id: 'summary', labelKey: 'finTabSummary', defaultLabel: 'Summary & Analytics', icon: TrendingUp },
-    { id: 'expenses', labelKey: 'finTabExpenses', defaultLabel: 'Operational Expenses', icon: PieChart },
+    {
+      id: 'summary',
+      labelKey: 'finTabSummary',
+      defaultLabel: 'Summary & Analytics',
+      icon: TrendingUp,
+    },
+    {
+      id: 'expenses',
+      labelKey: 'finTabExpenses',
+      defaultLabel: 'Operational Expenses',
+      icon: PieChart,
+    },
     { id: 'salaries', labelKey: 'finTabSalaries', defaultLabel: 'Fixed Salaries', icon: Users },
   ];
 
@@ -164,7 +179,9 @@ export function FinancePage() {
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent dark:bg-[#5B8FD4] text-accent-foreground dark:text-[#0B1528] font-semibold text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
             >
               <Plus className="size-4" />
-              <span><T k="finAddExpense" /></span>
+              <span>
+                <T k="finAddExpense" />
+              </span>
             </button>
           )}
         </div>
@@ -197,7 +214,9 @@ export function FinancePage() {
                 />
               )}
               <Icon className="size-4 relative z-10" />
-              <span className="relative z-10"><T k={item.labelKey} /></span>
+              <span className="relative z-10">
+                <T k={item.labelKey} />
+              </span>
             </button>
           );
         })}

@@ -9,6 +9,7 @@ This document details the multi-currency calculation engine, historical rate sna
 In cargo logistics management, cargo purchase prices (e.g. carrier costs in UZS, RUB, or RMB) and sell prices (e.g. client charges in USD) can be recorded at different dates and in different currencies.
 
 ### Key Features Implemented:
+
 1. **Accurate Multi-Currency Net Yield**: Converts all purchase and sell prices into standardized base currencies (USD & UZS) using exact exchange rates before calculating profit (`net_yield`).
 2. **Decoupled Purchase & Sell Timestamps**: Allows `purchase_date` and `sell_date` to be specified independently (e.g., when sell prices are agreed upon days or weeks after purchase registration).
 3. **Historical Exchange Rate Snapshotting**: Fetches and records official Central Bank of Uzbekistan (CBU) exchange rates (or user-defined custom exchange rates) for the exact registration date of each price.
@@ -23,7 +24,8 @@ In cargo logistics management, cargo purchase prices (e.g. carrier costs in UZS,
 Let $R_{USD}(d)$ be the exchange rate of 1 USD in UZS on date $d$, and $R_{CNY}(d)$, $R_{RUB}(d)$ be the respective CBU rates in UZS on date $d$.
 
 #### Purchase Price Conversion to USD ($P_{USD}$):
-$$P_{USD} = \begin{cases} 
+
+$$ P_{USD} = \begin{cases}
 P_{buy} & \text{if currency is USD} \\
 \frac{P_{buy}}{R_{USD}(d_{buy})} & \text{if currency is UZS} \\
 \frac{P_{buy}}{\text{usd\_rmb\_rate}} & \text{if currency is RMB/CNY} \\
@@ -34,7 +36,7 @@ P_{buy} & \text{if currency is USD} \\
 $$P_{UZS} = P_{USD} \times R_{USD}(d_{buy})$$
 
 #### Sell Price Conversion to USD ($S_{USD}$):
-$$S_{USD} = \begin{cases} 
+$$S_{USD} = \begin{cases}
 S_{sell} & \text{if currency is USD} \\
 \frac{S_{sell}}{R_{USD}(d_{sell})} & \text{if currency is UZS} \\
 \frac{S_{sell}}{\text{usd\_rmb\_rate}} & \text{if currency is RMB/CNY} \\
@@ -262,3 +264,4 @@ The system automatically fetches and caches daily exchange rates from the Centra
 - **Historical Archive Rates**: `https://cbu.uz/uz/arkhiv-kursov-valyut/json/all/YYYY-MM-DD/`
 
 Historical rates fetched from CBU are automatically cached in Redis and persisted in the local `currency_rates` table to maximize performance and ensure offline resilience.
+$$

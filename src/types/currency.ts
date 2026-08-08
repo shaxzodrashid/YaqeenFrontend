@@ -4,11 +4,11 @@ export type SupportedCurrency = 'UZS' | 'USD' | 'RUB' | 'RMB' | 'CNY';
 /** CBU Exchange Rate Snapshot for a single currency */
 export interface CbuRateItem {
   currency: SupportedCurrency;
-  code: string;       // e.g. "840" for USD, "643" for RUB, "860" for UZS, "156" for CNY
-  nominal: number;    // Usually 1
-  rate: number;       // Exchange rate in UZS (e.g. 12850.0 for USD)
-  diff: number;       // Rate difference compared to previous day
-  date: string;       // Rate publication date (e.g. "23.07.2026")
+  code: string; // e.g. "840" for USD, "643" for RUB, "860" for UZS, "156" for CNY
+  nominal: number; // Usually 1
+  rate: number; // Exchange rate in UZS (e.g. 12850.0 for USD)
+  diff: number; // Rate difference compared to previous day
+  date: string; // Rate publication date (e.g. "23.07.2026")
 }
 
 /** Response structure for GET /currency/rates */

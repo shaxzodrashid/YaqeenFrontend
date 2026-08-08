@@ -197,10 +197,14 @@ function getDemoTopPerformers(): DashboardTopPerformersResponse {
 }
 
 export const dashboardApi = {
-  getSalesProgress: async (params?: DashboardFilterParams): Promise<DashboardSalesProgressResponse> => {
+  getSalesProgress: async (
+    params?: DashboardFilterParams
+  ): Promise<DashboardSalesProgressResponse> => {
     try {
       const q = buildQueryString(params);
-      return await request<DashboardSalesProgressResponse>(`/dashboard/sales-progress${q}`, { method: 'GET' });
+      return await request<DashboardSalesProgressResponse>(`/dashboard/sales-progress${q}`, {
+        method: 'GET',
+      });
     } catch {
       return getDemoSalesProgress(params?.period);
     }
@@ -215,19 +219,28 @@ export const dashboardApi = {
     }
   },
 
-  getCargoDistribution: async (params?: DashboardFilterParams): Promise<DashboardCargoDistributionResponse> => {
+  getCargoDistribution: async (
+    params?: DashboardFilterParams
+  ): Promise<DashboardCargoDistributionResponse> => {
     try {
       const q = buildQueryString(params);
-      return await request<DashboardCargoDistributionResponse>(`/dashboard/cargo-distribution${q}`, { method: 'GET' });
+      return await request<DashboardCargoDistributionResponse>(
+        `/dashboard/cargo-distribution${q}`,
+        { method: 'GET' }
+      );
     } catch {
       return getDemoCargoDistribution();
     }
   },
 
-  getTopPerformers: async (params?: DashboardFilterParams): Promise<DashboardTopPerformersResponse> => {
+  getTopPerformers: async (
+    params?: DashboardFilterParams
+  ): Promise<DashboardTopPerformersResponse> => {
     try {
       const q = buildQueryString(params);
-      return await request<DashboardTopPerformersResponse>(`/dashboard/top-performers${q}`, { method: 'GET' });
+      return await request<DashboardTopPerformersResponse>(`/dashboard/top-performers${q}`, {
+        method: 'GET',
+      });
     } catch {
       return getDemoTopPerformers();
     }

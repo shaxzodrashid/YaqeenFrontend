@@ -10,11 +10,7 @@ interface TelegramButtonProps {
   isPending?: boolean;
 }
 
-export function TelegramButton({ 
-  onPress, 
-  text, 
-  isPending = false 
-}: TelegramButtonProps) {
+export function TelegramButton({ onPress, text, isPending = false }: TelegramButtonProps) {
   const { t } = useTranslation();
   const [internalPending, setInternalPending] = useState(false);
 
@@ -40,10 +36,13 @@ export function TelegramButton({
       {activePending ? (
         <Spinner size="sm" color="current" className="text-brand-navy dark:text-neutral-200" />
       ) : (
-        <Icon icon="logos:telegram" className="size-5 group-hover:scale-110 transition-transform duration-200" />
+        <Icon
+          icon="logos:telegram"
+          className="size-5 group-hover:scale-110 transition-transform duration-200"
+        />
       )}
       <span className="text-sm font-semibold tracking-wide">
-        {activePending ? t('btnConnectingTelegram') : (text || t('btnContinueTelegram'))}
+        {activePending ? t('btnConnectingTelegram') : text || t('btnContinueTelegram')}
       </span>
       {!activePending && (
         <ArrowRight className="absolute right-4 size-4 text-brand-gold opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />

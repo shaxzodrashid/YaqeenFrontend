@@ -20,13 +20,13 @@ The visual system is built around three complementary ideas:
 
 Use these attributes to evaluate visual and verbal decisions.
 
-| Attribute | The interface should feel | It should not feel |
-|---|---|---|
-| Calm | composed, ordered, spacious | empty, passive, emotionless |
-| Trustworthy | stable, explicit, legible | bureaucratic, rigid, intimidating |
-| Refined | polished, restrained, deliberate | luxurious for its own sake |
-| Modern | responsive, efficient, clean | trendy, temporary, generic |
-| Rooted | culturally aware, meaningful | themed, stereotypical, decorative |
+| Attribute   | The interface should feel        | It should not feel                |
+| ----------- | -------------------------------- | --------------------------------- |
+| Calm        | composed, ordered, spacious      | empty, passive, emotionless       |
+| Trustworthy | stable, explicit, legible        | bureaucratic, rigid, intimidating |
+| Refined     | polished, restrained, deliberate | luxurious for its own sake        |
+| Modern      | responsive, efficient, clean     | trendy, temporary, generic        |
+| Rooted      | culturally aware, meaningful     | themed, stereotypical, decorative |
 
 ## Brand Voice
 
@@ -168,12 +168,12 @@ No text, border, icon, crop, or decorative motif may enter the clear-space area.
 
 **Standardized production rule**
 
-| Asset | Digital minimum | Print minimum |
-|---|---:|---:|
-| Symbol only | 24 px high | 8 mm high |
-| Horizontal lockup | 120 px wide | 32 mm wide |
-| Stacked lockup | 96 px wide | 26 mm wide |
-| App icon artwork | 64 px canvas minimum | Not applicable |
+| Asset             |      Digital minimum |  Print minimum |
+| ----------------- | -------------------: | -------------: |
+| Symbol only       |           24 px high |      8 mm high |
+| Horizontal lockup |          120 px wide |     32 mm wide |
+| Stacked lockup    |           96 px wide |     26 mm wide |
+| App icon artwork  | 64 px canvas minimum | Not applicable |
 
 At small sizes, use a simplified symbol asset if the internal calligraphic detail becomes unclear.
 

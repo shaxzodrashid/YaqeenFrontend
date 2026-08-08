@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Package,
-  Calculator,
-  Truck,
-  Crown,
-  Target,
-  Receipt,
-  RotateCcw,
-  Award,
-} from 'lucide-react';
+import { Package, Calculator, Truck, Crown, Target, Receipt, RotateCcw, Award } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
@@ -44,7 +35,11 @@ export function CargoKpiPage() {
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
 
   const tabs: { id: CargoTabId; labelKey: string; icon: React.ReactNode }[] = [
-    { id: 'container-tracking', labelKey: 'tabContainerTracking', icon: <Truck className="size-4" /> },
+    {
+      id: 'container-tracking',
+      labelKey: 'tabContainerTracking',
+      icon: <Truck className="size-4" />,
+    },
     { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
     { id: 'ltl-kpi', labelKey: 'tabLtlKpi', icon: <Package className="size-4" /> },
     { id: 'ftl-kpi', labelKey: 'tabFtlKpi', icon: <Truck className="size-4" /> },
@@ -57,7 +52,10 @@ export function CargoKpiPage() {
   const handleGlobalReset = async () => {
     try {
       await cargoKpiApi.resetAll();
-      showNotification(t('successResetCompleted') || 'Global reset completed successfully', 'success');
+      showNotification(
+        t('successResetCompleted') || 'Global reset completed successfully',
+        'success'
+      );
       // Trigger re-render of current tab by re-setting active tab or triggering window event
       window.dispatchEvent(new Event('yaqeen_cargo_reset'));
     } catch (err: any) {
@@ -112,7 +110,9 @@ export function CargoKpiPage() {
               title={t('btnResetAll') || 'Global reset'}
             >
               <RotateCcw className="size-3.5 sm:size-4 shrink-0" />
-              <span className="hidden sm:inline"><T k="btnResetAll" /></span>
+              <span className="hidden sm:inline">
+                <T k="btnResetAll" />
+              </span>
               <span className="sm:hidden">Reset</span>
             </button>
           </div>

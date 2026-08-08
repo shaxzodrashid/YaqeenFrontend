@@ -237,5 +237,3 @@ export const api = {
   commercialOffers: commercialOffersApi,
   dashboard: dashboardApi,
 };
-
-

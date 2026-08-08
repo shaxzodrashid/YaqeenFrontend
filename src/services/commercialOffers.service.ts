@@ -1,9 +1,4 @@
-import {
-  request,
-  requestNoContent,
-  makeApiError,
-  registerDemoHandler,
-} from './httpClient';
+import { request, requestNoContent, makeApiError, registerDemoHandler } from './httpClient';
 import type {
   CommercialOffer,
   CommercialOfferStatus,
@@ -36,7 +31,7 @@ export const demoCommercialOffersDb: CommercialOffer[] = [
     terms: '50% advance upon contract signing, 50% upon arrival at Shanghai station',
     status: 'draft',
     created_by: 'aa111111-1111-1111-1111-111111111111',
-    creator_name: 'Jasur Yo\'ldoshev',
+    creator_name: "Jasur Yo'ldoshev",
     created_at: '2026-07-28T10:00:00.000Z',
     updated_at: '2026-07-28T10:00:00.000Z',
   },
@@ -58,7 +53,7 @@ export const demoCommercialOffersDb: CommercialOffer[] = [
     terms: '30% advance, 70% letter of credit',
     status: 'sent',
     created_by: 'aa111111-1111-1111-1111-111111111111',
-    creator_name: 'Jasur Yo\'ldoshev',
+    creator_name: "Jasur Yo'ldoshev",
     created_at: '2026-07-27T14:30:00.000Z',
     updated_at: '2026-07-27T15:10:00.000Z',
   },
@@ -124,14 +119,17 @@ export const demoCommercialOffersDb: CommercialOffer[] = [
     terms: 'Payment within 10 days of delivery',
     status: 'accepted',
     created_by: 'aa111111-1111-1111-1111-111111111111',
-    creator_name: 'Jasur Yo\'ldoshev',
+    creator_name: "Jasur Yo'ldoshev",
     created_at: '2026-07-20T11:00:00.000Z',
     updated_at: '2026-07-21T14:10:00.000Z',
   },
 ];
 
 // Helper to validate state machine transitions according to API doc Section 3
-export function validateOfferStatusTransition(currentStatus: CommercialOfferStatus, targetStatus: CommercialOfferStatus): boolean {
+export function validateOfferStatusTransition(
+  currentStatus: CommercialOfferStatus,
+  targetStatus: CommercialOfferStatus
+): boolean {
   if (currentStatus === targetStatus) return true;
   if (currentStatus === 'draft') {
     return ['sent', 'accepted', 'rejected'].includes(targetStatus);
@@ -166,7 +164,10 @@ function generateOfferNumber(): string {
 // Demo Handler Registration
 registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // 1. GET /commercial-offers/stats/summary
-  if (path === '/commercial-offers/stats/summary' && (options.method === 'GET' || !options.method)) {
+  if (
+    path === '/commercial-offers/stats/summary' &&
+    (options.method === 'GET' || !options.method)
+  ) {
     const total_offers = demoCommercialOffersDb.length;
     const by_status = {
       draft: demoCommercialOffersDb.filter((o) => o.status === 'draft').length,
@@ -190,7 +191,10 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // 2. GET /commercial-offers (Paginated List & Filters)
-  if ((path === '/commercial-offers' || path.startsWith('/commercial-offers?')) && (options.method === 'GET' || !options.method)) {
+  if (
+    (path === '/commercial-offers' || path.startsWith('/commercial-offers?')) &&
+    (options.method === 'GET' || !options.method)
+  ) {
     const urlObj = new URL(path, 'http://localhost');
     const search = urlObj.searchParams.get('search')?.toLowerCase() || '';
     const statusParam = urlObj.searchParams.get('status');
@@ -261,7 +265,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // 3. GET /commercial-offers/:id/pdf
-  if (path.startsWith('/commercial-offers/') && path.endsWith('/pdf') && (options.method === 'GET' || !options.method)) {
+  if (
+    path.startsWith('/commercial-offers/') &&
+    path.endsWith('/pdf') &&
+    (options.method === 'GET' || !options.method)
+  ) {
     const parts = path.split('/');
     const offerId = parts[2];
     const offer = demoCommercialOffersDb.find((o) => o.id === offerId);
@@ -274,7 +282,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // 4. GET /commercial-offers/:id
-  if (path.startsWith('/commercial-offers/') && (options.method === 'GET' || !options.method) && !path.includes('/stats/')) {
+  if (
+    path.startsWith('/commercial-offers/') &&
+    (options.method === 'GET' || !options.method) &&
+    !path.includes('/stats/')
+  ) {
     const offerId = path.split('/')[2];
     const offer = demoCommercialOffersDb.find((o) => o.id === offerId);
     if (!offer) {
@@ -285,8 +297,20 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // 5. POST /commercial-offers (Create Offer)
   if (path === '/commercial-offers' && options.method === 'POST') {
-    if (!body.client_name || !body.client_company || !body.origin || !body.destination || body.price_usd === undefined || body.price_local === undefined) {
-      throw makeApiError(path, 400, 'validation_failed', 'client_name, client_company, origin, destination, price_usd, and price_local are required.');
+    if (
+      !body.client_name ||
+      !body.client_company ||
+      !body.origin ||
+      !body.destination ||
+      body.price_usd === undefined ||
+      body.price_local === undefined
+    ) {
+      throw makeApiError(
+        path,
+        400,
+        'validation_failed',
+        'client_name, client_company, origin, destination, price_usd, and price_local are required.'
+      );
     }
 
     const newOffer: CommercialOffer = {
@@ -317,7 +341,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // 6. POST /commercial-offers/:id/duplicate
-  if (path.startsWith('/commercial-offers/') && path.endsWith('/duplicate') && options.method === 'POST') {
+  if (
+    path.startsWith('/commercial-offers/') &&
+    path.endsWith('/duplicate') &&
+    options.method === 'POST'
+  ) {
     const parts = path.split('/');
     const offerId = parts[2];
     const source = demoCommercialOffersDb.find((o) => o.id === offerId);
@@ -339,7 +367,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // 7. PATCH /commercial-offers/:id/status
-  if (path.startsWith('/commercial-offers/') && path.endsWith('/status') && options.method === 'PATCH') {
+  if (
+    path.startsWith('/commercial-offers/') &&
+    path.endsWith('/status') &&
+    options.method === 'PATCH'
+  ) {
     const parts = path.split('/');
     const offerId = parts[2];
     const index = demoCommercialOffersDb.findIndex((o) => o.id === offerId);
@@ -382,12 +414,16 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       ...current,
       client_id: body.client_id !== undefined ? body.client_id : current.client_id,
       client_name: body.client_name !== undefined ? body.client_name : current.client_name,
-      client_company: body.client_company !== undefined ? body.client_company : current.client_company,
+      client_company:
+        body.client_company !== undefined ? body.client_company : current.client_company,
       origin: body.origin !== undefined ? body.origin : current.origin,
       destination: body.destination !== undefined ? body.destination : current.destination,
-      cargo_description: body.cargo_description !== undefined ? body.cargo_description : current.cargo_description,
-      cargo_weight: body.cargo_weight !== undefined ? Number(body.cargo_weight) : current.cargo_weight,
-      cargo_volume: body.cargo_volume !== undefined ? Number(body.cargo_volume) : current.cargo_volume,
+      cargo_description:
+        body.cargo_description !== undefined ? body.cargo_description : current.cargo_description,
+      cargo_weight:
+        body.cargo_weight !== undefined ? Number(body.cargo_weight) : current.cargo_weight,
+      cargo_volume:
+        body.cargo_volume !== undefined ? Number(body.cargo_volume) : current.cargo_volume,
       price_usd: body.price_usd !== undefined ? Number(body.price_usd) : current.price_usd,
       price_local: body.price_local !== undefined ? Number(body.price_local) : current.price_local,
       inclusions: body.inclusions !== undefined ? body.inclusions : current.inclusions,
@@ -429,11 +465,13 @@ export const commercialOffersApi = {
     if (params?.date_from) searchParams.set('date_from', params.date_from);
     if (params?.date_to) searchParams.set('date_to', params.date_to);
     const query = searchParams.toString();
-    return request<CommercialOfferPaginatedResponse>(`/commercial-offers${query ? `?${query}` : ''}`, { method: 'GET' });
+    return request<CommercialOfferPaginatedResponse>(
+      `/commercial-offers${query ? `?${query}` : ''}`,
+      { method: 'GET' }
+    );
   },
 
-  get: (id: string) =>
-    request<CommercialOffer>(`/commercial-offers/${id}`, { method: 'GET' }),
+  get: (id: string) => request<CommercialOffer>(`/commercial-offers/${id}`, { method: 'GET' }),
 
   create: (dto: CreateCommercialOfferDto) =>
     request<CommercialOffer>('/commercial-offers', {
@@ -462,6 +500,5 @@ export const commercialOffersApi = {
     return request<Blob>(`/commercial-offers/${id}/pdf`, { method: 'GET' });
   },
 
-  delete: (id: string) =>
-    requestNoContent(`/commercial-offers/${id}`, { method: 'DELETE' }),
+  delete: (id: string) => requestNoContent(`/commercial-offers/${id}`, { method: 'DELETE' }),
 };

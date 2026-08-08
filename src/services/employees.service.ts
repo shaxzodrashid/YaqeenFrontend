@@ -58,8 +58,11 @@ export interface Employee {
   user_role?: string;
   user_status?: string;
   role_id?: string;
-  permissions?: Record<string, { create: boolean; read: boolean; update: boolean; delete: boolean }>;
-  
+  permissions?: Record<
+    string,
+    { create: boolean; read: boolean; update: boolean; delete: boolean }
+  >;
+
   // New Calculated Metrics
   tushum?: EmployeeTushum;
   reja_fakt?: EmployeeRejaFakt;
@@ -78,9 +81,15 @@ export interface Employee {
       display_name: string;
       description?: string | null;
       is_system?: boolean;
-      permissions?: Record<string, { create: boolean; read: boolean; update: boolean; delete: boolean }>;
+      permissions?: Record<
+        string,
+        { create: boolean; read: boolean; update: boolean; delete: boolean }
+      >;
     };
-    permissions?: Record<string, { create: boolean; read: boolean; update: boolean; delete: boolean }>;
+    permissions?: Record<
+      string,
+      { create: boolean; read: boolean; update: boolean; delete: boolean }
+    >;
   };
   employee?: {
     id: string;
@@ -435,7 +444,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   if (/^\/departments\/[^/]+$/.test(path) && method === 'DELETE') {
     const deptId = path.split('/departments/')[1];
     // Check if any employees belong to this department
-    const hasEmployees = Array.from(demoEmployeesDb.values()).some((emp) => emp.department_id === deptId);
+    const hasEmployees = Array.from(demoEmployeesDb.values()).some(
+      (emp) => emp.department_id === deptId
+    );
     if (hasEmployees) {
       throw makeApiError(path, 400, 'department_has_employees', 'Department has employees');
     }
@@ -521,7 +532,12 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // GET /employees/:id
-  if (/^\/employees\/[^/]+$/.test(path) && method === 'GET' && !path.includes('/me') && !path.includes('/picture')) {
+  if (
+    /^\/employees\/[^/]+$/.test(path) &&
+    method === 'GET' &&
+    !path.includes('/me') &&
+    !path.includes('/picture')
+  ) {
     const empId = path.split('/employees/')[1];
     const emp = demoEmployeesDb.get(empId);
     if (emp) {
@@ -530,8 +546,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // POST /employees/me/picture or POST /employees/:id/picture
-  if ((path === '/employees/me/picture' || /^\/employees\/[^/]+\/picture$/.test(path)) && method === 'POST') {
-    const empId = path === '/employees/me/picture' ? '1d63b635-8933-45d1-a233-d6902e3b27f1' : path.split('/')[2];
+  if (
+    (path === '/employees/me/picture' || /^\/employees\/[^/]+\/picture$/.test(path)) &&
+    method === 'POST'
+  ) {
+    const empId =
+      path === '/employees/me/picture'
+        ? '1d63b635-8933-45d1-a233-d6902e3b27f1'
+        : path.split('/')[2];
     const emp = demoEmployeesDb.get(empId) || {
       id: empId,
       first_name: 'User',
@@ -549,7 +571,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       updated_at: new Date().toISOString(),
     };
 
-    let simulatedUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+    let simulatedUrl =
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
     if (options.body instanceof FormData) {
       const file = options.body.get('file');
       if (file instanceof File) {
@@ -557,7 +580,12 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           throw makeApiError(path, 400, 'file_too_large', 'File size exceeds 5MB limit.');
         }
         if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-          throw makeApiError(path, 400, 'invalid_image_type', 'Invalid image type. Allowed: JPEG, PNG, WEBP, GIF.');
+          throw makeApiError(
+            path,
+            400,
+            'invalid_image_type',
+            'Invalid image type. Allowed: JPEG, PNG, WEBP, GIF.'
+          );
         }
         simulatedUrl = URL.createObjectURL(file);
       }
@@ -573,8 +601,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // DELETE /employees/me/picture or DELETE /employees/:id/picture
-  if ((path === '/employees/me/picture' || /^\/employees\/[^/]+\/picture$/.test(path)) && method === 'DELETE') {
-    const empId = path === '/employees/me/picture' ? '1d63b635-8933-45d1-a233-d6902e3b27f1' : path.split('/')[2];
+  if (
+    (path === '/employees/me/picture' || /^\/employees\/[^/]+\/picture$/.test(path)) &&
+    method === 'DELETE'
+  ) {
+    const empId =
+      path === '/employees/me/picture'
+        ? '1d63b635-8933-45d1-a233-d6902e3b27f1'
+        : path.split('/')[2];
     const emp = demoEmployeesDb.get(empId) || {
       id: empId,
       first_name: 'User',
@@ -606,26 +640,23 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
 // Departments API
 export const departmentsApi = {
-  list: () =>
-    request<Department[]>('/departments', { method: 'GET' }),
+  list: () => request<Department[]>('/departments', { method: 'GET' }),
 
-  get: (id: string) =>
-    request<Department>(`/departments/${id}`, { method: 'GET' }),
+  get: (id: string) => request<Department>(`/departments/${id}`, { method: 'GET' }),
 
   create: (dto: CreateDepartmentDto) =>
     request<Department>('/departments', {
       method: 'POST',
-      body: JSON.stringify(dto)
+      body: JSON.stringify(dto),
     }),
 
   update: (id: string, dto: CreateDepartmentDto) =>
     request<Department>(`/departments/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(dto)
+      body: JSON.stringify(dto),
     }),
 
-  delete: (id: string) =>
-    requestNoContent(`/departments/${id}`, { method: 'DELETE' })
+  delete: (id: string) => requestNoContent(`/departments/${id}`, { method: 'DELETE' }),
 };
 
 let cachedMePromise: Promise<Employee> | null = null;
@@ -655,8 +686,7 @@ export const employeesApi = {
     });
   },
 
-  deleteMyPicture: () =>
-    request<Employee>('/employees/me/picture', { method: 'DELETE' }),
+  deleteMyPicture: () => request<Employee>('/employees/me/picture', { method: 'DELETE' }),
 
   uploadPicture: (id: string, file: File) => {
     const formData = new FormData();
@@ -677,25 +707,24 @@ export const employeesApi = {
     if (params?.search) searchParams.set('search', params.search);
     if (params?.department_id) searchParams.set('department_id', params.department_id);
     const query = searchParams.toString();
-    return request<PaginatedResponse<Employee>>(`/employees${query ? `?${query}` : ''}`, { method: 'GET' });
+    return request<PaginatedResponse<Employee>>(`/employees${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
   },
 
-  get: (id: string) =>
-    request<Employee>(`/employees/${id}`, { method: 'GET' }),
+  get: (id: string) => request<Employee>(`/employees/${id}`, { method: 'GET' }),
 
   create: (dto: CreateEmployeeDto) =>
     request<Employee>('/employees', {
       method: 'POST',
-      body: JSON.stringify(dto)
+      body: JSON.stringify(dto),
     }),
 
   update: (id: string, dto: UpdateEmployeeDto) =>
     request<Employee>(`/employees/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(dto)
+      body: JSON.stringify(dto),
     }),
 
-  delete: (id: string) =>
-    requestNoContent(`/employees/${id}`, { method: 'DELETE' })
+  delete: (id: string) => requestNoContent(`/employees/${id}`, { method: 'DELETE' }),
 };
-

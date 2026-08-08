@@ -57,17 +57,53 @@ export interface UpdateRoleDto {
 
 // Fallback Taxonomy (11 Core Modules)
 export const DEFAULT_SYSTEM_MODULES: SystemModule[] = [
-  { module: 'clients', label: 'Clients Management', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'employees', label: 'Employee Management', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'departments', label: 'Department Management', actions: ['create', 'read', 'update', 'delete'] },
+  {
+    module: 'clients',
+    label: 'Clients Management',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'employees',
+    label: 'Employee Management',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'departments',
+    label: 'Department Management',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
   { module: 'cargo_kpi', label: 'Cargo KPI', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'cargo_registrations', label: 'Cargo Registrations', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'finance', label: 'Finance & Expenses', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'commercial_offers', label: 'Commercial Offers', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'tasks', label: 'Kanban Tasks & Board', actions: ['create', 'read', 'update', 'delete'] },
+  {
+    module: 'cargo_registrations',
+    label: 'Cargo Registrations',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'finance',
+    label: 'Finance & Expenses',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'commercial_offers',
+    label: 'Commercial Offers',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'tasks',
+    label: 'Kanban Tasks & Board',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
   { module: 'currency', label: 'Currency Rates', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'attachments', label: 'Attachments & Documents', actions: ['create', 'read', 'update', 'delete'] },
-  { module: 'roles', label: 'Role & Permissions Management', actions: ['create', 'read', 'update', 'delete'] },
+  {
+    module: 'attachments',
+    label: 'Attachments & Documents',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'roles',
+    label: 'Role & Permissions Management',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
 ];
 
 // Fallback Demo System Roles

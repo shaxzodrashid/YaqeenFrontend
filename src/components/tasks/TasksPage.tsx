@@ -15,13 +15,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { T } from '../T';
 import { api } from '../../services/api';
-import type {
-  KanbanBoard,
-  KanbanColumn,
-  Task,
-  Employee,
-  TaskPriority,
-} from '../../services/api';
+import type { KanbanBoard, KanbanColumn, Task, Employee, TaskPriority } from '../../services/api';
 import { KanbanBoardView } from './KanbanBoardView';
 import { BoardModal } from './BoardModal';
 import { ColumnModal } from './ColumnModal';
@@ -37,7 +31,9 @@ export function TasksPage() {
   const [boards, setBoards] = useState<KanbanBoard[]>([]);
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [activeBoard, setActiveBoard] = useState<KanbanBoard | null>(null);
-  const [columnMetricsMap, setColumnMetricsMap] = useState<Record<string, { total_tasks: number; loaded_tasks: number }>>({});
+  const [columnMetricsMap, setColumnMetricsMap] = useState<
+    Record<string, { total_tasks: number; loaded_tasks: number }>
+  >({});
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -79,7 +75,8 @@ export function TasksPage() {
     if (priorityFilter !== 'ALL') params.priority = priorityFilter;
     if (assigneeFilter !== 'ALL') params.assignee_id = assigneeFilter;
 
-    api.tasks.listTasks(params)
+    api.tasks
+      .listTasks(params)
       .then((tasks) => {
         if (isMounted) {
           setSearchResults(tasks);
@@ -161,7 +158,7 @@ export function TasksPage() {
           Object.entries(viewable.meta.column_counts).forEach(([colId, count]) => {
             map[colId] = {
               total_tasks: count,
-              loaded_tasks: (data.columns?.find(c => c.id === colId)?.tasks || []).length,
+              loaded_tasks: (data.columns?.find((c) => c.id === colId)?.tasks || []).length,
             };
           });
           setColumnMetricsMap(map);
@@ -176,13 +173,16 @@ export function TasksPage() {
 
   // Load employees list for assignees selector
   useEffect(() => {
-    api.employees.list().then((res: any) => {
-      if (Array.isArray(res)) {
-        setEmployees(res);
-      } else if (res?.items) {
-        setEmployees(res.items);
-      }
-    }).catch(console.error);
+    api.employees
+      .list()
+      .then((res: any) => {
+        if (Array.isArray(res)) {
+          setEmployees(res);
+        } else if (res?.items) {
+          setEmployees(res.items);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -473,7 +473,9 @@ export function TasksPage() {
             }`}
           >
             <Kanban className="size-3.5" />
-            <span><T k="taskViewBoard" /></span>
+            <span>
+              <T k="taskViewBoard" />
+            </span>
           </button>
           <button
             type="button"
@@ -485,7 +487,9 @@ export function TasksPage() {
             }`}
           >
             <TableIcon className="size-3.5" />
-            <span><T k="taskViewTable" /></span>
+            <span>
+              <T k="taskViewTable" />
+            </span>
           </button>
           <button
             type="button"
@@ -497,7 +501,9 @@ export function TasksPage() {
             }`}
           >
             <Grid className="size-3.5" />
-            <span><T k="taskViewMatrix" /></span>
+            <span>
+              <T k="taskViewMatrix" />
+            </span>
           </button>
         </div>
       </div>
@@ -512,7 +518,9 @@ export function TasksPage() {
         <div className="p-12 text-center border-2 border-dashed border-border rounded-2xl bg-surface/40 flex flex-col items-center justify-center gap-3">
           <Kanban className="size-12 text-muted" />
           <h3 className="text-base font-bold text-foreground">No Boards Found</h3>
-          <p className="text-xs text-muted">Create your first Kanban board to start managing tasks.</p>
+          <p className="text-xs text-muted">
+            Create your first Kanban board to start managing tasks.
+          </p>
           {canCreate('tasks') && (
             <Button
               onClick={() => {

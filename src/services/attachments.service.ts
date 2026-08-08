@@ -1,4 +1,11 @@
-import { request, requestNoContent, isDemoMode, BASE_URL, tokenStore, registerDemoHandler } from './httpClient';
+import {
+  request,
+  requestNoContent,
+  isDemoMode,
+  BASE_URL,
+  tokenStore,
+  registerDemoHandler,
+} from './httpClient';
 import type { Attachment } from './httpClient';
 
 export const demoAttachmentsDb: Attachment[] = [
@@ -8,7 +15,7 @@ export const demoAttachmentsDb: Attachment[] = [
     entity_id: '1d63b635-8933-45d1-a233-d6902e3b27f1',
     file_name: 'Employment_Contract_Rashidov.pdf',
     file_path: 'employee/1d63b635-8933-45d1-a233-d6902e3b27f1/contract.pdf',
-    mime_type: 'application/pdf'
+    mime_type: 'application/pdf',
   },
   {
     id: 'demo-attach-2',
@@ -16,7 +23,7 @@ export const demoAttachmentsDb: Attachment[] = [
     entity_id: '1d63b635-8933-45d1-a233-d6902e3b27f1',
     file_name: 'Passport_Scan.jpg',
     file_path: 'employee/1d63b635-8933-45d1-a233-d6902e3b27f1/passport.jpg',
-    mime_type: 'image/jpeg'
+    mime_type: 'image/jpeg',
   },
   {
     id: 'demo-attach-3',
@@ -24,7 +31,7 @@ export const demoAttachmentsDb: Attachment[] = [
     entity_id: 'c-client-1',
     file_name: 'Jasur_Yoldoshev_Passport.pdf',
     file_path: 'client/c-client-1/passport.pdf',
-    mime_type: 'application/pdf'
+    mime_type: 'application/pdf',
   },
   {
     id: 'demo-attach-4',
@@ -32,12 +39,17 @@ export const demoAttachmentsDb: Attachment[] = [
     entity_id: 'c-client-1',
     file_name: 'Global_Cargo_Logistics_Contract_2026.pdf',
     file_path: 'client/c-client-1/contract.pdf',
-    mime_type: 'application/pdf'
-  }
+    mime_type: 'application/pdf',
+  },
 ];
 
-export function getDemoAttachments(entityType: 'employee' | 'client', entityId: string): Attachment[] {
-  return demoAttachmentsDb.filter(att => att.entity_type === entityType && att.entity_id === entityId);
+export function getDemoAttachments(
+  entityType: 'employee' | 'client',
+  entityId: string
+): Attachment[] {
+  return demoAttachmentsDb.filter(
+    (att) => att.entity_type === entityType && att.entity_id === entityId
+  );
 }
 
 // Register demo handler for attachments
@@ -51,13 +63,18 @@ registerDemoHandler((path: string, options: RequestInit) => {
     const parts = path.split('/');
     const rawType = parts[3];
     // Map plural backend types back to singular for local demo DB
-    const entityType = (rawType === 'employees' || rawType === 'employee') ? 'employee' : 'client';
+    const entityType = rawType === 'employees' || rawType === 'employee' ? 'employee' : 'client';
     const entityId = parts[4] || '';
     return {
       handled: true,
       result: demoAttachmentsDb.filter(
-        (att) => att.entity_id === entityId && (att.entity_type === entityType || (entityType === 'employee' ? att.entity_type === 'employees' : att.entity_type === 'clients'))
-      )
+        (att) =>
+          att.entity_id === entityId &&
+          (att.entity_type === entityType ||
+            (entityType === 'employee'
+              ? att.entity_type === 'employees'
+              : att.entity_type === 'clients'))
+      ),
     };
   }
 
@@ -77,7 +94,7 @@ registerDemoHandler((path: string, options: RequestInit) => {
       rawType = (options.body.get('entity_type') as string) || 'employee';
     }
 
-    const entityType = (rawType === 'employees' || rawType === 'employee') ? 'employee' : 'client';
+    const entityType = rawType === 'employees' || rawType === 'employee' ? 'employee' : 'client';
 
     const newAttachment: Attachment = {
       id: 'demo-attach-' + Math.random().toString(36).substring(2, 11),
@@ -93,7 +110,7 @@ registerDemoHandler((path: string, options: RequestInit) => {
 
   if (path.startsWith('/attachments/') && options.method === 'DELETE') {
     const attachId = path.split('/').pop() || '';
-    const index = demoAttachmentsDb.findIndex(att => att.id === attachId);
+    const index = demoAttachmentsDb.findIndex((att) => att.id === attachId);
     if (index !== -1) {
       demoAttachmentsDb.splice(index, 1);
     }
@@ -119,7 +136,9 @@ const normalizeAttachment = (att: any): Attachment => {
 export const attachmentsApi = {
   listForEntity: async (entityType: 'employee' | 'client', entityId: string) => {
     const backendType = entityType === 'employee' ? 'employees' : 'clients';
-    const data = await request<Attachment[]>(`/attachments/entity/${backendType}/${entityId}`, { method: 'GET' });
+    const data = await request<Attachment[]>(`/attachments/entity/${backendType}/${entityId}`, {
+      method: 'GET',
+    });
     return (data || []).map(normalizeAttachment);
   },
 
@@ -131,18 +150,17 @@ export const attachmentsApi = {
     formData.append('entity_id', entityId);
     const data = await request<Attachment>('/attachments/upload', {
       method: 'POST',
-      body: formData
+      body: formData,
     });
     return normalizeAttachment(data);
   },
 
-  delete: (id: string) =>
-    requestNoContent(`/attachments/${id}`, { method: 'DELETE' }),
+  delete: (id: string) => requestNoContent(`/attachments/${id}`, { method: 'DELETE' }),
 
   download: async (id: string): Promise<Blob> => {
     if (isDemoMode()) {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const attachment = demoAttachmentsDb.find(att => att.id === id);
+      const attachment = demoAttachmentsDb.find((att) => att.id === id);
       const content = `Simulated secure content for document: ${attachment?.file_name || 'Doc'}`;
       return new Blob([content], { type: attachment?.mime_type || 'text/plain' });
     }
@@ -158,5 +176,5 @@ export const attachmentsApi = {
       throw new Error('Download failed');
     }
     return response.blob();
-  }
+  },
 };

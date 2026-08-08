@@ -50,11 +50,11 @@ Extension:
 
 ## Sizes
 
-| Size | Height | Horizontal Padding | Label | Icon |
-|---|---:|---:|---|---:|
-| Small | 36 px | 16 px | 13/18, 600 | 16 px |
-| Medium | 44 px | 20 px | 14/20, 600 | 20 px |
-| Large | 52 px | 24 px | 16/24, 600 | 20 px |
+| Size   | Height | Horizontal Padding | Label      |  Icon |
+| ------ | -----: | -----------------: | ---------- | ----: |
+| Small  |  36 px |              16 px | 13/18, 600 | 16 px |
+| Medium |  44 px |              20 px | 14/20, 600 | 20 px |
+| Large  |  52 px |              24 px | 16/24, 600 | 20 px |
 
 Minimum touch target: 44 × 44 px.
 
@@ -293,13 +293,13 @@ Non-interactive status or count.
 
 ## Recommended Mappings
 
-| Label Type | Treatment |
-|---|---|
-| Active | Royal Blue fill, white text |
-| Premium | Champagne Gold fill, Deep Navy text |
-| New | Light Gray fill, Deep Navy text |
-| Info | White or neutral fill, subtle border |
-| Count | Gold or danger fill depending on meaning |
+| Label Type | Treatment                                |
+| ---------- | ---------------------------------------- |
+| Active     | Royal Blue fill, white text              |
+| Premium    | Champagne Gold fill, Deep Navy text      |
+| New        | Light Gray fill, Deep Navy text          |
+| Info       | White or neutral fill, subtle border     |
+| Count      | Gold or danger fill depending on meaning |
 
 ---
 

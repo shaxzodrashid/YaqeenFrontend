@@ -1,20 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Package,
-  Layers,
-  Percent,
-  RefreshCw,
-  X,
-  CheckCircle,
-  UserCheck,
-} from 'lucide-react';
+import { Package, Layers, Percent, RefreshCw, X, CheckCircle, UserCheck } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
-import {
-  cargoKpiApi,
-  calculateLtlItemBaseRate,
-} from '../../services/cargoKpi.service';
+import { cargoKpiApi, calculateLtlItemBaseRate } from '../../services/cargoKpi.service';
 import type {
   LtlItemsResponse,
   LtlEmployeeSummary,
@@ -49,7 +38,9 @@ export function LtlModuleTab() {
   const [editingItem] = useState<LtlCargoItem | null>(null);
 
   // Modal form states
-  const [selectedEmpId, setSelectedEmpId] = useState<string>('b1a2c3d4-e5f6-7890-abcd-ef1234567890');
+  const [selectedEmpId, setSelectedEmpId] = useState<string>(
+    'b1a2c3d4-e5f6-7890-abcd-ef1234567890'
+  );
   const [volumeStr, setVolumeStr] = useState<string>('10');
   const [weightStr, setWeightStr] = useState<string>('1000');
   const [cargoType, setCargoType] = useState<LtlCargoType>('oddiy');
@@ -72,7 +63,8 @@ export function LtlModuleTab() {
   }, [loadLtlData]);
 
   const handleClearAll = async () => {
-    if (!window.confirm(t('confirmResetLtl') || 'Are you sure you want to clear all LTL items?')) return;
+    if (!window.confirm(t('confirmResetLtl') || 'Are you sure you want to clear all LTL items?'))
+      return;
     try {
       await cargoKpiApi.resetLtlItems();
       showNotification('All LTL cargo items cleared', 'success');
@@ -163,7 +155,8 @@ export function LtlModuleTab() {
       {/* Read-Only Notice Banner */}
       <div className="p-3 px-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center justify-between gap-3">
         <span>
-          <strong>Read-Only View:</strong> Cargo registrations are registered exclusively in the <strong>Cargo Transactions</strong> tab.
+          <strong>Read-Only View:</strong> Cargo registrations are registered exclusively in the{' '}
+          <strong>Cargo Transactions</strong> tab.
         </span>
       </div>
 
@@ -174,13 +167,20 @@ export function LtlModuleTab() {
             <Percent className="size-4 text-brand-gold" />
             Volume Coefficient Scale (Volume_coeff)
           </span>
-          <span className="text-muted-foreground text-[11px]">Final LTL KPI = Total Base KPI × Volume_coeff</span>
+          <span className="text-muted-foreground text-[11px]">
+            Final LTL KPI = Total Base KPI × Volume_coeff
+          </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           {VOLUME_COEFF_TIERS.map((tier, idx) => (
-            <div key={idx} className="p-2 rounded-lg bg-surface border border-border/60 text-center">
+            <div
+              key={idx}
+              className="p-2 rounded-lg bg-surface border border-border/60 text-center"
+            >
               <span className="text-muted-foreground block text-[10px]">{tier.range}</span>
-              <span className="text-xs font-extrabold text-brand-gold mt-0.5 block">{tier.coeff} ({tier.text})</span>
+              <span className="text-xs font-extrabold text-brand-gold mt-0.5 block">
+                {tier.coeff} ({tier.text})
+              </span>
             </div>
           ))}
         </div>
@@ -196,7 +196,9 @@ export function LtlModuleTab() {
         <div className="p-12 rounded-2xl bg-surface border border-border text-center text-muted-foreground">
           <Layers className="size-10 mx-auto mb-3 text-muted-foreground/40" />
           <h4 className="text-sm font-bold text-foreground">No LTL Cargo Items</h4>
-          <p className="text-xs mt-1">Add your first LTL cargo item to see employee volume coefficients and KPI results.</p>
+          <p className="text-xs mt-1">
+            Add your first LTL cargo item to see employee volume coefficients and KPI results.
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -225,7 +227,9 @@ export function LtlModuleTab() {
                 {/* KPI Metrics Chips */}
                 <div className="flex flex-wrap items-center gap-3 text-xs">
                   <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/10">
-                    <span className="text-neutral-400 block text-[10px]">{t('ltlTotalVolume')}</span>
+                    <span className="text-neutral-400 block text-[10px]">
+                      {t('ltlTotalVolume')}
+                    </span>
                     <strong className="text-white text-sm">{emp.total_volume} m³</strong>
                   </div>
                   <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/10">
@@ -233,12 +237,20 @@ export function LtlModuleTab() {
                     <strong className="text-white text-sm">${emp.total_base_kpi}</strong>
                   </div>
                   <div className="px-3 py-1.5 rounded-xl bg-brand-gold/20 border border-brand-gold/40 text-brand-gold">
-                    <span className="text-brand-gold/80 block text-[10px]">{t('ltlVolumeCoeff')}</span>
-                    <strong className="text-brand-gold text-sm">{emp.volume_coefficient_percentage} ({emp.volume_coefficient})</strong>
+                    <span className="text-brand-gold/80 block text-[10px]">
+                      {t('ltlVolumeCoeff')}
+                    </span>
+                    <strong className="text-brand-gold text-sm">
+                      {emp.volume_coefficient_percentage} ({emp.volume_coefficient})
+                    </strong>
                   </div>
                   <div className="px-4 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-                    <span className="text-emerald-300/80 block text-[10px]">{t('ltlFinalKpi')}</span>
-                    <strong className="text-emerald-400 text-base font-black">${emp.final_ltl_kpi}</strong>
+                    <span className="text-emerald-300/80 block text-[10px]">
+                      {t('ltlFinalKpi')}
+                    </span>
+                    <strong className="text-emerald-400 text-base font-black">
+                      ${emp.final_ltl_kpi}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -258,22 +270,29 @@ export function LtlModuleTab() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {emp.items.map((item: LtlCargoItem) => (
-                      <tr key={item.id} className="hover:bg-muted/20 text-foreground transition-colors">
+                      <tr
+                        key={item.id}
+                        className="hover:bg-muted/20 text-foreground transition-colors"
+                      >
                         <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize ${
-                            item.cargo_type === 'lyustra'
-                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                              : item.cargo_type.includes('pod')
-                                ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                                : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                          }`}>
+                          <span
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize ${
+                              item.cargo_type === 'lyustra'
+                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                : item.cargo_type.includes('pod')
+                                  ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                                  : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                            }`}
+                          >
                             {item.cargo_type}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-semibold">{item.volume} m³</td>
                         <td className="px-4 py-3">{item.weight} kg</td>
                         <td className="px-4 py-3 font-mono">{item.density} kg/m³</td>
-                        <td className="px-4 py-3 font-semibold text-brand-gold">${item.base_rate} / m³</td>
+                        <td className="px-4 py-3 font-semibold text-brand-gold">
+                          ${item.base_rate} / m³
+                        </td>
                         <td className="px-4 py-3 font-bold text-foreground">${item.base_kpi}</td>
                         <td className="px-4 py-3 text-right">
                           <span className="text-[10px] font-bold text-muted-foreground px-2 py-0.5 rounded bg-muted">
@@ -394,7 +413,9 @@ export function LtlModuleTab() {
                 <div className="p-3.5 rounded-xl bg-muted/50 border border-border text-xs space-y-1.5">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Calculated Density:</span>
-                    <span className="font-mono font-bold text-foreground">{modalPreview.density} kg/m³</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {modalPreview.density} kg/m³
+                    </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Base Rate:</span>

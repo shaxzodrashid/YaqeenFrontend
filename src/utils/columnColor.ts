@@ -27,13 +27,28 @@ export function saveStoredColumnColor(columnId: string, color: string) {
 export function getDefaultColorByName(name?: string | null): string {
   if (!name) return '#3B82F6';
   const lower = name.toLowerCase();
-  if (lower.includes('done') || lower.includes('complete') || lower.includes('finish') || lower.includes('released')) {
+  if (
+    lower.includes('done') ||
+    lower.includes('complete') ||
+    lower.includes('finish') ||
+    lower.includes('released')
+  ) {
     return '#10B981'; // Emerald Green
   }
-  if (lower.includes('progress') || lower.includes('doing') || lower.includes('working') || lower.includes('active')) {
+  if (
+    lower.includes('progress') ||
+    lower.includes('doing') ||
+    lower.includes('working') ||
+    lower.includes('active')
+  ) {
     return '#F59E0B'; // Amber
   }
-  if (lower.includes('review') || lower.includes('testing') || lower.includes('qa') || lower.includes('audit')) {
+  if (
+    lower.includes('review') ||
+    lower.includes('testing') ||
+    lower.includes('qa') ||
+    lower.includes('audit')
+  ) {
     return '#8B5CF6'; // Purple
   }
   if (lower.includes('backlog') || lower.includes('hold') || lower.includes('pause')) {
@@ -51,7 +66,9 @@ export function getDefaultColorByName(name?: string | null): string {
  * 2. Local storage stored color for column.id
  * 3. Default aim color inferred from column name
  */
-export function getColumnColor(column?: { id?: string; name?: string; color?: string | null } | null): string {
+export function getColumnColor(
+  column?: { id?: string; name?: string; color?: string | null } | null
+): string {
   if (!column) return '#3B82F6';
   if (column.color && column.color !== 'null' && column.color.trim() !== '') {
     return column.color;

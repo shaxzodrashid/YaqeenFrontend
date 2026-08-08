@@ -66,9 +66,7 @@ export const BlurTextAnim: React.FC<BlurTextAnimProps> = ({
 
         // Smooth cubic-bezier easeInOut Easing
         const easedProgress =
-          progress < 0.5
-            ? 2 * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+          progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
         const waveIndex = -(blurSpread + gapSpread) + easedProgress * totalSteps;
 
@@ -168,11 +166,7 @@ export const BlurTextAnim: React.FC<BlurTextAnimProps> = ({
   const defaultClasses = hasWhitespaceClass ? '' : 'whitespace-pre-wrap break-words';
 
   if (!isAnimating) {
-    return (
-      <Component className={`${defaultClasses} ${className}`}>
-        {currText}
-      </Component>
-    );
+    return <Component className={`${defaultClasses} ${className}`}>{currText}</Component>;
   }
 
   // Tokenize target text for proper word-wrapping and multi-line support
@@ -235,10 +229,7 @@ export const BlurTextAnim: React.FC<BlurTextAnimProps> = ({
   flushWord(`w-end-${maxLen}`);
 
   return (
-    <Component
-      ref={containerRef}
-      className={`${defaultClasses} tracking-normal ${className}`}
-    >
+    <Component ref={containerRef} className={`${defaultClasses} tracking-normal ${className}`}>
       {elements}
     </Component>
   );

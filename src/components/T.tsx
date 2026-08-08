@@ -39,14 +39,7 @@ export const T: React.FC<TProps> = ({
     targetText = children;
   }
 
-  return (
-    <BlurTextAnim
-      text={targetText}
-      className={className}
-      duration={duration}
-      as={as}
-    />
-  );
+  return <BlurTextAnim text={targetText} className={className} duration={duration} as={as} />;
 };
 
 export default T;

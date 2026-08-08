@@ -87,7 +87,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text bg-border/20 dark:bg-night-border/40 hover:bg-border/40 rounded-xl transition-colors cursor-pointer"
           >
             <RotateCcw className="size-3.5" />
-            <span><T k="ovReset" /></span>
+            <span>
+              <T k="ovReset" />
+            </span>
           </button>
           <button
             onClick={onRefresh}
@@ -95,7 +97,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-neutral-950 bg-brand-gold hover:bg-brand-gold/90 disabled:opacity-50 rounded-xl transition-all shadow-sm cursor-pointer active:scale-95"
           >
             <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span><T k="ovRefresh" /></span>
+            <span>
+              <T k="ovRefresh" />
+            </span>
           </button>
         </div>
       </div>
@@ -105,7 +109,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/40 dark:border-night-border/40 animate-fadeIn">
           <div className="flex items-center gap-2 text-xs text-muted dark:text-night-muted">
             <Calendar className="size-4 text-brand-gold" />
-            <span className="font-semibold"><T k="ovCustomDateRange" /></span>
+            <span className="font-semibold">
+              <T k="ovCustomDateRange" />
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -167,7 +173,8 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           >
             <option value="">{t('ovAllManagers')}</option>
             {employees.map((emp) => {
-              const empName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone || 'Manager';
+              const empName =
+                `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone || 'Manager';
               return (
                 <option key={emp.id} value={emp.id}>
                   {empName}
@@ -186,7 +193,11 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           >
             <option value="">{t('ovAllClients')}</option>
             {clients.map((cli) => {
-              const cliName = cli.company_name || `${cli.first_name || ''} ${cli.last_name || ''}`.trim() || cli.phone || 'Client';
+              const cliName =
+                cli.company_name ||
+                `${cli.first_name || ''} ${cli.last_name || ''}`.trim() ||
+                cli.phone ||
+                'Client';
               return (
                 <option key={cli.id} value={cli.id}>
                   {cliName}

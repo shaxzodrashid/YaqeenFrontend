@@ -15,10 +15,7 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cargoKpiApi } from '../../services/cargoKpi.service';
-import type {
-  EmployeePlansResponse,
-  EmployeePlanProgress,
-} from '../../services/cargoKpi.service';
+import type { EmployeePlansResponse, EmployeePlanProgress } from '../../services/cargoKpi.service';
 import { formatMoney, type SupportedCurrency } from '../../types/currency';
 import { EmployeeSelect } from './EmployeeSelect';
 
@@ -33,7 +30,9 @@ export function EmployeePlansTab() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingPlan, setEditingPlan] = useState<EmployeePlanProgress | null>(null);
-  const [selectedEmpId, setSelectedEmpId] = useState<string>('b1a2c3d4-e5f6-7890-abcd-ef1234567890');
+  const [selectedEmpId, setSelectedEmpId] = useState<string>(
+    'b1a2c3d4-e5f6-7890-abcd-ef1234567890'
+  );
   const [targetStr, setTargetStr] = useState<string>('50000');
   const [planCurrency, setPlanCurrency] = useState<SupportedCurrency>('UZS');
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -74,7 +73,10 @@ export function EmployeePlansTab() {
     if (!window.confirm('Are you sure you want to delete this target plan?')) return;
     try {
       await cargoKpiApi.deletePlan(id);
-      showNotification(t('successPlanDeleted') || 'Employee target plan deleted successfully', 'success');
+      showNotification(
+        t('successPlanDeleted') || 'Employee target plan deleted successfully',
+        'success'
+      );
       loadPlans();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to delete plan', 'error');
@@ -204,7 +206,8 @@ export function EmployeePlansTab() {
                 Overall Department Progress ({data.month || '2026-07'})
               </span>
               <h3 className="text-2xl font-black text-white mt-1">
-                {(data?.total_actual ?? 0).toLocaleString()} / {(data?.total_target ?? 0).toLocaleString()}
+                {(data?.total_actual ?? 0).toLocaleString()} /{' '}
+                {(data?.total_target ?? 0).toLocaleString()}
               </h3>
             </div>
             <div className="flex items-center gap-3">
@@ -241,7 +244,9 @@ export function EmployeePlansTab() {
         <div className="p-12 rounded-2xl bg-surface border border-border text-center text-muted-foreground">
           <Trophy className="size-10 mx-auto mb-3 text-muted-foreground/40" />
           <h4 className="text-sm font-bold text-foreground">No Target Plans for {month}</h4>
-          <p className="text-xs mt-1">Click "Add Target Plan" to set target sales metrics for your sales team.</p>
+          <p className="text-xs mt-1">
+            Click "Add Target Plan" to set target sales metrics for your sales team.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -278,16 +283,28 @@ export function EmployeePlansTab() {
                   {/* Financial Stats */}
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <div className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border">
-                      <span className="text-muted-foreground block text-[10px]">{t('targetSales')}</span>
-                      <strong className="text-foreground text-sm">{formatMoney(plan.target_sales, planCurr)}</strong>
+                      <span className="text-muted-foreground block text-[10px]">
+                        {t('targetSales')}
+                      </span>
+                      <strong className="text-foreground text-sm">
+                        {formatMoney(plan.target_sales, planCurr)}
+                      </strong>
                     </div>
                     <div className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border">
-                      <span className="text-muted-foreground block text-[10px]">{t('actualSales')}</span>
-                      <strong className="text-emerald-500 text-sm">{formatMoney(plan.actual_sales, planCurr)}</strong>
+                      <span className="text-muted-foreground block text-[10px]">
+                        {t('actualSales')}
+                      </span>
+                      <strong className="text-emerald-500 text-sm">
+                        {formatMoney(plan.actual_sales, planCurr)}
+                      </strong>
                     </div>
                     <div className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border">
-                      <span className="text-muted-foreground block text-[10px]">{t('remainingTarget')}</span>
-                      <strong className="text-rose-500 text-sm">{formatMoney(plan.remaining_target, planCurr)}</strong>
+                      <span className="text-muted-foreground block text-[10px]">
+                        {t('remainingTarget')}
+                      </span>
+                      <strong className="text-rose-500 text-sm">
+                        {formatMoney(plan.remaining_target, planCurr)}
+                      </strong>
                     </div>
 
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${st.bg}`}>
@@ -454,4 +471,3 @@ export function EmployeePlansTab() {
     </div>
   );
 }
-

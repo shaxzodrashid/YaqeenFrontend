@@ -245,7 +245,9 @@ export function SalesManagerKpiTab() {
               className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all flex items-center gap-2 cursor-pointer"
             >
               <BookOpen className="size-4 text-brand-gold" />
-              <span><T k="smkMatrixToggle" /></span>
+              <span>
+                <T k="smkMatrixToggle" />
+              </span>
               {showMatrix ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             </button>
 
@@ -255,7 +257,9 @@ export function SalesManagerKpiTab() {
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-brand-gold to-amber-500 text-brand-navy shadow-md hover:brightness-110 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Calculator className="size-4" />
-                <span><T k="smkCalcEvaluations" /></span>
+                <span>
+                  <T k="smkCalcEvaluations" />
+                </span>
               </button>
             )}
           </div>
@@ -282,10 +286,18 @@ export function SalesManagerKpiTab() {
             >
               <option value="">{t('smkFilterStatus') || 'All Statuses'}</option>
               <option value="APPROVED">{t('smkStatusApproved') || 'Approved'}</option>
-              <option value="PENDING_SR_CHECK_APPROVAL">{t('smkStatusPendingSrCheck') || 'Pending SR Check'}</option>
-              <option value="DEMOTION_PENDING_REVIEW">{t('smkStatusDemotionPending') || 'Demotion Pending'}</option>
-              <option value="DEMOTION_APPROVED">{t('smkStatusDemotionApproved') || 'Demoted'}</option>
-              <option value="DEMOTION_REJECTED">{t('smkStatusDemotionRejected') || 'Level Retained'}</option>
+              <option value="PENDING_SR_CHECK_APPROVAL">
+                {t('smkStatusPendingSrCheck') || 'Pending SR Check'}
+              </option>
+              <option value="DEMOTION_PENDING_REVIEW">
+                {t('smkStatusDemotionPending') || 'Demotion Pending'}
+              </option>
+              <option value="DEMOTION_APPROVED">
+                {t('smkStatusDemotionApproved') || 'Demoted'}
+              </option>
+              <option value="DEMOTION_REJECTED">
+                {t('smkStatusDemotionRejected') || 'Level Retained'}
+              </option>
             </select>
           </div>
 
@@ -337,7 +349,9 @@ export function SalesManagerKpiTab() {
                     {SALES_BONUS_MATRIX.map((tier) => (
                       <tr key={tier.label} className="hover:bg-muted/20">
                         <td className="px-3 py-2 font-medium">{tier.label}</td>
-                        <td className="px-3 py-2 text-right font-bold text-brand-gold">{tier.rate}%</td>
+                        <td className="px-3 py-2 text-right font-bold text-brand-gold">
+                          {tier.rate}%
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -367,8 +381,12 @@ export function SalesManagerKpiTab() {
                       <tr key={spec.level} className="hover:bg-muted/20">
                         <td className="px-3 py-2">{getLevelBadge(spec.level)}</td>
                         <td className="px-3 py-2 font-bold text-foreground">${spec.fixedSalary}</td>
-                        <td className="px-3 py-2">${spec.targetMin.toLocaleString()} – ${spec.targetMax.toLocaleString()}</td>
-                        <td className="px-3 py-2">${spec.srCheckMin} / ${spec.srCheckTarget}</td>
+                        <td className="px-3 py-2">
+                          ${spec.targetMin.toLocaleString()} – ${spec.targetMax.toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2">
+                          ${spec.srCheckMin} / ${spec.srCheckTarget}
+                        </td>
                         <td className="px-3 py-2">{spec.menteesRequired}</td>
                       </tr>
                     ))}
@@ -386,9 +404,12 @@ export function SalesManagerKpiTab() {
       {evaluations.length === 0 ? (
         <div className="p-12 text-center rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm space-y-3">
           <Award className="size-12 text-muted-foreground mx-auto opacity-50" />
-          <h3 className="text-base font-bold text-foreground">No Sales Manager Evaluations Found</h3>
+          <h3 className="text-base font-bold text-foreground">
+            No Sales Manager Evaluations Found
+          </h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Click <strong>"Calculate Evaluations"</strong> above to compute monthly sales, bonuses, and career rank evaluations for {month}.
+            Click <strong>"Calculate Evaluations"</strong> above to compute monthly sales, bonuses,
+            and career rank evaluations for {month}.
           </p>
         </div>
       ) : (
@@ -397,7 +418,8 @@ export function SalesManagerKpiTab() {
             const totalSalesNum = Number(item.total_sales);
             const targetMinNum = Number(item.plan_target_min);
             const targetMaxNum = Number(item.plan_target_max);
-            const salesPct = targetMinNum > 0 ? Math.round((totalSalesNum / targetMinNum) * 100) : 100;
+            const salesPct =
+              targetMinNum > 0 ? Math.round((totalSalesNum / targetMinNum) * 100) : 100;
 
             const avgCheckNum = Number(item.average_check);
             const srMinNum = Number(item.sr_check_min);
@@ -428,7 +450,9 @@ export function SalesManagerKpiTab() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Evaluation Month: <span className="font-semibold text-foreground">{item.month}</span> • Deals: <span className="font-semibold text-foreground">{item.deal_count}</span>
+                        Evaluation Month:{' '}
+                        <span className="font-semibold text-foreground">{item.month}</span> • Deals:{' '}
+                        <span className="font-semibold text-foreground">{item.deal_count}</span>
                       </p>
                     </div>
                   </div>
@@ -437,25 +461,31 @@ export function SalesManagerKpiTab() {
                     {getStatusBadge(item.approval_status)}
 
                     {/* ROP/CEO Action Buttons */}
-                    {canUpdate('cargo_kpi') && item.approval_status === 'PENDING_SR_CHECK_APPROVAL' && (
-                      <button
-                        onClick={() => setActiveSrCheckEval(item)}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <CheckCircle className="size-3.5" />
-                        <span><T k="smkApproveSrCheck" /></span>
-                      </button>
-                    )}
+                    {canUpdate('cargo_kpi') &&
+                      item.approval_status === 'PENDING_SR_CHECK_APPROVAL' && (
+                        <button
+                          onClick={() => setActiveSrCheckEval(item)}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <CheckCircle className="size-3.5" />
+                          <span>
+                            <T k="smkApproveSrCheck" />
+                          </span>
+                        </button>
+                      )}
 
-                    {canUpdate('cargo_kpi') && item.approval_status === 'DEMOTION_PENDING_REVIEW' && (
-                      <button
-                        onClick={() => setActiveDemotionEval(item)}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <ShieldAlert className="size-3.5" />
-                        <span><T k="smkReviewDemotion" /></span>
-                      </button>
-                    )}
+                    {canUpdate('cargo_kpi') &&
+                      item.approval_status === 'DEMOTION_PENDING_REVIEW' && (
+                        <button
+                          onClick={() => setActiveDemotionEval(item)}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <ShieldAlert className="size-3.5" />
+                          <span>
+                            <T k="smkReviewDemotion" />
+                          </span>
+                        </button>
+                      )}
 
                     {canUpdate('cargo_kpi') && (
                       <button
@@ -484,7 +514,9 @@ export function SalesManagerKpiTab() {
                       <span className="font-bold text-muted-foreground uppercase tracking-wider">
                         <T k="smkSalesProgress" />
                       </span>
-                      <span className={`font-black ${salesPct >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                      <span
+                        className={`font-black ${salesPct >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}
+                      >
                         {salesPct}%
                       </span>
                     </div>
@@ -501,10 +533,14 @@ export function SalesManagerKpiTab() {
                     <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                       <div>
                         <span className="text-muted-foreground block text-[11px]">Total Sales</span>
-                        <strong className="text-foreground text-sm">${Number(item.total_sales).toLocaleString()}</strong>
+                        <strong className="text-foreground text-sm">
+                          ${Number(item.total_sales).toLocaleString()}
+                        </strong>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block text-[11px]">Plan Min / Max</span>
+                        <span className="text-muted-foreground block text-[11px]">
+                          Plan Min / Max
+                        </span>
                         <strong className="text-foreground text-sm">
                           ${targetMinNum.toLocaleString()} / ${targetMaxNum.toLocaleString()}
                         </strong>
@@ -518,36 +554,50 @@ export function SalesManagerKpiTab() {
                       <span className="font-bold text-muted-foreground uppercase tracking-wider">
                         <T k="smkAverageCheckProgress" />
                       </span>
-                      <span className={`font-bold px-2 py-0.5 rounded ${
-                        avgCheckNum >= srTargetNum
-                          ? 'bg-emerald-500/15 text-emerald-500'
-                          : avgCheckNum >= srMinNum
-                          ? 'bg-amber-500/15 text-amber-500'
-                          : 'bg-rose-500/15 text-rose-500'
-                      }`}>
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded ${
+                          avgCheckNum >= srTargetNum
+                            ? 'bg-emerald-500/15 text-emerald-500'
+                            : avgCheckNum >= srMinNum
+                              ? 'bg-amber-500/15 text-amber-500'
+                              : 'bg-rose-500/15 text-rose-500'
+                        }`}
+                      >
                         ${avgCheckNum}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                       <div>
-                        <span className="text-muted-foreground block text-[11px]">SR Check Target</span>
-                        <strong className="text-foreground text-sm">${srTargetNum} (Min ${srMinNum})</strong>
+                        <span className="text-muted-foreground block text-[11px]">
+                          SR Check Target
+                        </span>
+                        <strong className="text-foreground text-sm">
+                          ${srTargetNum} (Min ${srMinNum})
+                        </strong>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block text-[11px]">Bonus Rate (%)</span>
-                        <strong className="text-brand-gold text-sm">{item.sales_bonus_rate}%</strong>
+                        <span className="text-muted-foreground block text-[11px]">
+                          Bonus Rate (%)
+                        </span>
+                        <strong className="text-brand-gold text-sm">
+                          {item.sales_bonus_rate}%
+                        </strong>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4 text-xs pt-2 border-t border-border/50">
                       <div className="flex items-center gap-1.5 text-emerald-500">
                         <ArrowUpRight className="size-3.5" />
-                        <span>Success Streak: <strong>{item.consecutive_successes} mo</strong></span>
+                        <span>
+                          Success Streak: <strong>{item.consecutive_successes} mo</strong>
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-rose-500">
                         <ArrowDownRight className="size-3.5" />
-                        <span>Missed Streak: <strong>{item.consecutive_failures} mo</strong></span>
+                        <span>
+                          Missed Streak: <strong>{item.consecutive_failures} mo</strong>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -564,22 +614,33 @@ export function SalesManagerKpiTab() {
                       </div>
                       <div className="flex justify-between text-muted-foreground">
                         <span>Sales Bonus ({item.sales_bonus_rate}%):</span>
-                        <span className="font-semibold text-foreground">+${item.sales_bonus_amount}</span>
+                        <span className="font-semibold text-foreground">
+                          +${item.sales_bonus_amount}
+                        </span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
                         <span>KPI Bonus:</span>
-                        <span className="font-semibold text-foreground">+${item.kpi_bonus_amount}</span>
+                        <span className="font-semibold text-foreground">
+                          +${item.kpi_bonus_amount}
+                        </span>
                       </div>
                       {Number(item.additional_bonus_amount) > 0 && (
                         <div className="flex justify-between text-muted-foreground">
                           <span>Add. Bonus:</span>
-                          <span className="font-semibold text-foreground">+${item.additional_bonus_amount}</span>
+                          <span className="font-semibold text-foreground">
+                            +${item.additional_bonus_amount}
+                          </span>
                         </div>
                       )}
                       <div className="flex justify-between items-baseline pt-2 border-t border-border font-bold">
-                        <span className="text-foreground text-xs uppercase"><T k="smkTotalEarnings" />:</span>
+                        <span className="text-foreground text-xs uppercase">
+                          <T k="smkTotalEarnings" />:
+                        </span>
                         <span className="text-xl font-black text-brand-gold">
-                          ${Number(item.total_earnings).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          $
+                          {Number(item.total_earnings).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
                     </div>
@@ -591,7 +652,10 @@ export function SalesManagerKpiTab() {
                   <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground flex items-start gap-2">
                     <HelpCircle className="size-4 text-brand-gold shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-foreground">{item.reviewer_name || 'Reviewer'}:</strong> {item.review_notes}
+                      <strong className="text-foreground">
+                        {item.reviewer_name || 'Reviewer'}:
+                      </strong>{' '}
+                      {item.review_notes}
                     </div>
                   </div>
                 )}

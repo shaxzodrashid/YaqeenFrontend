@@ -1,8 +1,4 @@
-import {
-  request,
-  registerDemoHandler,
-  makeApiError,
-} from './httpClient';
+import { request, registerDemoHandler, makeApiError } from './httpClient';
 import { demoEmployeesDb } from './employees.service';
 import { demoClientsDb } from './clients.service';
 
@@ -40,11 +36,7 @@ export const CONTAINER_TYPES = [
 export type ContainerType = (typeof CONTAINER_TYPES)[number];
 
 export type CargoRegistrationStatus =
-  | 'Waiting'
-  | 'In Transit'
-  | 'Border'
-  | 'At Station'
-  | 'Delivered';
+  'Waiting' | 'In Transit' | 'Border' | 'At Station' | 'Delivered';
 
 export type CurrencyType = 'UZS' | 'RUB' | 'USD' | 'RMB';
 
@@ -242,7 +234,8 @@ export function convertPriceToUsdAndUzs(
     amountUsd = price / usdRateInUzs;
     amountUzs = price;
   } else if (currency === 'RMB') {
-    const rmbCrossRate = usdRmbRate && usdRmbRate > 0 ? usdRmbRate : (usdRateInUzs / (cbuRates.RMB || 1780));
+    const rmbCrossRate =
+      usdRmbRate && usdRmbRate > 0 ? usdRmbRate : usdRateInUzs / (cbuRates.RMB || 1780);
     amountUsd = price / rmbCrossRate;
     amountUzs = amountUsd * usdRateInUzs;
   } else if (currency === 'RUB') {
@@ -408,7 +401,6 @@ function saveStoredDemoRecords(records: InternalCargoRegistrationRecord[]) {
 
 let demoRecords = getStoredDemoRecords();
 
-
 // ---------------------------------------------------------------------------
 // Offline Demo Mock Handler
 // ---------------------------------------------------------------------------
@@ -460,7 +452,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       filtered = filtered.filter((r) => r.cargo_type.toLowerCase() === cargoType.toLowerCase());
     }
     if (containerType) {
-      filtered = filtered.filter((r) => (r.container_type || '').toLowerCase() === containerType.toLowerCase());
+      filtered = filtered.filter(
+        (r) => (r.container_type || '').toLowerCase() === containerType.toLowerCase()
+      );
     }
     if (clientId) {
       filtered = filtered.filter((r) => r.client_id === clientId);
@@ -565,7 +559,10 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       const emp = demoEmployeesDb.get(r.employee_id);
       const empName = emp ? `${emp.first_name} ${emp.last_name}`.trim() : 'Employee';
 
-      const purDate = r.purchase_date || r.confirmed_date || (r.created_at ? r.created_at.slice(0, 10) : undefined);
+      const purDate =
+        r.purchase_date ||
+        r.confirmed_date ||
+        (r.created_at ? r.created_at.slice(0, 10) : undefined);
       const sellDate = r.sell_date || (r.created_at ? r.created_at.slice(0, 10) : undefined);
 
       const purConv = convertPriceToUsdAndUzs(
@@ -619,7 +616,12 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           custom_rate: r.sell_custom_rate,
         },
         net_yield: {
-          amount: r.sell_currency === 'USD' ? netYieldUsd : (r.sell_currency === 'UZS' ? netYieldUzs : netYieldUsd),
+          amount:
+            r.sell_currency === 'USD'
+              ? netYieldUsd
+              : r.sell_currency === 'UZS'
+                ? netYieldUzs
+                : netYieldUsd,
           amount_usd: netYieldUsd,
           amount_uzs: netYieldUzs,
           purchase_currency: r.purchase_currency,
@@ -807,10 +809,20 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     if (cargo_type === 'LTL') {
       if (!volume || Number(volume) <= 0) {
-        throw makeApiError(path, 400, 'volume_required_for_ltl', 'Volume > 0 is required for LTL cargo');
+        throw makeApiError(
+          path,
+          400,
+          'volume_required_for_ltl',
+          'Volume > 0 is required for LTL cargo'
+        );
       }
       if (!weight || Number(weight) <= 0) {
-        throw makeApiError(path, 400, 'weight_required_for_ltl', 'Weight > 0 is required for LTL cargo');
+        throw makeApiError(
+          path,
+          400,
+          'weight_required_for_ltl',
+          'Weight > 0 is required for LTL cargo'
+        );
       }
     }
 
@@ -881,7 +893,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       sell_date: sell_date || todayStr,
       sell_usd_rate: sCustom ? Number(sCustom) : 11886.72,
       sell_custom_rate: sCustom ? Number(sCustom) : null,
-      usd_rmb_rate: (purchase_currency === 'RMB' || sell_currency === 'RMB') ? Number(usd_rmb_rate) : null,
+      usd_rmb_rate:
+        purchase_currency === 'RMB' || sell_currency === 'RMB' ? Number(usd_rmb_rate) : null,
       status: status || 'Waiting',
       description: description || null,
       client_id,
@@ -906,7 +919,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const current = demoRecords[idx];
-    const pCustom = body?.purchase_exchange_rate || body?.purchase_custom_rate || current.purchase_custom_rate;
+    const pCustom =
+      body?.purchase_exchange_rate || body?.purchase_custom_rate || current.purchase_custom_rate;
     const sCustom = body?.sell_exchange_rate || body?.sell_custom_rate || current.sell_custom_rate;
 
     const updatedState: InternalCargoRegistrationRecord = {
@@ -920,15 +934,33 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     // Re-evaluate validation rules on updated record
     if (updatedState.cargo_type === 'LTL') {
       if (!updatedState.volume || Number(updatedState.volume) <= 0) {
-        throw makeApiError(path, 400, 'volume_required_for_ltl', 'Volume > 0 is required for LTL cargo');
+        throw makeApiError(
+          path,
+          400,
+          'volume_required_for_ltl',
+          'Volume > 0 is required for LTL cargo'
+        );
       }
       if (!updatedState.weight || Number(updatedState.weight) <= 0) {
-        throw makeApiError(path, 400, 'weight_required_for_ltl', 'Weight > 0 is required for LTL cargo');
+        throw makeApiError(
+          path,
+          400,
+          'weight_required_for_ltl',
+          'Weight > 0 is required for LTL cargo'
+        );
       }
       updatedState.container_type = null;
     } else if (updatedState.cargo_type === 'FTL') {
-      if (!updatedState.container_type || !CONTAINER_TYPES.includes(updatedState.container_type as ContainerType)) {
-        throw makeApiError(path, 400, 'invalid_container_type', 'Valid container type required for FTL');
+      if (
+        !updatedState.container_type ||
+        !CONTAINER_TYPES.includes(updatedState.container_type as ContainerType)
+      ) {
+        throw makeApiError(
+          path,
+          400,
+          'invalid_container_type',
+          'Valid container type required for FTL'
+        );
       }
       updatedState.volume = null;
       updatedState.weight = null;
@@ -988,7 +1020,9 @@ export const cargoRegistrationsApi = {
       body: JSON.stringify(dto),
     }),
 
-  list: async (params?: CargoRegistrationListParams): Promise<CargoRegistrationPaginatedResponse> => {
+  list: async (
+    params?: CargoRegistrationListParams
+  ): Promise<CargoRegistrationPaginatedResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
@@ -1000,17 +1034,23 @@ export const cargoRegistrationsApi = {
     if (params?.client_id) searchParams.set('client_id', params.client_id);
     if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
 
-    if (params?.confirmed_start_date) searchParams.set('confirmed_start_date', params.confirmed_start_date);
-    if (params?.confirmed_end_date) searchParams.set('confirmed_end_date', params.confirmed_end_date);
+    if (params?.confirmed_start_date)
+      searchParams.set('confirmed_start_date', params.confirmed_start_date);
+    if (params?.confirmed_end_date)
+      searchParams.set('confirmed_end_date', params.confirmed_end_date);
     if (params?.loaded_start_date) searchParams.set('loaded_start_date', params.loaded_start_date);
     if (params?.loaded_end_date) searchParams.set('loaded_end_date', params.loaded_end_date);
-    if (params?.arrived_start_date) searchParams.set('arrived_start_date', params.arrived_start_date);
+    if (params?.arrived_start_date)
+      searchParams.set('arrived_start_date', params.arrived_start_date);
     if (params?.arrived_end_date) searchParams.set('arrived_end_date', params.arrived_end_date);
 
     const query = searchParams.toString();
-    return request<CargoRegistrationPaginatedResponse>(`/cargo-registrations${query ? `?${query}` : ''}`, {
-      method: 'GET',
-    });
+    return request<CargoRegistrationPaginatedResponse>(
+      `/cargo-registrations${query ? `?${query}` : ''}`,
+      {
+        method: 'GET',
+      }
+    );
   },
 
   get: (id: string) =>

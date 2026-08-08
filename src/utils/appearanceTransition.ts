@@ -1,16 +1,14 @@
 import React from 'react';
 
-export type PositionOrigin = { clientX: number; clientY: number } | React.MouseEvent | MouseEvent | null | undefined;
+export type PositionOrigin =
+  { clientX: number; clientY: number } | React.MouseEvent | MouseEvent | null | undefined;
 
 /**
  * Triggers a circular reveal animation when changing appearance/theme.
  * Uses the Web View Transitions API (`document.startViewTransition`) with circular clip-path expansion.
  * Falls back gracefully to standard state update if unsupported or reduced motion is requested.
  */
-export function animateAppearanceChange(
-  event: PositionOrigin,
-  updateCallback: () => void
-): void {
+export function animateAppearanceChange(event: PositionOrigin, updateCallback: () => void): void {
   // Check if browser supports View Transitions API and user hasn't requested reduced motion
   const isSupported =
     typeof document !== 'undefined' &&
@@ -48,20 +46,17 @@ export function animateAppearanceChange(
   });
 
   transition.ready.then(() => {
-    const clipPath = [
-      `circle(0px at ${x}px ${y}px)`,
-      `circle(${endRadius}px at ${x}px ${y}px)`
-    ];
+    const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`];
 
     requestAnimationFrame(() => {
       document.documentElement.animate(
         {
-          clipPath: clipPath
+          clipPath: clipPath,
         },
         {
           duration: 400,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-          pseudoElement: '::view-transition-new(root)'
+          pseudoElement: '::view-transition-new(root)',
         }
       );
     });

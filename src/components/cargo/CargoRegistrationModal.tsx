@@ -53,7 +53,8 @@ const STATUS_STAGE_CONFIG: {
     key: 'Waiting',
     label: 'Waiting',
     badgeClass: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
-    activeClass: 'bg-yellow-500/25 border-yellow-500 text-yellow-700 dark:text-yellow-300 ring-2 ring-yellow-500/40 shadow-sm',
+    activeClass:
+      'bg-yellow-500/25 border-yellow-500 text-yellow-700 dark:text-yellow-300 ring-2 ring-yellow-500/40 shadow-sm',
     dotClass: 'bg-yellow-500',
     icon: <Clock className="size-3.5" />,
   },
@@ -61,7 +62,8 @@ const STATUS_STAGE_CONFIG: {
     key: 'In Transit',
     label: 'In Transit',
     badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    activeClass: 'bg-blue-500/25 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40 shadow-sm',
+    activeClass:
+      'bg-blue-500/25 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40 shadow-sm',
     dotClass: 'bg-blue-500',
     icon: <Truck className="size-3.5" />,
   },
@@ -69,7 +71,8 @@ const STATUS_STAGE_CONFIG: {
     key: 'Border',
     label: 'Border',
     badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-    activeClass: 'bg-amber-500/25 border-amber-500 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-sm',
+    activeClass:
+      'bg-amber-500/25 border-amber-500 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-sm',
     dotClass: 'bg-amber-500',
     icon: <Clock className="size-3.5" />,
   },
@@ -77,7 +80,8 @@ const STATUS_STAGE_CONFIG: {
     key: 'At Station',
     label: 'At Station',
     badgeClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-    activeClass: 'bg-indigo-500/25 border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/40 shadow-sm',
+    activeClass:
+      'bg-indigo-500/25 border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/40 shadow-sm',
     dotClass: 'bg-indigo-500',
     icon: <MapPin className="size-3.5" />,
   },
@@ -85,7 +89,8 @@ const STATUS_STAGE_CONFIG: {
     key: 'Delivered',
     label: 'Delivered',
     badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-    activeClass: 'bg-emerald-500/25 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/40 shadow-sm',
+    activeClass:
+      'bg-emerald-500/25 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/40 shadow-sm',
     dotClass: 'bg-emerald-500',
     icon: <CheckCircle2 className="size-3.5" />,
   },
@@ -129,16 +134,12 @@ export function CargoRegistrationModal({
   const [arrivedDate, setArrivedDate] = useState<string>('');
   const [purchasePriceStr, setPurchasePriceStr] = useState<string>('4500');
   const [purchaseCurrency, setPurchaseCurrency] = useState<CurrencyType>('USD');
-  const [purchaseDate, setPurchaseDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [purchaseDate, setPurchaseDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [purchaseCustomRateStr, setPurchaseCustomRateStr] = useState<string>('');
 
   const [sellPriceStr, setSellPriceStr] = useState<string>('6200');
   const [sellCurrency, setSellCurrency] = useState<CurrencyType>('USD');
-  const [sellDate, setSellDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [sellDate, setSellDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [sellCustomRateStr, setSellCustomRateStr] = useState<string>('');
 
   const [usdRmbRateStr, setUsdRmbRateStr] = useState<string>('7.235');
@@ -159,7 +160,8 @@ export function CargoRegistrationModal({
   // Fetch exchange rates on modal open
   useEffect(() => {
     if (!isOpen) return;
-    currencyApi.getExchangeRates()
+    currencyApi
+      .getExchangeRates()
       .then((data) => {
         if (data?.rates) {
           const newRates: Record<string, number> = { UZS: 1 };
@@ -217,15 +219,19 @@ export function CargoRegistrationModal({
             detail.purchase_date
               ? detail.purchase_date.slice(0, 10)
               : detail.confirmed_date
-              ? detail.confirmed_date.slice(0, 10)
-              : new Date().toISOString().split('T')[0]
+                ? detail.confirmed_date.slice(0, 10)
+                : new Date().toISOString().split('T')[0]
           );
-          setPurchaseCustomRateStr(detail.purchase_custom_rate ? String(detail.purchase_custom_rate) : '');
+          setPurchaseCustomRateStr(
+            detail.purchase_custom_rate ? String(detail.purchase_custom_rate) : ''
+          );
 
           setSellPriceStr(String(detail.sell_price ?? 0));
           setSellCurrency(detail.sell_currency || 'USD');
           setSellDate(
-            detail.sell_date ? detail.sell_date.slice(0, 10) : new Date().toISOString().split('T')[0]
+            detail.sell_date
+              ? detail.sell_date.slice(0, 10)
+              : new Date().toISOString().split('T')[0]
           );
           setSellCustomRateStr(detail.sell_custom_rate ? String(detail.sell_custom_rate) : '');
 
@@ -317,7 +323,10 @@ export function CargoRegistrationModal({
 
     const rate = parseFloat(usdRmbRateStr) || 0;
     if (isRmbRateRequired && rate <= 0) {
-      showNotification('USD -> RMB rate (> 0) is required when RMB currency is selected.', 'warning');
+      showNotification(
+        'USD -> RMB rate (> 0) is required when RMB currency is selected.',
+        'warning'
+      );
       return;
     }
 
@@ -433,19 +442,13 @@ export function CargoRegistrationModal({
       cbuRates
     );
 
-    const sellConv = convertPriceToUsdAndUzs(
-      sp,
-      sellCurrency,
-      sellDate,
-      sCustom,
-      rate,
-      cbuRates
-    );
+    const sellConv = convertPriceToUsdAndUzs(sp, sellCurrency, sellDate, sCustom, rate, cbuRates);
 
     const marginUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
     const marginUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
 
-    const margin = sellCurrency === 'USD' ? marginUsd : (sellCurrency === 'UZS' ? marginUzs : marginUsd);
+    const margin =
+      sellCurrency === 'USD' ? marginUsd : sellCurrency === 'UZS' ? marginUzs : marginUsd;
     const roiPct = purConv.amount_usd > 0 ? (marginUsd / purConv.amount_usd) * 100 : 0;
 
     let marginUsdStr: string | null = null;
@@ -464,7 +467,18 @@ export function CargoRegistrationModal({
       purchase_currency: purchaseCurrency,
       sell_currency: sellCurrency,
     };
-  }, [purchasePriceStr, sellPriceStr, purchaseCurrency, sellCurrency, purchaseDate, purchaseCustomRateStr, sellDate, sellCustomRateStr, usdRmbRateStr, rates]);
+  }, [
+    purchasePriceStr,
+    sellPriceStr,
+    purchaseCurrency,
+    sellCurrency,
+    purchaseDate,
+    purchaseCustomRateStr,
+    sellDate,
+    sellCustomRateStr,
+    usdRmbRateStr,
+    rates,
+  ]);
 
   const canAssignEveryone = canRegisterForEveryone();
 
@@ -521,7 +535,6 @@ export function CargoRegistrationModal({
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
               {/* Form Content - Scrollable */}
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 custom-scrollbar">
-
                 {/* SECTION 1: CARGO TYPE HERO SWITCHER */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -541,7 +554,9 @@ export function CargoRegistrationModal({
                         <Box className="size-5" />
                       </div>
                       <div>
-                        <div className="font-bold text-sm text-foreground">LTL Cargo (Groupage)</div>
+                        <div className="font-bold text-sm text-foreground">
+                          LTL Cargo (Groupage)
+                        </div>
                         <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
                           Partial container load calculated by Volume (m³) & Weight (kg)
                         </div>
@@ -561,7 +576,9 @@ export function CargoRegistrationModal({
                         <Layers className="size-5" />
                       </div>
                       <div>
-                        <div className="font-bold text-sm text-foreground">FTL Cargo (Full Truck)</div>
+                        <div className="font-bold text-sm text-foreground">
+                          FTL Cargo (Full Truck)
+                        </div>
                         <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
                           Full container load with standard whitelisted specifications
                         </div>
@@ -756,7 +773,8 @@ export function CargoRegistrationModal({
                       <div className="space-y-2.5 p-3 rounded-xl bg-background/50 border border-border/60">
                         <label className="block text-xs font-semibold text-foreground flex items-center gap-1.5">
                           <Coins className="size-3.5 text-amber-500" />
-                          <span>Purchase Price (Buy Cost)</span> <span className="text-rose-500">*</span>
+                          <span>Purchase Price (Buy Cost)</span>{' '}
+                          <span className="text-rose-500">*</span>
                         </label>
                         <div className="flex gap-2">
                           <input
@@ -933,7 +951,10 @@ export function CargoRegistrationModal({
                             modalNetYieldPreview.margin >= 0 ? 'text-emerald-500' : 'text-rose-500'
                           }`}
                         >
-                          {formatMoney(modalNetYieldPreview.margin, modalNetYieldPreview.sell_currency)}
+                          {formatMoney(
+                            modalNetYieldPreview.margin,
+                            modalNetYieldPreview.sell_currency
+                          )}
                         </span>
                         {modalNetYieldPreview.marginUsdStr && (
                           <span className="text-[11px] font-semibold text-muted-foreground block">
@@ -1038,7 +1059,6 @@ export function CargoRegistrationModal({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-focus/30 transition-all resize-none"
                   />
                 </div>
-
               </div>
 
               {/* STICKY FOOTER ACTION BAR */}

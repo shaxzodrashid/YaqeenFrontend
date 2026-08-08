@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Trash2, Building2, MapPin, DollarSign, Package, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Trash2,
+  Building2,
+  MapPin,
+  DollarSign,
+  Package,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { ClientSelect } from '../cargo/ClientSelect';
 import type { CommercialOffer, CreateCommercialOfferDto } from '../../types/commercialOffers';
@@ -49,8 +61,16 @@ export function CommercialOfferFormModal({
       setOrigin(initialData.origin || '');
       setDestination(initialData.destination || '');
       setCargoDescription(initialData.cargo_description || '');
-      setCargoWeight(initialData.cargo_weight !== null && initialData.cargo_weight !== undefined ? String(initialData.cargo_weight) : '');
-      setCargoVolume(initialData.cargo_volume !== null && initialData.cargo_volume !== undefined ? String(initialData.cargo_volume) : '');
+      setCargoWeight(
+        initialData.cargo_weight !== null && initialData.cargo_weight !== undefined
+          ? String(initialData.cargo_weight)
+          : ''
+      );
+      setCargoVolume(
+        initialData.cargo_volume !== null && initialData.cargo_volume !== undefined
+          ? String(initialData.cargo_volume)
+          : ''
+      );
       setPriceUsd(initialData.price_usd !== undefined ? String(initialData.price_usd) : '');
       setPriceLocal(initialData.price_local !== undefined ? String(initialData.price_local) : '');
       setTerms(initialData.terms || '');
@@ -406,7 +426,12 @@ export function CommercialOfferFormModal({
                     type="text"
                     value={newInclusion}
                     onChange={(e) => setNewInclusion(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddInclusion(); } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddInclusion();
+                      }
+                    }}
                     placeholder="Add included service..."
                     className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-xs"
                   />
@@ -420,7 +445,10 @@ export function CommercialOfferFormModal({
                 </div>
                 <ul className="space-y-1.5 max-h-36 overflow-y-auto">
                   {inclusions.map((item, i) => (
-                    <li key={i} className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-foreground">
+                    <li
+                      key={i}
+                      className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-foreground"
+                    >
                       <span>✓ {item}</span>
                       <button
                         type="button"
@@ -444,7 +472,12 @@ export function CommercialOfferFormModal({
                     type="text"
                     value={newExclusion}
                     onChange={(e) => setNewExclusion(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExclusion(); } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddExclusion();
+                      }
+                    }}
                     placeholder="Add excluded item..."
                     className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-xs"
                   />
@@ -458,7 +491,10 @@ export function CommercialOfferFormModal({
                 </div>
                 <ul className="space-y-1.5 max-h-36 overflow-y-auto">
                   {exclusions.map((item, i) => (
-                    <li key={i} className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-rose-500/5 border border-rose-500/20 text-foreground">
+                    <li
+                      key={i}
+                      className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-rose-500/5 border border-rose-500/20 text-foreground"
+                    >
                       <span>✗ {item}</span>
                       <button
                         type="button"

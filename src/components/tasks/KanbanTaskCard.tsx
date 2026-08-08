@@ -61,8 +61,8 @@ export function KanbanTaskCard({
         isDoneStatus
           ? 'border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5'
           : isOverdue
-          ? 'border-rose-500/40 hover:border-rose-500/70 bg-rose-500/5'
-          : 'border-border hover:border-brand-gold/50'
+            ? 'border-rose-500/40 hover:border-rose-500/70 bg-rose-500/5'
+            : 'border-border hover:border-brand-gold/50'
       }`}
     >
       {columnColor && !isDoneStatus && !isOverdue && (
@@ -164,14 +164,13 @@ export function KanbanTaskCard({
         {task.assignees && task.assignees.length > 0 && (
           <div className="flex items-center -space-x-1.5 shrink-0">
             {task.assignees.slice(0, 3).map((assignee) => {
-              const name = `${assignee.firstName || ''} ${assignee.lastName || ''}`.trim() || 'Assignee';
+              const name =
+                `${assignee.firstName || ''} ${assignee.lastName || ''}`.trim() || 'Assignee';
               return (
                 <Tooltip key={assignee.id} delay={0} closeDelay={0}>
                   <Tooltip.Trigger>
                     <Avatar className="size-6 border-2 border-surface bg-brand-royal text-brand-gold text-[9px] font-bold">
-                      <Avatar.Fallback>
-                        {name.slice(0, 2).toUpperCase()}
-                      </Avatar.Fallback>
+                      <Avatar.Fallback>{name.slice(0, 2).toUpperCase()}</Avatar.Fallback>
                     </Avatar>
                   </Tooltip.Trigger>
                   <Tooltip.Content placement="top">{name}</Tooltip.Content>

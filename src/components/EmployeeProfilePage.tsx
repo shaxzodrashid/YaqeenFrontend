@@ -1,16 +1,35 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, Button, Avatar, Chip, Spinner } from '@heroui/react';
 import {
-  ArrowLeft, Pencil, Phone, MapPin, Building,
-  DollarSign, Calendar, ShieldCheck, FileText,
-  Upload, FolderOpen, FileSpreadsheet, FileImage,
-  File, Download, Trash2, Camera
+  ArrowLeft,
+  Pencil,
+  Phone,
+  MapPin,
+  Building,
+  DollarSign,
+  Calendar,
+  ShieldCheck,
+  FileText,
+  Upload,
+  FolderOpen,
+  FileSpreadsheet,
+  FileImage,
+  File,
+  Download,
+  Trash2,
+  Camera,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePermissions } from '../context/PermissionsContext';
 import { api, tokenStore, getImageUrl, formatMoney } from '../services/api';
-import type { Employee, Department, ApiError, Attachment, SupportedCurrency } from '../services/api';
+import type {
+  Employee,
+  Department,
+  ApiError,
+  Attachment,
+  SupportedCurrency,
+} from '../services/api';
 import { T } from './T';
 
 interface EmployeeProfilePageProps {
@@ -206,7 +225,9 @@ export function EmployeeProfilePage({
   const getDeptDisplayName = (deptId?: string) => {
     if (!deptId) return '—';
     const dept = departments.find((d) => d.id === deptId);
-    return dept?.display_name || employee?.department_display_name || employee?.department_name || '—';
+    return (
+      dept?.display_name || employee?.department_display_name || employee?.department_name || '—'
+    );
   };
 
   const formatSalary = (salary?: string, currency: SupportedCurrency = 'UZS') => {
@@ -237,7 +258,9 @@ export function EmployeeProfilePage({
   if (!employee) {
     return (
       <Card className="p-8 border border-border/40 bg-surface rounded-2xl text-center">
-        <h3 className="text-base font-bold text-foreground mb-1">{t('employee_profile_missing')}</h3>
+        <h3 className="text-base font-bold text-foreground mb-1">
+          {t('employee_profile_missing')}
+        </h3>
         {onBack && (
           <Button onPress={onBack} variant="ghost" className="mt-4">
             <ArrowLeft className="size-4 mr-2" />
@@ -264,7 +287,9 @@ export function EmployeeProfilePage({
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold font-serif text-foreground"><T k="profileTitle" /></h1>
+            <h1 className="text-2xl font-bold font-serif text-foreground">
+              <T k="profileTitle" />
+            </h1>
             <p className="text-sm text-muted mt-0.5">
               {employee.first_name} {employee.last_name}
             </p>
@@ -306,14 +331,17 @@ export function EmployeeProfilePage({
               )}
               <Avatar.Fallback
                 className="text-2xl font-bold"
-                style={{ backgroundColor: `${employee.color || '#CCCCCC'}15`, color: employee.color || '#CCCCCC' }}
+                style={{
+                  backgroundColor: `${employee.color || '#CCCCCC'}15`,
+                  color: employee.color || '#CCCCCC',
+                }}
               >
                 {employee.first_name?.[0]}
                 {employee.last_name?.[0]}
               </Avatar.Fallback>
             </Avatar>
 
-            {(uploadingPicture || deletingPicture) ? (
+            {uploadingPicture || deletingPicture ? (
               <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center text-white">
                 <Spinner size="md" className="text-brand-gold" />
               </div>
@@ -322,7 +350,9 @@ export function EmployeeProfilePage({
                 <button
                   type="button"
                   onClick={handlePictureUploadClick}
-                  title={employee.picture_url ? t('profileChangePicture') : t('profileUploadPicture')}
+                  title={
+                    employee.picture_url ? t('profileChangePicture') : t('profileUploadPicture')
+                  }
                   className="p-2 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors cursor-pointer"
                 >
                   <Camera className="size-4" />
@@ -375,16 +405,24 @@ export function EmployeeProfilePage({
             <div className="flex items-center gap-3">
               <Phone className="size-4 text-muted shrink-0" />
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted font-medium uppercase tracking-wider"><T k="fieldPhone" /></span>
-                <span className="text-xs font-semibold text-foreground font-mono truncate">{employee.phone}</span>
+                <span className="text-[10px] text-muted font-medium uppercase tracking-wider">
+                  <T k="fieldPhone" />
+                </span>
+                <span className="text-xs font-semibold text-foreground font-mono truncate">
+                  {employee.phone}
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <Building className="size-4 text-muted shrink-0" />
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted font-medium uppercase tracking-wider"><T k="fieldDepartment" /></span>
-                <span className="text-xs font-semibold text-foreground truncate">{getDeptDisplayName(employee.department_id)}</span>
+                <span className="text-[10px] text-muted font-medium uppercase tracking-wider">
+                  <T k="fieldDepartment" />
+                </span>
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {getDeptDisplayName(employee.department_id)}
+                </span>
               </div>
             </div>
 
@@ -392,8 +430,12 @@ export function EmployeeProfilePage({
               <div className="flex items-center gap-3">
                 <DollarSign className="size-4 text-muted shrink-0" />
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] text-muted font-medium uppercase tracking-wider"><T k="fieldSalary" /></span>
-                  <span className="text-xs font-bold text-foreground font-mono">{formatSalary(employee.fixed_salary, employee.currency)}</span>
+                  <span className="text-[10px] text-muted font-medium uppercase tracking-wider">
+                    <T k="fieldSalary" />
+                  </span>
+                  <span className="text-xs font-bold text-foreground font-mono">
+                    {formatSalary(employee.fixed_salary, employee.currency)}
+                  </span>
                 </div>
               </div>
             )}
@@ -412,23 +454,39 @@ export function EmployeeProfilePage({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldFirstName" /></span>
-                  <span className="text-sm font-medium text-foreground mt-0.5">{employee.first_name}</span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="fieldFirstName" />
+                  </span>
+                  <span className="text-sm font-medium text-foreground mt-0.5">
+                    {employee.first_name}
+                  </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldLastName" /></span>
-                  <span className="text-sm font-medium text-foreground mt-0.5">{employee.last_name}</span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="fieldLastName" />
+                  </span>
+                  <span className="text-sm font-medium text-foreground mt-0.5">
+                    {employee.last_name}
+                  </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldPhone" /></span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="fieldPhone" />
+                  </span>
                   <span className="text-sm font-mono text-foreground mt-0.5">{employee.phone}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldSecondaryPhone" /></span>
-                  <span className="text-sm font-mono text-foreground mt-0.5">{employee.secondary_phone || '—'}</span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="fieldSecondaryPhone" />
+                  </span>
+                  <span className="text-sm font-mono text-foreground mt-0.5">
+                    {employee.secondary_phone || '—'}
+                  </span>
                 </div>
                 <div className="flex flex-col sm:col-span-2">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldAddress" /></span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="fieldAddress" />
+                  </span>
                   <span className="text-sm font-medium text-foreground mt-0.5 flex items-start gap-1">
                     <MapPin className="size-3.5 text-muted shrink-0 mt-0.5" />
                     {employee.address || '—'}
@@ -445,11 +503,17 @@ export function EmployeeProfilePage({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldDepartment" /></span>
-                  <span className="text-sm font-medium text-foreground mt-0.5">{getDeptDisplayName(employee.department_id)}</span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="fieldDepartment" />
+                  </span>
+                  <span className="text-sm font-medium text-foreground mt-0.5">
+                    {getDeptDisplayName(employee.department_id)}
+                  </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted font-medium uppercase"><T k="colJoined" /></span>
+                  <span className="text-[10px] text-muted font-medium uppercase">
+                    <T k="colJoined" />
+                  </span>
                   <span className="text-sm font-medium text-foreground mt-0.5 flex items-center gap-1.5">
                     <Calendar className="size-3.5 text-muted" />
                     {formatDate(employee.created_at)}
@@ -457,8 +521,12 @@ export function EmployeeProfilePage({
                 </div>
                 {isAdminView && (
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-muted font-medium uppercase"><T k="fieldSalary" /></span>
-                    <span className="text-sm font-bold text-foreground font-mono mt-0.5">{formatSalary(employee.fixed_salary, employee.currency)}</span>
+                    <span className="text-[10px] text-muted font-medium uppercase">
+                      <T k="fieldSalary" />
+                    </span>
+                    <span className="text-sm font-bold text-foreground font-mono mt-0.5">
+                      {formatSalary(employee.fixed_salary, employee.currency)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -474,9 +542,12 @@ export function EmployeeProfilePage({
                 <div className="flex items-start gap-3 bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/15 p-4 rounded-xl">
                   <ShieldCheck className="size-5 text-emerald-500 shrink-0 mt-0.5" />
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-emerald-500"><T k="profileAccountLinked" /></span>
+                    <span className="text-xs font-bold text-emerald-500">
+                      <T k="profileAccountLinked" />
+                    </span>
                     <span className="text-[11px] text-muted mt-1">
-                      Username / Login: <strong className="font-mono">{employee.username || employee.phone}</strong>
+                      Username / Login:{' '}
+                      <strong className="font-mono">{employee.username || employee.phone}</strong>
                     </span>
                     <span className="text-[11px] text-muted mt-0.5">
                       Account Status: <strong>{employee.user_status || 'Open'}</strong>
@@ -487,9 +558,12 @@ export function EmployeeProfilePage({
                 <div className="flex items-start gap-3 bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/15 p-4 rounded-xl">
                   <FileText className="size-5 text-amber-500 shrink-0 mt-0.5" />
                   <div className="flex flex-col text-xs font-semibold text-amber-500">
-                    <span><T k="profileNoAccount" /></span>
+                    <span>
+                      <T k="profileNoAccount" />
+                    </span>
                     <p className="text-[10px] text-muted font-normal mt-1 leading-normal">
-                      The user registration details are automatically linked once an employee registers with the exact phone number ({employee.phone}) on the signup page.
+                      The user registration details are automatically linked once an employee
+                      registers with the exact phone number ({employee.phone}) on the signup page.
                     </p>
                   </div>
                 </div>
@@ -553,8 +627,12 @@ export function EmployeeProfilePage({
                   <FolderOpen className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-foreground"><T k="profileNoDocuments" /></h4>
-                  <p className="text-xs text-muted max-w-sm mt-1"><T k="profileNoDocumentsDesc" /></p>
+                  <h4 className="text-sm font-bold text-foreground">
+                    <T k="profileNoDocuments" />
+                  </h4>
+                  <p className="text-xs text-muted max-w-sm mt-1">
+                    <T k="profileNoDocumentsDesc" />
+                  </p>
                 </div>
               </div>
             ) : (
@@ -563,9 +641,13 @@ export function EmployeeProfilePage({
                   const name = att.file_name || att.fileName || 'document';
                   const mime = att.mime_type || att.mimeType || '';
                   const isPdf = mime.includes('pdf') || name.toLowerCase().endsWith('.pdf');
-                  const isImage = mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
-                  const isSpreadsheet = mime.includes('excel') || mime.includes('sheet') || /\.(xlsx?|csv)$/i.test(name);
-                  
+                  const isImage =
+                    mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
+                  const isSpreadsheet =
+                    mime.includes('excel') ||
+                    mime.includes('sheet') ||
+                    /\.(xlsx?|csv)$/i.test(name);
+
                   let Icon = File;
                   let iconColor = 'text-muted';
                   let iconBg = 'bg-muted/10';
@@ -593,11 +675,16 @@ export function EmployeeProfilePage({
                       className="flex items-center justify-between border border-border/20 hover:border-border/60 rounded-2xl p-4 bg-default/5 hover:bg-default/10 transition-all text-left"
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
+                        <div
+                          className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}
+                        >
                           <Icon className="size-5.5" />
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold text-foreground truncate max-w-[180px] md:max-w-[200px]" title={name}>
+                          <span
+                            className="text-xs font-bold text-foreground truncate max-w-[180px] md:max-w-[200px]"
+                            title={name}
+                          >
                             {name}
                           </span>
                           <span className="text-[9px] font-mono text-muted uppercase mt-0.5 tracking-wider">
@@ -615,11 +702,7 @@ export function EmployeeProfilePage({
                           isDisabled={isDownloading || isDeleting}
                           className="text-muted hover:text-foreground hover:bg-default/50 rounded-lg size-8"
                         >
-                          {isDownloading ? (
-                            <Spinner size="sm" />
-                          ) : (
-                            <Download className="size-4" />
-                          )}
+                          {isDownloading ? <Spinner size="sm" /> : <Download className="size-4" />}
                         </Button>
 
                         {isManager && canDelete('attachments') && (
@@ -631,11 +714,7 @@ export function EmployeeProfilePage({
                             isDisabled={isDownloading || isDeleting}
                             className="text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-lg size-8"
                           >
-                            {isDeleting ? (
-                              <Spinner size="sm" />
-                            ) : (
-                              <Trash2 className="size-4" />
-                            )}
+                            {isDeleting ? <Spinner size="sm" /> : <Trash2 className="size-4" />}
                           </Button>
                         )}
                       </div>

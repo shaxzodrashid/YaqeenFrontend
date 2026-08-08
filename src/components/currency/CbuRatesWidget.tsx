@@ -118,15 +118,24 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
           <Coins className="size-3.5 text-brand-gold" />
           <div className="flex items-center gap-2 font-medium">
             <span className="text-foreground dark:text-night-text">
-              1 USD = <span className="font-semibold text-brand-gold">{usdRate ? `${usdRate.rate.toLocaleString()} UZS` : '...'}</span>
+              1 USD ={' '}
+              <span className="font-semibold text-brand-gold">
+                {usdRate ? `${usdRate.rate.toLocaleString()} UZS` : '...'}
+              </span>
             </span>
             <span className="text-muted dark:text-night-muted">|</span>
             <span className="text-foreground dark:text-night-text">
-              1 RUB = <span className="font-semibold text-brand-gold">{rubRate ? `${rubRate.rate.toLocaleString()} UZS` : '...'}</span>
+              1 RUB ={' '}
+              <span className="font-semibold text-brand-gold">
+                {rubRate ? `${rubRate.rate.toLocaleString()} UZS` : '...'}
+              </span>
             </span>
             <span className="text-muted dark:text-night-muted">|</span>
             <span className="text-foreground dark:text-night-text">
-              1 RMB = <span className="font-semibold text-brand-gold">{rmbRate ? `${rmbRate.rate.toLocaleString()} UZS` : '...'}</span>
+              1 RMB ={' '}
+              <span className="font-semibold text-brand-gold">
+                {rmbRate ? `${rmbRate.rate.toLocaleString()} UZS` : '...'}
+              </span>
             </span>
           </div>
         </button>
@@ -158,13 +167,17 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-foreground dark:text-night-text">CBU Live Rates</span>
+              <span className="text-xs font-bold text-foreground dark:text-night-text">
+                CBU Live Rates
+              </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
                 Official
               </span>
             </div>
             <p className="text-[11px] text-muted dark:text-night-muted">
-              {ratesData?.rates?.USD?.date ? `Updated ${ratesData.rates.USD.date}` : 'Central Bank of Uzbekistan'}
+              {ratesData?.rates?.USD?.date
+                ? `Updated ${ratesData.rates.USD.date}`
+                : 'Central Bank of Uzbekistan'}
             </p>
           </div>
         </div>
@@ -180,10 +193,16 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
             {usdRate && usdRate.diff !== 0 && (
               <span
                 className={`flex items-center text-[10px] font-semibold ${
-                  usdRate.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  usdRate.diff > 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
-                {usdRate.diff > 0 ? <TrendingUp className="size-3 mr-0.5" /> : <TrendingDown className="size-3 mr-0.5" />}
+                {usdRate.diff > 0 ? (
+                  <TrendingUp className="size-3 mr-0.5" />
+                ) : (
+                  <TrendingDown className="size-3 mr-0.5" />
+                )}
                 {usdRate.diff > 0 ? `+${usdRate.diff}` : usdRate.diff}
               </span>
             )}
@@ -198,10 +217,16 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
             {rubRate && rubRate.diff !== 0 && (
               <span
                 className={`flex items-center text-[10px] font-semibold ${
-                  rubRate.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  rubRate.diff > 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
-                {rubRate.diff > 0 ? <TrendingUp className="size-3 mr-0.5" /> : <TrendingDown className="size-3 mr-0.5" />}
+                {rubRate.diff > 0 ? (
+                  <TrendingUp className="size-3 mr-0.5" />
+                ) : (
+                  <TrendingDown className="size-3 mr-0.5" />
+                )}
                 {rubRate.diff > 0 ? `+${rubRate.diff}` : rubRate.diff}
               </span>
             )}
@@ -216,10 +241,16 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
             {rmbRate && rmbRate.diff !== 0 && (
               <span
                 className={`flex items-center text-[10px] font-semibold ${
-                  rmbRate.diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  rmbRate.diff > 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
-                {rmbRate.diff > 0 ? <TrendingUp className="size-3 mr-0.5" /> : <TrendingDown className="size-3 mr-0.5" />}
+                {rmbRate.diff > 0 ? (
+                  <TrendingUp className="size-3 mr-0.5" />
+                ) : (
+                  <TrendingDown className="size-3 mr-0.5" />
+                )}
                 {rmbRate.diff > 0 ? `+${rmbRate.diff}` : rmbRate.diff}
               </span>
             )}
@@ -354,7 +385,11 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
                   disabled={converting}
                   className="w-full py-2.5 rounded-xl bg-accent dark:bg-[#5B8FD4] text-accent-foreground dark:text-[#0B1528] font-bold text-xs shadow-md hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {converting ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />}
+                  {converting ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ArrowRightLeft className="size-4" />
+                  )}
                   <span>Calculate Conversion</span>
                 </button>
               </form>
@@ -369,7 +404,11 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
                     {formatMoney(calcResult.converted_amount, calcResult.to_currency)}
                   </div>
                   <div className="text-[11px] text-muted dark:text-night-muted flex items-center justify-between mt-1">
-                    <span>Rate used: 1 {calcResult.from_currency} = {calcResult.exchange_rate_used.toLocaleString()} {calcResult.to_currency === 'UZS' ? 'UZS' : calcResult.to_currency}</span>
+                    <span>
+                      Rate used: 1 {calcResult.from_currency} ={' '}
+                      {calcResult.exchange_rate_used.toLocaleString()}{' '}
+                      {calcResult.to_currency === 'UZS' ? 'UZS' : calcResult.to_currency}
+                    </span>
                     <span>Date: {calcResult.date}</span>
                   </div>
                 </div>

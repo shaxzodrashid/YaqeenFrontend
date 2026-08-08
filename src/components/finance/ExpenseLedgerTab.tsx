@@ -19,7 +19,14 @@ import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { CATEGORY_CONFIG } from './ExpenseModal';
 import { api, formatMoney } from '../../services/api';
-import type { Expense, ExpenseCategory, ExpenseListParams, CategoryBreakdownResponse, SupportedCurrency, ExchangeRatesResponse } from '../../services/api';
+import type {
+  Expense,
+  ExpenseCategory,
+  ExpenseListParams,
+  CategoryBreakdownResponse,
+  SupportedCurrency,
+  ExchangeRatesResponse,
+} from '../../services/api';
 
 interface ExpenseLedgerTabProps {
   onOpenAddModal: () => void;
@@ -27,7 +34,11 @@ interface ExpenseLedgerTabProps {
   selectedCurrency: SupportedCurrency;
 }
 
-export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurrency }: ExpenseLedgerTabProps) {
+export function ExpenseLedgerTab({
+  onOpenAddModal,
+  onOpenEditModal,
+  selectedCurrency,
+}: ExpenseLedgerTabProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canUpdate, canDelete } = usePermissions();
@@ -35,7 +46,9 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [totalSum, setTotalSum] = useState<number>(0);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
-  const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdownResponse | null>(null);
+  const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdownResponse | null>(
+    null
+  );
   const [ratesData, setRatesData] = useState<ExchangeRatesResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -107,21 +120,24 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
   }, []);
 
   // Helper to convert UZS amount to target currency using CBU exchange rates
-  const convertAmount = useCallback((amountInUzs: number, targetCurrency: SupportedCurrency): number => {
-    if (targetCurrency === 'UZS') return amountInUzs;
-    if (!ratesData || !ratesData.rates) return amountInUzs;
+  const convertAmount = useCallback(
+    (amountInUzs: number, targetCurrency: SupportedCurrency): number => {
+      if (targetCurrency === 'UZS') return amountInUzs;
+      if (!ratesData || !ratesData.rates) return amountInUzs;
 
-    let lookupCurrency = targetCurrency;
-    if (targetCurrency === 'RMB' && !ratesData.rates['RMB'] && ratesData.rates['CNY']) {
-      lookupCurrency = 'CNY';
-    } else if (targetCurrency === 'CNY' && !ratesData.rates['CNY'] && ratesData.rates['RMB']) {
-      lookupCurrency = 'RMB';
-    }
+      let lookupCurrency = targetCurrency;
+      if (targetCurrency === 'RMB' && !ratesData.rates['RMB'] && ratesData.rates['CNY']) {
+        lookupCurrency = 'CNY';
+      } else if (targetCurrency === 'CNY' && !ratesData.rates['CNY'] && ratesData.rates['RMB']) {
+        lookupCurrency = 'RMB';
+      }
 
-    const rateItem = ratesData.rates[lookupCurrency];
-    if (!rateItem || !rateItem.rate) return amountInUzs;
-    return amountInUzs / rateItem.rate;
-  }, [ratesData]);
+      const rateItem = ratesData.rates[lookupCurrency];
+      if (!rateItem || !rateItem.rate) return amountInUzs;
+      return amountInUzs / rateItem.rate;
+    },
+    [ratesData]
+  );
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -147,7 +163,17 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
     } finally {
       setLoading(false);
     }
-  }, [page, sortBy, sortOrder, search, categoryFilter, employeeFilter, startDate, endDate, showNotification]);
+  }, [
+    page,
+    sortBy,
+    sortOrder,
+    search,
+    categoryFilter,
+    employeeFilter,
+    startDate,
+    endDate,
+    showNotification,
+  ]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -220,7 +246,10 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
                     <T k={cfg.labelKey} />
                   </span>
                   <p className="text-xs font-bold text-foreground dark:text-night-text mt-0.5">
-                    {formatMoney(convertAmount(item?.total_amount || 0, selectedCurrency), selectedCurrency)}
+                    {formatMoney(
+                      convertAmount(item?.total_amount || 0, selectedCurrency),
+                      selectedCurrency
+                    )}
                   </p>
                 </div>
               </button>
@@ -268,7 +297,9 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent dark:bg-[#5B8FD4] text-accent-foreground dark:text-[#0B1528] font-semibold text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
             >
               <Plus className="size-4" />
-              <span><T k="finAddExpense" /></span>
+              <span>
+                <T k="finAddExpense" />
+              </span>
             </button>
           </div>
         </div>
@@ -280,7 +311,10 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
             <input
               type="date"
               value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setPage(1);
+              }}
               className="px-2.5 py-1 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-xs text-foreground dark:text-night-text focus:outline-none"
             />
           </div>
@@ -289,7 +323,10 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
             <input
               type="date"
               value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setPage(1);
+              }}
               className="px-2.5 py-1 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-xs text-foreground dark:text-night-text focus:outline-none"
             />
           </div>
@@ -297,7 +334,10 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
             <span className="text-muted dark:text-night-muted">Employee:</span>
             <select
               value={employeeFilter}
-              onChange={(e) => { setEmployeeFilter(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setEmployeeFilter(e.target.value);
+                setPage(1);
+              }}
               className="px-2.5 py-1 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-xs text-foreground dark:text-night-text focus:outline-none cursor-pointer"
             >
               <option value="">All Employees</option>
@@ -336,7 +376,9 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
         ) : expenses.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <Receipt className="size-8 text-muted/50" />
-            <p className="text-sm font-semibold text-foreground dark:text-night-text">No expenses found</p>
+            <p className="text-sm font-semibold text-foreground dark:text-night-text">
+              No expenses found
+            </p>
             <p className="text-xs text-muted dark:text-night-muted">
               Try clearing filters or log a new operational expense.
             </p>
@@ -369,7 +411,9 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
                         {expense.expense_date?.split('T')[0]}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${cfg.bgClass} ${cfg.borderClass} ${cfg.colorClass}`}>
+                        <div
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${cfg.bgClass} ${cfg.borderClass} ${cfg.colorClass}`}
+                        >
                           <Icon className="size-3.5" />
                           <span>{t(cfg.labelKey) || cfg.defaultLabel}</span>
                         </div>
@@ -424,7 +468,10 @@ export function ExpenseLedgerTab({ onOpenAddModal, onOpenEditModal, selectedCurr
         {/* Footer & Pagination */}
         <div className="px-6 py-4 border-t border-border/60 dark:border-night-border bg-background/40 dark:bg-night-field/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div className="text-muted dark:text-night-muted">
-            Filtered Total: <span className="font-bold text-foreground dark:text-night-text">{formatMoney(convertAmount(totalSum, selectedCurrency), selectedCurrency)}</span>
+            Filtered Total:{' '}
+            <span className="font-bold text-foreground dark:text-night-text">
+              {formatMoney(convertAmount(totalSum, selectedCurrency), selectedCurrency)}
+            </span>
           </div>
 
           <div className="flex items-center gap-3">

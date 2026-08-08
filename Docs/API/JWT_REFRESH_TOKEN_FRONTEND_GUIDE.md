@@ -6,13 +6,15 @@ This guide provides a comprehensive walkthrough for frontend developers (React, 
 
 ## 1. Concepts & Token Lifecycle
 
-| Token Type | Purpose | Expiration / Lifetime | Where Sent |
-| :--- | :--- | :--- | :--- |
-| **Access Token (JWT)** | Authenticates individual API requests | Short/Medium (e.g., 1 day) | Included in `Authorization` header |
-| **Refresh Token** | Obtains a fresh Access Token + Refresh Token pair | Configurable (e.g., 30 minutes) | Sent in body to `/auth/refresh` |
+| Token Type             | Purpose                                           | Expiration / Lifetime           | Where Sent                         |
+| :--------------------- | :------------------------------------------------ | :------------------------------ | :--------------------------------- |
+| **Access Token (JWT)** | Authenticates individual API requests             | Short/Medium (e.g., 1 day)      | Included in `Authorization` header |
+| **Refresh Token**      | Obtains a fresh Access Token + Refresh Token pair | Configurable (e.g., 30 minutes) | Sent in body to `/auth/refresh`    |
 
 ### Token Rotation Strategy
+
 When `/auth/refresh` is called, the backend uses **Refresh Token Rotation**:
+
 1. The submitted `refreshToken` is checked and immediately **invalidated/deleted**.
 2. A new `accessToken` AND a new `refreshToken` are generated and returned.
 3. The frontend **must replace both tokens** with the new pair.
@@ -22,15 +24,16 @@ When `/auth/refresh` is called, the backend uses **Refresh Token Rotation**:
 ## 2. API Endpoints Overview
 
 ### 2.1 Login
-* **Endpoint:** `POST /auth/login`
-* **Request Body:**
+
+- **Endpoint:** `POST /auth/login`
+- **Request Body:**
   ```json
   {
     "phone_number": "+998901234567",
     "password": "YourPassword123!"
   }
   ```
-* **Success Response (`200 OK`):**
+- **Success Response (`200 OK`):**
   ```json
   {
     "accessToken": "eyJhbGciOiJIUzI1NiIsIn...",
@@ -47,21 +50,22 @@ When `/auth/refresh` is called, the backend uses **Refresh Token Rotation**:
 ---
 
 ### 2.2 Refresh Token
-* **Endpoint:** `POST /auth/refresh`
-* **Request Body:**
+
+- **Endpoint:** `POST /auth/refresh`
+- **Request Body:**
   ```json
   {
     "refreshToken": "4a9d7f8c1b2e3f..."
   }
   ```
-* **Success Response (`200 OK`):**
+- **Success Response (`200 OK`):**
   ```json
   {
     "accessToken": "eyJhbGciOiJIUzI1NiIsIn...",
     "refreshToken": "9f8e7d6c5b4a3e..."
   }
   ```
-* **Error Response (`401 Unauthorized`):**
+- **Error Response (`401 Unauthorized`):**
   ```json
   {
     "statusCode": 401,
@@ -73,14 +77,15 @@ When `/auth/refresh` is called, the backend uses **Refresh Token Rotation**:
 ---
 
 ### 2.3 Logout
-* **Endpoint:** `POST /auth/logout`
-* **Request Body:**
+
+- **Endpoint:** `POST /auth/logout`
+- **Request Body:**
   ```json
   {
     "refreshToken": "9f8e7d6c5b4a3e..."
   }
   ```
-* **Success Response (`200 OK`):**
+- **Success Response (`200 OK`):**
   ```json
   {
     "message": "Logged out successfully."
@@ -92,12 +97,12 @@ When `/auth/refresh` is called, the backend uses **Refresh Token Rotation**:
 ## 3. Recommended Frontend Storage Strategy
 
 1. **Access Token (`accessToken`):**
-   * Keep in **in-memory state** (e.g., Zustand, Redux, React Context, or a module-level variable).
-   * Fast access, naturally cleared on hard page reloads (can be restored via refresh token or initial auth check).
+   - Keep in **in-memory state** (e.g., Zustand, Redux, React Context, or a module-level variable).
+   - Fast access, naturally cleared on hard page reloads (can be restored via refresh token or initial auth check).
 
 2. **Refresh Token (`refreshToken`):**
-   * **Web Applications:** Store in `localStorage` or `sessionStorage` (or HTTP-Only secure cookies if handled transparently by cookie configuration).
-   * **Mobile / React Native:** Store using secure storage like `Expo SecureStore` or `react-native-encrypted-storage`.
+   - **Web Applications:** Store in `localStorage` or `sessionStorage` (or HTTP-Only secure cookies if handled transparently by cookie configuration).
+   - **Mobile / React Native:** Store using secure storage like `Expo SecureStore` or `react-native-encrypted-storage`.
 
 ---
 
@@ -298,20 +303,21 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
 
 1. **Always Use `Bearer` Scheme:**
    Headers must strictly follow:
+
    ```http
    Authorization: Bearer <accessToken>
    ```
 
 2. **Single-Use Refresh Tokens (Rotation):**
-   * Do NOT re-use old refresh tokens. Once used in `/auth/refresh`, the backend deletes that key from Redis.
-   * If an old refresh token is reused, the backend will return `401 Unauthorized` (`invalid_refresh_token`).
+   - Do NOT re-use old refresh tokens. Once used in `/auth/refresh`, the backend deletes that key from Redis.
+   - If an old refresh token is reused, the backend will return `401 Unauthorized` (`invalid_refresh_token`).
 
 3. **User Status Handling:**
    If a user account becomes `Banned`, `Deleted`, or `Pending`, calls to `/auth/refresh` will fail with standard 401 error objects containing `location`:
-   * `account_banned`
-   * `account_deleted`
-   * `account_pending`
-   When received, clear tokens and present appropriate UI messages to the user.
+   - `account_banned`
+   - `account_deleted`
+   - `account_pending`
+     When received, clear tokens and present appropriate UI messages to the user.
 
 4. **Logout Procedure:**
    Always call `POST /auth/logout` with `{ refreshToken }` to invalidate the refresh session on the backend before clearing local storage.

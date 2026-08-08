@@ -3,7 +3,7 @@ import {
   requestNoContent,
   normalizePhone,
   makeApiError,
-  registerDemoHandler
+  registerDemoHandler,
 } from './httpClient';
 import type { Attachment } from './httpClient';
 import { demoAttachmentsDb } from './attachments.service';
@@ -93,8 +93,8 @@ export const demoClientsDb: Client[] = [
       first_name: 'Jasur',
       last_name: "Yo'ldoshev",
       phone: '+998901234567',
-      color: '#FF0000'
-    }
+      color: '#FF0000',
+    },
   },
   {
     id: 'c-client-2',
@@ -114,8 +114,8 @@ export const demoClientsDb: Client[] = [
       first_name: 'Jasur',
       last_name: "Yo'ldoshev",
       phone: '+998901234567',
-      color: '#FF0000'
-    }
+      color: '#FF0000',
+    },
   },
   {
     id: 'c-client-3',
@@ -135,8 +135,8 @@ export const demoClientsDb: Client[] = [
       first_name: 'Rustam',
       last_name: 'Rasulov',
       phone: '+998909876543',
-      color: '#3357FF'
-    }
+      color: '#3357FF',
+    },
   },
   {
     id: 'c-client-4',
@@ -156,8 +156,8 @@ export const demoClientsDb: Client[] = [
       first_name: 'Rustam',
       last_name: 'Rasulov',
       phone: '+998909876543',
-      color: '#3357FF'
-    }
+      color: '#3357FF',
+    },
   },
   {
     id: 'c-client-5',
@@ -172,7 +172,7 @@ export const demoClientsDb: Client[] = [
     created_at: '2026-07-16T11:00:00.000Z',
     updated_at: '2026-07-16T11:00:00.000Z',
     effective_color: '#808080',
-    assigned_employee: null
+    assigned_employee: null,
   },
   {
     id: 'c-client-6',
@@ -192,8 +192,8 @@ export const demoClientsDb: Client[] = [
       first_name: 'Alisher',
       last_name: 'Rashidov',
       phone: '+998901111111',
-      color: '#6F42C1'
-    }
+      color: '#6F42C1',
+    },
   },
   {
     id: 'c-client-7',
@@ -208,19 +208,25 @@ export const demoClientsDb: Client[] = [
     created_at: '2026-07-14T16:10:00.000Z',
     updated_at: '2026-07-14T16:10:00.000Z',
     effective_color: '#808080',
-    assigned_employee: null
-  }
+    assigned_employee: null,
+  },
 ];
 
 // Dedicated Client Mock Database Handlers
 registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // Color stats
-  if (path === '/clients/stats/color-distribution' && (options.method === 'GET' || !options.method)) {
-    const activeClients = demoClientsDb.filter(c => c.is_active);
+  if (
+    path === '/clients/stats/color-distribution' &&
+    (options.method === 'GET' || !options.method)
+  ) {
+    const activeClients = demoClientsDb.filter((c) => c.is_active);
     const colorMap: Record<string, number> = {};
-    const empMap: Record<string, { employee_id: string | null; employee_name: string; default_color: string; count: number }> = {};
+    const empMap: Record<
+      string,
+      { employee_id: string | null; employee_name: string; default_color: string; count: number }
+    > = {};
 
-    activeClients.forEach(c => {
+    activeClients.forEach((c) => {
       const col = (c.effective_color || '#808080').toUpperCase();
       colorMap[col] = (colorMap[col] || 0) + 1;
 
@@ -231,7 +237,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             employee_id: empId,
             employee_name: `${c.assigned_employee.first_name} ${c.assigned_employee.last_name}`,
             default_color: c.assigned_employee.color || '#808080',
-            count: 0
+            count: 0,
           };
         }
         empMap[empId].count += 1;
@@ -242,7 +248,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             employee_id: null,
             employee_name: 'Unassigned',
             default_color: '#808080',
-            count: 0
+            count: 0,
           };
         }
         empMap[unassignedKey].count += 1;
@@ -252,13 +258,16 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const stats: ClientColorStats = {
       total_clients: activeClients.length,
       by_color: Object.entries(colorMap).map(([color, count]) => ({ color, count })),
-      by_employee: Object.values(empMap)
+      by_employee: Object.values(empMap),
     };
     return { handled: true, result: stats };
   }
 
   // List
-  if ((path === '/clients' || path.startsWith('/clients?')) && (options.method === 'GET' || !options.method)) {
+  if (
+    (path === '/clients' || path.startsWith('/clients?')) &&
+    (options.method === 'GET' || !options.method)
+  ) {
     const urlObj = new URL(path, 'http://localhost');
     const search = urlObj.searchParams.get('search')?.toLowerCase() || '';
     const empId = urlObj.searchParams.get('assigned_employee_id');
@@ -270,33 +279,38 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     let filtered = [...demoClientsDb];
 
     if (search) {
-      filtered = filtered.filter(c =>
-        c.first_name.toLowerCase().includes(search) ||
-        c.last_name.toLowerCase().includes(search) ||
-        c.company_name.toLowerCase().includes(search) ||
-        c.phone.includes(search)
+      filtered = filtered.filter(
+        (c) =>
+          c.first_name.toLowerCase().includes(search) ||
+          c.last_name.toLowerCase().includes(search) ||
+          c.company_name.toLowerCase().includes(search) ||
+          c.phone.includes(search)
       );
     }
 
     if (empId) {
-      filtered = filtered.filter(c => c.assigned_employee_id === empId);
+      filtered = filtered.filter((c) => c.assigned_employee_id === empId);
     }
 
     if (colorFilter) {
-      filtered = filtered.filter(c => (c.effective_color || '#808080').toUpperCase() === colorFilter);
+      filtered = filtered.filter(
+        (c) => (c.effective_color || '#808080').toUpperCase() === colorFilter
+      );
     }
 
     if (isActiveParam !== null && isActiveParam !== undefined) {
       const activeBool = isActiveParam === 'true';
-      filtered = filtered.filter(c => c.is_active === activeBool);
+      filtered = filtered.filter((c) => c.is_active === activeBool);
     }
 
     const total = filtered.length;
     const totalPages = Math.ceil(total / limit) || 1;
     const startIndex = (page - 1) * limit;
-    const paginatedItems = filtered.slice(startIndex, startIndex + limit).map(c => ({
+    const paginatedItems = filtered.slice(startIndex, startIndex + limit).map((c) => ({
       ...c,
-      attachments: demoAttachmentsDb.filter(att => att.entity_type === 'client' && att.entity_id === c.id)
+      attachments: demoAttachmentsDb.filter(
+        (att) => att.entity_type === 'client' && att.entity_id === c.id
+      ),
     }));
 
     const result: ClientPaginatedResponse = {
@@ -305,8 +319,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         total,
         page,
         limit,
-        totalPages
-      }
+        totalPages,
+      },
     };
 
     return { handled: true, result };
@@ -315,9 +329,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // Create
   if (path === '/clients' && options.method === 'POST') {
     const normPhone = normalizePhone(body.phone || '');
-    const exists = demoClientsDb.some(c => normalizePhone(c.phone) === normPhone);
+    const exists = demoClientsDb.some((c) => normalizePhone(c.phone) === normPhone);
     if (exists) {
-      throw makeApiError(path, 400, 'client_phone_exists', 'A client with this phone number already exists.');
+      throw makeApiError(
+        path,
+        400,
+        'client_phone_exists',
+        'A client with this phone number already exists.'
+      );
     }
 
     const newId = 'c-client-' + (demoClientsDb.length + 1);
@@ -326,15 +345,33 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     let assignedEmp = null;
     if (empId) {
       if (empId === 'b1a2c3d4-e5f6-7890-abcd-ef1234567890') {
-        assignedEmp = { id: empId, first_name: 'Jasur', last_name: "Yo'ldoshev", phone: '+998901234567', color: '#FF0000' };
+        assignedEmp = {
+          id: empId,
+          first_name: 'Jasur',
+          last_name: "Yo'ldoshev",
+          phone: '+998901234567',
+          color: '#FF0000',
+        };
       } else if (empId === '2b78a1c9-34e5-4a1d-91b2-c8d9e0f1a2b3') {
-        assignedEmp = { id: empId, first_name: 'Rustam', last_name: 'Rasulov', phone: '+998909876543', color: '#3357FF' };
+        assignedEmp = {
+          id: empId,
+          first_name: 'Rustam',
+          last_name: 'Rasulov',
+          phone: '+998909876543',
+          color: '#3357FF',
+        };
       } else if (empId === '1d63b635-8933-45d1-a233-d6902e3b27f1') {
-        assignedEmp = { id: empId, first_name: 'Alisher', last_name: 'Rashidov', phone: '+998901111111', color: '#6F42C1' };
+        assignedEmp = {
+          id: empId,
+          first_name: 'Alisher',
+          last_name: 'Rashidov',
+          phone: '+998901111111',
+          color: '#6F42C1',
+        };
       }
     }
 
-    const effectiveColor = assignedEmp ? (assignedEmp.color || '#808080') : '#808080';
+    const effectiveColor = assignedEmp ? assignedEmp.color || '#808080' : '#808080';
 
     const newClient: Client = {
       id: newId,
@@ -350,7 +387,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       updated_at: new Date().toISOString(),
       effective_color: effectiveColor,
       assigned_employee: assignedEmp,
-      attachments: []
+      attachments: [],
     };
 
     demoClientsDb.unshift(newClient);
@@ -358,15 +395,21 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   // Get single client
-  if (path.startsWith('/clients/') && (options.method === 'GET' || !options.method) && !path.includes('/stats/')) {
+  if (
+    path.startsWith('/clients/') &&
+    (options.method === 'GET' || !options.method) &&
+    !path.includes('/stats/')
+  ) {
     const clientId = path.split('/')[2];
-    const client = demoClientsDb.find(c => c.id === clientId);
+    const client = demoClientsDb.find((c) => c.id === clientId);
     if (!client) {
       throw makeApiError(path, 404, 'client_not_found', 'Client not found');
     }
     const fullClient = {
       ...client,
-      attachments: demoAttachmentsDb.filter(att => att.entity_type === 'client' && att.entity_id === client.id)
+      attachments: demoAttachmentsDb.filter(
+        (att) => att.entity_type === 'client' && att.entity_id === client.id
+      ),
     };
     return { handled: true, result: fullClient };
   }
@@ -374,7 +417,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // Update client
   if (path.startsWith('/clients/') && options.method === 'PUT') {
     const clientId = path.split('/')[2];
-    const index = demoClientsDb.findIndex(c => c.id === clientId);
+    const index = demoClientsDb.findIndex((c) => c.id === clientId);
     if (index === -1) {
       throw makeApiError(path, 404, 'client_not_found', 'Client not found');
     }
@@ -383,27 +426,53 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     if (body.phone && normalizePhone(body.phone) !== normalizePhone(current.phone)) {
       const normPhone = normalizePhone(body.phone);
-      if (demoClientsDb.some(c => c.id !== clientId && normalizePhone(c.phone) === normPhone)) {
-        throw makeApiError(path, 400, 'client_phone_exists', 'A client with this phone number already exists.');
+      if (demoClientsDb.some((c) => c.id !== clientId && normalizePhone(c.phone) === normPhone)) {
+        throw makeApiError(
+          path,
+          400,
+          'client_phone_exists',
+          'A client with this phone number already exists.'
+        );
       }
     }
 
-    const empId = body.assigned_employee_id !== undefined ? body.assigned_employee_id : current.assigned_employee_id;
+    const empId =
+      body.assigned_employee_id !== undefined
+        ? body.assigned_employee_id
+        : current.assigned_employee_id;
     let assignedEmp = current.assigned_employee;
 
     if (empId !== current.assigned_employee_id) {
       if (empId === 'b1a2c3d4-e5f6-7890-abcd-ef1234567890') {
-        assignedEmp = { id: empId, first_name: 'Jasur', last_name: "Yo'ldoshev", phone: '+998901234567', color: '#FF0000' };
+        assignedEmp = {
+          id: empId,
+          first_name: 'Jasur',
+          last_name: "Yo'ldoshev",
+          phone: '+998901234567',
+          color: '#FF0000',
+        };
       } else if (empId === '2b78a1c9-34e5-4a1d-91b2-c8d9e0f1a2b3') {
-        assignedEmp = { id: empId, first_name: 'Rustam', last_name: 'Rasulov', phone: '+998909876543', color: '#3357FF' };
+        assignedEmp = {
+          id: empId,
+          first_name: 'Rustam',
+          last_name: 'Rasulov',
+          phone: '+998909876543',
+          color: '#3357FF',
+        };
       } else if (empId === '1d63b635-8933-45d1-a233-d6902e3b27f1') {
-        assignedEmp = { id: empId, first_name: 'Alisher', last_name: 'Rashidov', phone: '+998901111111', color: '#6F42C1' };
+        assignedEmp = {
+          id: empId,
+          first_name: 'Alisher',
+          last_name: 'Rashidov',
+          phone: '+998901111111',
+          color: '#6F42C1',
+        };
       } else {
         assignedEmp = null;
       }
     }
 
-    const effectiveColor = assignedEmp ? (assignedEmp.color || '#808080') : '#808080';
+    const effectiveColor = assignedEmp ? assignedEmp.color || '#808080' : '#808080';
 
     const updated: Client = {
       ...current,
@@ -417,7 +486,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       is_active: body.is_active !== undefined ? body.is_active : current.is_active,
       updated_at: new Date().toISOString(),
       effective_color: effectiveColor,
-      assigned_employee: assignedEmp
+      assigned_employee: assignedEmp,
     };
 
     demoClientsDb[index] = updated;
@@ -425,20 +494,25 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       handled: true,
       result: {
         ...updated,
-        attachments: demoAttachmentsDb.filter(att => att.entity_type === 'client' && att.entity_id === updated.id)
-      }
+        attachments: demoAttachmentsDb.filter(
+          (att) => att.entity_type === 'client' && att.entity_id === updated.id
+        ),
+      },
     };
   }
 
   // Delete client
   if (path.startsWith('/clients/') && options.method === 'DELETE') {
     const clientId = path.split('/')[2];
-    const index = demoClientsDb.findIndex(c => c.id === clientId);
+    const index = demoClientsDb.findIndex((c) => c.id === clientId);
     if (index !== -1) {
       demoClientsDb.splice(index, 1);
     }
     for (let i = demoAttachmentsDb.length - 1; i >= 0; i--) {
-      if (demoAttachmentsDb[i].entity_type === 'client' && demoAttachmentsDb[i].entity_id === clientId) {
+      if (
+        demoAttachmentsDb[i].entity_type === 'client' &&
+        demoAttachmentsDb[i].entity_id === clientId
+      ) {
         demoAttachmentsDb.splice(i, 1);
       }
     }
@@ -454,31 +528,32 @@ export const clientsApi = {
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.search) searchParams.set('search', params.search);
-    if (params?.assigned_employee_id) searchParams.set('assigned_employee_id', params.assigned_employee_id);
+    if (params?.assigned_employee_id)
+      searchParams.set('assigned_employee_id', params.assigned_employee_id);
     if (params?.color) searchParams.set('color', params.color);
     if (params?.is_active !== undefined) searchParams.set('is_active', String(params.is_active));
     const query = searchParams.toString();
-    return request<ClientPaginatedResponse>(`/clients${query ? `?${query}` : ''}`, { method: 'GET' });
+    return request<ClientPaginatedResponse>(`/clients${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
   },
 
   getColorDistribution: () =>
     request<ClientColorStats>('/clients/stats/color-distribution', { method: 'GET' }),
 
-  get: (id: string) =>
-    request<Client>(`/clients/${id}`, { method: 'GET' }),
+  get: (id: string) => request<Client>(`/clients/${id}`, { method: 'GET' }),
 
   create: (dto: CreateClientDto) =>
     request<Client>('/clients', {
       method: 'POST',
-      body: JSON.stringify(dto)
+      body: JSON.stringify(dto),
     }),
 
   update: (id: string, dto: UpdateClientDto) =>
     request<Client>(`/clients/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(dto)
+      body: JSON.stringify(dto),
     }),
 
-  delete: (id: string) =>
-    requestNoContent(`/clients/${id}`, { method: 'DELETE' })
+  delete: (id: string) => requestNoContent(`/clients/${id}`, { method: 'DELETE' }),
 };

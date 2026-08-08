@@ -9,19 +9,20 @@ This document provides detailed specifications of the **Clients API endpoints** 
 The backend employs a combination of the global `JwtAuthGuard` and `RolesGuard` to secure endpoints.
 
 ### Role Hierarchies
-* **CEO / ROP (Administrators):** Have full write, update, delete, and read permissions on all client records, color configurations, and assignment statistics.
-* **EMPLOYEE (Standard Staff):** Read permissions to search, view client profiles, and access assigned client lists.
+
+- **CEO / ROP (Administrators):** Have full write, update, delete, and read permissions on all client records, color configurations, and assignment statistics.
+- **EMPLOYEE (Standard Staff):** Read permissions to search, view client profiles, and access assigned client lists.
 
 ### Security Exceptions Registry
 
-| Location Key | HTTP Code | Scenario |
-| :--- | :--- | :--- |
-| `unauthorized` | 401 | JWT token is missing, expired, or invalid. |
-| `role_missing` | 403 | Authenticated user payload contains no role identifier. |
-| `insufficient_role` | 403 | Non-admin user attempting write/delete operations (e.g. standard employee trying to delete a client). |
-| `client_not_found` | 404 | Target client record does not exist in the database. |
-| `assigned_employee_not_found` | 404 | Provided `assigned_employee_id` does not match any existing employee. |
-| `client_phone_exists` | 400 | A client with the given phone number already exists in the system. |
+| Location Key                  | HTTP Code | Scenario                                                                                              |
+| :---------------------------- | :-------- | :---------------------------------------------------------------------------------------------------- |
+| `unauthorized`                | 401       | JWT token is missing, expired, or invalid.                                                            |
+| `role_missing`                | 403       | Authenticated user payload contains no role identifier.                                               |
+| `insufficient_role`           | 403       | Non-admin user attempting write/delete operations (e.g. standard employee trying to delete a client). |
+| `client_not_found`            | 404       | Target client record does not exist in the database.                                                  |
+| `assigned_employee_not_found` | 404       | Provided `assigned_employee_id` does not match any existing employee.                                 |
+| `client_phone_exists`         | 400       | A client with the given phone number already exists in the system.                                    |
 
 ---
 
@@ -33,7 +34,7 @@ The following entity diagram illustrates the structural relationships between cl
 erDiagram
     EMPLOYEES ||--o{ CLIENTS : "responsible for / assigned to"
     CLIENTS ||--o{ ATTACHMENTS : "has files (passport, contracts)"
-    
+
     EMPLOYEES {
         uuid id PK
         string first_name
@@ -70,15 +71,19 @@ erDiagram
 ## 3. Core Logic & Automatic Workflows
 
 ### 3.1. Color-Coding & Inheritance Logic
+
 Clients can be color-coded individually to represent active status, priority, or ownership in sales pipelines (~300 active clients):
+
 1. **Explicit Client Color**: If a client has a non-null `color` hex string saved (e.g., `#FF0000`), `effective_color` is set to that explicit color.
 2. **Inherited Employee Color**: If a client's `color` field is `null`, the backend automatically inherits the assigned employee's `color` property.
 3. **Default Fallback**: If neither client nor employee has a custom color set, `effective_color` defaults to `#CCCCCC`.
 
 ### 3.2. Phone Normalization & Duplication Check
+
 - Phone numbers passed in requests (e.g., `+998 (90) 123-45-67`) are automatically normalized to digits only (`998901234567`) before checking against existing records to prevent duplicate client entries.
 
 ### 3.3. Document & Passport Attachments
+
 - Client files (e.g., passport scans, contracts) uploaded via `/attachments/upload` with `entity_type: 'client'` and `entity_id: <client_uuid>` are automatically aggregated and embedded as an `attachments` array in `GET /clients` and `GET /clients/:id` responses.
 
 ---
@@ -88,24 +93,26 @@ Clients can be color-coded individually to represent active status, priority, or
 ---
 
 ### 4.1. List Clients
+
 Retrieves a paginated list of clients filtered by employee assignment, color tag, search term, or active status.
 
-* **Endpoint:** `GET /clients`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
+- **Endpoint:** `GET /clients`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
 
 #### Query Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `search` | `string` | No | Search query matching first name, last name, company name, or phone. |
-| `assigned_employee_id` | `UUID` | No | Filter clients assigned to a specific employee. |
-| `color` | `string` | No | Filter clients by hex color code (matches explicit client color or inherited employee color). |
-| `is_active` | `boolean` | No | Filter active (`true`) or inactive (`false`) clients. |
-| `page` | `number` | No | Page number (default: `1`). |
-| `limit` | `number` | No | Items per page (default: `20`, max: `100`). |
+| Parameter              | Type      | Required | Description                                                                                   |
+| :--------------------- | :-------- | :------- | :-------------------------------------------------------------------------------------------- |
+| `search`               | `string`  | No       | Search query matching first name, last name, company name, or phone.                          |
+| `assigned_employee_id` | `UUID`    | No       | Filter clients assigned to a specific employee.                                               |
+| `color`                | `string`  | No       | Filter clients by hex color code (matches explicit client color or inherited employee color). |
+| `is_active`            | `boolean` | No       | Filter active (`true`) or inactive (`false`) clients.                                         |
+| `page`                 | `number`  | No       | Page number (default: `1`).                                                                   |
+| `limit`                | `number`  | No       | Items per page (default: `20`, max: `100`).                                                   |
 
 #### Success Response (200 OK)
+
 ```json
 {
   "data": [
@@ -154,13 +161,15 @@ Retrieves a paginated list of clients filtered by employee assignment, color tag
 ---
 
 ### 4.2. Get Color Distribution Statistics
+
 Returns aggregate count statistics of active clients grouped by effective color codes and assigned employees.
 
-* **Endpoint:** `GET /clients/stats/color-distribution`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `GET /clients/stats/color-distribution`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 #### Success Response (200 OK)
+
 ```json
 {
   "total_clients": 300,
@@ -188,16 +197,19 @@ Returns aggregate count statistics of active clients grouped by effective color 
 ---
 
 ### 4.3. Get Client by ID
+
 Retrieves single client record with detailed assigned employee profile and attached document list.
 
-* **Endpoint:** `GET /clients/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
+- **Endpoint:** `GET /clients/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
 
 #### Path Parameters
-* `id` (`UUID`, required) - Target client UUID.
+
+- `id` (`UUID`, required) - Target client UUID.
 
 #### Error Responses
+
 - `404 Not Found`:
   ```json
   {
@@ -210,13 +222,15 @@ Retrieves single client record with detailed assigned employee profile and attac
 ---
 
 ### 4.4. Create Client
+
 Registers a new client record.
 
-* **Endpoint:** `POST /clients`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `POST /clients`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 #### Request Body
+
 ```json
 {
   "first_name": "Jasur",
@@ -231,6 +245,7 @@ Registers a new client record.
 ```
 
 #### Validation Rules
+
 - `first_name` (string, required, length: 2-100)
 - `last_name` (string, required, length: 2-100)
 - `phone` (string, required, international phone format e.g. `+998901234567`)
@@ -243,26 +258,31 @@ Registers a new client record.
 ---
 
 ### 4.5. Update Client
+
 Updates existing client profile details.
 
-* **Endpoint:** `PUT /clients/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `PUT /clients/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 #### Path Parameters
-* `id` (`UUID`, required)
+
+- `id` (`UUID`, required)
 
 #### Request Body
+
 Accepts partial fields of `CreateClientDto`.
 
 ---
 
 ### 4.6. Delete Client
+
 Deletes target client record.
 
-* **Endpoint:** `DELETE /clients/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `DELETE /clients/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 #### Response
-* `204 No Content` on successful deletion.
+
+- `204 No Content` on successful deletion.

@@ -41,7 +41,11 @@ const pageModuleMap: Record<string, string> = {
   commercial: 'commercial_offers',
 };
 
-export function Dashboard({ userPhone: _userPhone, authMethod: _authMethod, onLogout }: DashboardProps) {
+export function Dashboard({
+  userPhone: _userPhone,
+  authMethod: _authMethod,
+  onLogout,
+}: DashboardProps) {
   const [currentPage, setCurrentPage] = useState<PageId>('overview');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);

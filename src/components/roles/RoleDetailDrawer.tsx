@@ -48,9 +48,7 @@ export function RoleDetailDrawer({
   });
 
   const percentageGranted =
-    totalPossibleActions > 0
-      ? Math.round((activeActionsCount / totalPossibleActions) * 100)
-      : 0;
+    totalPossibleActions > 0 ? Math.round((activeActionsCount / totalPossibleActions) * 100) : 0;
 
   const formatDate = (isoString?: string) => {
     if (!isoString) return '—';
@@ -69,7 +67,6 @@ export function RoleDetailDrawer({
     <Modal.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Container>
         <Modal.Dialog className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-surface dark:bg-[#1A2030] border border-border/50 rounded-2xl shadow-2xl">
-          
           {/* Top Banner */}
           <div className="p-6 bg-gradient-to-r from-brand-navy via-brand-royal to-brand-navy dark:from-[#111827] dark:via-[#1E293B] dark:to-[#0F172A] text-white relative">
             <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/10 cursor-pointer focus:outline-none transition-colors" />
@@ -122,7 +119,6 @@ export function RoleDetailDrawer({
 
           {/* Body Content */}
           <Modal.Body className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-            
             {/* Granted Actions Gauge & Stat */}
             <div className="p-4 rounded-xl bg-default/20 dark:bg-night-field border border-border/40 flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
@@ -138,7 +134,10 @@ export function RoleDetailDrawer({
                 />
               </div>
               <p className="text-[11px] text-muted">
-                {t('rolesExplicitCrudGranted', { granted: activeActionsCount, total: totalPossibleActions })}
+                {t('rolesExplicitCrudGranted', {
+                  granted: activeActionsCount,
+                  total: totalPossibleActions,
+                })}
               </p>
             </div>
 
@@ -164,7 +163,9 @@ export function RoleDetailDrawer({
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-foreground">
-                          {mod.module === 'cargo_registrations' ? t('tabTransactions') || mod.label : mod.label}
+                          {mod.module === 'cargo_registrations'
+                            ? t('tabTransactions') || mod.label
+                            : mod.label}
                         </span>
                         <code className="text-[10px] font-mono text-muted">{mod.module}</code>
                       </div>
@@ -219,7 +220,9 @@ export function RoleDetailDrawer({
                       {/* Special Permission for Cargo Registrations */}
                       {mod.module === 'cargo_registrations' && (
                         <div className="pt-2 border-t border-border/30 flex items-center justify-between text-[10px]">
-                          <span className="text-muted font-medium">{t('rolesRegisterForEveryone')}</span>
+                          <span className="text-muted font-medium">
+                            {t('rolesRegisterForEveryone')}
+                          </span>
                           <span
                             className={`px-2 py-0.5 rounded font-bold border ${
                               p.register_for_everyone
@@ -248,7 +251,11 @@ export function RoleDetailDrawer({
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border/40 bg-default/20 dark:bg-night-field">
-            <Button variant="ghost" onPress={() => onOpenChange(false)} className="font-semibold text-xs">
+            <Button
+              variant="ghost"
+              onPress={() => onOpenChange(false)}
+              className="font-semibold text-xs"
+            >
               {t('actionClose')}
             </Button>
             {onEditRole && (
@@ -264,7 +271,6 @@ export function RoleDetailDrawer({
               </Button>
             )}
           </div>
-
         </Modal.Dialog>
       </Modal.Container>
     </Modal.Backdrop>

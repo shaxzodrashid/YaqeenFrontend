@@ -290,7 +290,8 @@ export const tasksService = {
     if (params?.page) query.append('page', String(params.page));
     if (params?.limit) query.append('limit', String(params.limit));
     if (params?.offset !== undefined) query.append('offset', String(params.offset));
-    if (params?.group_by_column !== undefined) query.append('group_by_column', String(params.group_by_column));
+    if (params?.group_by_column !== undefined)
+      query.append('group_by_column', String(params.group_by_column));
 
     const queryString = query.toString();
     const endpoint = queryString ? `/tasks?${queryString}` : '/tasks';
@@ -309,7 +310,8 @@ export const tasksService = {
     if (params?.page) query.append('page', String(params.page));
     if (params?.limit) query.append('limit', String(params.limit));
     if (params?.offset !== undefined) query.append('offset', String(params.offset));
-    if (params?.group_by_column !== undefined) query.append('group_by_column', String(params.group_by_column));
+    if (params?.group_by_column !== undefined)
+      query.append('group_by_column', String(params.group_by_column));
 
     const queryString = query.toString();
     const endpoint = queryString ? `/tasks?${queryString}` : '/tasks';
@@ -373,7 +375,11 @@ export const tasksService = {
     });
   },
 
-  async updateChecklistItem(taskId: string, itemId: string, dto: UpdateChecklistItemDto): Promise<TaskChecklist> {
+  async updateChecklistItem(
+    taskId: string,
+    itemId: string,
+    dto: UpdateChecklistItemDto
+  ): Promise<TaskChecklist> {
     return request<TaskChecklist>(`/tasks/${taskId}/checklists/${itemId}`, {
       method: 'PUT',
       body: JSON.stringify(dto),
@@ -428,9 +434,14 @@ export const tasksService = {
     return response.json();
   },
 
-  async getAttachmentDownloadUrl(attachmentId: string, expiry?: number): Promise<{ downloadUrl: string }> {
+  async getAttachmentDownloadUrl(
+    attachmentId: string,
+    expiry?: number
+  ): Promise<{ downloadUrl: string }> {
     const query = expiry ? `?expiry=${expiry}` : '';
-    return request<{ downloadUrl: string }>(`/attachments/${attachmentId}/download${query}`, { method: 'GET' });
+    return request<{ downloadUrl: string }>(`/attachments/${attachmentId}/download${query}`, {
+      method: 'GET',
+    });
   },
 
   async deleteAttachment(attachmentId: string): Promise<void> {

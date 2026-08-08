@@ -43,8 +43,7 @@ export function KanbanColumnCard({
   const remainingTasks = Math.max(0, totalTasks - loadedTasks);
 
   // Role transition authorization check
-  const isRestrictedForUser =
-    allowedRoles.length > 0 && !isCeo && !allowedRoles.includes(userRole);
+  const isRestrictedForUser = allowedRoles.length > 0 && !isCeo && !allowedRoles.includes(userRole);
 
   return (
     <div
@@ -52,10 +51,10 @@ export function KanbanColumnCard({
         isDraggingActive && isTargetColumn && !isRestrictedForUser
           ? 'ring-2 ring-brand-gold border-brand-gold bg-brand-gold/10 scale-[1.01]'
           : isDraggingActive && isTargetColumn && isRestrictedForUser
-          ? 'ring-2 ring-rose-500/50 bg-rose-500/10'
-          : isDraggingActive && isRestrictedForUser
-          ? 'opacity-60'
-          : ''
+            ? 'ring-2 ring-rose-500/50 bg-rose-500/10'
+            : isDraggingActive && isRestrictedForUser
+              ? 'opacity-60'
+              : ''
       }`}
     >
       {/* Top Color Accent Line */}
@@ -64,17 +63,16 @@ export function KanbanColumnCard({
       {/* Column Header */}
       <div className="p-3.5 border-b border-border/40 flex items-center justify-between gap-2 bg-surface/40">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span
-            className="size-3 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
-          <h3 className="text-sm font-bold text-foreground truncate">
-            {column.name}
-          </h3>
+          <span className="size-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
+          <h3 className="text-sm font-bold text-foreground truncate">{column.name}</h3>
 
           <span
             className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-border/40 text-muted shrink-0"
-            title={columnMetrics ? `Loaded ${loadedTasks} of ${totalTasks} total tasks (${remainingTasks} remaining)` : undefined}
+            title={
+              columnMetrics
+                ? `Loaded ${loadedTasks} of ${totalTasks} total tasks (${remainingTasks} remaining)`
+                : undefined
+            }
           >
             {columnMetrics ? `${loadedTasks}/${totalTasks}` : tasks.length}
           </span>

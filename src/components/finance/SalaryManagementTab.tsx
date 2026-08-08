@@ -1,19 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Users,
-  DollarSign,
-  Building2,
-  Edit3,
-  Check,
-  Loader2,
-  TrendingUp,
-} from 'lucide-react';
+import { Users, DollarSign, Building2, Edit3, Check, Loader2, TrendingUp } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
 import { T } from '../T';
 import { usePermissions } from '../../context/PermissionsContext';
 import { api, formatMoney } from '../../services/api';
-import type { FixedSalariesResponse, EmployeeSalaryInfo, SupportedCurrency, ExchangeRatesResponse } from '../../services/api';
+import type {
+  FixedSalariesResponse,
+  EmployeeSalaryInfo,
+  SupportedCurrency,
+  ExchangeRatesResponse,
+} from '../../services/api';
 
 interface SalaryManagementTabProps {
   salaryData: FixedSalariesResponse | null;
@@ -23,7 +20,13 @@ interface SalaryManagementTabProps {
   selectedCurrency?: SupportedCurrency;
 }
 
-export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatchModal, selectedCurrency = 'UZS' }: SalaryManagementTabProps) {
+export function SalaryManagementTab({
+  salaryData,
+  loading,
+  onRefresh,
+  onOpenBatchModal,
+  selectedCurrency = 'UZS',
+}: SalaryManagementTabProps) {
   const { showNotification } = useNotification();
   const { canUpdate } = usePermissions();
 
@@ -47,27 +50,33 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
   }, []);
 
   // Helper to convert UZS amount to target currency using CBU exchange rates
-  const convertAmount = useCallback((amountInUzs: number, targetCurrency: SupportedCurrency): number => {
-    if (targetCurrency === 'UZS') return amountInUzs;
-    if (!ratesData || !ratesData.rates) return amountInUzs;
+  const convertAmount = useCallback(
+    (amountInUzs: number, targetCurrency: SupportedCurrency): number => {
+      if (targetCurrency === 'UZS') return amountInUzs;
+      if (!ratesData || !ratesData.rates) return amountInUzs;
 
-    let lookupCurrency = targetCurrency;
-    if (targetCurrency === 'RMB' && !ratesData.rates['RMB'] && ratesData.rates['CNY']) {
-      lookupCurrency = 'CNY';
-    } else if (targetCurrency === 'CNY' && !ratesData.rates['CNY'] && ratesData.rates['RMB']) {
-      lookupCurrency = 'RMB';
-    }
+      let lookupCurrency = targetCurrency;
+      if (targetCurrency === 'RMB' && !ratesData.rates['RMB'] && ratesData.rates['CNY']) {
+        lookupCurrency = 'CNY';
+      } else if (targetCurrency === 'CNY' && !ratesData.rates['CNY'] && ratesData.rates['RMB']) {
+        lookupCurrency = 'RMB';
+      }
 
-    const rateItem = ratesData.rates[lookupCurrency];
-    if (!rateItem || !rateItem.rate) return amountInUzs;
-    return amountInUzs / rateItem.rate;
-  }, [ratesData]);
+      const rateItem = ratesData.rates[lookupCurrency];
+      if (!rateItem || !rateItem.rate) return amountInUzs;
+      return amountInUzs / rateItem.rate;
+    },
+    [ratesData]
+  );
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-pulse">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-44 rounded-2xl bg-border/20 dark:bg-night-surface border border-border/40 dark:border-night-border" />
+          <div
+            key={i}
+            className="h-44 rounded-2xl bg-border/20 dark:bg-night-surface border border-border/40 dark:border-night-border"
+          />
         ))}
       </div>
     );
@@ -82,11 +91,13 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
   }
 
   const { total_active_employees, total_monthly_salaries, departments } = salaryData;
-  const avgSalary = total_active_employees > 0 ? total_monthly_salaries / total_active_employees : 0;
+  const avgSalary =
+    total_active_employees > 0 ? total_monthly_salaries / total_active_employees : 0;
 
-  const filteredDepts = selectedDeptId === 'all'
-    ? departments
-    : departments.filter((d) => d.department_id === selectedDeptId);
+  const filteredDepts =
+    selectedDeptId === 'all'
+      ? departments
+      : departments.filter((d) => d.department_id === selectedDeptId);
 
   const handleStartEdit = (emp: EmployeeSalaryInfo) => {
     setEditingEmpId(emp.id);
@@ -142,7 +153,10 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
                 Monthly Salary Burden ($E_sal$)
               </span>
               <span className="text-xl font-bold text-brand-gold">
-                {formatMoney(convertAmount(total_monthly_salaries, selectedCurrency), selectedCurrency)}
+                {formatMoney(
+                  convertAmount(total_monthly_salaries, selectedCurrency),
+                  selectedCurrency
+                )}
               </span>
             </div>
           </div>
@@ -170,7 +184,9 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
             className="w-full md:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent dark:bg-[#5B8FD4] text-accent-foreground dark:text-[#0B1528] font-semibold text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
           >
             <Edit3 className="size-4" />
-            <span><T k="finBatchUpdateSalaries" /></span>
+            <span>
+              <T k="finBatchUpdateSalaries" />
+            </span>
           </button>
         )}
       </div>
@@ -229,7 +245,10 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
                   Dept Fixed Salary Total
                 </span>
                 <span className="text-sm font-bold text-brand-gold">
-                  {formatMoney(convertAmount(dept.total_fixed_salary, selectedCurrency), selectedCurrency)}
+                  {formatMoney(
+                    convertAmount(dept.total_fixed_salary, selectedCurrency),
+                    selectedCurrency
+                  )}
                 </span>
               </div>
             </div>
@@ -250,9 +269,13 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
                       {/* Avatar */}
                       <div
                         className="size-10 rounded-full border border-brand-gold/30 flex items-center justify-center font-bold text-xs shrink-0"
-                        style={{ backgroundColor: emp.color ? `${emp.color}20` : '#0F2D5C20', color: emp.color || '#C8A96A' }}
+                        style={{
+                          backgroundColor: emp.color ? `${emp.color}20` : '#0F2D5C20',
+                          color: emp.color || '#C8A96A',
+                        }}
                       >
-                        {emp.first_name?.[0]}{emp.last_name?.[0] || 'Y'}
+                        {emp.first_name?.[0]}
+                        {emp.last_name?.[0] || 'Y'}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-foreground dark:text-night-text truncate">
@@ -262,11 +285,13 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
                           {emp.phone || 'No phone'}
                         </p>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        emp.is_active
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          emp.is_active
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                        }`}
+                      >
                         {emp.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
@@ -281,7 +306,7 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
                         <div className="flex items-center gap-1.5">
                           <div className="relative w-24">
                             <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-muted text-xs">
-                              {emp.currency === 'UZS' ? 'so\'m' : emp.currency === 'RUB' ? '₽' : '$'}
+                              {emp.currency === 'UZS' ? "so'm" : emp.currency === 'RUB' ? '₽' : '$'}
                             </span>
                             <input
                               type="number"
@@ -299,7 +324,11 @@ export function SalaryManagementTab({ salaryData, loading, onRefresh, onOpenBatc
                             onClick={() => handleSaveSingleSalary(emp.id)}
                             className="p-1 rounded-lg bg-emerald-500/20 text-emerald-600 hover:bg-emerald-500/30 transition-colors cursor-pointer"
                           >
-                            {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                            {isSaving ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Check className="size-3.5" />
+                            )}
                           </button>
                         </div>
                       ) : (

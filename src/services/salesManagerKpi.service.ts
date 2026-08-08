@@ -1,7 +1,4 @@
-import {
-  request,
-  registerDemoHandler,
-} from './httpClient';
+import { request, registerDemoHandler } from './httpClient';
 import type {
   SalesManagerEvaluation,
   CalculateEvaluationDto,
@@ -199,12 +196,10 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
 ];
 
 // Helper to generate evaluation object dynamically in demo mode
-function createDemoEvaluation(
-  emp: any,
-  month: string,
-  addBonus = 0
-): SalesManagerEvaluation {
-  const level: CareerLevel = (emp.user_role === 'ROP' || emp.user_role === 'CEO' ? 'SENIOR' : 'JUNIOR') as CareerLevel;
+function createDemoEvaluation(emp: any, month: string, addBonus = 0): SalesManagerEvaluation {
+  const level: CareerLevel = (
+    emp.user_role === 'ROP' || emp.user_role === 'CEO' ? 'SENIOR' : 'JUNIOR'
+  ) as CareerLevel;
   const spec = CAREER_LEVELS_MATRIX[level] || CAREER_LEVELS_MATRIX.JUNIOR;
   const mentees = level === 'SENIOR' ? 1 : level === 'EXPERT' ? 3 : 0;
 
@@ -348,7 +343,9 @@ registerDemoHandler((path, options) => {
 
   // 3. Approve Average Check Exception
   // POST /sales-manager-kpi/evaluations/:id/approve-sr-check
-  const approveSrMatch = pathname.match(/^\/sales-manager-kpi\/evaluations\/([^/]+)\/approve-sr-check$/);
+  const approveSrMatch = pathname.match(
+    /^\/sales-manager-kpi\/evaluations\/([^/]+)\/approve-sr-check$/
+  );
   if (approveSrMatch && method === 'POST') {
     const id = approveSrMatch[1];
     const body = options.body ? JSON.parse(String(options.body)) : {};
@@ -372,7 +369,9 @@ registerDemoHandler((path, options) => {
 
   // 4. Review Demotion Escalation
   // POST /sales-manager-kpi/evaluations/:id/review-demotion
-  const demotionMatch = pathname.match(/^\/sales-manager-kpi\/evaluations\/([^/]+)\/review-demotion$/);
+  const demotionMatch = pathname.match(
+    /^\/sales-manager-kpi\/evaluations\/([^/]+)\/review-demotion$/
+  );
   if (demotionMatch && method === 'POST') {
     const id = demotionMatch[1];
     const body = options.body ? JSON.parse(String(options.body)) : {};

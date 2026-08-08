@@ -19,7 +19,12 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
+  },
 };
 
 export function DepartmentsPage() {
@@ -160,8 +165,12 @@ export function DepartmentsPage() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl font-bold font-serif text-foreground"><T k="deptTitle" /></h1>
-          <p className="text-sm text-muted mt-1"><T k="deptSubtitle" /></p>
+          <h1 className="text-2xl font-bold font-serif text-foreground">
+            <T k="deptTitle" />
+          </h1>
+          <p className="text-sm text-muted mt-1">
+            <T k="deptSubtitle" />
+          </p>
         </div>
         {canCreate('departments') && (
           <Button
@@ -194,8 +203,12 @@ export function DepartmentsPage() {
           <div className="size-20 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center text-brand-gold mb-6">
             <Building2 className="size-9" />
           </div>
-          <h3 className="text-lg font-bold text-foreground mb-2"><T k="deptNoDepartments" /></h3>
-          <p className="text-sm text-muted max-w-sm mb-6"><T k="deptNoDepartmentsDesc" /></p>
+          <h3 className="text-lg font-bold text-foreground mb-2">
+            <T k="deptNoDepartments" />
+          </h3>
+          <p className="text-sm text-muted max-w-sm mb-6">
+            <T k="deptNoDepartmentsDesc" />
+          </p>
           <Button
             onPress={openCreateModal}
             className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-semibold rounded-xl px-5"
@@ -220,8 +233,12 @@ export function DepartmentsPage() {
                       <Building2 className="size-5" />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <h3 className="text-sm font-bold text-foreground truncate">{dept.display_name}</h3>
-                      <code className="text-[11px] text-muted font-mono bg-default/50 px-1.5 py-0.5 rounded mt-0.5 w-fit">{dept.name}</code>
+                      <h3 className="text-sm font-bold text-foreground truncate">
+                        {dept.display_name}
+                      </h3>
+                      <code className="text-[11px] text-muted font-mono bg-default/50 px-1.5 py-0.5 rounded mt-0.5 w-fit">
+                        {dept.name}
+                      </code>
                     </div>
                   </div>
 
@@ -254,7 +271,9 @@ export function DepartmentsPage() {
 
                 <div className="flex items-center gap-1.5 text-[11px] text-muted mt-2">
                   <Calendar className="size-3" />
-                  <span><T k="deptCreatedAt" />: {formatDate(dept.created_at)}</span>
+                  <span>
+                    <T k="deptCreatedAt" />: {formatDate(dept.created_at)}
+                  </span>
                 </div>
               </Card>
             </motion.div>
@@ -265,105 +284,137 @@ export function DepartmentsPage() {
       {/* Create/Edit Modal */}
       <Modal.Backdrop isOpen={modalOpen} onOpenChange={setModalOpen}>
         <Modal.Container>
-            <Modal.Dialog className="max-w-md">
-              <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
-              <Modal.Header>
-                <Modal.Heading className="font-serif font-bold text-lg">
-                  {editingDept ? <T k="deptEditDept" /> : <T k="deptNewDept" />}
-                </Modal.Heading>
-              </Modal.Header>
-              <Modal.Body className="flex flex-col gap-5 py-5">
-                {/* Machine Name */}
-                <div className="flex flex-col gap-1.5 text-left">
-                  <label className="text-xs font-semibold text-foreground"><T k="deptFieldName" /></label>
-                  <input
-                    type="text"
-                    value={formName}
-                    onChange={(e) => { setFormName(e.target.value.toLowerCase()); setFormErrors((p) => ({ ...p, name: undefined })); }}
-                    placeholder="marketing-hq"
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 font-mono
+          <Modal.Dialog className="max-w-md">
+            <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
+            <Modal.Header>
+              <Modal.Heading className="font-serif font-bold text-lg">
+                {editingDept ? <T k="deptEditDept" /> : <T k="deptNewDept" />}
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="flex flex-col gap-5 py-5">
+              {/* Machine Name */}
+              <div className="flex flex-col gap-1.5 text-left">
+                <label className="text-xs font-semibold text-foreground">
+                  <T k="deptFieldName" />
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => {
+                    setFormName(e.target.value.toLowerCase());
+                    setFormErrors((p) => ({ ...p, name: undefined }));
+                  }}
+                  placeholder="marketing-hq"
+                  className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 font-mono
                       ${formErrors.name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'}`}
-                  />
-                  <p className={`text-[11px] ${formErrors.name ? 'text-rose-500' : 'text-muted'}`}>
-                    {formErrors.name ? formErrors.name : <T k="deptFieldNameHint" />}
-                  </p>
-                </div>
+                />
+                <p className={`text-[11px] ${formErrors.name ? 'text-rose-500' : 'text-muted'}`}>
+                  {formErrors.name ? formErrors.name : <T k="deptFieldNameHint" />}
+                </p>
+              </div>
 
-                {/* Display Name */}
-                <div className="flex flex-col gap-1.5 text-left">
-                  <label className="text-xs font-semibold text-foreground"><T k="deptFieldDisplayName" /></label>
-                  <input
-                    type="text"
-                    value={formDisplayName}
-                    onChange={(e) => { setFormDisplayName(e.target.value); setFormErrors((p) => ({ ...p, display_name: undefined })); }}
-                    placeholder="Marketing HQ"
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30
+              {/* Display Name */}
+              <div className="flex flex-col gap-1.5 text-left">
+                <label className="text-xs font-semibold text-foreground">
+                  <T k="deptFieldDisplayName" />
+                </label>
+                <input
+                  type="text"
+                  value={formDisplayName}
+                  onChange={(e) => {
+                    setFormDisplayName(e.target.value);
+                    setFormErrors((p) => ({ ...p, display_name: undefined }));
+                  }}
+                  placeholder="Marketing HQ"
+                  className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30
                       ${formErrors.display_name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'}`}
-                  />
-                  <p className={`text-[11px] ${formErrors.display_name ? 'text-rose-500' : 'text-muted'}`}>
-                    {formErrors.display_name ? formErrors.display_name : <T k="deptFieldDisplayNameHint" />}
-                  </p>
-                </div>
-              </Modal.Body>
-              <Modal.Footer className="flex justify-end gap-2">
-                <Button variant="ghost" onPress={() => setModalOpen(false)} className="font-semibold">
-                  <T k="actionCancel" />
-                </Button>
-                <Button
-                  onPress={handleSave}
-                  isDisabled={saving}
-                  className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-semibold min-w-[100px]"
+                />
+                <p
+                  className={`text-[11px] ${formErrors.display_name ? 'text-rose-500' : 'text-muted'}`}
                 >
-                  {saving ? (
-                    <span className="inline-flex items-center gap-2"><Spinner size="sm" /> {editingDept ? <T k="actionSaving" /> : <T k="actionCreating" />}</span>
+                  {formErrors.display_name ? (
+                    formErrors.display_name
                   ) : (
-                    editingDept ? <T k="actionSave" /> : <T k="actionCreate" />
+                    <T k="deptFieldDisplayNameHint" />
                   )}
-                </Button>
-              </Modal.Footer>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
+                </p>
+              </div>
+            </Modal.Body>
+            <Modal.Footer className="flex justify-end gap-2">
+              <Button variant="ghost" onPress={() => setModalOpen(false)} className="font-semibold">
+                <T k="actionCancel" />
+              </Button>
+              <Button
+                onPress={handleSave}
+                isDisabled={saving}
+                className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-semibold min-w-[100px]"
+              >
+                {saving ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner size="sm" />{' '}
+                    {editingDept ? <T k="actionSaving" /> : <T k="actionCreating" />}
+                  </span>
+                ) : editingDept ? (
+                  <T k="actionSave" />
+                ) : (
+                  <T k="actionCreate" />
+                )}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {/* Delete Confirmation Modal */}
       <Modal.Backdrop isOpen={deleteOpen} onOpenChange={setDeleteOpen}>
         <Modal.Container>
-            <Modal.Dialog className="max-w-sm">
-              <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
-              <Modal.Body className="flex flex-col items-center text-center py-8 gap-4">
-                <div className="size-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
-                  <AlertTriangle className="size-7" />
+          <Modal.Dialog className="max-w-sm">
+            <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
+            <Modal.Body className="flex flex-col items-center text-center py-8 gap-4">
+              <div className="size-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <AlertTriangle className="size-7" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground font-serif">
+                <T k="deptDeleteTitle" />
+              </h3>
+              <p className="text-sm text-muted leading-relaxed">
+                <T k="deptDeleteDesc" />
+              </p>
+              {deletingDept && (
+                <div className="flex items-center gap-2 bg-default/30 px-3 py-2 rounded-xl">
+                  <Building2 className="size-4 text-muted" />
+                  <span className="text-sm font-semibold text-foreground">
+                    {deletingDept.display_name}
+                  </span>
+                  <code className="text-[11px] text-muted font-mono">({deletingDept.name})</code>
                 </div>
-                <h3 className="text-lg font-bold text-foreground font-serif"><T k="deptDeleteTitle" /></h3>
-                <p className="text-sm text-muted leading-relaxed"><T k="deptDeleteDesc" /></p>
-                {deletingDept && (
-                  <div className="flex items-center gap-2 bg-default/30 px-3 py-2 rounded-xl">
-                    <Building2 className="size-4 text-muted" />
-                    <span className="text-sm font-semibold text-foreground">{deletingDept.display_name}</span>
-                    <code className="text-[11px] text-muted font-mono">({deletingDept.name})</code>
-                  </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer className="flex justify-center gap-3 pb-6">
+              <Button
+                variant="ghost"
+                onPress={() => setDeleteOpen(false)}
+                className="font-semibold"
+              >
+                <T k="actionCancel" />
+              </Button>
+              <Button
+                onPress={handleDelete}
+                isDisabled={deleting}
+                className="bg-rose-500 text-white hover:bg-rose-600 font-semibold min-w-[140px]"
+              >
+                {deleting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner size="sm" /> <T k="actionDelete" />
+                  </span>
+                ) : (
+                  <T k="deptDeleteConfirm" />
                 )}
-              </Modal.Body>
-              <Modal.Footer className="flex justify-center gap-3 pb-6">
-                <Button variant="ghost" onPress={() => setDeleteOpen(false)} className="font-semibold">
-                  <T k="actionCancel" />
-                </Button>
-                <Button
-                  onPress={handleDelete}
-                  isDisabled={deleting}
-                  className="bg-rose-500 text-white hover:bg-rose-600 font-semibold min-w-[140px]"
-                >
-                  {deleting ? (
-                    <span className="inline-flex items-center gap-2"><Spinner size="sm" /> <T k="actionDelete" /></span>
-                  ) : (
-                    <T k="deptDeleteConfirm" />
-                  )}
-                </Button>
-              </Modal.Footer>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </div>
   );
 }
-

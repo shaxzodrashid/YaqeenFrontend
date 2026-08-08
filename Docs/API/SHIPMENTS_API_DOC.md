@@ -40,11 +40,11 @@ erDiagram
 
 Shipment endpoints are protected by the `JwtAuthGuard` and `RolesGuard`. The permission identifier for shipments is `cargo_kpi`.
 
-| Role | Permissions | Description |
-| :--- | :--- | :--- |
-| **CEO** | Create, Read, Update, Delete | Full administrative access to shipment ledgers and financial performance metrics. |
-| **ROP** | Create, Read, Update, Delete | Complete operational control for their departments and sales teams. |
-| **EMPLOYEE** | Read | View access to search and check shipment performance histories. |
+| Role         | Permissions                  | Description                                                                       |
+| :----------- | :--------------------------- | :-------------------------------------------------------------------------------- |
+| **CEO**      | Create, Read, Update, Delete | Full administrative access to shipment ledgers and financial performance metrics. |
+| **ROP**      | Create, Read, Update, Delete | Complete operational control for their departments and sales teams.               |
+| **EMPLOYEE** | Read                         | View access to search and check shipment performance histories.                   |
 
 ---
 
@@ -52,23 +52,23 @@ Shipment endpoints are protected by the `JwtAuthGuard` and `RolesGuard`. The per
 
 ### Table name: `cargo_transactions`
 
-| Column | Data Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | `uuid` | Primary Key, Default: `uuid_generate_v4()` | Unique transaction identifier |
-| `client_id` | `uuid` | Foreign Key (`clients.id`), `notNullable()`, `onDelete('RESTRICT')` | Linked client record |
-| `employee_id` | `uuid` | Foreign Key (`employees.id`), `notNullable()`, `onDelete('RESTRICT')` | Linked employee record |
-| `department_id` | `uuid` | Foreign Key (`departments.id`), `notNullable()`, `onDelete('RESTRICT')` | Linked department record |
-| `description` | `text` | Nullable | Brief note/description of the cargo shipment |
-| `buy_price` | `decimal(12,2)` | Default: `0.00`, Not Nullable | Supplier cost in transaction currency |
-| `sell_price` | `decimal(12,2)` | Default: `0.00`, Not Nullable | Customer sales price in transaction currency |
-| `margin` | `decimal(12,2)` | Default: `0.00`, Not Nullable | Calculated gross margin: `sell_price - buy_price` |
-| `kpi_percentage`| `decimal(5,2)` | Default: `0.00`, Not Nullable | KPI percentage rate for the department |
-| `kpi_bonus` | `decimal(12,2)` | Default: `0.00`, Not Nullable | Calculated employee bonus: `margin * kpi_percentage` |
-| `currency` | `string(3)` | Default: `'UZS'`, Not Nullable | ISO currency code (`UZS`, `USD`, `RUB`, `RMB`, `CNY`) |
-| `status` | `string(50)` | Default: `'Waiting'`, Not Nullable | Shipment status stage: `'Waiting'`, `'In Transit'`, `'Border'`, `'At Station'`, `'Delivered'` |
-| `transaction_date` | `date` | Not Nullable | Ledger transaction date |
-| `created_at` | `timestamp` | Default: `now()` | Audit timestamp |
-| `updated_at` | `timestamp` | Default: `now()` | Audit timestamp |
+| Column             | Data Type       | Constraints                                                             | Description                                                                                   |
+| :----------------- | :-------------- | :---------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
+| `id`               | `uuid`          | Primary Key, Default: `uuid_generate_v4()`                              | Unique transaction identifier                                                                 |
+| `client_id`        | `uuid`          | Foreign Key (`clients.id`), `notNullable()`, `onDelete('RESTRICT')`     | Linked client record                                                                          |
+| `employee_id`      | `uuid`          | Foreign Key (`employees.id`), `notNullable()`, `onDelete('RESTRICT')`   | Linked employee record                                                                        |
+| `department_id`    | `uuid`          | Foreign Key (`departments.id`), `notNullable()`, `onDelete('RESTRICT')` | Linked department record                                                                      |
+| `description`      | `text`          | Nullable                                                                | Brief note/description of the cargo shipment                                                  |
+| `buy_price`        | `decimal(12,2)` | Default: `0.00`, Not Nullable                                           | Supplier cost in transaction currency                                                         |
+| `sell_price`       | `decimal(12,2)` | Default: `0.00`, Not Nullable                                           | Customer sales price in transaction currency                                                  |
+| `margin`           | `decimal(12,2)` | Default: `0.00`, Not Nullable                                           | Calculated gross margin: `sell_price - buy_price`                                             |
+| `kpi_percentage`   | `decimal(5,2)`  | Default: `0.00`, Not Nullable                                           | KPI percentage rate for the department                                                        |
+| `kpi_bonus`        | `decimal(12,2)` | Default: `0.00`, Not Nullable                                           | Calculated employee bonus: `margin * kpi_percentage`                                          |
+| `currency`         | `string(3)`     | Default: `'UZS'`, Not Nullable                                          | ISO currency code (`UZS`, `USD`, `RUB`, `RMB`, `CNY`)                                         |
+| `status`           | `string(50)`    | Default: `'Waiting'`, Not Nullable                                      | Shipment status stage: `'Waiting'`, `'In Transit'`, `'Border'`, `'At Station'`, `'Delivered'` |
+| `transaction_date` | `date`          | Not Nullable                                                            | Ledger transaction date                                                                       |
+| `created_at`       | `timestamp`     | Default: `now()`                                                        | Audit timestamp                                                                               |
+| `updated_at`       | `timestamp`     | Default: `now()`                                                        | Audit timestamp                                                                               |
 
 ---
 
@@ -97,13 +97,15 @@ Shipment endpoints are protected by the `JwtAuthGuard` and `RolesGuard`. The per
 ---
 
 ### 5.1. Create Shipment (Log Cargo Transaction)
+
 Registers a new cargo shipment transaction under the specified employee, department, and client.
 
-* **Endpoint:** `POST /cargo-kpi/transactions`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `POST /cargo-kpi/transactions`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 #### Request Body (JSON)
+
 ```json
 {
   "employee_id": "caefa548-bb21-48cf-8332-7371c1aae407",
@@ -118,6 +120,7 @@ Registers a new cargo shipment transaction under the specified employee, departm
 ```
 
 #### Success Response (201 Created)
+
 ```json
 {
   "id": "27c1a84f-e28a-4d2c-80bf-c53ae8910bcf",
@@ -143,13 +146,15 @@ Registers a new cargo shipment transaction under the specified employee, departm
 ---
 
 ### 5.2. List Shipments
+
 Retrieves a paginated list of shipments, sorted by transaction date in descending order. Supports filtering by employee, department, and date ranges.
 
-* **Endpoint:** `GET /cargo-kpi/transactions`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
+- **Endpoint:** `GET /cargo-kpi/transactions`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
 
 #### Query Parameters
+
 - `employee_id` (UUID, Optional) - Filter by employee
 - `department_id` (UUID, Optional) - Filter by department
 - `start_date` (YYYY-MM-DD, Optional) - Filter by start date inclusive
@@ -158,6 +163,7 @@ Retrieves a paginated list of shipments, sorted by transaction date in descendin
 - `limit` (number, Optional, Default: 20)
 
 #### Success Response (200 OK)
+
 ```json
 {
   "data": [
@@ -193,31 +199,35 @@ Retrieves a paginated list of shipments, sorted by transaction date in descendin
 ---
 
 ### 5.3. Get Shipment by ID
+
 Retrieves details of a single shipment.
 
-* **Endpoint:** `GET /cargo-kpi/transactions/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
+- **Endpoint:** `GET /cargo-kpi/transactions/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`, `EMPLOYEE`
 
 ---
 
 ### 5.4. Update Shipment
+
 Updates shipment fields dynamically. Recalculates `margin` and `kpi_bonus` automatically if prices or departments are updated.
 
-* **Endpoint:** `PUT /cargo-kpi/transactions/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `PUT /cargo-kpi/transactions/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 ---
 
 ### 5.5. Update Shipment Status Stage
+
 Updates the current logistics lifecycle status stage of a specific cargo shipment transaction.
 
-* **Endpoint:** `PUT /cargo-kpi/transactions/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
+- **Endpoint:** `PUT /cargo-kpi/transactions/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
 
 #### Request Body (JSON)
+
 ```json
 {
   "status": "In Transit"
@@ -225,6 +235,7 @@ Updates the current logistics lifecycle status stage of a specific cargo shipmen
 ```
 
 #### Allowed Status Values
+
 - `"Waiting"`
 - `"In Transit"`
 - `"Border"`
@@ -232,6 +243,7 @@ Updates the current logistics lifecycle status stage of a specific cargo shipmen
 - `"Delivered"`
 
 #### Success Response (200 OK)
+
 ```json
 {
   "id": "27c1a84f-e28a-4d2c-80bf-c53ae8910bcf",
@@ -244,12 +256,13 @@ Updates the current logistics lifecycle status stage of a specific cargo shipmen
 ---
 
 ### 5.6. Delete Shipment
+
 Removes a shipment record from the database.
 
-* **Endpoint:** `DELETE /cargo-kpi/transactions/:id`
-* **Guards:** `JwtAuthGuard`, `RolesGuard`
-* **Allowed Roles:** `CEO`, `ROP`
-* **Success Response:** `204 No Content`
+- **Endpoint:** `DELETE /cargo-kpi/transactions/:id`
+- **Guards:** `JwtAuthGuard`, `RolesGuard`
+- **Allowed Roles:** `CEO`, `ROP`
+- **Success Response:** `204 No Content`
 
 ---
 
@@ -257,10 +270,10 @@ Removes a shipment record from the database.
 
 The following business error keys are returned in the response body payload (under `location` and `message` key properties) during failures:
 
-| HTTP Status | Error Key / Location | Scenario |
-| :--- | :--- | :--- |
-| **404 Not Found** | `client_not_found` | The provided `client_id` UUID does not reference any existing client. |
-| **404 Not Found** | `employee_not_found` | The provided `employee_id` UUID does not reference any existing employee. |
-| **404 Not Found** | `department_not_found` | The provided `department_id` UUID does not reference any existing department. |
-| **404 Not Found** | `transaction_not_found`| The target shipment transaction record does not exist. |
+| HTTP Status         | Error Key / Location         | Scenario                                                                                                  |
+| :------------------ | :--------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| **404 Not Found**   | `client_not_found`           | The provided `client_id` UUID does not reference any existing client.                                     |
+| **404 Not Found**   | `employee_not_found`         | The provided `employee_id` UUID does not reference any existing employee.                                 |
+| **404 Not Found**   | `department_not_found`       | The provided `department_id` UUID does not reference any existing department.                             |
+| **404 Not Found**   | `transaction_not_found`      | The target shipment transaction record does not exist.                                                    |
 | **400 Bad Request** | (Standard validation fields) | Invalid UUID format, negative pricing parameters, or invalid currency code (must be `UZS`, `USD`, `RUB`). |

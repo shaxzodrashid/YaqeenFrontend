@@ -11,7 +11,7 @@ import {
   LogIn,
   UserPlus,
   Eye,
-  EyeOff
+  EyeOff,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
@@ -99,7 +99,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
       } else if (error?.location === 'account_pending') {
         setFormError(t('account_pending') || 'Account registration is pending approval.');
       } else {
-        setFormError(t(error?.location || 'internal_error') || error?.message || 'Authentication failed');
+        setFormError(
+          t(error?.location || 'internal_error') || error?.message || 'Authentication failed'
+        );
       }
     } finally {
       setLoading(false);
@@ -132,7 +134,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
       if (error?.location === 'telegram_not_registered') {
         setShowTelegramGuide(true);
       } else {
-        setFormError(t(error?.location || 'internal_error') || error?.message || 'Failed to send OTP code');
+        setFormError(
+          t(error?.location || 'internal_error') || error?.message || 'Failed to send OTP code'
+        );
       }
     } finally {
       setLoading(false);
@@ -175,7 +179,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
     setFieldErrors({});
 
     if (!password || password.length < 6) {
-      setFieldErrors({ password: t('minPasswordLength', { min: 6 }) || 'Password must be at least 6 characters' });
+      setFieldErrors({
+        password: t('minPasswordLength', { min: 6 }) || 'Password must be at least 6 characters',
+      });
       return;
     }
     if (password !== confirmPassword) {
@@ -187,16 +193,24 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
     try {
       if (activeTab === 'register') {
         await api.registerSetPassword(tempToken, password, confirmPassword);
-        showNotification(t('btnCreatingAccount') || 'Account created successfully! Please sign in.', 'success');
+        showNotification(
+          t('btnCreatingAccount') || 'Account created successfully! Please sign in.',
+          'success'
+        );
       } else {
         await api.resetSetPassword(tempToken, password, confirmPassword);
-        showNotification(t('btnSubmittingPassword') || 'Password reset successfully! Please sign in.', 'success');
+        showNotification(
+          t('btnSubmittingPassword') || 'Password reset successfully! Please sign in.',
+          'success'
+        );
       }
       setActiveTab('signin');
       resetForm();
     } catch (err) {
       const error = err as ApiError;
-      setFormError(t(error?.location || 'internal_error') || error?.message || 'Failed to update password');
+      setFormError(
+        t(error?.location || 'internal_error') || error?.message || 'Failed to update password'
+      );
     } finally {
       setLoading(false);
     }
@@ -226,8 +240,12 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
             />
           )}
           <span className="relative z-10 flex items-center gap-2">
-            <LogIn className={`size-4 transition-transform duration-300 ${!isFlipped ? 'scale-110 text-[#A88C52] dark:text-brand-gold' : ''}`} />
-            <span><T k="signIn" /></span>
+            <LogIn
+              className={`size-4 transition-transform duration-300 ${!isFlipped ? 'scale-110 text-[#A88C52] dark:text-brand-gold' : ''}`}
+            />
+            <span>
+              <T k="signIn" />
+            </span>
           </span>
         </button>
 
@@ -249,12 +267,15 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
             />
           )}
           <span className="relative z-10 flex items-center gap-2">
-            <UserPlus className={`size-4 transition-transform duration-300 ${isFlipped ? 'scale-110 text-[#A88C52] dark:text-brand-gold' : ''}`} />
-            <span><T k="createAccount" /></span>
+            <UserPlus
+              className={`size-4 transition-transform duration-300 ${isFlipped ? 'scale-110 text-[#A88C52] dark:text-brand-gold' : ''}`}
+            />
+            <span>
+              <T k="createAccount" />
+            </span>
           </span>
         </button>
       </div>
-
 
       {/* ── 3D TURNING CARD CONTAINER ───────────────────────────────── */}
       <div className="w-full perspective-1200">
@@ -326,7 +347,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
                       }}
                       placeholder={t('passwordPlaceholder') || 'Enter your password'}
                       className={`w-full pl-3.5 pr-10 py-2.5 rounded-xl text-sm bg-neutral-50 dark:bg-field text-foreground border transition-all focus:outline-none focus:ring-2 focus:ring-brand-gold/30 ${
-                        fieldErrors.password ? 'border-rose-500' : 'border-neutral-200 dark:border-field-border'
+                        fieldErrors.password
+                          ? 'border-rose-500'
+                          : 'border-neutral-200 dark:border-field-border'
                       }`}
                     />
                     <button
@@ -392,10 +415,14 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
               <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-border/40">
                 <div>
                   <h2 className="text-xl font-bold text-brand-navy dark:text-foreground tracking-tight">
-                    {activeTab === 'forgot' ? t('forgotPassword') || 'Reset Password' : t('createAccount') || 'Create Account'}
+                    {activeTab === 'forgot'
+                      ? t('forgotPassword') || 'Reset Password'
+                      : t('createAccount') || 'Create Account'}
                   </h2>
                   <p className="text-xs text-neutral-500 dark:text-muted mt-0.5">
-                    {activeTab === 'forgot' ? 'Reset your access code safely' : 'Join Yaqeen with simple verification'}
+                    {activeTab === 'forgot'
+                      ? 'Reset your access code safely'
+                      : 'Join Yaqeen with simple verification'}
                   </p>
                 </div>
                 <div className="size-10 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center border border-brand-gold/20 shrink-0">
@@ -405,9 +432,15 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
 
               {/* Progress Steps */}
               <div className="flex items-center justify-between text-[11px] font-bold text-neutral-400 dark:text-muted border-b border-neutral-100 dark:border-border/30 pb-2.5">
-                <span className={step === 'phone' ? 'text-brand-gold font-extrabold' : ''}>1. <T k="stepPhoneInput" /></span>
-                <span className={step === 'otp' ? 'text-brand-gold font-extrabold' : ''}>2. <T k="stepOtpVerify" /></span>
-                <span className={step === 'password' ? 'text-brand-gold font-extrabold' : ''}>3. <T k="stepPasswordSet" /></span>
+                <span className={step === 'phone' ? 'text-brand-gold font-extrabold' : ''}>
+                  1. <T k="stepPhoneInput" />
+                </span>
+                <span className={step === 'otp' ? 'text-brand-gold font-extrabold' : ''}>
+                  2. <T k="stepOtpVerify" />
+                </span>
+                <span className={step === 'password' ? 'text-brand-gold font-extrabold' : ''}>
+                  3. <T k="stepPasswordSet" />
+                </span>
               </div>
 
               {/* Form Error Banner */}
@@ -419,9 +452,7 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
               )}
 
               {/* Telegram Instructions if phone not linked */}
-              {showTelegramGuide && (
-                <TelegramInstructions botUsername="YaqeenOtpBot" />
-              )}
+              {showTelegramGuide && <TelegramInstructions botUsername="YaqeenOtpBot" />}
 
               {/* STEP 1: Phone Input */}
               {step === 'phone' && (
@@ -470,7 +501,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
                       }}
                       placeholder={t('enterOtpPlaceholder') || 'Enter 6-digit code'}
                       className={`w-full px-3.5 py-2.5 rounded-xl text-center text-base font-mono tracking-widest bg-neutral-50 dark:bg-field text-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold/30 ${
-                        fieldErrors.otp ? 'border-rose-500' : 'border-neutral-200 dark:border-field-border'
+                        fieldErrors.otp
+                          ? 'border-rose-500'
+                          : 'border-neutral-200 dark:border-field-border'
                       }`}
                     />
                     {fieldErrors.otp && (
@@ -522,11 +555,15 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
                       }}
                       placeholder={t('passwordPlaceholder') || 'Enter password'}
                       className={`w-full px-3.5 py-2.5 rounded-xl text-sm bg-neutral-50 dark:bg-field text-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold/30 ${
-                        fieldErrors.password ? 'border-rose-500' : 'border-neutral-200 dark:border-field-border'
+                        fieldErrors.password
+                          ? 'border-rose-500'
+                          : 'border-neutral-200 dark:border-field-border'
                       }`}
                     />
                     {fieldErrors.password && (
-                      <p className="text-[11px] text-rose-500 font-medium">{fieldErrors.password}</p>
+                      <p className="text-[11px] text-rose-500 font-medium">
+                        {fieldErrors.password}
+                      </p>
                     )}
                   </div>
 
@@ -544,11 +581,15 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
                       }}
                       placeholder={t('confirmPasswordPlaceholder') || 'Confirm password'}
                       className={`w-full px-3.5 py-2.5 rounded-xl text-sm bg-neutral-50 dark:bg-field text-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold/30 ${
-                        fieldErrors.confirmPassword ? 'border-rose-500' : 'border-neutral-200 dark:border-field-border'
+                        fieldErrors.confirmPassword
+                          ? 'border-rose-500'
+                          : 'border-neutral-200 dark:border-field-border'
                       }`}
                     />
                     {fieldErrors.confirmPassword && (
-                      <p className="text-[11px] text-rose-500 font-medium">{fieldErrors.confirmPassword}</p>
+                      <p className="text-[11px] text-rose-500 font-medium">
+                        {fieldErrors.confirmPassword}
+                      </p>
                     )}
                   </div>
 

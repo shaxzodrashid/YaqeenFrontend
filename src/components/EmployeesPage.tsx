@@ -2,8 +2,19 @@ import { useEffect, useState, useCallback } from 'react';
 import { Button, Pagination, Skeleton, Avatar, Modal, Spinner } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, Eye, Pencil, Trash2, UserX, UserCheck,
-  Users, AlertTriangle, ShieldAlert, TrendingUp, Activity, Briefcase,
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  UserX,
+  UserCheck,
+  Users,
+  AlertTriangle,
+  ShieldAlert,
+  TrendingUp,
+  Activity,
+  Briefcase,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
@@ -114,8 +125,6 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
   },
 ];
 
-
-
 /* ── Animation variants ────────────────────────────────────── */
 
 const containerVariants = {
@@ -139,7 +148,12 @@ const rowVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.97 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
+  },
   exit: { opacity: 0, scale: 0.95 },
 };
 
@@ -147,32 +161,62 @@ const cardVariants = {
 
 function StatusBadge({ status }: { status: EnrichedEmployee['online_status'] }) {
   const config = {
-    online: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 dark:bg-emerald-500/15', key: 'statusOnline' },
-    sick: { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 dark:bg-amber-500/15', key: 'statusSick' },
-    vacation: { dot: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 dark:bg-blue-500/15', key: 'statusVacation' },
-    offline: { dot: 'bg-neutral-400 dark:bg-slate-500', text: 'text-neutral-500 dark:text-slate-400', bg: 'bg-neutral-400/10 dark:bg-slate-500/15', key: 'statusOffline' },
+    online: {
+      dot: 'bg-emerald-500',
+      text: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+      key: 'statusOnline',
+    },
+    sick: {
+      dot: 'bg-amber-500',
+      text: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      key: 'statusSick',
+    },
+    vacation: {
+      dot: 'bg-blue-500',
+      text: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-500/10 dark:bg-blue-500/15',
+      key: 'statusVacation',
+    },
+    offline: {
+      dot: 'bg-neutral-400 dark:bg-slate-500',
+      text: 'text-neutral-500 dark:text-slate-400',
+      bg: 'bg-neutral-400/10 dark:bg-slate-500/15',
+      key: 'statusOffline',
+    },
   }[status];
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${config.bg} ${config.text}`}>
-      <span className={`size-1.5 rounded-full ${config.dot} ${status === 'online' ? 'animate-pulse' : ''}`} />
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${config.bg} ${config.text}`}
+    >
+      <span
+        className={`size-1.5 rounded-full ${config.dot} ${status === 'online' ? 'animate-pulse' : ''}`}
+      />
       <T k={config.key} />
     </span>
   );
 }
 
-function PlanProgressBar({ percent, statusLabel, statusCode }: { percent: number; statusLabel: string; statusCode?: string }) {
+function PlanProgressBar({
+  percent,
+  statusLabel,
+  statusCode,
+}: {
+  percent: number;
+  statusLabel: string;
+  statusCode?: string;
+}) {
   const clamped = Math.min(percent, 150);
   const barWidth = Math.min(clamped, 100);
   const isCompleted = statusCode ? statusCode === 'COMPLETED' : percent >= 100;
-  const barColor =
-    isCompleted ? 'bg-emerald-500' :
-    percent >= 80 ? 'bg-amber-500' :
-    'bg-rose-500';
-  const badgeColor =
-    isCompleted ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
-    percent >= 80 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' :
-    'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+  const barColor = isCompleted ? 'bg-emerald-500' : percent >= 80 ? 'bg-amber-500' : 'bg-rose-500';
+  const badgeColor = isCompleted
+    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+    : percent >= 80
+      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+      : 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
 
   return (
     <div className="flex flex-col gap-1.5 min-w-[120px]">
@@ -202,7 +246,12 @@ export function EmployeesPage() {
   // Data state
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [meta, setMeta] = useState({ totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: 10 });
+  const [meta, setMeta] = useState({
+    totalItems: 0,
+    totalPages: 1,
+    currentPage: 1,
+    itemsPerPage: 10,
+  });
   const [loading, setLoading] = useState(true);
 
   // Live clock state
@@ -257,12 +306,12 @@ export function EmployeesPage() {
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.employees.list({
+      const data = (await api.employees.list({
         page,
         limit: 20,
         search: searchQuery || undefined,
         department_id: activeTab === 'all' ? undefined : activeTab,
-      }) as PaginatedResponse<Employee>;
+      })) as PaginatedResponse<Employee>;
       setEmployees(data.items);
       setMeta({
         totalItems: data.meta.totalItems,
@@ -369,8 +418,6 @@ export function EmployeesPage() {
     }
   };
 
-
-
   // Format amount based on current currency & locale
   const formatMoney = (rubAmount: number) => {
     if (rubAmount === 0) {
@@ -410,19 +457,40 @@ export function EmployeesPage() {
   const getEnrichedEmployee = (emp: Employee, index: number): EnrichedEmployee => {
     const preset = DEFAULT_PRESETS[index % DEFAULT_PRESETS.length] || {};
 
-    let positionTitle = emp.user_role === 'CEO' ? t('posCEO') : emp.user_role === 'ROP' ? t('posROP') : t('posSalesManager');
+    let positionTitle =
+      emp.user_role === 'CEO'
+        ? t('posCEO')
+        : emp.user_role === 'ROP'
+          ? t('posROP')
+          : t('posSalesManager');
     if (!emp.user_role && preset.position_title) {
       if (preset.position_title.includes('продаж')) positionTitle = t('posSalesManager');
       else if (preset.position_title.includes('Ст.')) positionTitle = t('posSeniorManager');
       else if (preset.position_title.includes('СГ')) positionTitle = t('posGroupageManager');
-      else if (preset.position_title.includes('Маркетолог')) positionTitle = t('posMarketingSpecialist');
-      else if (preset.position_title.includes('Декларант')) positionTitle = t('posCustomsDeclarant');
+      else if (preset.position_title.includes('Маркетолог'))
+        positionTitle = t('posMarketingSpecialist');
+      else if (preset.position_title.includes('Декларант'))
+        positionTitle = t('posCustomsDeclarant');
     }
 
-    const onlineStatus: EnrichedEmployee['online_status'] = emp.is_active ? (preset.online_status || 'online') : 'offline';
-    const revenueRub = emp.tushum?.amount !== undefined ? emp.tushum.amount : (preset.revenue_rub !== undefined ? preset.revenue_rub : (emp.fixed_salary ? parseFloat(emp.fixed_salary) * 1.5 : 3000000));
+    const onlineStatus: EnrichedEmployee['online_status'] = emp.is_active
+      ? preset.online_status || 'online'
+      : 'offline';
+    const revenueRub =
+      emp.tushum?.amount !== undefined
+        ? emp.tushum.amount
+        : preset.revenue_rub !== undefined
+          ? preset.revenue_rub
+          : emp.fixed_salary
+            ? parseFloat(emp.fixed_salary) * 1.5
+            : 3000000;
     const planTarget = emp.reja_fakt?.formatted_plan || preset.plan_target || '3 000 000 ₽';
-    const planPercent = emp.reja_fakt?.percentage !== undefined ? emp.reja_fakt.percentage : (preset.plan_percent !== undefined ? preset.plan_percent : 100);
+    const planPercent =
+      emp.reja_fakt?.percentage !== undefined
+        ? emp.reja_fakt.percentage
+        : preset.plan_percent !== undefined
+          ? preset.plan_percent
+          : 100;
 
     let planStatusLabel = emp.reja_fakt?.status || t('planDone');
     if (!emp.reja_fakt) {
@@ -433,7 +501,12 @@ export function EmployeesPage() {
       }
     }
 
-    const clientsCount = emp.mijozlar_count !== undefined ? emp.mijozlar_count : (preset.clients_count !== undefined ? preset.clients_count : 1);
+    const clientsCount =
+      emp.mijozlar_count !== undefined
+        ? emp.mijozlar_count
+        : preset.clients_count !== undefined
+          ? preset.clients_count
+          : 1;
     const accentColor = emp.color || preset.accent_color || '#F59E0B';
 
     return {
@@ -456,7 +529,10 @@ export function EmployeesPage() {
         employee={viewingEmployee}
         departments={departments}
         onBack={() => setViewingEmployee(null)}
-        onEdit={(emp) => { setViewingEmployee(null); handleEditEmployee(emp); }}
+        onEdit={(emp) => {
+          setViewingEmployee(null);
+          handleEditEmployee(emp);
+        }}
       />
     );
   }
@@ -501,8 +577,8 @@ export function EmployeesPage() {
 
   // Compute quick stats
   const totalRevenue = enrichedEmployeesList.reduce((sum, e) => sum + e.revenue_rub, 0);
-  const onlineCount = enrichedEmployeesList.filter(e => e.online_status === 'online').length;
-  const planDoneCount = enrichedEmployeesList.filter(e => e.plan_percent >= 100).length;
+  const onlineCount = enrichedEmployeesList.filter((e) => e.online_status === 'online').length;
+  const planDoneCount = enrichedEmployeesList.filter((e) => e.plan_percent >= 100).length;
 
   const start = (page - 1) * meta.itemsPerPage + 1;
   const end = Math.min(page * meta.itemsPerPage, meta.totalItems);
@@ -521,8 +597,12 @@ export function EmployeesPage() {
         className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
       >
         <div>
-          <h1 className="text-2xl font-bold font-serif text-foreground tracking-tight"><T k="empTitle" /></h1>
-          <p className="text-xs text-muted mt-0.5"><T k="empSubtitle" /></p>
+          <h1 className="text-2xl font-bold font-serif text-foreground tracking-tight">
+            <T k="empTitle" />
+          </h1>
+          <p className="text-xs text-muted mt-0.5">
+            <T k="empSubtitle" />
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -585,12 +665,18 @@ export function EmployeesPage() {
               key={stat.key}
               className="flex items-center gap-3 p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:shadow-lg hover:border-brand-gold/30 transition-all duration-300"
             >
-              <div className={`size-10 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} shrink-0`}>
+              <div
+                className={`size-10 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} shrink-0`}
+              >
                 {stat.icon}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] sm:text-xs font-medium text-muted truncate"><T k={stat.key} /></span>
-                <span className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">{stat.value}</span>
+                <span className="text-[10px] sm:text-xs font-medium text-muted truncate">
+                  <T k={stat.key} />
+                </span>
+                <span className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
+                  {stat.value}
+                </span>
               </div>
             </div>
           ))}
@@ -606,7 +692,9 @@ export function EmployeesPage() {
         <div className="flex items-center gap-3 text-xs">
           {/* Year Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-muted font-medium"><T k="filterYear" /></span>
+            <span className="text-muted font-medium">
+              <T k="filterYear" />
+            </span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
@@ -620,7 +708,9 @@ export function EmployeesPage() {
 
           {/* Period Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-muted font-medium"><T k="filterPeriod" /></span>
+            <span className="text-muted font-medium">
+              <T k="filterPeriod" />
+            </span>
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -643,7 +733,7 @@ export function EmployeesPage() {
             const labels = {
               RUB: '₽ RUB',
               USD: '$ USD',
-              UZS: locale === 'uz' ? 'so\'m UZS' : locale === 'en' ? 'UZS' : 'сум UZS'
+              UZS: locale === 'uz' ? "so'm UZS" : locale === 'en' ? 'UZS' : 'сум UZS',
             };
             return (
               <button
@@ -663,10 +753,7 @@ export function EmployeesPage() {
       </motion.div>
 
       {/* ─── Category Tabs & Actions Bar ─────────────── */}
-      <motion.div
-        variants={itemVariants}
-        className="flex flex-col gap-3"
-      >
+      <motion.div variants={itemVariants} className="flex flex-col gap-3">
         {/* Department / Category Pills */}
         <div className="flex items-center overflow-x-auto no-scrollbar gap-1.5 bg-surface dark:bg-surface border border-border/40 p-1.5 rounded-xl">
           {[
@@ -736,26 +823,60 @@ export function EmployeesPage() {
           <table className="w-full text-left border-collapse min-w-[850px]">
             <thead>
               <tr className="border-b border-border/60 text-[10px] uppercase font-bold text-muted tracking-wider">
-                <th className="py-3.5 px-5 w-[240px]"><T k="colName" /></th>
-                <th className="py-3.5 px-5"><T k="colRole" /></th>
-                <th className="py-3.5 px-5"><T k="colStatus" /></th>
-                <th className="py-3.5 px-5"><T k="colRevenue" /></th>
-                <th className="py-3.5 px-5"><T k="colPlanFact" /></th>
-                <th className="py-3.5 px-5 text-center"><T k="colClients" /></th>
-                <th className="py-3.5 px-5 text-right"><T k="colActions" /></th>
+                <th className="py-3.5 px-5 w-[240px]">
+                  <T k="colName" />
+                </th>
+                <th className="py-3.5 px-5">
+                  <T k="colRole" />
+                </th>
+                <th className="py-3.5 px-5">
+                  <T k="colStatus" />
+                </th>
+                <th className="py-3.5 px-5">
+                  <T k="colRevenue" />
+                </th>
+                <th className="py-3.5 px-5">
+                  <T k="colPlanFact" />
+                </th>
+                <th className="py-3.5 px-5 text-center">
+                  <T k="colClients" />
+                </th>
+                <th className="py-3.5 px-5 text-right">
+                  <T k="colActions" />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="py-4 px-5"><div className="flex items-center gap-3"><Skeleton className="size-10 rounded-full" /><div className="flex flex-col gap-1.5"><Skeleton className="h-4 w-28 rounded" /><Skeleton className="h-3 w-16 rounded" /></div></div></td>
-                    <td className="py-4 px-5"><Skeleton className="h-4 w-32 rounded" /></td>
-                    <td className="py-4 px-5"><Skeleton className="h-6 w-20 rounded-full" /></td>
-                    <td className="py-4 px-5"><Skeleton className="h-4 w-24 rounded" /></td>
-                    <td className="py-4 px-5"><Skeleton className="h-4 w-32 rounded" /></td>
-                    <td className="py-4 px-5 text-center"><Skeleton className="size-6 rounded-md mx-auto" /></td>
-                    <td className="py-4 px-5 text-right"><Skeleton className="h-6 w-20 rounded ml-auto" /></td>
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-10 rounded-full" />
+                        <div className="flex flex-col gap-1.5">
+                          <Skeleton className="h-4 w-28 rounded" />
+                          <Skeleton className="h-3 w-16 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-5">
+                      <Skeleton className="h-4 w-32 rounded" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <Skeleton className="h-4 w-24 rounded" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <Skeleton className="h-4 w-32 rounded" />
+                    </td>
+                    <td className="py-4 px-5 text-center">
+                      <Skeleton className="size-6 rounded-md mx-auto" />
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <Skeleton className="h-6 w-20 rounded ml-auto" />
+                    </td>
                   </tr>
                 ))
               ) : filteredList.length === 0 ? (
@@ -765,15 +886,20 @@ export function EmployeesPage() {
                       <div className="size-16 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center text-brand-gold">
                         <Users className="size-8" />
                       </div>
-                      <h3 className="text-sm font-bold text-foreground"><T k="empNoEmployees" /></h3>
-                      <p className="text-xs text-muted max-w-sm"><T k="empNoEmployeesDesc" /></p>
+                      <h3 className="text-sm font-bold text-foreground">
+                        <T k="empNoEmployees" />
+                      </h3>
+                      <p className="text-xs text-muted max-w-sm">
+                        <T k="empNoEmployeesDesc" />
+                      </p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 <AnimatePresence mode="popLayout">
                   {filteredList.map((emp, i) => {
-                    const initials = `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
+                    const initials =
+                      `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
 
                     return (
                       <motion.tr
@@ -820,7 +946,9 @@ export function EmployeesPage() {
                               >
                                 {emp.first_name} {emp.last_name}
                               </span>
-                              <span className="text-[11px] text-muted truncate">{emp.position_title}</span>
+                              <span className="text-[11px] text-muted truncate">
+                                {emp.position_title}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -903,7 +1031,11 @@ export function EmployeesPage() {
                                     : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
                                 }`}
                               >
-                                {emp.is_active ? <UserX className="size-3.5" /> : <UserCheck className="size-3.5" />}
+                                {emp.is_active ? (
+                                  <UserX className="size-3.5" />
+                                ) : (
+                                  <UserCheck className="size-3.5" />
+                                )}
                               </Button>
                             )}
                             {canDelete('employees') && (
@@ -932,21 +1064,22 @@ export function EmployeesPage() {
         {!loading && meta.totalPages > 0 && filteredList.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between px-5 py-3.5 border-t border-border/40 gap-3 text-xs bg-surface/50">
             <span className="text-muted">
-              <T k="pagShowing" /> {start}–{end} <T k="pagOf" /> {meta.totalItems} <T k="pagResults" />
+              <T k="pagShowing" /> {start}–{end} <T k="pagOf" /> {meta.totalItems}{' '}
+              <T k="pagResults" />
             </span>
             <Pagination size="sm">
               <Pagination.Content>
                 <Pagination.Item>
                   <Pagination.Previous
                     isDisabled={page === 1}
-                    onPress={() => setPage(p => Math.max(1, p - 1))}
+                    onPress={() => setPage((p) => Math.max(1, p - 1))}
                     className="text-xs text-foreground/70"
                   >
                     <Pagination.PreviousIcon />
                     <T k="pagPrev" />
                   </Pagination.Previous>
                 </Pagination.Item>
-                {pages.map(p => (
+                {pages.map((p) => (
                   <Pagination.Item key={p}>
                     <Pagination.Link
                       isActive={p === page}
@@ -960,7 +1093,7 @@ export function EmployeesPage() {
                 <Pagination.Item>
                   <Pagination.Next
                     isDisabled={page === meta.totalPages}
-                    onPress={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                    onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
                     className="text-xs text-foreground/70"
                   >
                     <T k="pagNext" />
@@ -977,7 +1110,10 @@ export function EmployeesPage() {
       <div className="md:hidden flex flex-col gap-3">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40">
+            <div
+              key={i}
+              className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40"
+            >
               <div className="flex items-center gap-3 mb-4">
                 <Skeleton className="size-12 rounded-full" />
                 <div className="flex flex-col gap-1.5 flex-1">
@@ -996,13 +1132,18 @@ export function EmployeesPage() {
             <div className="size-16 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center text-brand-gold">
               <Users className="size-8" />
             </div>
-            <h3 className="text-sm font-bold text-foreground"><T k="empNoEmployees" /></h3>
-            <p className="text-xs text-muted max-w-sm text-center"><T k="empNoEmployeesDesc" /></p>
+            <h3 className="text-sm font-bold text-foreground">
+              <T k="empNoEmployees" />
+            </h3>
+            <p className="text-xs text-muted max-w-sm text-center">
+              <T k="empNoEmployeesDesc" />
+            </p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
             {filteredList.map((emp, i) => {
-              const initials = `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
+              const initials =
+                `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
 
               return (
                 <motion.div
@@ -1060,12 +1201,20 @@ export function EmployeesPage() {
                   {/* Metrics grid */}
                   <div className="grid grid-cols-2 gap-2.5 mb-4 pl-2">
                     <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
-                      <span className="text-[10px] text-muted font-medium"><T k="colRevenue" /></span>
-                      <span className="text-sm font-bold text-foreground truncate">{emp.tushum?.formatted || formatMoney(emp.revenue_rub)}</span>
+                      <span className="text-[10px] text-muted font-medium">
+                        <T k="colRevenue" />
+                      </span>
+                      <span className="text-sm font-bold text-foreground truncate">
+                        {emp.tushum?.formatted || formatMoney(emp.revenue_rub)}
+                      </span>
                     </div>
                     <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
-                      <span className="text-[10px] text-muted font-medium"><T k="colPlanFact" /></span>
-                      <span className="text-sm font-bold text-foreground truncate">{emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}</span>
+                      <span className="text-[10px] text-muted font-medium">
+                        <T k="colPlanFact" />
+                      </span>
+                      <span className="text-sm font-bold text-foreground truncate">
+                        {emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}
+                      </span>
                     </div>
                   </div>
 
@@ -1087,7 +1236,9 @@ export function EmployeesPage() {
                       >
                         {emp.mijozlar_count ?? emp.clients_count}
                       </span>
-                      <span className="text-[10px] text-muted"><T k="clientCountSuffix" /></span>
+                      <span className="text-[10px] text-muted">
+                        <T k="clientCountSuffix" />
+                      </span>
                     </div>
 
                     {/* Always visible action buttons on mobile */}
@@ -1121,7 +1272,11 @@ export function EmployeesPage() {
                             : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
                         }`}
                       >
-                        {emp.is_active ? <UserX className="size-4" /> : <UserCheck className="size-4" />}
+                        {emp.is_active ? (
+                          <UserX className="size-4" />
+                        ) : (
+                          <UserCheck className="size-4" />
+                        )}
                       </Button>
                       <Button
                         isIconOnly
@@ -1151,7 +1306,7 @@ export function EmployeesPage() {
                 size="sm"
                 variant="ghost"
                 isDisabled={page === 1}
-                onPress={() => setPage(p => Math.max(1, p - 1))}
+                onPress={() => setPage((p) => Math.max(1, p - 1))}
                 className="text-xs text-foreground/70 rounded-lg"
               >
                 <T k="pagPrev" />
@@ -1163,7 +1318,7 @@ export function EmployeesPage() {
                 size="sm"
                 variant="ghost"
                 isDisabled={page === meta.totalPages}
-                onPress={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
                 className="text-xs text-foreground/70 rounded-lg"
               >
                 <T k="pagNext" />
@@ -1180,7 +1335,10 @@ export function EmployeesPage() {
         mode={drawerMode}
         employee={selectedEmployee}
         departments={departments}
-        onSuccess={() => { setDrawerOpen(false); fetchEmployees(); }}
+        onSuccess={() => {
+          setDrawerOpen(false);
+          fetchEmployees();
+        }}
       />
 
       {/* ─── Delete Confirmation Modal ────────────────── */}
@@ -1192,33 +1350,61 @@ export function EmployeesPage() {
               <div className="size-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 flex items-center justify-center text-rose-500">
                 <AlertTriangle className="size-7" />
               </div>
-              <h3 className="text-lg font-bold text-foreground font-serif"><T k="empDeleteTitle" /></h3>
-              <p className="text-xs text-muted leading-relaxed max-w-xs"><T k="empDeleteDesc" /></p>
+              <h3 className="text-lg font-bold text-foreground font-serif">
+                <T k="empDeleteTitle" />
+              </h3>
+              <p className="text-xs text-muted leading-relaxed max-w-xs">
+                <T k="empDeleteDesc" />
+              </p>
               {deletingEmployee && (
                 <div className="flex items-center gap-3 bg-border/20 dark:bg-border/10 px-4 py-2.5 rounded-xl border border-border/40">
-                  <Avatar className="size-8" style={{ borderColor: deletingEmployee.color || '#CCC', borderWidth: 2 }}>
+                  <Avatar
+                    className="size-8"
+                    style={{ borderColor: deletingEmployee.color || '#CCC', borderWidth: 2 }}
+                  >
                     {deletingEmployee.picture_url && (
                       <Avatar.Image
                         src={getImageUrl(deletingEmployee.picture_url)}
                         alt={`${deletingEmployee.first_name}`}
                       />
                     )}
-                    <Avatar.Fallback className="text-[10px] font-bold" style={{ backgroundColor: `${deletingEmployee.color || '#CCC'}20`, color: deletingEmployee.color || '#CCC' }}>
-                      {deletingEmployee.first_name?.[0]}{deletingEmployee.last_name?.[0]}
+                    <Avatar.Fallback
+                      className="text-[10px] font-bold"
+                      style={{
+                        backgroundColor: `${deletingEmployee.color || '#CCC'}20`,
+                        color: deletingEmployee.color || '#CCC',
+                      }}
+                    >
+                      {deletingEmployee.first_name?.[0]}
+                      {deletingEmployee.last_name?.[0]}
                     </Avatar.Fallback>
                   </Avatar>
-                  <span className="text-xs font-semibold text-foreground">{deletingEmployee.first_name} {deletingEmployee.last_name}</span>
+                  <span className="text-xs font-semibold text-foreground">
+                    {deletingEmployee.first_name} {deletingEmployee.last_name}
+                  </span>
                 </div>
               )}
             </Modal.Body>
             <Modal.Footer className="flex justify-center gap-3 pb-6">
-              <Button variant="ghost" onPress={() => setDeleteOpen(false)} className="text-xs font-semibold text-muted"><T k="actionCancel" /></Button>
+              <Button
+                variant="ghost"
+                onPress={() => setDeleteOpen(false)}
+                className="text-xs font-semibold text-muted"
+              >
+                <T k="actionCancel" />
+              </Button>
               <Button
                 onPress={handleConfirmDelete}
                 isDisabled={deleteLoading}
                 className="bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold min-w-[160px] rounded-xl"
               >
-                {deleteLoading ? <span className="inline-flex items-center gap-2"><Spinner size="sm" /> <T k="actionDelete" /></span> : <T k="empDeleteConfirm" />}
+                {deleteLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner size="sm" /> <T k="actionDelete" />
+                  </span>
+                ) : (
+                  <T k="empDeleteConfirm" />
+                )}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>
@@ -1231,18 +1417,38 @@ export function EmployeesPage() {
           <Modal.Dialog className="sm:max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl">
             <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
             <Modal.Body className="flex flex-col items-center text-center py-8 gap-4">
-              <div className={`size-14 rounded-2xl flex items-center justify-center ${statusEmployee?.is_active ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-500' : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500'}`}>
-                {statusEmployee?.is_active ? <UserX className="size-7" /> : <UserCheck className="size-7" />}
+              <div
+                className={`size-14 rounded-2xl flex items-center justify-center ${statusEmployee?.is_active ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-500' : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500'}`}
+              >
+                {statusEmployee?.is_active ? (
+                  <UserX className="size-7" />
+                ) : (
+                  <UserCheck className="size-7" />
+                )}
               </div>
               <h3 className="text-lg font-bold text-foreground font-serif">
-                {statusEmployee?.is_active ? <T k="empDeactivateTitle" /> : <T k="empActivateTitle" />}
+                {statusEmployee?.is_active ? (
+                  <T k="empDeactivateTitle" />
+                ) : (
+                  <T k="empActivateTitle" />
+                )}
               </h3>
               <p className="text-xs text-muted leading-relaxed max-w-xs">
-                {statusEmployee?.is_active ? <T k="empDeactivateDesc" /> : <T k="empActivateDesc" />}
+                {statusEmployee?.is_active ? (
+                  <T k="empDeactivateDesc" />
+                ) : (
+                  <T k="empActivateDesc" />
+                )}
               </p>
             </Modal.Body>
             <Modal.Footer className="flex justify-center gap-3 pb-6">
-              <Button variant="ghost" onPress={() => setStatusOpen(false)} className="text-xs font-semibold text-muted"><T k="actionCancel" /></Button>
+              <Button
+                variant="ghost"
+                onPress={() => setStatusOpen(false)}
+                className="text-xs font-semibold text-muted"
+              >
+                <T k="actionCancel" />
+              </Button>
               <Button
                 onPress={handleConfirmToggleStatus}
                 isDisabled={statusLoading}

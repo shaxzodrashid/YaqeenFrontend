@@ -125,7 +125,11 @@ export function RopSeoModuleTab() {
               <div className="flex items-baseline gap-2 bg-brand-gold/15 border border-brand-gold/30 px-5 py-2.5 rounded-2xl">
                 <span className="text-xs font-bold text-brand-gold uppercase">Total KPI:</span>
                 <span className="text-3xl font-black text-brand-gold">
-                  ${(ropData?.rop_total_kpi ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {(ropData?.rop_total_kpi ?? 0).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
             </div>
@@ -252,7 +256,9 @@ export function RopSeoModuleTab() {
                           <tr
                             key={idx}
                             className={`${
-                              isActive ? 'bg-brand-gold/15 font-bold text-brand-gold' : 'text-foreground'
+                              isActive
+                                ? 'bg-brand-gold/15 font-bold text-brand-gold'
+                                : 'text-foreground'
                             }`}
                           >
                             <td className="px-3 py-2">{tier.range}</td>
@@ -291,13 +297,17 @@ export function RopSeoModuleTab() {
                       {ROP_TRUCK_RATE_TIERS.map((tier, idx) => {
                         const count = ropData.truck_count;
                         const isActive =
-                          tier.maxT === Infinity ? count >= 10 : count >= tier.minT && count <= tier.maxT;
+                          tier.maxT === Infinity
+                            ? count >= 10
+                            : count >= tier.minT && count <= tier.maxT;
 
                         return (
                           <tr
                             key={idx}
                             className={`${
-                              isActive ? 'bg-emerald-500/15 font-bold text-emerald-500' : 'text-foreground'
+                              isActive
+                                ? 'bg-emerald-500/15 font-bold text-emerald-500'
+                                : 'text-foreground'
                             }`}
                           >
                             <td className="px-3 py-2">{tier.range}</td>
@@ -370,7 +380,9 @@ export function RopSeoModuleTab() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border text-xs space-y-1">
-              <span className="text-muted-foreground font-medium block">SEO Commission Policy:</span>
+              <span className="text-muted-foreground font-medium block">
+                SEO Commission Policy:
+              </span>
               <p className="text-muted-foreground">
                 SEO managers receive a fixed <strong>10% rate</strong> on pure net company profit.
               </p>
@@ -395,14 +407,19 @@ export function RopSeoModuleTab() {
               <div className="py-6 my-auto">
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl md:text-5xl font-black tracking-tight text-white">
-                    ${seoResult.seo_kpi.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    $
+                    {seoResult.seo_kpi.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                   <span className="text-sm font-semibold text-brand-gold">USD</span>
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-xs text-neutral-300">
                   <CheckCircle className="size-4 text-emerald-400" />
                   <span>
-                    Net Profit: ${seoResult.net_profit.toLocaleString()} × {seoResult.seo_rate_percentage}
+                    Net Profit: ${seoResult.net_profit.toLocaleString()} ×{' '}
+                    {seoResult.seo_rate_percentage}
                   </span>
                 </div>
               </div>
@@ -416,9 +433,7 @@ export function RopSeoModuleTab() {
                 </div>
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                   <span className="text-[11px] text-neutral-400 block">{t('seoRate')}</span>
-                  <span className="text-base font-bold text-brand-gold mt-0.5 block">
-                    10.0%
-                  </span>
+                  <span className="text-base font-bold text-brand-gold mt-0.5 block">10.0%</span>
                 </div>
               </div>
             </div>

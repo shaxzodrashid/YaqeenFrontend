@@ -30,7 +30,11 @@ const PRESET_COLORS = [
 
 const DEFAULT_SYSTEM_ROLES = ['CEO', 'ROP', 'EMPLOYEE'];
 
-import { getColumnColor, saveStoredColumnColor, getDefaultColorByName } from '../../utils/columnColor';
+import {
+  getColumnColor,
+  saveStoredColumnColor,
+  getDefaultColorByName,
+} from '../../utils/columnColor';
 
 export function ColumnModal({
   isOpen,
@@ -173,7 +177,8 @@ export function ColumnModal({
                   </label>
                 </div>
                 <p className="text-xs text-muted mb-3 leading-relaxed">
-                  If specified, only users with these roles (and CEO superusers) can create or move tasks into this column. Leave empty to allow all roles.
+                  If specified, only users with these roles (and CEO superusers) can create or move
+                  tasks into this column. Leave empty to allow all roles.
                 </p>
 
                 <div className="flex flex-wrap gap-2">
@@ -204,7 +209,8 @@ export function ColumnModal({
                     Mark Tasks in this Column as Completed (`is_done_status`)
                   </span>
                   <span className="text-[11px] text-muted block mt-0.5">
-                    Tasks reaching this column automatically record completion timestamps and show green checkmarks.
+                    Tasks reaching this column automatically record completion timestamps and show
+                    green checkmarks.
                   </span>
                 </div>
                 <input

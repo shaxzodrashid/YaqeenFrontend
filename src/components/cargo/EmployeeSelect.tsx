@@ -30,29 +30,32 @@ export function EmployeeSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch employees from backend GET /employees with backend search capability
-  const fetchEmployees = useCallback(async (query: string) => {
-    setLoading(true);
-    try {
-      const res = await employeesApi.list({
-        search: query.trim() || undefined,
-        limit: 20,
-      });
-      const items = res?.items || (Array.isArray(res) ? res : []);
-      setEmployees(items);
+  const fetchEmployees = useCallback(
+    async (query: string) => {
+      setLoading(true);
+      try {
+        const res = await employeesApi.list({
+          search: query.trim() || undefined,
+          limit: 20,
+        });
+        const items = res?.items || (Array.isArray(res) ? res : []);
+        setEmployees(items);
 
-      // If we have a selected value but no selectedEmployee object yet, resolve it from fetched list or API
-      if (value && !selectedEmployee) {
-        const found = items.find((e) => e.id === value);
-        if (found) {
-          setSelectedEmployee(found);
+        // If we have a selected value but no selectedEmployee object yet, resolve it from fetched list or API
+        if (value && !selectedEmployee) {
+          const found = items.find((e) => e.id === value);
+          if (found) {
+            setSelectedEmployee(found);
+          }
         }
+      } catch (err) {
+        console.error('Failed to fetch employees for selector:', err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Failed to fetch employees for selector:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [value, selectedEmployee]);
+    },
+    [value, selectedEmployee]
+  );
 
   // If value is provided and selectedEmployee is not set or out-of-sync, fetch single employee
   useEffect(() => {
@@ -91,10 +94,13 @@ export function EmployeeSelect({
       return;
     }
 
-    const timer = setTimeout(() => {
-      fetchEmployees(searchQuery);
-      lastFetchedQueryRef.current = searchQuery;
-    }, searchQuery ? 250 : 0);
+    const timer = setTimeout(
+      () => {
+        fetchEmployees(searchQuery);
+        lastFetchedQueryRef.current = searchQuery;
+      },
+      searchQuery ? 250 : 0
+    );
 
     return () => clearTimeout(timer);
   }, [searchQuery, isOpen, fetchEmployees, employees.length]);
@@ -158,7 +164,8 @@ export function EmployeeSelect({
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
-                  `${selectedEmployee.first_name?.[0] || ''}${selectedEmployee.last_name?.[0] || ''}`.toUpperCase() || 'E'
+                  `${selectedEmployee.first_name?.[0] || ''}${selectedEmployee.last_name?.[0] || ''}`.toUpperCase() ||
+                  'E'
                 )}
               </div>
               <div className="truncate text-left">
@@ -166,12 +173,17 @@ export function EmployeeSelect({
                   {getEmployeeFullName(selectedEmployee)}
                 </span>
                 <span className="text-[10px] text-muted-foreground block truncate">
-                  {selectedEmployee.department_display_name || selectedEmployee.department_name || selectedEmployee.phone || 'Employee'}
+                  {selectedEmployee.department_display_name ||
+                    selectedEmployee.department_name ||
+                    selectedEmployee.phone ||
+                    'Employee'}
                 </span>
               </div>
             </>
           ) : (
-            <span className="text-muted-foreground text-xs font-medium truncate">{placeholder}</span>
+            <span className="text-muted-foreground text-xs font-medium truncate">
+              {placeholder}
+            </span>
           )}
         </div>
 
@@ -186,7 +198,9 @@ export function EmployeeSelect({
               <X className="size-3.5" />
             </button>
           )}
-          <ChevronDown className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180 text-brand-gold' : ''}`} />
+          <ChevronDown
+            className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180 text-brand-gold' : ''}`}
+          />
         </div>
       </div>
 
@@ -263,13 +277,17 @@ export function EmployeeSelect({
                             className="w-full h-full rounded-full object-cover"
                           />
                         ) : (
-                          `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase() || 'E'
+                          `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase() ||
+                          'E'
                         )}
                       </div>
                       <div className="truncate">
-                        <span className="font-semibold block truncate text-foreground">{empNameStr}</span>
+                        <span className="font-semibold block truncate text-foreground">
+                          {empNameStr}
+                        </span>
                         <span className="text-[10px] text-muted-foreground block truncate">
-                          {emp.department_display_name || emp.department_name || 'Sales'} • {emp.phone}
+                          {emp.department_display_name || emp.department_name || 'Sales'} •{' '}
+                          {emp.phone}
                         </span>
                       </div>
                     </div>

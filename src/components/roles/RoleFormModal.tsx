@@ -14,7 +14,12 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
-import type { Role, SystemModule, RolePermissions, ModulePermissions } from '../../services/roles.service';
+import type {
+  Role,
+  SystemModule,
+  RolePermissions,
+  ModulePermissions,
+} from '../../services/roles.service';
 
 interface RoleFormModalProps {
   isOpen: boolean;
@@ -195,7 +200,6 @@ export function RoleFormModal({
     <Modal.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Container>
         <Modal.Dialog className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-surface dark:bg-[#1A2030] border border-border/50 rounded-2xl shadow-2xl">
-          
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-default/20 dark:bg-night-field">
             <div className="flex items-center gap-3">
@@ -218,7 +222,6 @@ export function RoleFormModal({
 
           {/* Modal Content */}
           <Modal.Body className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
-            
             {/* CEO Notice */}
             {isCeoRole && (
               <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs">
@@ -256,8 +259,11 @@ export function RoleFormModal({
                       ${errors.name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'}`}
                   />
                 </div>
-                <p className={`text-[11px] ${errors.name ? 'text-rose-500 font-medium' : 'text-muted'}`}>
-                  {errors.name || (isSystemRole ? t('rolesSystemRenameProhibited') : t('rolesFieldNameHint'))}
+                <p
+                  className={`text-[11px] ${errors.name ? 'text-rose-500 font-medium' : 'text-muted'}`}
+                >
+                  {errors.name ||
+                    (isSystemRole ? t('rolesSystemRenameProhibited') : t('rolesFieldNameHint'))}
                 </p>
               </div>
 
@@ -277,7 +283,9 @@ export function RoleFormModal({
                   className={`w-full px-3.5 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-all focus:outline-none focus:ring-2 focus:ring-focus/30
                     ${errors.display_name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'}`}
                 />
-                <p className={`text-[11px] ${errors.display_name ? 'text-rose-500 font-medium' : 'text-muted'}`}>
+                <p
+                  className={`text-[11px] ${errors.display_name ? 'text-rose-500 font-medium' : 'text-muted'}`}
+                >
                   {errors.display_name || t('rolesFieldDisplayNameHint')}
                 </p>
               </div>
@@ -307,9 +315,7 @@ export function RoleFormModal({
                       {modules.length} Modules
                     </span>
                   </h4>
-                  <p className="text-[11px] text-muted">
-                    {t('rolesMatrixSubtitle')}
-                  </p>
+                  <p className="text-[11px] text-muted">{t('rolesMatrixSubtitle')}</p>
                 </div>
 
                 {/* Preset Controls */}
@@ -368,7 +374,9 @@ export function RoleFormModal({
                             <Trash2 className="size-3" /> {t('rolesActionDelete')}
                           </span>
                         </th>
-                        <th className="py-3 px-3 text-right min-w-[110px]">{t('rolesRowActions')}</th>
+                        <th className="py-3 px-3 text-right min-w-[110px]">
+                          {t('rolesRowActions')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
@@ -382,7 +390,10 @@ export function RoleFormModal({
                         const allGranted =
                           modPerms.create && modPerms.read && modPerms.update && modPerms.delete;
                         const noneGranted =
-                          !modPerms.create && !modPerms.read && !modPerms.update && !modPerms.delete;
+                          !modPerms.create &&
+                          !modPerms.read &&
+                          !modPerms.update &&
+                          !modPerms.delete;
 
                         return (
                           <tr
@@ -393,7 +404,9 @@ export function RoleFormModal({
                             <td className="py-3 px-4">
                               <div className="flex flex-col">
                                 <span className="font-semibold text-foreground text-xs">
-                                  {mod.module === 'cargo_registrations' ? t('tabTransactions') || mod.label : mod.label}
+                                  {mod.module === 'cargo_registrations'
+                                    ? t('tabTransactions') || mod.label
+                                    : mod.label}
                                 </span>
                                 <code className="text-[10px] text-muted font-mono">
                                   {mod.module}
@@ -402,7 +415,9 @@ export function RoleFormModal({
                                   <div className="mt-2 pt-1.5 border-t border-border/30">
                                     <button
                                       type="button"
-                                      onClick={() => toggleAction(mod.module, 'register_for_everyone')}
+                                      onClick={() =>
+                                        toggleAction(mod.module, 'register_for_everyone')
+                                      }
                                       className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                                         modPerms.register_for_everyone
                                           ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/40 shadow-xs'
@@ -429,7 +444,11 @@ export function RoleFormModal({
                                     : 'bg-default/20 border-border/40 text-muted/40 hover:border-emerald-500/30'
                                 }`}
                               >
-                                {modPerms.create ? <Check className="size-4 stroke-[3]" /> : <span className="text-[10px]">✕</span>}
+                                {modPerms.create ? (
+                                  <Check className="size-4 stroke-[3]" />
+                                ) : (
+                                  <span className="text-[10px]">✕</span>
+                                )}
                               </button>
                             </td>
 
@@ -444,7 +463,11 @@ export function RoleFormModal({
                                     : 'bg-default/20 border-border/40 text-muted/40 hover:border-sky-500/30'
                                 }`}
                               >
-                                {modPerms.read ? <Check className="size-4 stroke-[3]" /> : <span className="text-[10px]">✕</span>}
+                                {modPerms.read ? (
+                                  <Check className="size-4 stroke-[3]" />
+                                ) : (
+                                  <span className="text-[10px]">✕</span>
+                                )}
                               </button>
                             </td>
 
@@ -459,7 +482,11 @@ export function RoleFormModal({
                                     : 'bg-default/20 border-border/40 text-muted/40 hover:border-amber-500/30'
                                 }`}
                               >
-                                {modPerms.update ? <Check className="size-4 stroke-[3]" /> : <span className="text-[10px]">✕</span>}
+                                {modPerms.update ? (
+                                  <Check className="size-4 stroke-[3]" />
+                                ) : (
+                                  <span className="text-[10px]">✕</span>
+                                )}
                               </button>
                             </td>
 
@@ -474,7 +501,11 @@ export function RoleFormModal({
                                     : 'bg-default/20 border-border/40 text-muted/40 hover:border-rose-500/30'
                                 }`}
                               >
-                                {modPerms.delete ? <Check className="size-4 stroke-[3]" /> : <span className="text-[10px]">✕</span>}
+                                {modPerms.delete ? (
+                                  <Check className="size-4 stroke-[3]" />
+                                ) : (
+                                  <span className="text-[10px]">✕</span>
+                                )}
                               </button>
                             </td>
 
@@ -545,7 +576,6 @@ export function RoleFormModal({
               )}
             </Button>
           </div>
-
         </Modal.Dialog>
       </Modal.Container>
     </Modal.Backdrop>

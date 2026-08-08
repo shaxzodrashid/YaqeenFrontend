@@ -1,13 +1,28 @@
 import { useEffect, useState, useRef } from 'react';
 import { Modal, Button, Spinner, Avatar } from '@heroui/react';
-import { 
-  User, Phone, ShieldCheck, Camera, Trash2, Building, 
-  Coins, MapPin, Palette
+import {
+  User,
+  Phone,
+  ShieldCheck,
+  Camera,
+  Trash2,
+  Building,
+  Coins,
+  MapPin,
+  Palette,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { api, getImageUrl } from '../services/api';
-import type { Employee, Department, CreateEmployeeDto, UpdateEmployeeDto, ApiError, SupportedCurrency, Role } from '../services/api';
+import type {
+  Employee,
+  Department,
+  CreateEmployeeDto,
+  UpdateEmployeeDto,
+  ApiError,
+  SupportedCurrency,
+  Role,
+} from '../services/api';
 import { PhoneInput } from './PhoneInput';
 
 interface EmployeeFormModalProps {
@@ -82,10 +97,10 @@ export function EmployeeFormModal({
       try {
         const rolesList = await api.roles.list();
         setAvailableRoles(rolesList || []);
-        
+
         // Default role in create mode if roles loaded
         if (mode === 'create' && !role && rolesList && rolesList.length > 0) {
-          const defaultRole = rolesList.find(r => r.name === 'EMPLOYEE') || rolesList[0];
+          const defaultRole = rolesList.find((r) => r.name === 'EMPLOYEE') || rolesList[0];
           if (defaultRole) {
             setRole(defaultRole.name);
           }
@@ -151,7 +166,10 @@ export function EmployeeFormModal({
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      showNotification(t('invalid_image_type') || 'Only JPEG, PNG, WEBP, and GIF images are allowed', 'error');
+      showNotification(
+        t('invalid_image_type') || 'Only JPEG, PNG, WEBP, and GIF images are allowed',
+        'error'
+      );
       if (pictureInputRef.current) pictureInputRef.current.value = '';
       return;
     }
@@ -164,7 +182,10 @@ export function EmployeeFormModal({
       window.dispatchEvent(new Event('yaqeen_profile_updated'));
     } catch (err) {
       const error = err as ApiError;
-      showNotification(t(error?.location || 'internal_error') || error?.message || 'Failed to upload photo', 'error');
+      showNotification(
+        t(error?.location || 'internal_error') || error?.message || 'Failed to upload photo',
+        'error'
+      );
     } finally {
       setUploadingPicture(false);
       if (pictureInputRef.current) pictureInputRef.current.value = '';
@@ -181,7 +202,10 @@ export function EmployeeFormModal({
       window.dispatchEvent(new Event('yaqeen_profile_updated'));
     } catch (err) {
       const error = err as ApiError;
-      showNotification(t(error?.location || 'internal_error') || error?.message || 'Failed to delete photo', 'error');
+      showNotification(
+        t(error?.location || 'internal_error') || error?.message || 'Failed to delete photo',
+        'error'
+      );
     } finally {
       setDeletingPicture(false);
     }
@@ -232,7 +256,7 @@ export function EmployeeFormModal({
     if (e) e.preventDefault();
     if (!validate()) return;
 
-    const selectedRole = availableRoles.find(r => r.name === role);
+    const selectedRole = availableRoles.find((r) => r.name === role);
     const roleId = selectedRole?.id || employee?.role_id || employee?.user?.role_id || '';
 
     setLoading(true);
@@ -269,17 +293,29 @@ export function EmployeeFormModal({
           role,
         };
         await api.employees.update(employee.id, dto);
-        showNotification(t('successEmpUpdated') || 'Employee details successfully updated!', 'success');
+        showNotification(
+          t('successEmpUpdated') || 'Employee details successfully updated!',
+          'success'
+        );
       }
       onSuccess();
     } catch (err) {
       const error = err as ApiError;
       if (error?.location === 'employee_phone_exists') {
-        setErrors((prev) => ({ ...prev, phone: t('employee_phone_exists') || 'This phone number is already registered.' }));
+        setErrors((prev) => ({
+          ...prev,
+          phone: t('employee_phone_exists') || 'This phone number is already registered.',
+        }));
       } else if (error?.location === 'department_not_found') {
-        setErrors((prev) => ({ ...prev, departmentId: t('department_not_found') || 'Department not found.' }));
+        setErrors((prev) => ({
+          ...prev,
+          departmentId: t('department_not_found') || 'Department not found.',
+        }));
       } else {
-        showNotification(t(error?.location || 'internal_error') || error?.message || 'Failed to save employee', 'error');
+        showNotification(
+          t(error?.location || 'internal_error') || error?.message || 'Failed to save employee',
+          'error'
+        );
       }
     } finally {
       setLoading(false);
@@ -294,19 +330,24 @@ export function EmployeeFormModal({
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Modal.Container>
         <Modal.Dialog className="max-w-2xl bg-surface dark:bg-surface border border-border/40 rounded-2xl overflow-hidden relative shadow-2xl transition-all duration-300">
-          
           {/* Top visual color border line */}
-          <div className="h-1.5 w-full transition-colors duration-300" style={{ backgroundColor: accentColor }} />
-          
+          <div
+            className="h-1.5 w-full transition-colors duration-300"
+            style={{ backgroundColor: accentColor }}
+          />
+
           <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none z-10" />
-          
+
           <Modal.Header className="pt-6 pb-4 px-6">
             <Modal.Heading className="font-serif font-bold text-xl flex items-center gap-2">
-              <span className="p-1 rounded-lg" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
+              <span
+                className="p-1 rounded-lg"
+                style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+              >
                 <User className="size-5" />
               </span>
-              {mode === 'create' 
-                ? t('empNewEmployee') || 'Register New Employee' 
+              {mode === 'create'
+                ? t('empNewEmployee') || 'Register New Employee'
                 : t('empEditEmployee') || 'Edit Employee Profile'}
             </Modal.Heading>
           </Modal.Header>
@@ -321,7 +362,7 @@ export function EmployeeFormModal({
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
               />
-              
+
               {/* Dynamic Avatar Container */}
               <div className="relative group shrink-0">
                 <Avatar
@@ -329,10 +370,7 @@ export function EmployeeFormModal({
                   style={{ borderColor: accentColor }}
                 >
                   {pictureUrl && (
-                    <Avatar.Image
-                      src={getImageUrl(pictureUrl)}
-                      alt={`${firstName} ${lastName}`}
-                    />
+                    <Avatar.Image src={getImageUrl(pictureUrl)} alt={`${firstName} ${lastName}`} />
                   )}
                   <Avatar.Fallback
                     className="text-xl font-bold tracking-wider"
@@ -342,8 +380,9 @@ export function EmployeeFormModal({
                   </Avatar.Fallback>
                 </Avatar>
 
-                {mode === 'edit' && employee?.id && (
-                  (uploadingPicture || deletingPicture) ? (
+                {mode === 'edit' &&
+                  employee?.id &&
+                  (uploadingPicture || deletingPicture ? (
                     <div className="absolute inset-0 rounded-full bg-black/55 flex items-center justify-center">
                       <Spinner size="sm" style={{ color: accentColor }} />
                     </div>
@@ -352,7 +391,11 @@ export function EmployeeFormModal({
                       <button
                         type="button"
                         onClick={handlePictureUploadClick}
-                        title={pictureUrl ? t('profileChangePicture') || 'Change Picture' : t('profileUploadPicture') || 'Upload Picture'}
+                        title={
+                          pictureUrl
+                            ? t('profileChangePicture') || 'Change Picture'
+                            : t('profileUploadPicture') || 'Upload Picture'
+                        }
                         className="p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors cursor-pointer"
                       >
                         <Camera className="size-3.5" />
@@ -368,14 +411,13 @@ export function EmployeeFormModal({
                         </button>
                       )}
                     </div>
-                  )
-                )}
+                  ))}
               </div>
 
               {/* Live Preview Text Info */}
               <div className="flex-1 text-center sm:text-left min-w-0">
                 <h4 className="text-base font-bold text-foreground truncate">
-                  {firstName.trim() || lastName.trim() 
+                  {firstName.trim() || lastName.trim()
                     ? `${firstName} ${lastName}`
                     : t('empNewEmployee') || 'New Employee'}
                 </h4>
@@ -383,13 +425,20 @@ export function EmployeeFormModal({
                   <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-brand-royal/10 dark:bg-night-royal/15 text-brand-royal dark:text-night-royal uppercase tracking-wider">
                     {role}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold border" style={{ borderColor: `${accentColor}40`, color: accentColor, backgroundColor: `${accentColor}10` }}>
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold border"
+                    style={{
+                      borderColor: `${accentColor}40`,
+                      color: accentColor,
+                      backgroundColor: `${accentColor}10`,
+                    }}
+                  >
                     <Palette className="size-3" />
                     Accent: {accentColor.toUpperCase()}
                   </span>
                 </div>
                 <p className="text-[11px] text-muted mt-1.5 max-w-md">
-                  {mode === 'edit' 
+                  {mode === 'edit'
                     ? t('profileChangePicture') || 'Click camera overlay to upload a profile photo'
                     : 'Profile photo upload will be available after registration'}
                 </p>
@@ -404,7 +453,8 @@ export function EmployeeFormModal({
                   {t('autoAccountLinkage') || 'Automatic Account Linkage'}
                 </p>
                 <p className="text-[10px] text-muted leading-relaxed mt-0.5">
-                  Entering the primary phone number automatically connects their system user account and sets up their login role sync.
+                  Entering the primary phone number automatically connects their system user account
+                  and sets up their login role sync.
                 </p>
               </div>
             </div>
@@ -415,7 +465,7 @@ export function EmployeeFormModal({
                 <User className="size-3.5" />
                 {t('groupPersonalDetails') || 'Personal Details'}
               </h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-foreground">
@@ -430,11 +480,15 @@ export function EmployeeFormModal({
                     }}
                     placeholder="Artyom"
                     className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 ${
-                      errors.firstName ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'
+                      errors.firstName
+                        ? 'border-rose-500 focus:ring-rose-500/30'
+                        : 'border-field-border'
                     }`}
                   />
                   {errors.firstName && (
-                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.firstName}</p>
+                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
+                      {errors.firstName}
+                    </p>
                   )}
                 </div>
 
@@ -451,11 +505,15 @@ export function EmployeeFormModal({
                     }}
                     placeholder="Kovalyov"
                     className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 ${
-                      errors.lastName ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'
+                      errors.lastName
+                        ? 'border-rose-500 focus:ring-rose-500/30'
+                        : 'border-field-border'
                     }`}
                   />
                   {errors.lastName && (
-                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.lastName}</p>
+                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
+                      {errors.lastName}
+                    </p>
                   )}
                 </div>
               </div>
@@ -558,7 +616,9 @@ export function EmployeeFormModal({
                     setErrors((p) => ({ ...p, departmentId: '' }));
                   }}
                   className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
-                    errors.departmentId ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'
+                    errors.departmentId
+                      ? 'border-rose-500 focus:ring-rose-500/30'
+                      : 'border-field-border'
                   }`}
                 >
                   <option value="">{t('fieldSelectDept') || 'Select Department'}</option>
@@ -569,7 +629,9 @@ export function EmployeeFormModal({
                   ))}
                 </select>
                 {errors.departmentId && (
-                  <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.departmentId}</p>
+                  <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
+                    {errors.departmentId}
+                  </p>
                 )}
               </div>
 
@@ -621,7 +683,7 @@ export function EmployeeFormModal({
                 <label className="text-xs font-semibold text-foreground">
                   {t('selectTagColor') || 'Choose Employee Accent Color:'}
                 </label>
-                
+
                 <div className="flex items-center gap-2 flex-wrap">
                   {colorPresets.map((preset) => (
                     <button
@@ -629,13 +691,11 @@ export function EmployeeFormModal({
                       type="button"
                       onClick={() => setColor(preset)}
                       className={`size-8 rounded-full border-2 transition-all relative cursor-pointer`}
-                      style={{ 
-                        backgroundColor: preset, 
+                      style={{
+                        backgroundColor: preset,
                         borderColor: color === preset ? '#ffffff' : 'transparent',
-                        boxShadow: color === preset 
-                          ? `0 0 12px 2px ${preset}80` 
-                          : 'none',
-                        transform: color === preset ? 'scale(1.15)' : 'none'
+                        boxShadow: color === preset ? `0 0 12px 2px ${preset}80` : 'none',
+                        transform: color === preset ? 'scale(1.15)' : 'none',
                       }}
                     >
                       {color === preset && (
@@ -643,7 +703,7 @@ export function EmployeeFormModal({
                       )}
                     </button>
                   ))}
-                  
+
                   {/* Custom color picker row */}
                   <div className="flex items-center gap-1.5 border border-field-border bg-field rounded-xl px-2.5 py-1.5 shrink-0 ml-auto transition-colors focus-within:ring-2 focus-within:ring-focus/25">
                     <input
@@ -652,7 +712,9 @@ export function EmployeeFormModal({
                       onChange={(e) => setColor(e.target.value)}
                       className="size-5 border-0 p-0 cursor-pointer bg-transparent rounded"
                     />
-                    <span className="text-xs font-mono font-bold uppercase select-all text-field-foreground">{color}</span>
+                    <span className="text-xs font-mono font-bold uppercase select-all text-field-foreground">
+                      {color}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -661,10 +723,12 @@ export function EmployeeFormModal({
               {mode === 'edit' && (
                 <div className="flex items-center justify-between border border-border/20 rounded-2xl p-3 bg-default-100/35 dark:bg-default-50/10 mt-1">
                   <div>
-                    <span className="text-xs font-bold text-foreground">{t('fieldIsActive') || 'Employee Work Status'}</span>
+                    <span className="text-xs font-bold text-foreground">
+                      {t('fieldIsActive') || 'Employee Work Status'}
+                    </span>
                     <p className="text-[10px] text-muted mt-0.5">
-                      {isActive 
-                        ? t('statusActive') || 'Active employee (full system access)' 
+                      {isActive
+                        ? t('statusActive') || 'Active employee (full system access)'
                         : t('statusInactive') || 'Suspended / Inactive'}
                     </p>
                   </div>
@@ -684,13 +748,12 @@ export function EmployeeFormModal({
                 </div>
               )}
             </div>
-
           </Modal.Body>
 
           <Modal.Footer className="px-6 py-4 border-t border-border/20 flex justify-end gap-3 bg-default-50/20 dark:bg-default-50/2 shrink-0">
-            <Button 
-              variant="ghost" 
-              onPress={onClose} 
+            <Button
+              variant="ghost"
+              onPress={onClose}
               className="font-semibold text-sm rounded-xl text-muted hover:text-foreground border border-border/40 hover:bg-default/50"
             >
               {t('actionCancel') || 'Cancel'}
@@ -707,8 +770,8 @@ export function EmployeeFormModal({
               {loading ? (
                 <>
                   <Spinner size="sm" color="current" className="mr-2" />
-                  {mode === 'create' 
-                    ? t('actionCreating') || 'Registering...' 
+                  {mode === 'create'
+                    ? t('actionCreating') || 'Registering...'
                     : t('actionSaving') || 'Saving...'}
                 </>
               ) : mode === 'create' ? (

@@ -81,7 +81,8 @@ export function CargoTransactionsTab() {
 
   // Fetch exchange rates from backend
   useEffect(() => {
-    currencyApi.getExchangeRates()
+    currencyApi
+      .getExchangeRates()
       .then((res) => {
         if (res?.rates) {
           const newRates: Record<string, number> = { UZS: 1 };
@@ -97,31 +98,34 @@ export function CargoTransactionsTab() {
       .catch(() => {});
   }, []);
 
-  const getNetYield = useCallback((
-    sellAmount: number,
-    sellCurr: string,
-    purchaseAmount: number,
-    purchaseCurr: string,
-    usdRmbRate?: number | null
-  ) => {
-    if (sellCurr === purchaseCurr) {
-      return sellAmount - purchaseAmount;
-    }
+  const getNetYield = useCallback(
+    (
+      sellAmount: number,
+      sellCurr: string,
+      purchaseAmount: number,
+      purchaseCurr: string,
+      usdRmbRate?: number | null
+    ) => {
+      if (sellCurr === purchaseCurr) {
+        return sellAmount - purchaseAmount;
+      }
 
-    const currentRates = { ...rates };
-    if (usdRmbRate && usdRmbRate > 0) {
-      const usdInUzs = currentRates.USD || 12800;
-      currentRates.RMB = usdInUzs / usdRmbRate;
-    }
+      const currentRates = { ...rates };
+      if (usdRmbRate && usdRmbRate > 0) {
+        const usdInUzs = currentRates.USD || 12800;
+        currentRates.RMB = usdInUzs / usdRmbRate;
+      }
 
-    const pRate = currentRates[purchaseCurr] || 1;
-    const sRate = currentRates[sellCurr] || 1;
+      const pRate = currentRates[purchaseCurr] || 1;
+      const sRate = currentRates[sellCurr] || 1;
 
-    const purchaseInUzs = purchaseAmount * pRate;
-    const purchaseInSellCurrency = purchaseInUzs / sRate;
+      const purchaseInUzs = purchaseAmount * pRate;
+      const purchaseInSellCurrency = purchaseInUzs / sRate;
 
-    return sellAmount - purchaseInSellCurrency;
-  }, [rates]);
+      return sellAmount - purchaseInSellCurrency;
+    },
+    [rates]
+  );
 
   // Fetch Cargo Registrations
   const loadRegistrations = useCallback(async () => {
@@ -277,7 +281,12 @@ export function CargoTransactionsTab() {
                 <SlidersHorizontal className="size-3.5 text-brand-gold" />
                 Filter Cargo Registrations
               </span>
-              {(statusFilter || cargoTypeFilter || containerTypeFilter || clientIdFilter || employeeIdFilter || confirmedStartDate) && (
+              {(statusFilter ||
+                cargoTypeFilter ||
+                containerTypeFilter ||
+                clientIdFilter ||
+                employeeIdFilter ||
+                confirmedStartDate) && (
                 <button
                   onClick={() => {
                     setStatusFilter('');
@@ -299,7 +308,9 @@ export function CargoTransactionsTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               {/* Status Filter */}
               <div>
-                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Status</label>
+                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                  Status
+                </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => {
@@ -319,7 +330,9 @@ export function CargoTransactionsTab() {
 
               {/* Cargo Type Filter */}
               <div>
-                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Cargo Type</label>
+                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                  Cargo Type
+                </label>
                 <select
                   value={cargoTypeFilter}
                   onChange={(e) => {
@@ -336,7 +349,9 @@ export function CargoTransactionsTab() {
 
               {/* Container Type Filter (FTL) */}
               <div>
-                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Container Type</label>
+                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                  Container Type
+                </label>
                 <select
                   value={containerTypeFilter}
                   onChange={(e) => {
@@ -356,7 +371,9 @@ export function CargoTransactionsTab() {
 
               {/* Date Filter */}
               <div>
-                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">Confirmed Date</label>
+                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
+                  Confirmed Date
+                </label>
                 <input
                   type="date"
                   value={confirmedStartDate}
@@ -398,14 +415,16 @@ export function CargoTransactionsTab() {
                 const val = (meta.calculated_net_yield as any)[curr] || 0;
                 return (
                   <div key={curr} className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                    <span className="text-[10px] font-bold text-muted-foreground block">{curr}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground block">
+                      {curr}
+                    </span>
                     <span
                       className={`text-xs font-extrabold truncate block ${
                         val > 0
                           ? 'text-emerald-600 dark:text-emerald-400'
                           : val < 0
-                          ? 'text-rose-600 dark:text-rose-400'
-                          : 'text-foreground'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-foreground'
                       }`}
                     >
                       {formatMoney(val, curr)}
@@ -439,7 +458,9 @@ export function CargoTransactionsTab() {
                 const val = (meta.gross_sales_revenue as any)[curr] || 0;
                 return (
                   <div key={curr} className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                    <span className="text-[10px] font-bold text-muted-foreground block">{curr}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground block">
+                      {curr}
+                    </span>
                     <span className="text-xs font-extrabold text-foreground truncate block">
                       {formatMoney(val, curr)}
                     </span>
@@ -501,10 +522,7 @@ export function CargoTransactionsTab() {
                   const isNegative = netYieldVal < 0;
 
                   return (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-muted/30 transition-colors"
-                    >
+                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                       {/* Truck ID & Cargo Type */}
                       <td className="py-3 px-4 font-bold text-foreground whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -540,7 +558,10 @@ export function CargoTransactionsTab() {
                       {/* Purchase Price */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="font-semibold text-foreground">
-                          {formatMoney(item.purchase_price?.amount || 0, item.purchase_price?.currency || 'USD')}
+                          {formatMoney(
+                            item.purchase_price?.amount || 0,
+                            item.purchase_price?.currency || 'USD'
+                          )}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
                           Date: {item.purchase_price?.date || item.purchase_date || 'N/A'}
@@ -550,7 +571,10 @@ export function CargoTransactionsTab() {
                       {/* Sell Price */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="font-semibold text-foreground">
-                          {formatMoney(item.sell_price?.amount || 0, item.sell_price?.currency || 'USD')}
+                          {formatMoney(
+                            item.sell_price?.amount || 0,
+                            item.sell_price?.currency || 'USD'
+                          )}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
                           Date: {item.sell_price?.date || item.sell_date || 'N/A'}
@@ -564,17 +588,18 @@ export function CargoTransactionsTab() {
                             isPositive
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : isNegative
-                              ? 'text-rose-600 dark:text-rose-400'
-                              : 'text-foreground'
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-foreground'
                           }
                         >
                           {formatMoney(netYieldVal, item.sell_price?.currency || 'USD')}
                         </div>
-                        {item.net_yield?.amount_usd !== undefined && item.sell_price?.currency !== 'USD' && (
-                          <div className="text-[10px] text-muted-foreground font-semibold">
-                            ≈ {formatMoney(item.net_yield.amount_usd, 'USD')}
-                          </div>
-                        )}
+                        {item.net_yield?.amount_usd !== undefined &&
+                          item.sell_price?.currency !== 'USD' && (
+                            <div className="text-[10px] text-muted-foreground font-semibold">
+                              ≈ {formatMoney(item.net_yield.amount_usd, 'USD')}
+                            </div>
+                          )}
                         {item.usd_rmb_rate && (
                           <div className="text-[10px] font-semibold text-amber-500">
                             Rate: {item.usd_rmb_rate} RMB/USD
@@ -589,12 +614,12 @@ export function CargoTransactionsTab() {
                             item.status === 'Delivered'
                               ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                               : item.status === 'In Transit'
-                              ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30'
-                              : item.status === 'Border'
-                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                              : item.status === 'At Station'
-                              ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-                              : 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
+                                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                                : item.status === 'Border'
+                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                  : item.status === 'At Station'
+                                    ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+                                    : 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
                           }`}
                         >
                           {item.status}
@@ -644,7 +669,8 @@ export function CargoTransactionsTab() {
           <div className="flex items-center justify-between p-4 border-t border-border bg-muted/20 text-xs">
             <span className="text-muted-foreground font-semibold">
               Showing {data.meta.offset + 1} to{' '}
-              {Math.min(data.meta.offset + data.meta.limit, data.meta.total)} of {data.meta.total} cargos
+              {Math.min(data.meta.offset + data.meta.limit, data.meta.total)} of {data.meta.total}{' '}
+              cargos
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -703,7 +729,9 @@ export function CargoTransactionsTab() {
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-muted-foreground font-semibold">Container / Truck ID:</span>
-                  <span className="font-extrabold text-foreground">{detailsItem.container_truck_id}</span>
+                  <span className="font-extrabold text-foreground">
+                    {detailsItem.container_truck_id}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-muted-foreground font-semibold">Cargo Type:</span>
@@ -723,7 +751,9 @@ export function CargoTransactionsTab() {
                 ) : (
                   <div className="flex justify-between py-1 border-b border-border/50">
                     <span className="text-muted-foreground font-semibold">Container Type:</span>
-                    <span className="font-semibold text-foreground">{detailsItem.container_type || 'N/A'}</span>
+                    <span className="font-semibold text-foreground">
+                      {detailsItem.container_type || 'N/A'}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between py-1 border-b border-border/50">
@@ -759,16 +789,20 @@ export function CargoTransactionsTab() {
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-muted-foreground">
                     <span>Purchase Reg. Date:</span>
-                    <span className="font-semibold text-foreground">{detailsItem.purchase_date || 'N/A'}</span>
+                    <span className="font-semibold text-foreground">
+                      {detailsItem.purchase_date || 'N/A'}
+                    </span>
                   </div>
-                  {detailsItem.purchase_amount_usd !== undefined && detailsItem.purchase_amount_usd !== null && (
-                    <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                      <span>Equivalents (USD / UZS):</span>
-                      <span className="font-semibold text-foreground">
-                        {formatMoney(detailsItem.purchase_amount_usd, 'USD')} ({formatMoney(detailsItem.purchase_amount_uzs || 0, 'UZS')})
-                      </span>
-                    </div>
-                  )}
+                  {detailsItem.purchase_amount_usd !== undefined &&
+                    detailsItem.purchase_amount_usd !== null && (
+                      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                        <span>Equivalents (USD / UZS):</span>
+                        <span className="font-semibold text-foreground">
+                          {formatMoney(detailsItem.purchase_amount_usd, 'USD')} (
+                          {formatMoney(detailsItem.purchase_amount_uzs || 0, 'UZS')})
+                        </span>
+                      </div>
+                    )}
                   {detailsItem.purchase_usd_rate && (
                     <div className="flex justify-between items-center text-[10px] text-muted-foreground">
                       <span>Snapshot Rate (UZS/USD):</span>
@@ -786,16 +820,20 @@ export function CargoTransactionsTab() {
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-muted-foreground">
                     <span>Sell Reg. Date:</span>
-                    <span className="font-semibold text-foreground">{detailsItem.sell_date || 'N/A'}</span>
+                    <span className="font-semibold text-foreground">
+                      {detailsItem.sell_date || 'N/A'}
+                    </span>
                   </div>
-                  {detailsItem.sell_amount_usd !== undefined && detailsItem.sell_amount_usd !== null && (
-                    <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                      <span>Equivalents (USD / UZS):</span>
-                      <span className="font-semibold text-foreground">
-                        {formatMoney(detailsItem.sell_amount_usd, 'USD')} ({formatMoney(detailsItem.sell_amount_uzs || 0, 'UZS')})
-                      </span>
-                    </div>
-                  )}
+                  {detailsItem.sell_amount_usd !== undefined &&
+                    detailsItem.sell_amount_usd !== null && (
+                      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                        <span>Equivalents (USD / UZS):</span>
+                        <span className="font-semibold text-foreground">
+                          {formatMoney(detailsItem.sell_amount_usd, 'USD')} (
+                          {formatMoney(detailsItem.sell_amount_uzs || 0, 'UZS')})
+                        </span>
+                      </div>
+                    )}
                   {detailsItem.sell_usd_rate && (
                     <div className="flex justify-between items-center text-[10px] text-muted-foreground">
                       <span>Snapshot Rate (UZS/USD):</span>
@@ -810,15 +848,21 @@ export function CargoTransactionsTab() {
                   return (
                     <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">Standardized Net Yield:</span>
-                        <span className={`font-extrabold text-sm ${netUsd >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          Standardized Net Yield:
+                        </span>
+                        <span
+                          className={`font-extrabold text-sm ${netUsd >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}
+                        >
                           {formatMoney(netUsd, 'USD')}
                         </span>
                       </div>
                       {netUzs !== undefined && (
                         <div className="flex justify-between items-center text-[11px] text-muted-foreground">
                           <span>UZS Equivalent:</span>
-                          <span className={`font-semibold ${netUzs >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          <span
+                            className={`font-semibold ${netUzs >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}
+                          >
                             {formatMoney(netUzs, 'UZS')}
                           </span>
                         </div>
@@ -829,8 +873,12 @@ export function CargoTransactionsTab() {
 
                 {detailsItem.usd_rmb_rate && (
                   <div className="flex justify-between py-1 border-b border-border/50">
-                    <span className="text-muted-foreground font-semibold">USD -&gt; RMB Cross Rate:</span>
-                    <span className="font-bold text-amber-500">{detailsItem.usd_rmb_rate} RMB/USD</span>
+                    <span className="text-muted-foreground font-semibold">
+                      USD -&gt; RMB Cross Rate:
+                    </span>
+                    <span className="font-bold text-amber-500">
+                      {detailsItem.usd_rmb_rate} RMB/USD
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between py-1 border-b border-border/50">

@@ -20,7 +20,12 @@ import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { rolesApi, DEFAULT_SYSTEM_MODULES } from '../../services/roles.service';
-import type { Role, SystemModule, CreateRoleDto, UpdateRoleDto } from '../../services/roles.service';
+import type {
+  Role,
+  SystemModule,
+  CreateRoleDto,
+  UpdateRoleDto,
+} from '../../services/roles.service';
 import { RoleFormModal } from './RoleFormModal';
 import { RoleDetailDrawer } from './RoleDetailDrawer';
 
@@ -34,7 +39,12 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 320, damping: 24 } },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring' as const, stiffness: 320, damping: 24 },
+  },
 };
 
 export function RolesPage() {
@@ -199,10 +209,7 @@ export function RolesPage() {
       if (loc === 'system_role_delete_prohibited') {
         showNotification(t('rolesSystemDeleteProhibited'), 'error');
       } else if (loc === 'role_has_assigned_users') {
-        showNotification(
-          err?.message || t('rolesHasAssignedUsers'),
-          'error'
-        );
+        showNotification(err?.message || t('rolesHasAssignedUsers'), 'error');
       } else {
         showNotification(err?.message || t('internal_error'), 'error');
       }
@@ -225,7 +232,6 @@ export function RolesPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      
       {/* PAGE HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -277,7 +283,9 @@ export function RolesPage() {
         {/* Card 1: Total Roles */}
         <Card className="p-4 border border-border/40 bg-surface dark:bg-night-surface rounded-2xl shadow-sm hover:border-brand-gold/30 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-muted"><T k="rolesTotalCount" /></span>
+            <span className="text-xs font-semibold text-muted">
+              <T k="rolesTotalCount" />
+            </span>
             <div className="size-8 rounded-xl bg-brand-gold/15 flex items-center justify-center text-brand-gold">
               <Shield className="size-4" />
             </div>
@@ -293,7 +301,9 @@ export function RolesPage() {
         {/* Card 2: System Roles */}
         <Card className="p-4 border border-border/40 bg-surface dark:bg-night-surface rounded-2xl shadow-sm hover:border-amber-500/30 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-muted"><T k="rolesFilterSystem" /></span>
+            <span className="text-xs font-semibold text-muted">
+              <T k="rolesFilterSystem" />
+            </span>
             <div className="size-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-500">
               <Lock className="size-4" />
             </div>
@@ -302,14 +312,18 @@ export function RolesPage() {
             <span className="text-2xl font-bold font-serif text-foreground">
               {loading ? <Skeleton className="w-12 h-8 rounded-lg" /> : systemRolesCount}
             </span>
-            <span className="text-[11px] text-amber-500 font-medium font-mono">{t('rolesImmutable')}</span>
+            <span className="text-[11px] text-amber-500 font-medium font-mono">
+              {t('rolesImmutable')}
+            </span>
           </div>
         </Card>
 
         {/* Card 3: Custom Roles */}
         <Card className="p-4 border border-border/40 bg-surface dark:bg-night-surface rounded-2xl shadow-sm hover:border-sky-500/30 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-muted"><T k="rolesFilterCustom" /></span>
+            <span className="text-xs font-semibold text-muted">
+              <T k="rolesFilterCustom" />
+            </span>
             <div className="size-8 rounded-xl bg-sky-500/15 flex items-center justify-center text-sky-400">
               <Layers className="size-4" />
             </div>
@@ -325,7 +339,9 @@ export function RolesPage() {
         {/* Card 4: Active Assigned Users */}
         <Card className="p-4 border border-border/40 bg-surface dark:bg-night-surface rounded-2xl shadow-sm hover:border-emerald-500/30 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-muted"><T k="rolesAssignedUsers" /></span>
+            <span className="text-xs font-semibold text-muted">
+              <T k="rolesAssignedUsers" />
+            </span>
             <div className="size-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
               <Users className="size-4" />
             </div>
@@ -334,14 +350,15 @@ export function RolesPage() {
             <span className="text-2xl font-bold font-serif text-foreground">
               {loading ? <Skeleton className="w-12 h-8 rounded-lg" /> : totalAssignedUsers}
             </span>
-            <span className="text-[11px] text-emerald-400 font-medium">{t('rolesUserAccounts')}</span>
+            <span className="text-[11px] text-emerald-400 font-medium">
+              {t('rolesUserAccounts')}
+            </span>
           </div>
         </Card>
       </div>
 
       {/* SEARCH BAR & TYPE FILTERS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface dark:bg-night-surface p-3 rounded-2xl border border-border/40">
-        
         {/* Search Input */}
         <div className="relative flex-1">
           <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
@@ -393,7 +410,10 @@ export function RolesPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="p-6 border border-border/40 bg-surface dark:bg-night-surface rounded-2xl">
+            <Card
+              key={i}
+              className="p-6 border border-border/40 bg-surface dark:bg-night-surface rounded-2xl"
+            >
               <div className="flex items-center justify-between mb-4">
                 <Skeleton className="w-10 h-10 rounded-xl" />
                 <Skeleton className="w-20 h-6 rounded-full" />
@@ -441,7 +461,6 @@ export function RolesPage() {
               return (
                 <motion.div key={role.id} variants={cardVariants} layout>
                   <Card className="group p-6 border border-border/40 bg-surface dark:bg-[#1A2030] rounded-2xl hover:border-brand-gold/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full relative overflow-hidden">
-                    
                     {/* Decorative gradient blur in background */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 rounded-full blur-2xl pointer-events-none group-hover:bg-brand-gold/10 transition-colors" />
 
@@ -481,9 +500,7 @@ export function RolesPage() {
                                 <Lock className="size-3.5" />
                               </div>
                             </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              {t('rolesSystemBadge')}
-                            </Tooltip.Content>
+                            <Tooltip.Content>{t('rolesSystemBadge')}</Tooltip.Content>
                           </Tooltip>
                         ) : (
                           <Tooltip closeDelay={0}>
@@ -492,9 +509,7 @@ export function RolesPage() {
                                 <Layers className="size-3.5" />
                               </div>
                             </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              {t('rolesCustomBadge')}
-                            </Tooltip.Content>
+                            <Tooltip.Content>{t('rolesCustomBadge')}</Tooltip.Content>
                           </Tooltip>
                         )}
                       </div>
@@ -570,7 +585,6 @@ export function RolesPage() {
                         )}
                       </div>
                     </div>
-
                   </Card>
                 </motion.div>
               );
@@ -602,7 +616,7 @@ export function RolesPage() {
         <Modal.Container>
           <Modal.Dialog className="max-w-sm bg-surface dark:bg-[#1A2030] border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
             <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
-            
+
             <Modal.Body className="flex flex-col items-center text-center py-8 px-6 gap-4">
               <div className="size-14 rounded-2xl bg-rose-500/15 flex items-center justify-center text-rose-500 border border-rose-500/30">
                 <AlertTriangle className="size-7" />
@@ -612,9 +626,7 @@ export function RolesPage() {
                 <h3 className="text-lg font-bold font-serif text-foreground">
                   {t('rolesDeleteTitle')}
                 </h3>
-                <p className="text-xs text-muted leading-relaxed mt-1">
-                  {t('rolesDeleteDesc')}
-                </p>
+                <p className="text-xs text-muted leading-relaxed mt-1">{t('rolesDeleteDesc')}</p>
               </div>
 
               {deletingRole && (
@@ -622,9 +634,7 @@ export function RolesPage() {
                   <span className="text-xs font-bold text-foreground">
                     {deletingRole.display_name}
                   </span>
-                  <code className="text-[11px] font-mono text-brand-gold">
-                    {deletingRole.name}
-                  </code>
+                  <code className="text-[11px] font-mono text-brand-gold">{deletingRole.name}</code>
 
                   {deletingRole.user_count > 0 && (
                     <div className="mt-2 text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20">
@@ -662,7 +672,6 @@ export function RolesPage() {
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
-
     </div>
   );
 }

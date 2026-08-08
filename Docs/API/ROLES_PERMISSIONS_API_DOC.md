@@ -14,7 +14,7 @@ The Yaqeen Backend implements a flexible, database-backed **Dynamic Role-Based A
 erDiagram
     ROLES ||--o{ USERS : "assigned to"
     USERS ||--o| EMPLOYEES : "linked profile"
-    
+
     ROLES {
         uuid id PK
         string name "unique system name (e.g. CEO, ROP, LOGISTICS_MGR)"
@@ -46,16 +46,16 @@ erDiagram
 
 ### Database Schema (`roles` table)
 
-| Field | Type | Modifiers | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | `uuid` | Primary Key, default `uuid_generate_v4()` | Unique identifier for the role. |
-| `name` | `varchar(100)` | Unique, Not Null | System machine name (e.g. `'CEO'`, `'ROP'`, `'EMPLOYEE'`, `'LOGISTICS_MANAGER'`). |
-| `display_name` | `varchar(100)` | Not Null | Human-readable title displayed in frontend forms and tables. |
-| `description` | `text` | Nullable | Description of responsibilities and scope of the role. |
-| `permissions` | `jsonb` | Not Null, default `{}` | Key-value store of module-level CRUD permissions. |
-| `is_system` | `boolean` | Not Null, default `false` | Indicates immutable built-in system roles (`CEO`, `ROP`, `EMPLOYEE`). |
-| `created_at` | `timestamp` | Default `NOW()` | Record creation timestamp. |
-| `updated_at` | `timestamp` | Default `NOW()` | Record last modification timestamp. |
+| Field          | Type           | Modifiers                                 | Description                                                                       |
+| :------------- | :------------- | :---------------------------------------- | :-------------------------------------------------------------------------------- |
+| `id`           | `uuid`         | Primary Key, default `uuid_generate_v4()` | Unique identifier for the role.                                                   |
+| `name`         | `varchar(100)` | Unique, Not Null                          | System machine name (e.g. `'CEO'`, `'ROP'`, `'EMPLOYEE'`, `'LOGISTICS_MANAGER'`). |
+| `display_name` | `varchar(100)` | Not Null                                  | Human-readable title displayed in frontend forms and tables.                      |
+| `description`  | `text`         | Nullable                                  | Description of responsibilities and scope of the role.                            |
+| `permissions`  | `jsonb`        | Not Null, default `{}`                    | Key-value store of module-level CRUD permissions.                                 |
+| `is_system`    | `boolean`      | Not Null, default `false`                 | Indicates immutable built-in system roles (`CEO`, `ROP`, `EMPLOYEE`).             |
+| `created_at`   | `timestamp`    | Default `NOW()`                           | Record creation timestamp.                                                        |
+| `updated_at`   | `timestamp`    | Default `NOW()`                           | Record last modification timestamp.                                               |
 
 ---
 
@@ -65,18 +65,18 @@ Permissions in the Yaqeen Backend are structured around **10 core system modules
 
 ### Available System Modules (`GET /roles/modules`)
 
-| Module Key | Label | Scope & Description |
-| :--- | :--- | :--- |
-| `clients` | Clients Management | Access to client catalog, company profiles, contacts, and client tags. |
-| `employees` | Employee Management | Access to employee profiles, salary details, onboarding, and profile pictures. |
-| `departments` | Department Management | Access to organizational department listings, creation, and department edits. |
-| `cargo_kpi` | Cargo KPI | Access to cargo transaction records, shipments, metrics, and KPI target calculations. |
-| `finance` | Finance & Expenses | Access to financial expense logs, income/expense reports, and ledger entries. |
-| `commercial_offers` | Commercial Offers | Access to commercial offer generation, price quotes, PDFs, and client proposals. |
-| `tasks` | Kanban Tasks & Board | Access to workspace task boards, columns, cards, task status, and comments. |
-| `currency` | Currency Rates | Access to exchange rate configurations and Central Bank sync settings. |
-| `attachments` | Attachments & Documents | Access to uploading, viewing presigned URLs, and deleting MinIO document files. |
-| `roles` | Role & Permissions Management | Access to creating, viewing, updating, and deleting custom roles and permissions. |
+| Module Key          | Label                         | Scope & Description                                                                   |
+| :------------------ | :---------------------------- | :------------------------------------------------------------------------------------ |
+| `clients`           | Clients Management            | Access to client catalog, company profiles, contacts, and client tags.                |
+| `employees`         | Employee Management           | Access to employee profiles, salary details, onboarding, and profile pictures.        |
+| `departments`       | Department Management         | Access to organizational department listings, creation, and department edits.         |
+| `cargo_kpi`         | Cargo KPI                     | Access to cargo transaction records, shipments, metrics, and KPI target calculations. |
+| `finance`           | Finance & Expenses            | Access to financial expense logs, income/expense reports, and ledger entries.         |
+| `commercial_offers` | Commercial Offers             | Access to commercial offer generation, price quotes, PDFs, and client proposals.      |
+| `tasks`             | Kanban Tasks & Board          | Access to workspace task boards, columns, cards, task status, and comments.           |
+| `currency`          | Currency Rates                | Access to exchange rate configurations and Central Bank sync settings.                |
+| `attachments`       | Attachments & Documents       | Access to uploading, viewing presigned URLs, and deleting MinIO document files.       |
+| `roles`             | Role & Permissions Management | Access to creating, viewing, updating, and deleting custom roles and permissions.     |
 
 ### CRUD Action Definitions
 
@@ -104,18 +104,18 @@ The system seeds 3 built-in **System Roles** (`is_system: true`). System roles c
 
 ### System Role Permission Matrix
 
-| Module Key | Action | CEO (Chief Executive Officer) | ROP (Head of Sales / Ops) | EMPLOYEE (Standard Staff) |
-| :--- | :--- | :---: | :---: | :---: |
-| **`clients`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `true` / `true` / `true` / `true` | `false` / `true` / `true` / `false` |
-| **`employees`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `true` / `false` | `false` / `true` / `false` / `false` |
-| **`departments`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `true` / `false` / `false` |
-| **`cargo_kpi`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` |
-| **`finance`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `false` / `false` / `false` |
-| **`commercial_offers`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `true` / `true` / `true` / `true` | `true` / `true` / `false` / `false` |
-| **`tasks`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `true` / `true` / `true` / `true` | `true` / `true` / `true` / `false` |
-| **`currency`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `true` / `false` / `false` |
-| **`attachments`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `true` / `true` / `true` / `true` | `true` / `true` / `false` / `false` |
-| **`roles`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `false` / `false` / `false` |
+| Module Key              | Action                                  |   CEO (Chief Executive Officer)   |      ROP (Head of Sales / Ops)       |       EMPLOYEE (Standard Staff)       |
+| :---------------------- | :-------------------------------------- | :-------------------------------: | :----------------------------------: | :-----------------------------------: |
+| **`clients`**           | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` |  `true` / `true` / `true` / `true`   |  `false` / `true` / `true` / `false`  |
+| **`employees`**         | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `true` / `false`  | `false` / `true` / `false` / `false`  |
+| **`departments`**       | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `true` / `false` / `false`  |
+| **`cargo_kpi`**         | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` |  `true` / `true` / `true` / `true`   | `false` / `true` / `false` / `false`  |
+| **`finance`**           | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `false` / `false` / `false` |
+| **`commercial_offers`** | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` |  `true` / `true` / `true` / `true`   |  `true` / `true` / `false` / `false`  |
+| **`tasks`**             | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` |  `true` / `true` / `true` / `true`   |  `true` / `true` / `true` / `false`   |
+| **`currency`**          | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `true` / `false` / `false`  |
+| **`attachments`**       | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` |  `true` / `true` / `true` / `true`   |  `true` / `true` / `false` / `false`  |
+| **`roles`**             | `create` / `read` / `update` / `delete` | `true` / `true` / `true` / `true` | `false` / `true` / `false` / `false` | `false` / `false` / `false` / `false` |
 
 > [!NOTE]
 > The **CEO** role possesses administrative superuser privileges: the backend's `PermissionsGuard` automatically bypasses all individual permission checks for users with `role: 'CEO'` or `role_name: 'CEO'`.
@@ -139,33 +139,34 @@ export class RolesController { ... }
 2. **Database Role Lookup:** Queries `users` joined with `roles` using `user.id`.
 3. **Superuser Bypass:** If user's role is `'CEO'`, access is granted immediately (`return true`).
 4. **Permissions Evaluation:** Extracts the JSON `permissions` object from the linked role.
-   - *Fallback 1:* If `role_id` is null, searches `roles` by matching legacy `user.role` string.
-   - *Fallback 2:* If no database role matches, uses default hardcoded `DEFAULT_SYSTEM_PERMISSIONS`.
+   - _Fallback 1:_ If `role_id` is null, searches `roles` by matching legacy `user.role` string.
+   - _Fallback 2:_ If no database role matches, uses default hardcoded `DEFAULT_SYSTEM_PERMISSIONS`.
 5. **Action Verification:** Checks whether `permissions[module][action] === true`. If `false`, throws `403 ForbiddenException` (`location: "insufficient_permissions"`).
 
 ---
 
 ## 5. Security Exceptions & Error Registry
 
-| Location Key | HTTP Code | Cause / Description |
-| :--- | :--- | :--- |
-| `auth_header_missing` | `401 Unauthorized` | Bearer Authorization header was omitted. |
-| `invalid_token` | `401 Unauthorized` | JWT signature is invalid or token has expired. |
-| `user_missing` | `403 Forbidden` | User identity is missing from request execution context. |
-| `invalid_user_id` | `403 Forbidden` | Authenticated user ID is not a valid UUID format. |
-| `user_not_found` | `403 Forbidden` | Authenticated user record does not exist in database. |
-| `insufficient_permissions` | `403 Forbidden` | User's role lacks the required `module:action` permission. |
-| `role_not_found` | `404 Not Found` | Target role ID could not be found. |
-| `role_name_exists` | `400 Bad Request` | Role name already exists in database (names are case-insensitive unique). |
-| `system_role_rename_prohibited` | `400 Bad Request` | Attempted to change the `name` of a built-in system role (`CEO`, `ROP`, `EMPLOYEE`). |
-| `system_role_delete_prohibited` | `400 Bad Request` | Attempted to delete a built-in system role. |
-| `role_has_assigned_users` | `400 Bad Request` | Attempted to delete a role that currently has assigned user accounts (`user_count > 0`). |
+| Location Key                    | HTTP Code          | Cause / Description                                                                      |
+| :------------------------------ | :----------------- | :--------------------------------------------------------------------------------------- |
+| `auth_header_missing`           | `401 Unauthorized` | Bearer Authorization header was omitted.                                                 |
+| `invalid_token`                 | `401 Unauthorized` | JWT signature is invalid or token has expired.                                           |
+| `user_missing`                  | `403 Forbidden`    | User identity is missing from request execution context.                                 |
+| `invalid_user_id`               | `403 Forbidden`    | Authenticated user ID is not a valid UUID format.                                        |
+| `user_not_found`                | `403 Forbidden`    | Authenticated user record does not exist in database.                                    |
+| `insufficient_permissions`      | `403 Forbidden`    | User's role lacks the required `module:action` permission.                               |
+| `role_not_found`                | `404 Not Found`    | Target role ID could not be found.                                                       |
+| `role_name_exists`              | `400 Bad Request`  | Role name already exists in database (names are case-insensitive unique).                |
+| `system_role_rename_prohibited` | `400 Bad Request`  | Attempted to change the `name` of a built-in system role (`CEO`, `ROP`, `EMPLOYEE`).     |
+| `system_role_delete_prohibited` | `400 Bad Request`  | Attempted to delete a built-in system role.                                              |
+| `role_has_assigned_users`       | `400 Bad Request`  | Attempted to delete a role that currently has assigned user accounts (`user_count > 0`). |
 
 ---
 
 ## 6. REST API Endpoints Specification
 
 ### Base Route: `/roles`
+
 All endpoints require a valid Bearer JWT header: `Authorization: Bearer <access_token>`
 
 ---
@@ -174,12 +175,13 @@ All endpoints require a valid Bearer JWT header: `Authorization: Bearer <access_
 
 Retrieves the available system modules taxonomy to allow frontend clients to dynamically render permission matrix form controls.
 
-* **Route:** `/roles/modules`
-* **Method:** `GET`
-* **Access:** `Private` (Requires `roles:read` permission)
-* **Success HTTP Status:** `200 OK`
+- **Route:** `/roles/modules`
+- **Method:** `GET`
+- **Access:** `Private` (Requires `roles:read` permission)
+- **Success HTTP Status:** `200 OK`
 
 #### Success Response Example
+
 ```json
 [
   {
@@ -241,12 +243,13 @@ Retrieves the available system modules taxonomy to allow frontend clients to dyn
 
 Retrieves all roles configured in the system (both system and custom roles), including normalized permission matrices and the count of assigned active users.
 
-* **Route:** `/roles`
-* **Method:** `GET`
-* **Access:** `Private` (Requires `roles:read` permission)
-* **Success HTTP Status:** `200 OK`
+- **Route:** `/roles`
+- **Method:** `GET`
+- **Access:** `Private` (Requires `roles:read` permission)
+- **Success HTTP Status:** `200 OK`
 
 #### Success Response Example
+
 ```json
 [
   {
@@ -302,13 +305,14 @@ Retrieves all roles configured in the system (both system and custom roles), inc
 
 Retrieves details and permission matrix for a specific role by UUID.
 
-* **Route:** `/roles/:id`
-* **Method:** `GET`
-* **Access:** `Private` (Requires `roles:read` permission)
-* **URL Parameters:** `id` (UUID, required)
-* **Success HTTP Status:** `200 OK`
+- **Route:** `/roles/:id`
+- **Method:** `GET`
+- **Access:** `Private` (Requires `roles:read` permission)
+- **URL Parameters:** `id` (UUID, required)
+- **Success HTTP Status:** `200 OK`
 
 #### Success Response Example
+
 ```json
 {
   "id": "a9b8c7d6-5432-10fe-dcba-9876543210fe",
@@ -340,13 +344,14 @@ Retrieves details and permission matrix for a specific role by UUID.
 
 Creates a new custom role with custom module permissions.
 
-* **Route:** `/roles`
-* **Method:** `POST`
-* **Access:** `Private` (Requires `roles:create` permission)
-* **Content-Type:** `application/json`
-* **Success HTTP Status:** `201 Created`
+- **Route:** `/roles`
+- **Method:** `POST`
+- **Access:** `Private` (Requires `roles:create` permission)
+- **Content-Type:** `application/json`
+- **Success HTTP Status:** `201 Created`
 
 #### Request Body (`CreateRoleDto`)
+
 ```json
 {
   "name": "FINANCE_AUDITOR",
@@ -362,12 +367,14 @@ Creates a new custom role with custom module permissions.
 ```
 
 #### Validation Rules (`CreateRoleDto`)
+
 - `name` (string, required): 2-100 characters. Pattern: `/^[A-Za-z0-9_\-\s]+$/`. Must be unique across all roles.
 - `display_name` (string, required): 2-100 characters.
 - `description` (string, optional): Additional text notes.
 - `permissions` (object, required): Object containing module permission objects. Missing modules default all action flags to `false`.
 
 #### Success Response Example
+
 ```json
 {
   "id": "f1e2d3c4-b5a6-9788-7766-554433221100",
@@ -399,14 +406,15 @@ Creates a new custom role with custom module permissions.
 
 Modifies an existing role's display name, description, or permission matrix.
 
-* **Route:** `/roles/:id`
-* **Method:** `PUT`
-* **Access:** `Private` (Requires `roles:update` permission)
-* **URL Parameters:** `id` (UUID, required)
-* **Content-Type:** `application/json`
-* **Success HTTP Status:** `200 OK`
+- **Route:** `/roles/:id`
+- **Method:** `PUT`
+- **Access:** `Private` (Requires `roles:update` permission)
+- **URL Parameters:** `id` (UUID, required)
+- **Content-Type:** `application/json`
+- **Success HTTP Status:** `200 OK`
 
 #### Request Body (`UpdateRoleDto`)
+
 ```json
 {
   "display_name": "Senior Operations & Sales ROP",
@@ -418,6 +426,7 @@ Modifies an existing role's display name, description, or permission matrix.
 ```
 
 #### Validation Rules & Constraints (`UpdateRoleDto`)
+
 - `name` (string, optional): Renaming system roles (`is_system: true`) is prohibited and throws `400 Bad Request` (`location: "system_role_rename_prohibited"`).
 - `display_name` (string, optional): 2-100 characters.
 - `description` (string, optional): Text notes.
@@ -429,13 +438,14 @@ Modifies an existing role's display name, description, or permission matrix.
 
 Deletes a custom role from the database.
 
-* **Route:** `/roles/:id`
-* **Method:** `DELETE`
-* **Access:** `Private` (Requires `roles:delete` permission)
-* **URL Parameters:** `id` (UUID, required)
-* **Success HTTP Status:** `244 No Content` (Returns `204 OK` with empty body)
+- **Route:** `/roles/:id`
+- **Method:** `DELETE`
+- **Access:** `Private` (Requires `roles:delete` permission)
+- **URL Parameters:** `id` (UUID, required)
+- **Success HTTP Status:** `244 No Content` (Returns `204 OK` with empty body)
 
 #### Deletion Safety Rules
+
 1. **System Protection:** Attempting to delete a built-in system role (`is_system: true`) returns `400 Bad Request` (`location: "system_role_delete_prohibited"`).
 2. **Assigned Users Guard:** Attempting to delete a role assigned to active user accounts returns `400 Bad Request` (`location: "role_has_assigned_users"`). Reassign users before deletion.
 

@@ -25,7 +25,11 @@ import { EmployeeSelect } from './EmployeeSelect';
 interface CalculateEvaluationsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (data: { month: string; employee_id?: string; additional_bonus_amount?: number }) => Promise<void>;
+  onConfirm: (data: {
+    month: string;
+    employee_id?: string;
+    additional_bonus_amount?: number;
+  }) => Promise<void>;
   currentMonth: string;
 }
 
@@ -223,8 +227,13 @@ export function ApproveSrCheckModal({
               <T k="smkApproveSrCheckModalDesc" />
             </p>
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-500/20 text-muted-foreground">
-              <div>Sales Total: <strong className="text-foreground">${evaluation.total_sales}</strong></div>
-              <div>Avg Check: <strong className="text-amber-500">${evaluation.average_check}</strong> (Min: ${evaluation.sr_check_min})</div>
+              <div>
+                Sales Total: <strong className="text-foreground">${evaluation.total_sales}</strong>
+              </div>
+              <div>
+                Avg Check: <strong className="text-amber-500">${evaluation.average_check}</strong>{' '}
+                (Min: ${evaluation.sr_check_min})
+              </div>
             </div>
           </div>
 
@@ -238,7 +247,10 @@ export function ApproveSrCheckModal({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:border-amber-500"
-                placeholder={t('smkReviewNotesPlaceholder') || 'Approved by CEO after reviewing deal structure...'}
+                placeholder={
+                  t('smkReviewNotesPlaceholder') ||
+                  'Approved by CEO after reviewing deal structure...'
+                }
               />
             </div>
 
@@ -337,7 +349,10 @@ export function ReviewDemotionModal({
               <T k="smkReviewDemotionModalDesc" />
             </p>
             <div className="flex items-center gap-3 pt-2 text-muted-foreground">
-              <div>Consecutive Missed Months: <strong className="text-rose-500">{evaluation.consecutive_failures}</strong></div>
+              <div>
+                Consecutive Missed Months:{' '}
+                <strong className="text-rose-500">{evaluation.consecutive_failures}</strong>
+              </div>
             </div>
           </div>
 
@@ -346,7 +361,7 @@ export function ReviewDemotionModal({
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Review Decision Action
               </label>
-              
+
               <label
                 onClick={() => setAction('MAINTAIN_LEVEL')}
                 className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -426,7 +441,9 @@ export function ReviewDemotionModal({
                 type="submit"
                 disabled={submitting}
                 className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer ${
-                  action === 'APPROVE_DEMOTION' ? 'bg-rose-500 hover:bg-rose-600' : 'bg-blue-500 hover:bg-blue-600'
+                  action === 'APPROVE_DEMOTION'
+                    ? 'bg-rose-500 hover:bg-rose-600'
+                    : 'bg-blue-500 hover:bg-blue-600'
                 }`}
               >
                 <CheckCircle className="size-4" />
@@ -450,7 +467,10 @@ interface UpdateEmployeeLevelModalProps {
   currentLevel?: CareerLevel;
   currentMentees?: number;
   onClose: () => void;
-  onConfirm: (employeeId: string, data: { career_level: CareerLevel; mentees_count: number }) => Promise<void>;
+  onConfirm: (
+    employeeId: string,
+    data: { career_level: CareerLevel; mentees_count: number }
+  ) => Promise<void>;
 }
 
 export function UpdateEmployeeLevelModal({

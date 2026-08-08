@@ -28,16 +28,36 @@ const FORMAT_GROUPS: FormatItem[][] = [
   [
     { command: 'bold', label: 'Bold', shortcut: `${modKey}B`, icon: Bold },
     { command: 'italic', label: 'Italic', shortcut: `${modKey}I`, icon: Italic },
-    { command: 'strikeThrough', label: 'Strikethrough', shortcut: `${modKey}${shiftKey}X`, icon: Strikethrough },
+    {
+      command: 'strikeThrough',
+      label: 'Strikethrough',
+      shortcut: `${modKey}${shiftKey}X`,
+      icon: Strikethrough,
+    },
   ],
   [
     { command: 'code', label: 'Inline Code', shortcut: `${modKey}E`, icon: Code },
     { command: 'h3', label: 'Heading', shortcut: `${modKey}${shiftKey}H`, icon: Heading },
   ],
   [
-    { command: 'unorderedList', label: 'Bullet List', shortcut: `${modKey}${shiftKey}8`, icon: List },
-    { command: 'orderedList', label: 'Numbered List', shortcut: `${modKey}${shiftKey}7`, icon: ListOrdered },
-    { command: 'taskCheckbox', label: 'Task Checkbox', shortcut: `${modKey}${shiftKey}T`, icon: CheckSquare },
+    {
+      command: 'unorderedList',
+      label: 'Bullet List',
+      shortcut: `${modKey}${shiftKey}8`,
+      icon: List,
+    },
+    {
+      command: 'orderedList',
+      label: 'Numbered List',
+      shortcut: `${modKey}${shiftKey}7`,
+      icon: ListOrdered,
+    },
+    {
+      command: 'taskCheckbox',
+      label: 'Task Checkbox',
+      shortcut: `${modKey}${shiftKey}T`,
+      icon: CheckSquare,
+    },
     { command: 'blockquote', label: 'Quote', shortcut: `${modKey}${shiftKey}Q`, icon: Quote },
     { command: 'link', label: 'Link', shortcut: `${modKey}K`, icon: LinkIcon },
   ],
@@ -57,10 +77,7 @@ function formatInlineMarkdownHtml(str: string): string {
   let res = str;
 
   // Escape HTML entities to prevent rendering raw HTML tags
-  res = res
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  res = res.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   // Bold **text**
   res = res.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -71,7 +88,10 @@ function formatInlineMarkdownHtml(str: string): string {
   // Code `text`
   res = res.replace(/`(.*?)`/g, '<code>$1</code>');
   // Links [text](url)
-  res = res.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  res = res.replace(
+    /\[(.*?)\]\((.*?)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
 
   return res;
 }
@@ -111,15 +131,25 @@ function markdownToHtml(md: string): string {
     } else if (trimmed.startsWith('> ')) {
       closeLists();
       html += `<blockquote>${formatInlineMarkdownHtml(trimmed.slice(2))}</blockquote>`;
-    } else if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ') || trimmed.startsWith('- [X] ')) {
+    } else if (
+      trimmed.startsWith('- [ ] ') ||
+      trimmed.startsWith('- [x] ') ||
+      trimmed.startsWith('- [X] ')
+    ) {
       closeLists();
       const checked = trimmed.startsWith('- [x] ') || trimmed.startsWith('- [X] ');
       const content = trimmed.substring(6);
-      html += `<div class="task-item-row" data-task-status="${checked ? 'done' : 'todo'}">` +
+      html +=
+        `<div class="task-item-row" data-task-status="${checked ? 'done' : 'todo'}">` +
         `<input type="checkbox" class="task-checkbox-input" ${checked ? 'checked' : ''} />` +
         `<span>${formatInlineMarkdownHtml(content)}</span>` +
         `</div>`;
-    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed === '-' || trimmed === '*') {
+    } else if (
+      trimmed.startsWith('- ') ||
+      trimmed.startsWith('* ') ||
+      trimmed === '-' ||
+      trimmed === '*'
+    ) {
       if (inOl) {
         html += '</ol>';
         inOl = false;
@@ -128,7 +158,7 @@ function markdownToHtml(md: string): string {
         html += '<ul>';
         inUl = true;
       }
-      const content = (trimmed === '-' || trimmed === '*') ? '' : trimmed.slice(2);
+      const content = trimmed === '-' || trimmed === '*' ? '' : trimmed.slice(2);
       const renderedContent = formatInlineMarkdownHtml(content);
       html += `<li>${renderedContent || '<br>'}</li>`;
     } else if (/^\d+\.\s/.test(trimmed) || /^\d+\.$/.test(trimmed)) {
@@ -358,7 +388,11 @@ export function RichTextEditor({
 
     // Find enclosing block element
     let block: HTMLElement | null = container.parentElement;
-    while (block && block !== editorRef.current && !['P', 'DIV', 'LI', 'BLOCKQUOTE'].includes(block.tagName)) {
+    while (
+      block &&
+      block !== editorRef.current &&
+      !['P', 'DIV', 'LI', 'BLOCKQUOTE'].includes(block.tagName)
+    ) {
       block = block.parentElement;
     }
 
@@ -556,9 +590,10 @@ export function RichTextEditor({
             textBeforeContent.lastIndexOf('\n'),
             textBeforeContent.lastIndexOf('\r')
           );
-          const lineTextBefore = lastNewlineIndex !== -1
-            ? textBeforeContent.slice(lastNewlineIndex + 1)
-            : textBeforeContent;
+          const lineTextBefore =
+            lastNewlineIndex !== -1
+              ? textBeforeContent.slice(lastNewlineIndex + 1)
+              : textBeforeContent;
 
           const trimmedPrefix = lineTextBefore.trim();
 
@@ -592,19 +627,19 @@ export function RichTextEditor({
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         const container = range.startContainer;
-        
+
         let liElement = container as HTMLElement;
         while (liElement && liElement.tagName !== 'LI') {
           liElement = liElement.parentElement as HTMLElement;
         }
-        
+
         if (liElement) {
           const textContent = liElement.innerText || '';
           if (textContent.trim() === '') {
             e.preventDefault();
             const ul = liElement.parentElement;
             liElement.remove();
-            
+
             const p = document.createElement('p');
             p.innerHTML = '<br>';
 

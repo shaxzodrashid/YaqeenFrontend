@@ -1,78 +1,78 @@
-@import "tailwindcss";
-@import "@heroui/styles";
+@import 'tailwindcss';
+@import '@heroui/styles';
 
 @theme {
-  --color-brand-royal: #0F2D5C;
-  --color-brand-royal-hover: #173E77;
-  --color-brand-navy: #11213D;
-  --color-brand-navy-hover: #1A3157;
-  --color-brand-gold: #C8A96A;
-  --color-brand-gold-soft: #F2E9D8;
-  --color-neutral-ivory: #F7F5F0;
-  --color-neutral-100: #E6E7EB;
-  --color-neutral-300: #B7C2D1;
-  --color-neutral-600: #6B7280;
+  --color-brand-royal: #0f2d5c;
+  --color-brand-royal-hover: #173e77;
+  --color-brand-navy: #11213d;
+  --color-brand-navy-hover: #1a3157;
+  --color-brand-gold: #c8a96a;
+  --color-brand-gold-soft: #f2e9d8;
+  --color-neutral-ivory: #f7f5f0;
+  --color-neutral-100: #e6e7eb;
+  --color-neutral-300: #b7c2d1;
+  --color-neutral-600: #6b7280;
 
   /* Soft Night palette (dark theme foundations) */
-  --color-night-canvas: #12161F;
-  --color-night-surface: #1A2030;
-  --color-night-elevated: #222A3C;
-  --color-night-field: #161C28;
-  --color-night-border: #2A3347;
-  --color-night-muted: #9AA8BC;
-  --color-night-text: #F0EDE6;
-  --color-night-royal: #5B8FD4;
-  --color-night-royal-hover: #6C9CDB;
-  --color-night-gold: #D4B87A;
-  --color-night-sidebar: #151B28;
+  --color-night-canvas: #12161f;
+  --color-night-surface: #1a2030;
+  --color-night-elevated: #222a3c;
+  --color-night-field: #161c28;
+  --color-night-border: #2a3347;
+  --color-night-muted: #9aa8bc;
+  --color-night-text: #f0ede6;
+  --color-night-royal: #5b8fd4;
+  --color-night-royal-hover: #6c9cdb;
+  --color-night-gold: #d4b87a;
+  --color-night-sidebar: #151b28;
 
   /* Sidebar layout */
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 72px;
 
   /* Status colors */
-  --color-status-active: #10B981;
-  --color-status-inactive: #EF4444;
-  --color-status-pending: #F59E0B;
-  --color-status-banned: #DC2626;
-  
-  --font-display: "Playfair Display", Georgia, serif;
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-status-active: #10b981;
+  --color-status-inactive: #ef4444;
+  --color-status-pending: #f59e0b;
+  --color-status-banned: #dc2626;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @layer base {
   :root,
   .light,
-  [data-theme="light"] {
+  [data-theme='light'] {
     color-scheme: light;
-    --background: #F7F5F0;
-    --foreground: #11213D;
-    --surface: #FFFFFF;
-    --surface-foreground: #11213D;
-    --overlay: #FFFFFF;
-    --overlay-foreground: #11213D;
-    
-    --accent: #0F2D5C;
-    --accent-foreground: #FFFFFF;
-    
-    --default: #E6E7EB;
-    --default-foreground: #11213D;
-    
-    --muted: #6B7280;
-    --border: #B7C2D1;
-    --focus: #0F2D5C;
-    --link: #0F2D5C;
-    
+    --background: #f7f5f0;
+    --foreground: #11213d;
+    --surface: #ffffff;
+    --surface-foreground: #11213d;
+    --overlay: #ffffff;
+    --overlay-foreground: #11213d;
+
+    --accent: #0f2d5c;
+    --accent-foreground: #ffffff;
+
+    --default: #e6e7eb;
+    --default-foreground: #11213d;
+
+    --muted: #6b7280;
+    --border: #b7c2d1;
+    --focus: #0f2d5c;
+    --link: #0f2d5c;
+
     --radius: 8px;
     --field-radius: 8px;
-    --field-background: #FFFFFF;
-    --field-foreground: #11213D;
-    --field-border: #B7C2D1;
+    --field-background: #ffffff;
+    --field-foreground: #11213d;
+    --field-border: #b7c2d1;
 
     /* Semantic helpers used by components */
-    --sidebar-bg: #11213D;
+    --sidebar-bg: #11213d;
     --sidebar-border: rgba(15, 45, 92, 0.4);
-    --shadow-color: rgba(17, 33, 61, 0.10);
+    --shadow-color: rgba(17, 33, 61, 0.1);
   }
 
   /*
@@ -81,35 +81,35 @@
    * gold reserved for premium accents only.
    */
   .dark,
-  [data-theme="dark"] {
+  [data-theme='dark'] {
     color-scheme: dark;
-    --background: #12161F;
-    --foreground: #F0EDE6;
-    --surface: #1A2030;
-    --surface-foreground: #F0EDE6;
-    --overlay: #222A3C;
-    --overlay-foreground: #F0EDE6;
-    
+    --background: #12161f;
+    --foreground: #f0ede6;
+    --surface: #1a2030;
+    --surface-foreground: #f0ede6;
+    --overlay: #222a3c;
+    --overlay-foreground: #f0ede6;
+
     /* Softened royal — primary actions stay blue, not gold */
-    --accent: #5B8FD4;
-    --accent-foreground: #0B1528;
-    
-    --default: #252D3F;
-    --default-foreground: #E8E4DC;
-    
-    --muted: #9AA8BC;
-    --border: #2A3347;
-    --focus: #8FA9CF;
-    --link: #8FB4E8;
-    
+    --accent: #5b8fd4;
+    --accent-foreground: #0b1528;
+
+    --default: #252d3f;
+    --default-foreground: #e8e4dc;
+
+    --muted: #9aa8bc;
+    --border: #2a3347;
+    --focus: #8fa9cf;
+    --link: #8fb4e8;
+
     --radius: 8px;
     --field-radius: 8px;
-    --field-background: #161C28;
-    --field-foreground: #F0EDE6;
-    --field-border: #2E384E;
+    --field-background: #161c28;
+    --field-foreground: #f0ede6;
+    --field-border: #2e384e;
 
-    --sidebar-bg: #151B28;
-    --sidebar-border: rgba(183, 194, 209, 0.10);
+    --sidebar-bg: #151b28;
+    --sidebar-border: rgba(183, 194, 209, 0.1);
     --shadow-color: rgba(0, 0, 0, 0.35);
   }
 }
@@ -123,7 +123,11 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3, h4, .font-serif {
+h1,
+h2,
+h3,
+h4,
+.font-serif {
   font-family: var(--font-display);
 }
 
@@ -144,12 +148,19 @@ h1, h2, h3, h4, .font-serif {
 }
 
 /* Hide scrollbar for horizontal pill containers */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* Progress bar fill animation */
 @keyframes progressFill {
-  from { width: 0%; }
+  from {
+    width: 0%;
+  }
 }
 .animate-progress-fill {
   animation: progressFill 0.8s ease-out forwards;
@@ -327,7 +338,7 @@ h1, h2, h3, h4, .font-serif {
   margin: 0.125rem 0;
 }
 
-.rich-text-editor-content .task-item-row[data-task-status="done"] {
+.rich-text-editor-content .task-item-row[data-task-status='done'] {
   color: var(--muted);
   text-decoration: line-through;
 }
@@ -364,4 +375,3 @@ h1, h2, h3, h4, .font-serif {
 ::view-transition-new(root) {
   z-index: 9999;
 }
-

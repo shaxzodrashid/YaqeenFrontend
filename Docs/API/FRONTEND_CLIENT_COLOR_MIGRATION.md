@@ -2,7 +2,7 @@
 
 **Target Audience:** Frontend Developers (Web & Mobile Apps)  
 **Date:** July 23, 2026  
-**Module:** Clients & Employee Management  
+**Module:** Clients & Employee Management
 
 ---
 
@@ -11,6 +11,7 @@
 To simplify client workflow and prevent conflicting color tags, **client color tags have been unified with employee color tags**.
 
 ### Key Rules
+
 1. **Inherited Color Tag**: When a client is assigned to a responsible employee, the client automatically shares that employee's color tag (`color`).
 2. **Default Unassigned Color Tag (`#808080`)**: If no employee is assigned to a client (`assigned_employee_id` is `null`), the client automatically defaults to **Unassigned Gray (`#808080`)**.
 3. **No Direct Client Color Inputs**: Client registration and update forms **must ask for a responsible employee** (`assigned_employee_id`) instead of a color tag. The backend no longer accepts or stores a standalone client `color` property.
@@ -20,19 +21,22 @@ To simplify client workflow and prevent conflicting color tags, **client color t
 ## 2. Frontend UI/UX Changes Required
 
 ### 2.1. Registration Form (`POST /clients`)
-* **Remove**: Color picker / hex input field.
-* **Add / Emphasize**: "Responsible Employee" dropdown selector (`assigned_employee_id`).
-  * Dropdown options should list active employees retrieved from `GET /employees`.
-  * Display employee name along with their color tag badge (e.g., `Rustam Rasulov` with color tag `#FF0000`).
-  * Allow selecting "None / Unassigned" (sets `assigned_employee_id: null`).
+
+- **Remove**: Color picker / hex input field.
+- **Add / Emphasize**: "Responsible Employee" dropdown selector (`assigned_employee_id`).
+  - Dropdown options should list active employees retrieved from `GET /employees`.
+  - Display employee name along with their color tag badge (e.g., `Rustam Rasulov` with color tag `#FF0000`).
+  - Allow selecting "None / Unassigned" (sets `assigned_employee_id: null`).
 
 ### 2.2. Edit Client Form (`PUT /clients/:id`)
-* **Remove**: Color picker / hex input field.
-* **Update**: Changing the "Responsible Employee" selection automatically updates the client's `effective_color` tag in API responses.
+
+- **Remove**: Color picker / hex input field.
+- **Update**: Changing the "Responsible Employee" selection automatically updates the client's `effective_color` tag in API responses.
 
 ### 2.3. Client Lists, Cards & Badges
-* **Field to Render**: Always use **`effective_color`** returned in `GET /clients` and `GET /clients/:id` responses for badge background, avatar border, or tag chips.
-* **Fallback Logic**: If for any reason `effective_color` is missing, fallback to `#808080` (Unassigned Gray).
+
+- **Field to Render**: Always use **`effective_color`** returned in `GET /clients` and `GET /clients/:id` responses for badge background, avatar border, or tag chips.
+- **Fallback Logic**: If for any reason `effective_color` is missing, fallback to `#808080` (Unassigned Gray).
 
 ---
 
@@ -41,6 +45,7 @@ To simplify client workflow and prevent conflicting color tags, **client color t
 ### 3.1. Register Client (`POST /clients`)
 
 #### OLD Payload (Deprecated ❌)
+
 ```json
 {
   "first_name": "Jasur",
@@ -53,6 +58,7 @@ To simplify client workflow and prevent conflicting color tags, **client color t
 ```
 
 #### NEW Payload (Required ✅)
+
 ```json
 {
   "first_name": "Jasur",
@@ -70,6 +76,7 @@ To simplify client workflow and prevent conflicting color tags, **client color t
 ### 3.2. Response Structure (`GET /clients`, `POST /clients`, `PUT /clients/:id`)
 
 #### Assigned Client Response Example
+
 ```json
 {
   "id": "a3b1c2d4-e5f6-7890-abcd-ef1234567890",
@@ -94,6 +101,7 @@ To simplify client workflow and prevent conflicting color tags, **client color t
 ```
 
 #### Unassigned Client Response Example
+
 ```json
 {
   "id": "c4d3b2a1-e5f6-7890-abcd-ef1234567890",

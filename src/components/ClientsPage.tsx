@@ -2,8 +2,22 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button, Spinner } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, Eye, Pencil, Trash2, Building, Phone, Palette, User,
-  Paperclip, LayoutGrid, Table as TableIcon, Check, Copy, X, RefreshCw
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  Building,
+  Phone,
+  Palette,
+  User,
+  Paperclip,
+  LayoutGrid,
+  Table as TableIcon,
+  Check,
+  Copy,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
@@ -38,7 +52,12 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 16, scale: 0.98 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 320, damping: 25 } },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring' as const, stiffness: 320, damping: 25 },
+  },
   exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15 } },
 };
 
@@ -70,7 +89,9 @@ export function ClientsPage() {
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'inactive'>(
+    'all'
+  );
 
   // View Mode: Grid Cards vs Table View
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -293,7 +314,9 @@ export function ClientsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Palette className="size-4 text-brand-gold" />
-              <h3 className="text-sm font-bold text-foreground"><T k="clientColorPipelineDist" /></h3>
+              <h3 className="text-sm font-bold text-foreground">
+                <T k="clientColorPipelineDist" />
+              </h3>
             </div>
             {selectedColor && (
               <button
@@ -316,7 +339,8 @@ export function ClientsPage() {
               {/* Visual Distribution Stacked Progress Bar */}
               <div className="h-3.5 w-full rounded-full bg-default-100 dark:bg-default-50/20 overflow-hidden flex shadow-inner">
                 {stats.by_color.map((item) => {
-                  const percent = stats.total_clients > 0 ? (item.count / stats.total_clients) * 100 : 0;
+                  const percent =
+                    stats.total_clients > 0 ? (item.count / stats.total_clients) * 100 : 0;
                   const isSelected = selectedColor === item.color;
                   return (
                     <button
@@ -372,7 +396,9 @@ export function ClientsPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <User className="size-4 text-brand-gold" />
-                <h3 className="text-sm font-bold text-foreground"><T k="clientManagerBreakdown" /></h3>
+                <h3 className="text-sm font-bold text-foreground">
+                  <T k="clientManagerBreakdown" />
+                </h3>
               </div>
               {selectedEmployeeId && (
                 <button
@@ -420,7 +446,9 @@ export function ClientsPage() {
 
           {/* Total Active Summary Pill */}
           <div className="pt-3 border-t border-border/20 flex items-center justify-between text-xs">
-            <span className="text-muted font-medium"><T k="clientDirectoryHealth" /></span>
+            <span className="text-muted font-medium">
+              <T k="clientDirectoryHealth" />
+            </span>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
                 {totalActiveCount} <T k="statusActive" />
@@ -494,7 +522,10 @@ export function ClientsPage() {
             <div className="flex items-center p-1 rounded-xl bg-default-100/60 dark:bg-default-50/20 border border-border/30">
               <button
                 type="button"
-                onClick={() => { setActiveStatusFilter('all'); setPage(1); }}
+                onClick={() => {
+                  setActiveStatusFilter('all');
+                  setPage(1);
+                }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeStatusFilter === 'all'
                     ? 'bg-surface text-foreground shadow-sm'
@@ -505,7 +536,10 @@ export function ClientsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setActiveStatusFilter('active'); setPage(1); }}
+                onClick={() => {
+                  setActiveStatusFilter('active');
+                  setPage(1);
+                }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeStatusFilter === 'active'
                     ? 'bg-emerald-500 text-white shadow-sm'
@@ -516,7 +550,10 @@ export function ClientsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setActiveStatusFilter('inactive'); setPage(1); }}
+                onClick={() => {
+                  setActiveStatusFilter('inactive');
+                  setPage(1);
+                }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeStatusFilter === 'inactive'
                     ? 'bg-rose-500 text-white shadow-sm'
@@ -696,7 +733,9 @@ export function ClientsPage() {
                         </span>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted/60 italic font-medium"><T k="clientUnassigned" /></span>
+                      <span className="text-xs text-muted/60 italic font-medium">
+                        <T k="clientUnassigned" />
+                      </span>
                     )}
 
                     {/* Right side: Attachment counter & Action buttons */}
@@ -752,12 +791,24 @@ export function ClientsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-default-100/60 dark:bg-default-50/20 text-xs font-bold uppercase tracking-wider text-muted border-b border-border/25">
-                <th className="px-4 py-3"><T k="clientColColorName" /></th>
-                <th className="px-4 py-3"><T k="clientCompany" /></th>
-                <th className="px-4 py-3"><T k="phoneNumber" /></th>
-                <th className="px-4 py-3"><T k="clientAssignedTo" /></th>
-                <th className="px-4 py-3"><T k="colStatus" /></th>
-                <th className="px-4 py-3 text-right"><T k="colActions" /></th>
+                <th className="px-4 py-3">
+                  <T k="clientColColorName" />
+                </th>
+                <th className="px-4 py-3">
+                  <T k="clientCompany" />
+                </th>
+                <th className="px-4 py-3">
+                  <T k="phoneNumber" />
+                </th>
+                <th className="px-4 py-3">
+                  <T k="clientAssignedTo" />
+                </th>
+                <th className="px-4 py-3">
+                  <T k="colStatus" />
+                </th>
+                <th className="px-4 py-3 text-right">
+                  <T k="colActions" />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20 text-sm">
@@ -810,11 +861,14 @@ export function ClientsPage() {
                             style={{ backgroundColor: client.assigned_employee.color || '#808080' }}
                           />
                           <span className="text-xs font-semibold">
-                            {client.assigned_employee.first_name} {client.assigned_employee.last_name}
+                            {client.assigned_employee.first_name}{' '}
+                            {client.assigned_employee.last_name}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted italic"><T k="clientUnassigned" /></span>
+                        <span className="text-xs text-muted italic">
+                          <T k="clientUnassigned" />
+                        </span>
                       )}
                     </td>
 
@@ -874,7 +928,8 @@ export function ClientsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4 border-t border-border/20 text-xs">
           <span className="text-muted">
-            <T k="pagShowing" /> {page} <T k="pagOf" /> {totalPages} ({totalClients} <T k="clientTotal" />)
+            <T k="pagShowing" /> {page} <T k="pagOf" /> {totalPages} ({totalClients}{' '}
+            <T k="clientTotal" />)
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -940,13 +995,19 @@ export function ClientsPage() {
           <div className="w-full max-w-md rounded-2xl bg-surface border border-border/30 p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-rose-500">
               <Trash2 className="size-6" />
-              <h3 className="text-lg font-bold font-serif"><T k="clientDeleteTitle" /></h3>
+              <h3 className="text-lg font-bold font-serif">
+                <T k="clientDeleteTitle" />
+              </h3>
             </div>
             <p className="text-xs text-muted leading-relaxed">
               <T k="clientDeleteDesc" />
             </p>
             <div className="p-3 rounded-xl bg-default-100/50 dark:bg-default-50/10 border border-border/20 text-xs font-semibold">
-              Client: <span className="text-foreground">{clientToDelete.first_name} {clientToDelete.last_name}</span> ({clientToDelete.company_name})
+              Client:{' '}
+              <span className="text-foreground">
+                {clientToDelete.first_name} {clientToDelete.last_name}
+              </span>{' '}
+              ({clientToDelete.company_name})
             </div>
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button

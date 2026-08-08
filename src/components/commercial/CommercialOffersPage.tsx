@@ -58,7 +58,7 @@ export function CommercialOffersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [stats, setStats] = useState<CommercialOfferStats | null>(null);
   const [offers, setOffers] = useState<CommercialOffer[]>([]);
-  
+
   // Pagination & Filtering state
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -76,7 +76,7 @@ export function CommercialOffersPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   const [selectedOffer, setSelectedOffer] = useState<CommercialOffer | null>(null);
   const [editOffer, setEditOffer] = useState<CommercialOffer | null>(null);
-  
+
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
 
@@ -185,7 +185,10 @@ export function CommercialOffersPage() {
   const handleDownloadPdf = async (offer: CommercialOffer, lang?: PdfLanguage) => {
     try {
       const targetLang = lang || (locale as PdfLanguage) || 'ru';
-      showNotification(`${t('downloadingPdf')}: ${offer.offer_number} (${targetLang.toUpperCase()})...`, 'info');
+      showNotification(
+        `${t('downloadingPdf')}: ${offer.offer_number} (${targetLang.toUpperCase()})...`,
+        'info'
+      );
       downloadCommercialOfferPdfBlob(offer, targetLang);
     } catch (err: any) {
       showNotification(err?.message || 'Failed to download PDF', 'warning');
@@ -252,20 +255,24 @@ export function CommercialOffersPage() {
       className="flex flex-col gap-6 w-full"
     >
       {/* Header & Main Actions */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <motion.div
+        variants={itemVariants}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl font-bold font-serif text-foreground flex items-center gap-2.5">
             <FileText className="size-6 text-brand-gold" />
             <span>{t('commercialOffersTitle')}</span>
           </h1>
-          <p className="text-sm text-muted mt-0.5">
-            {t('commercialOffersSubtitle')}
-          </p>
+          <p className="text-sm text-muted mt-0.5">{t('commercialOffersSubtitle')}</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { fetchStats(); fetchOffers(); }}
+            onClick={() => {
+              fetchStats();
+              fetchOffers();
+            }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted/40 hover:bg-muted/70 text-foreground font-semibold text-xs border border-border transition-colors cursor-pointer"
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
@@ -274,7 +281,10 @@ export function CommercialOffersPage() {
 
           {canCreate('commercial_offers') && (
             <button
-              onClick={() => { setEditOffer(null); setIsFormModalOpen(true); }}
+              onClick={() => {
+                setEditOffer(null);
+                setIsFormModalOpen(true);
+              }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-gold text-brand-navy font-bold text-xs shadow-md hover:bg-brand-gold/90 transition-all cursor-pointer"
             >
               <Plus className="size-4" />
@@ -285,7 +295,10 @@ export function CommercialOffersPage() {
       </motion.div>
 
       {/* KPI Stats Cards */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5"
+      >
         {statCards.map((sc) => (
           <Card
             key={sc.key}
@@ -303,11 +316,15 @@ export function CommercialOffersPage() {
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className={`size-10 rounded-xl ${sc.bgColor} flex items-center justify-center ${sc.color} shrink-0`}>
+              <div
+                className={`size-10 rounded-xl ${sc.bgColor} flex items-center justify-center ${sc.color} shrink-0`}
+              >
                 {sc.icon}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted truncate">{sc.label}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted truncate">
+                  {sc.label}
+                </span>
                 <span className="text-xl font-bold text-foreground tracking-tight">{sc.value}</span>
               </div>
             </div>
@@ -328,7 +345,10 @@ export function CommercialOffersPage() {
                   {t('acceptedRevenueTotal')}
                 </span>
                 <span className="text-2xl font-bold font-serif text-white">
-                  ${stats.accepted_revenue.total_usd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  $
+                  {stats.accepted_revenue.total_usd.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
               </div>
             </div>
@@ -344,14 +364,20 @@ export function CommercialOffersPage() {
       )}
 
       {/* Filter Toolbar */}
-      <motion.div variants={itemVariants} className="p-4 rounded-2xl bg-surface border border-border/40 space-y-3">
+      <motion.div
+        variants={itemVariants}
+        className="p-4 rounded-2xl bg-surface border border-border/40 space-y-3"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
           {/* Search Box */}
           <div className="lg:col-span-4 relative">
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder={t('offerSearchPlaceholder')}
               className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
             />
@@ -362,10 +388,15 @@ export function CommercialOffersPage() {
           <div className="lg:col-span-3">
             <select
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
               className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
             >
-              <option value="">{t('statusAll')} ({t('offerStatusAll')})</option>
+              <option value="">
+                {t('statusAll')} ({t('offerStatusAll')})
+              </option>
               <option value="draft">Drafts ({t('offerStatusDraft')})</option>
               <option value="sent">Sent ({t('offerStatusSent')})</option>
               <option value="accepted">Accepted ({t('offerStatusAccepted')})</option>
@@ -378,7 +409,10 @@ export function CommercialOffersPage() {
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(1);
+              }}
               className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none"
             />
           </div>
@@ -388,7 +422,10 @@ export function CommercialOffersPage() {
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(1);
+              }}
               className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none"
             />
           </div>
@@ -400,7 +437,11 @@ export function CommercialOffersPage() {
               className="p-2 rounded-xl border border-border text-muted hover:text-foreground hover:bg-muted/40 transition-colors"
               title={viewMode === 'table' ? 'Grid View' : 'Table View'}
             >
-              {viewMode === 'table' ? <LayoutGrid className="size-4" /> : <List className="size-4" />}
+              {viewMode === 'table' ? (
+                <LayoutGrid className="size-4" />
+              ) : (
+                <List className="size-4" />
+              )}
             </button>
 
             {(search || statusFilter || dateFrom || dateTo) && (
@@ -432,7 +473,10 @@ export function CommercialOffersPage() {
             <p className="text-xs text-muted max-w-sm leading-relaxed">{t('noOffersDesc')}</p>
             {canCreate('commercial_offers') && (
               <button
-                onClick={() => { setEditOffer(null); setIsFormModalOpen(true); }}
+                onClick={() => {
+                  setEditOffer(null);
+                  setIsFormModalOpen(true);
+                }}
                 className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-gold text-brand-navy font-bold text-xs shadow-md hover:bg-brand-gold/90 transition-all cursor-pointer"
               >
                 <Plus className="size-4" />
@@ -498,7 +542,10 @@ export function CommercialOffersPage() {
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => { setSelectedOffer(offer); setIsDetailModalOpen(true); }}
+                          onClick={() => {
+                            setSelectedOffer(offer);
+                            setIsDetailModalOpen(true);
+                          }}
                           className="p-1.5 rounded-lg text-muted hover:text-brand-gold hover:bg-brand-gold/10 transition-colors"
                           title="View Details"
                         >
@@ -523,7 +570,10 @@ export function CommercialOffersPage() {
 
                         {canUpdate('commercial_offers') && (
                           <button
-                            onClick={() => { setEditOffer(offer); setIsFormModalOpen(true); }}
+                            onClick={() => {
+                              setEditOffer(offer);
+                              setIsFormModalOpen(true);
+                            }}
                             className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-muted/60 transition-colors"
                             title="Edit"
                           >
@@ -581,7 +631,9 @@ export function CommercialOffersPage() {
                   {/* Price */}
                   <div className="pt-2 border-t border-border/40 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-muted uppercase font-bold block">Proposal Total</span>
+                      <span className="text-[10px] text-muted uppercase font-bold block">
+                        Proposal Total
+                      </span>
                       <span className="text-base font-bold text-foreground">
                         ${offer.price_usd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </span>
@@ -595,7 +647,10 @@ export function CommercialOffersPage() {
                 {/* Card Actions */}
                 <div className="pt-4 mt-4 border-t border-border/40 flex items-center justify-between gap-2">
                   <button
-                    onClick={() => { setSelectedOffer(offer); setIsDetailModalOpen(true); }}
+                    onClick={() => {
+                      setSelectedOffer(offer);
+                      setIsDetailModalOpen(true);
+                    }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-brand-gold/15 text-brand-gold hover:bg-brand-gold/25 font-bold text-xs transition-colors cursor-pointer"
                   >
                     <Eye className="size-3.5" />
@@ -626,9 +681,14 @@ export function CommercialOffersPage() {
 
       {/* Pagination Bar */}
       {totalPages > 1 && (
-        <motion.div variants={itemVariants} className="flex items-center justify-between px-2 py-3 border-t border-border/40">
+        <motion.div
+          variants={itemVariants}
+          className="flex items-center justify-between px-2 py-3 border-t border-border/40"
+        >
           <span className="text-xs text-muted">
-            {t('showingTransactions').replace('{count}', String(offers.length)).replace('{total}', String(totalItems))}
+            {t('showingTransactions')
+              .replace('{count}', String(offers.length))
+              .replace('{total}', String(totalItems))}
           </span>
 
           <div className="flex items-center gap-2">
@@ -641,7 +701,9 @@ export function CommercialOffersPage() {
             </button>
 
             <span className="text-xs font-bold text-foreground px-2">
-              {t('pageIndicator').replace('{page}', String(page)).replace('{totalPages}', String(totalPages))}
+              {t('pageIndicator')
+                .replace('{page}', String(page))
+                .replace('{totalPages}', String(totalPages))}
             </span>
 
             <button
@@ -658,7 +720,10 @@ export function CommercialOffersPage() {
       {/* Modal: Create & Edit Offer */}
       <CommercialOfferFormModal
         isOpen={isFormModalOpen}
-        onClose={() => { setIsFormModalOpen(false); setEditOffer(null); }}
+        onClose={() => {
+          setIsFormModalOpen(false);
+          setEditOffer(null);
+        }}
         onSubmit={handleFormSubmit}
         initialData={editOffer}
         loading={formSubmitting}
@@ -671,7 +736,10 @@ export function CommercialOffersPage() {
         offer={selectedOffer}
         onUpdateStatus={handleUpdateStatus}
         onDuplicate={handleDuplicate}
-        onEdit={(off) => { setEditOffer(off); setIsFormModalOpen(true); }}
+        onEdit={(off) => {
+          setEditOffer(off);
+          setIsFormModalOpen(true);
+        }}
         onDelete={(id) => setDeleteConfirmId(id)}
         onDownloadPdf={handleDownloadPdf}
         canUpdate={canUpdate('commercial_offers')}
@@ -686,11 +754,11 @@ export function CommercialOffersPage() {
               <div className="size-10 rounded-full bg-rose-500/15 flex items-center justify-center">
                 <Trash2 className="size-5" />
               </div>
-              <h3 className="text-lg font-bold font-serif text-foreground">{t('offerDeleteTitle')}</h3>
+              <h3 className="text-lg font-bold font-serif text-foreground">
+                {t('offerDeleteTitle')}
+              </h3>
             </div>
-            <p className="text-xs text-muted leading-relaxed">
-              {t('offerDeleteDesc')}
-            </p>
+            <p className="text-xs text-muted leading-relaxed">{t('offerDeleteDesc')}</p>
             <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={() => setDeleteConfirmId(null)}

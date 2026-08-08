@@ -11,33 +11,33 @@
 ```css
 :root {
   /* Brand */
-  --yaqeen-royal: #0F2D5C;
-  --yaqeen-navy: #11213D;
-  --yaqeen-gold: #C8A96A;
-  --yaqeen-ivory: #F7F5F0;
+  --yaqeen-royal: #0f2d5c;
+  --yaqeen-navy: #11213d;
+  --yaqeen-gold: #c8a96a;
+  --yaqeen-ivory: #f7f5f0;
 
   /* Neutrals */
-  --yaqeen-gray-100: #E6E7EB;
-  --yaqeen-gray-300: #B7C2D1;
-  --yaqeen-gray-600: #6B7280;
-  --yaqeen-white: #FFFFFF;
+  --yaqeen-gray-100: #e6e7eb;
+  --yaqeen-gray-300: #b7c2d1;
+  --yaqeen-gray-600: #6b7280;
+  --yaqeen-white: #ffffff;
 
   /* Interaction extensions */
-  --yaqeen-royal-hover: #173E77;
-  --yaqeen-royal-pressed: #0B2348;
-  --yaqeen-navy-hover: #1A3157;
-  --yaqeen-gold-soft: #F2E9D8;
-  --yaqeen-focus: #8FA9CF;
+  --yaqeen-royal-hover: #173e77;
+  --yaqeen-royal-pressed: #0b2348;
+  --yaqeen-navy-hover: #1a3157;
+  --yaqeen-gold-soft: #f2e9d8;
+  --yaqeen-focus: #8fa9cf;
 
   /* Functional */
-  --yaqeen-success: #167A4A;
-  --yaqeen-success-soft: #E8F5EE;
-  --yaqeen-warning: #8A5A00;
-  --yaqeen-warning-soft: #FFF4D8;
-  --yaqeen-danger: #B42318;
-  --yaqeen-danger-soft: #FDECEA;
-  --yaqeen-info: #245EA8;
-  --yaqeen-info-soft: #EAF2FC;
+  --yaqeen-success: #167a4a;
+  --yaqeen-success-soft: #e8f5ee;
+  --yaqeen-warning: #8a5a00;
+  --yaqeen-warning-soft: #fff4d8;
+  --yaqeen-danger: #b42318;
+  --yaqeen-danger-soft: #fdecea;
+  --yaqeen-info: #245ea8;
+  --yaqeen-info-soft: #eaf2fc;
 
   /* Semantic surfaces */
   --color-canvas: var(--yaqeen-ivory);
@@ -57,8 +57,8 @@
   --color-border-strong: var(--yaqeen-gray-600);
 
   /* Typography */
-  --font-display: "Playfair Display", Georgia, serif;
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Spacing */
   --space-0: 0;
@@ -84,15 +84,9 @@
 
   /* Elevation */
   --shadow-0: none;
-  --shadow-1:
-    0 1px 2px rgba(17, 33, 61, 0.06),
-    0 2px 8px rgba(17, 33, 61, 0.04);
-  --shadow-2:
-    0 4px 12px rgba(17, 33, 61, 0.10),
-    0 1px 3px rgba(17, 33, 61, 0.08);
-  --shadow-3:
-    0 12px 32px rgba(17, 33, 61, 0.16),
-    0 4px 10px rgba(17, 33, 61, 0.08);
+  --shadow-1: 0 1px 2px rgba(17, 33, 61, 0.06), 0 2px 8px rgba(17, 33, 61, 0.04);
+  --shadow-2: 0 4px 12px rgba(17, 33, 61, 0.1), 0 1px 3px rgba(17, 33, 61, 0.08);
+  --shadow-3: 0 12px 32px rgba(17, 33, 61, 0.16), 0 4px 10px rgba(17, 33, 61, 0.08);
 
   /* Motion */
   --motion-instant: 80ms;
@@ -199,12 +193,7 @@ Each production component should define:
 Example conceptual API:
 
 ```tsx
-<Button
-  variant="primary"
-  size="medium"
-  leadingIcon={<TransferIcon />}
-  loading={isSubmitting}
->
+<Button variant="primary" size="medium" leadingIcon={<TransferIcon />} loading={isSubmitting}>
   New transfer
 </Button>
 ```
