@@ -53,7 +53,49 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export const BASE_URL = 'http://localhost:3000/api/v1';
+/**
+ * Normalizes and formats the backend base URL.
+ * Handles inputs like "backend-yaqeen.uz", "https://backend-yaqeen.uz", or "http://localhost:3000/api/v1".
+ */
+export function formatBaseUrl(raw?: string): string {
+  if (!raw || typeof raw !== 'string') {
+    return 'http://localhost:3000/api/v1';
+  }
+  let url = raw.trim();
+  if (!url) {
+    return 'http://localhost:3000/api/v1';
+  }
+
+  // Strip trailing slashes
+  url = url.replace(/\/+$/, '');
+
+  // Prepend protocol if missing
+  if (!/^https?:\/\//i.test(url)) {
+    const isLocal = url.startsWith('localhost') || url.startsWith('127.0.0.1');
+    url = `${isLocal ? 'http' : 'https'}://${url}`;
+  }
+
+  // Append /api/v1 path if no API path exists in the URL
+  try {
+    const parsed = new URL(url);
+    if (parsed.pathname === '' || parsed.pathname === '/') {
+      url = `${url}/api/v1`;
+    }
+  } catch {
+    if (!url.includes('/api/')) {
+      url = `${url}/api/v1`;
+    }
+  }
+
+  return url.replace(/\/+$/, '');
+}
+
+const envBaseUrl =
+  (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined) ||
+  (import.meta.env.BACKEND_BASE_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined);
+
+export const BASE_URL = formatBaseUrl(envBaseUrl);
 
 /**
  * Resolves picture/image URLs (relative or absolute) to a full URL pointing to backend if needed.
