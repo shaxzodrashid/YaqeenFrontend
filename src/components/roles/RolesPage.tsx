@@ -28,6 +28,7 @@ import type {
 } from '../../services/roles.service';
 import { RoleFormModal } from './RoleFormModal';
 import { RoleDetailDrawer } from './RoleDetailDrawer';
+import { getRoleDisplayName, getRoleDescription } from './roleUtils';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -104,12 +105,21 @@ export function RolesPage() {
 
   // Filtered roles list
   const filteredRoles = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     return roles.filter((role) => {
+      const localizedName = getRoleDisplayName(role, t).toLowerCase();
+      const localizedDesc = getRoleDescription(role, t).toLowerCase();
+      const rawName = role.name.toLowerCase();
+      const rawDisplayName = role.display_name.toLowerCase();
+      const rawDesc = (role.description || '').toLowerCase();
+
       const matchesSearch =
-        searchQuery.trim() === '' ||
-        role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        role.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (role.description && role.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        query === '' ||
+        rawName.includes(query) ||
+        rawDisplayName.includes(query) ||
+        localizedName.includes(query) ||
+        rawDesc.includes(query) ||
+        localizedDesc.includes(query);
 
       const matchesType =
         filterType === 'all' ||
@@ -118,7 +128,7 @@ export function RolesPage() {
 
       return matchesSearch && matchesType;
     });
-  }, [roles, searchQuery, filterType]);
+  }, [roles, searchQuery, filterType, t]);
 
   // Aggregate Stats
   const totalRolesCount = roles.length;
@@ -183,7 +193,7 @@ export function RolesPage() {
       console.error('Failed to save role:', err);
       const loc = err?.location || err?.message;
       if (loc === 'role_name_exists') {
-        showNotification('A role with this machine name already exists.', 'error');
+        showNotification(t('rolesRoleNameExists'), 'error');
       } else if (loc === 'system_role_rename_prohibited') {
         showNotification(t('rolesSystemRenameProhibited'), 'error');
       } else {
@@ -484,7 +494,7 @@ export function RolesPage() {
 
                           <div className="flex flex-col min-w-0">
                             <h3 className="text-base font-bold font-serif text-foreground truncate group-hover:text-brand-gold transition-colors">
-                              {role.display_name}
+                              {getRoleDisplayName(role, t)}
                             </h3>
                             <code className="text-[11px] font-mono text-brand-gold bg-brand-gold/10 border border-brand-gold/20 px-2 py-0.5 rounded w-fit mt-0.5">
                               {role.name}
@@ -516,15 +526,15 @@ export function RolesPage() {
 
                       {/* Description */}
                       <p className="text-xs text-muted leading-relaxed line-clamp-2 mb-4 min-h-[36px]">
-                        {role.description || 'No description provided.'}
+                        {getRoleDescription(role, t)}
                       </p>
 
                       {/* Module Permission Indicator */}
                       <div className="p-3 rounded-xl bg-default/20 dark:bg-night-field border border-border/30 mb-4 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-muted">Module Access</span>
+                          <span className="font-semibold text-muted">{t('rolesModuleAccess')}</span>
                           <span className="font-mono font-bold text-foreground">
-                            {grantedCount} / {total} Active
+                            {t('rolesActiveModulesCount', { granted: grantedCount, total })}
                           </span>
                         </div>
                         <div className="w-full h-1.5 bg-default/40 dark:bg-night-surface rounded-full overflow-hidden">
@@ -540,7 +550,9 @@ export function RolesPage() {
                     <div className="flex items-center justify-between pt-3 border-t border-border/30 mt-2">
                       <div className="flex items-center gap-1.5 text-xs text-muted font-medium">
                         <Users className="size-3.5 text-brand-gold" />
-                        <span>{role.user_count} accounts</span>
+                        <span>
+                          {role.user_count} {t('rolesUserAccounts')}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1">
@@ -632,13 +644,13 @@ export function RolesPage() {
               {deletingRole && (
                 <div className="w-full flex flex-col items-center gap-1 bg-default/30 dark:bg-night-field p-3 rounded-xl border border-border/40">
                   <span className="text-xs font-bold text-foreground">
-                    {deletingRole.display_name}
+                    {getRoleDisplayName(deletingRole, t)}
                   </span>
                   <code className="text-[11px] font-mono text-brand-gold">{deletingRole.name}</code>
 
                   {deletingRole.user_count > 0 && (
                     <div className="mt-2 text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20">
-                      ⚠️ Warning: Assigned to {deletingRole.user_count} active user account(s)
+                      ⚠️ {t('rolesAssignedUsersWarning', { count: deletingRole.user_count })}
                     </div>
                   )}
                 </div>

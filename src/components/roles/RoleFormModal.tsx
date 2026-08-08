@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Spinner } from '@heroui/react';
+import { Modal, Button, Spinner, Tooltip } from '@heroui/react';
 import {
   ShieldCheck,
   Lock,
@@ -20,6 +20,7 @@ import type {
   RolePermissions,
   ModulePermissions,
 } from '../../services/roles.service';
+import { getRoleDisplayName, getModuleName, getModuleDescription } from './roleUtils';
 
 interface RoleFormModalProps {
   isOpen: boolean;
@@ -212,7 +213,7 @@ export function RoleFormModal({
                 </Modal.Heading>
                 <p className="text-xs text-muted">
                   {editingRole
-                    ? `${editingRole.display_name} (${editingRole.name})`
+                    ? `${getRoleDisplayName(editingRole, t)} (${editingRole.name})`
                     : t('rolesSubtitle')}
                 </p>
               </div>
@@ -240,7 +241,7 @@ export function RoleFormModal({
                   </label>
                   {isSystemRole && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                      <Lock className="size-2.5" /> Locked System Name
+                      <Lock className="size-2.5" /> {t('rolesLockedSystemName')}
                     </span>
                   )}
                 </div>
@@ -312,7 +313,7 @@ export function RoleFormModal({
                   <h4 className="text-sm font-bold text-foreground flex items-center gap-2 font-serif">
                     <span>{t('rolesMatrixHeading')}</span>
                     <span className="text-[10px] font-sans font-bold text-brand-gold bg-brand-gold/15 px-2 py-0.5 rounded-full border border-brand-gold/30">
-                      {modules.length} Modules
+                      {modules.length} {t('rolesModulesCount')}
                     </span>
                   </h4>
                   <p className="text-[11px] text-muted">{t('rolesMatrixSubtitle')}</p>
@@ -354,26 +355,63 @@ export function RoleFormModal({
                     <thead>
                       <tr className="bg-default/30 dark:bg-night-surface border-b border-border/40 text-muted font-bold uppercase tracking-wider text-[10px]">
                         <th className="py-3 px-4 min-w-[200px]">{t('rolesSystemModuleHeader')}</th>
+
+                        {/* Create Column Header with Tooltip */}
                         <th className="py-3 px-2 text-center min-w-[80px]">
-                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                            <PlusCircle className="size-3" /> {t('rolesActionCreate')}
-                          </span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 cursor-help">
+                                <PlusCircle className="size-3" /> {t('rolesActionCreate')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermCreateTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
                         </th>
+
+                        {/* Read Column Header with Tooltip */}
                         <th className="py-3 px-2 text-center min-w-[80px]">
-                          <span className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400">
-                            <Eye className="size-3" /> {t('rolesActionRead')}
-                          </span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 cursor-help">
+                                <Eye className="size-3" /> {t('rolesActionRead')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermReadTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
                         </th>
+
+                        {/* Update Column Header with Tooltip */}
                         <th className="py-3 px-2 text-center min-w-[80px]">
-                          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                            <Edit3 className="size-3" /> {t('rolesActionUpdate')}
-                          </span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 cursor-help">
+                                <Edit3 className="size-3" /> {t('rolesActionUpdate')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermUpdateTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
                         </th>
+
+                        {/* Delete Column Header with Tooltip */}
                         <th className="py-3 px-2 text-center min-w-[80px]">
-                          <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
-                            <Trash2 className="size-3" /> {t('rolesActionDelete')}
-                          </span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 cursor-help">
+                                <Trash2 className="size-3" /> {t('rolesActionDelete')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermDeleteTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
                         </th>
+
                         <th className="py-3 px-3 text-right min-w-[110px]">
                           {t('rolesRowActions')}
                         </th>
@@ -395,6 +433,9 @@ export function RoleFormModal({
                           !modPerms.update &&
                           !modPerms.delete;
 
+                        const localizedModuleName = getModuleName(mod.module, mod.label, t);
+                        const localizedModuleDesc = getModuleDescription(mod.module, t);
+
                         return (
                           <tr
                             key={mod.module}
@@ -402,111 +443,151 @@ export function RoleFormModal({
                           >
                             {/* Module Name */}
                             <td className="py-3 px-4">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-foreground text-xs">
-                                  {mod.module === 'cargo_registrations'
-                                    ? t('tabTransactions') || mod.label
-                                    : mod.label}
-                                </span>
-                                <code className="text-[10px] text-muted font-mono">
-                                  {mod.module}
-                                </code>
-                                {mod.module === 'cargo_registrations' && (
-                                  <div className="mt-2 pt-1.5 border-t border-border/30">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        toggleAction(mod.module, 'register_for_everyone')
-                                      }
-                                      className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                        modPerms.register_for_everyone
-                                          ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/40 shadow-xs'
-                                          : 'bg-default/20 text-muted/60 border border-border/30 hover:border-purple-500/30'
-                                      }`}
-                                      title={t('rolesRegisterForEveryoneDesc')}
-                                    >
-                                      <span>{modPerms.register_for_everyone ? '✓' : '✕'}</span>
-                                      <span>{t('rolesRegisterForEveryone')}</span>
-                                    </button>
+                              <Tooltip delay={200} closeDelay={0} isDisabled={!localizedModuleDesc}>
+                                <Tooltip.Trigger>
+                                  <div className="flex flex-col text-left cursor-help">
+                                    <span className="font-semibold text-foreground text-xs">
+                                      {localizedModuleName}
+                                    </span>
+                                    <code className="text-[10px] text-muted font-mono">
+                                      {mod.module}
+                                    </code>
                                   </div>
-                                )}
-                              </div>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content placement="right">
+                                  {localizedModuleDesc}
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              {mod.module === 'cargo_registrations' && (
+                                <div className="mt-2 pt-1.5 border-t border-border/30">
+                                  <Tooltip delay={150} closeDelay={0}>
+                                    <Tooltip.Trigger>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          toggleAction(mod.module, 'register_for_everyone')
+                                        }
+                                        className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                          modPerms.register_for_everyone
+                                            ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/40 shadow-xs'
+                                            : 'bg-default/20 text-muted/60 border border-border/30 hover:border-purple-500/30'
+                                        }`}
+                                      >
+                                        <span>{modPerms.register_for_everyone ? '✓' : '✕'}</span>
+                                        <span>{t('rolesRegisterForEveryone')}</span>
+                                      </button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content placement="right">
+                                      {t('rolesPermRegisterEveryoneTooltip')}
+                                    </Tooltip.Content>
+                                  </Tooltip>
+                                </div>
+                              )}
                             </td>
 
                             {/* Create Flag */}
                             <td className="py-2 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => toggleAction(mod.module, 'create')}
-                                className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
-                                  modPerms.create
-                                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 scale-105'
-                                    : 'bg-default/20 border-border/40 text-muted/40 hover:border-emerald-500/30'
-                                }`}
-                              >
-                                {modPerms.create ? (
-                                  <Check className="size-4 stroke-[3]" />
-                                ) : (
-                                  <span className="text-[10px]">✕</span>
-                                )}
-                              </button>
+                              <Tooltip delay={150} closeDelay={0}>
+                                <Tooltip.Trigger>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleAction(mod.module, 'create')}
+                                    className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
+                                      modPerms.create
+                                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 scale-105'
+                                        : 'bg-default/20 border-border/40 text-muted/40 hover:border-emerald-500/30'
+                                    }`}
+                                  >
+                                    {modPerms.create ? (
+                                      <Check className="size-4 stroke-[3]" />
+                                    ) : (
+                                      <span className="text-[10px]">✕</span>
+                                    )}
+                                  </button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content placement="top">
+                                  {t('rolesPermCreateTooltip')}
+                                </Tooltip.Content>
+                              </Tooltip>
                             </td>
 
                             {/* Read Flag */}
                             <td className="py-2 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => toggleAction(mod.module, 'read')}
-                                className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
-                                  modPerms.read
-                                    ? 'bg-sky-500/20 border-sky-500/50 text-sky-600 dark:text-sky-400 scale-105'
-                                    : 'bg-default/20 border-border/40 text-muted/40 hover:border-sky-500/30'
-                                }`}
-                              >
-                                {modPerms.read ? (
-                                  <Check className="size-4 stroke-[3]" />
-                                ) : (
-                                  <span className="text-[10px]">✕</span>
-                                )}
-                              </button>
+                              <Tooltip delay={150} closeDelay={0}>
+                                <Tooltip.Trigger>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleAction(mod.module, 'read')}
+                                    className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
+                                      modPerms.read
+                                        ? 'bg-sky-500/20 border-sky-500/50 text-sky-600 dark:text-sky-400 scale-105'
+                                        : 'bg-default/20 border-border/40 text-muted/40 hover:border-sky-500/30'
+                                    }`}
+                                  >
+                                    {modPerms.read ? (
+                                      <Check className="size-4 stroke-[3]" />
+                                    ) : (
+                                      <span className="text-[10px]">✕</span>
+                                    )}
+                                  </button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content placement="top">
+                                  {t('rolesPermReadTooltip')}
+                                </Tooltip.Content>
+                              </Tooltip>
                             </td>
 
                             {/* Update Flag */}
                             <td className="py-2 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => toggleAction(mod.module, 'update')}
-                                className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
-                                  modPerms.update
-                                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-400 scale-105'
-                                    : 'bg-default/20 border-border/40 text-muted/40 hover:border-amber-500/30'
-                                }`}
-                              >
-                                {modPerms.update ? (
-                                  <Check className="size-4 stroke-[3]" />
-                                ) : (
-                                  <span className="text-[10px]">✕</span>
-                                )}
-                              </button>
+                              <Tooltip delay={150} closeDelay={0}>
+                                <Tooltip.Trigger>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleAction(mod.module, 'update')}
+                                    className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
+                                      modPerms.update
+                                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-400 scale-105'
+                                        : 'bg-default/20 border-border/40 text-muted/40 hover:border-amber-500/30'
+                                    }`}
+                                  >
+                                    {modPerms.update ? (
+                                      <Check className="size-4 stroke-[3]" />
+                                    ) : (
+                                      <span className="text-[10px]">✕</span>
+                                    )}
+                                  </button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content placement="top">
+                                  {t('rolesPermUpdateTooltip')}
+                                </Tooltip.Content>
+                              </Tooltip>
                             </td>
 
                             {/* Delete Flag */}
                             <td className="py-2 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => toggleAction(mod.module, 'delete')}
-                                className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
-                                  modPerms.delete
-                                    ? 'bg-rose-500/20 border-rose-500/50 text-rose-600 dark:text-rose-400 scale-105'
-                                    : 'bg-default/20 border-border/40 text-muted/40 hover:border-rose-500/30'
-                                }`}
-                              >
-                                {modPerms.delete ? (
-                                  <Check className="size-4 stroke-[3]" />
-                                ) : (
-                                  <span className="text-[10px]">✕</span>
-                                )}
-                              </button>
+                              <Tooltip delay={150} closeDelay={0}>
+                                <Tooltip.Trigger>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleAction(mod.module, 'delete')}
+                                    className={`size-7 rounded-lg border flex items-center justify-center mx-auto transition-all cursor-pointer focus:outline-none ${
+                                      modPerms.delete
+                                        ? 'bg-rose-500/20 border-rose-500/50 text-rose-600 dark:text-rose-400 scale-105'
+                                        : 'bg-default/20 border-border/40 text-muted/40 hover:border-rose-500/30'
+                                    }`}
+                                  >
+                                    {modPerms.delete ? (
+                                      <Check className="size-4 stroke-[3]" />
+                                    ) : (
+                                      <span className="text-[10px]">✕</span>
+                                    )}
+                                  </button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content placement="top">
+                                  {t('rolesPermDeleteTooltip')}
+                                </Tooltip.Content>
+                              </Tooltip>
                             </td>
 
                             {/* Row Grant / Revoke Shortcuts */}

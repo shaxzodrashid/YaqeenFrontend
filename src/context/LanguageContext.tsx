@@ -653,6 +653,58 @@ const translations = {
     successRoleUpdated: 'Role permissions updated successfully!',
     successRoleDeleted: 'Role deleted successfully!',
 
+    // Permission Tooltips (3 Languages)
+    rolesPermCreateTooltip: 'Allows creating new records within this module',
+    rolesPermReadTooltip: 'Allows viewing and searching records within this module',
+    rolesPermUpdateTooltip: 'Allows editing and modifying existing records within this module',
+    rolesPermDeleteTooltip: 'Allows deleting or archiving records within this module',
+    rolesPermRegisterEveryoneTooltip:
+      'Allows registering cargo entries on behalf of other employees',
+
+    // System Modules Labels & Tooltips
+    module_clients: 'Clients Management',
+    module_clients_desc: 'Access to client contacts, deals, and relationship status',
+    module_employees: 'Employee Management',
+    module_employees_desc: 'Access to staff profiles, user accounts, and department assignments',
+    module_departments: 'Department Management',
+    module_departments_desc: 'Access to organizational structure and department management',
+    module_cargo_kpi: 'Cargo KPI',
+    module_cargo_kpi_desc: 'Access to cargo KPI tracking, shipments, and logistics dashboards',
+    module_cargo_registrations: 'Cargo Registrations',
+    module_cargo_registrations_desc:
+      'Access to cargo registration forms, logs, and transaction records',
+    module_finance: 'Finance & Expenses',
+    module_finance_desc: 'Access to expense ledgers, payroll, and financial reports',
+    module_commercial_offers: 'Commercial Offers',
+    module_commercial_offers_desc: 'Access to creating and managing commercial proposals',
+    module_tasks: 'Kanban Tasks & Board',
+    module_tasks_desc: 'Access to Kanban task boards and team assignment cards',
+    module_currency: 'Currency Rates',
+    module_currency_desc: 'Access to exchange rates and multi-currency exchange matrix',
+    module_attachments: 'Attachments & Documents',
+    module_attachments_desc: 'Access to document uploads, file storage, and attachments',
+    module_roles: 'Role & Permissions Management',
+    module_roles_desc: 'Access to user roles, permission matrices, and security policies',
+
+    // System Roles Names & Descriptions
+    role_CEO_name: 'Chief Executive Officer',
+    role_CEO_desc: 'Full administrative access to all modules and system settings',
+    role_ROP_name: 'Head of Sales & Operations (ROP)',
+    role_ROP_desc: 'Department manager privileges with cargo, clients, and team controls',
+    role_EMPLOYEE_name: 'Standard Employee',
+    role_EMPLOYEE_desc: 'Operational access limited to personal tasks and assigned workload',
+
+    // Additional UI keys
+    rolesLockedSystemName: 'Locked System Name',
+    rolesModulesCount: 'Modules',
+    rolesGranted: 'Granted',
+    rolesOff: 'Off',
+    rolesModuleAccess: 'Module Access',
+    rolesActive: 'Active',
+    rolesNoDescription: 'No description provided.',
+    rolesAssignedUsersWarning: 'Warning: Assigned to {count} active user account(s)',
+    rolesActiveModulesCount: '{granted} / {total} Active',
+
     // Container Tracking & Shipments
     containerTrackingDashboard: 'Logistics & Container Tracking Dashboard',
     excelSyncEngine: 'Excel Sync Engine',
@@ -1536,6 +1588,58 @@ const translations = {
     successRoleUpdated: 'Права роли успешно обновлены!',
     successRoleDeleted: 'Роль успешно удалена!',
 
+    // Permission Tooltips (3 Languages)
+    rolesPermCreateTooltip: 'Разрешает создание новых записей в данном модуле',
+    rolesPermReadTooltip: 'Разрешает просмотр и поиск записей в данном модуле',
+    rolesPermUpdateTooltip:
+      'Разрешает редактирование и изменение существующих записей в данном модуле',
+    rolesPermDeleteTooltip: 'Разрешает удаление или архивацию записей в данном модуле',
+    rolesPermRegisterEveryoneTooltip: 'Разрешает регистрацию грузов от имени других сотрудников',
+
+    // System Modules Labels & Tooltips
+    module_clients: 'Управление клиентами',
+    module_clients_desc: 'Доступ к контактам клиентов, сделкам и статусам',
+    module_employees: 'Управление сотрудниками',
+    module_employees_desc: 'Доступ к профилям сотрудников, аккаунтам и отделам',
+    module_departments: 'Управление отделами',
+    module_departments_desc: 'Доступ к оргструктуре и управлению отделами',
+    module_cargo_kpi: 'KPI грузов',
+    module_cargo_kpi_desc: 'Доступ к KPI грузов, перевозкам и логистике',
+    module_cargo_registrations: 'Регистрация грузов',
+    module_cargo_registrations_desc: 'Доступ к форме регистрации грузов и журналу транзакций',
+    module_finance: 'Финансы и расходы',
+    module_finance_desc: 'Доступ к финансовым расходам, зарплатам и отчетам',
+    module_commercial_offers: 'Коммерческие предложения',
+    module_commercial_offers_desc: 'Доступ к созданию и управлению коммерческими предложениями',
+    module_tasks: 'Задачи Kanban',
+    module_tasks_desc: 'Доступ к Канбан-доскам задач и карточкам поручений',
+    module_currency: 'Курсы валют',
+    module_currency_desc: 'Доступ к курсам валют и валютной матрице',
+    module_attachments: 'Вложения и документы',
+    module_attachments_desc: 'Доступ к загрузке документов и файловому хранилищу',
+    module_roles: 'Управление ролями и правами',
+    module_roles_desc: 'Доступ к ролям, матрице прав и политике безопасности',
+
+    // System Roles Names & Descriptions
+    role_CEO_name: 'Генеральный директор (CEO)',
+    role_CEO_desc: 'Полный административный доступ ко всем модулям и настройкам системы',
+    role_ROP_name: 'Руководитель отдела продаж (РОП)',
+    role_ROP_desc: 'Права руководителя отдела с управлением грузами, клиентами и командой',
+    role_EMPLOYEE_name: 'Линейный сотрудник',
+    role_EMPLOYEE_desc:
+      'Операционный доступ, ограниченный личными задачами и привязанными объектами',
+
+    // Additional UI keys
+    rolesLockedSystemName: 'Системное имя заблокировано',
+    rolesModulesCount: 'модулей',
+    rolesGranted: 'Выдано',
+    rolesOff: 'Отключено',
+    rolesModuleAccess: 'Доступ к модулям',
+    rolesActive: 'активно',
+    rolesNoDescription: 'Описание не указано.',
+    rolesAssignedUsersWarning: 'Внимание: назначено на {count} активных аккаунтов',
+    rolesActiveModulesCount: '{granted} / {total} активно',
+
     // Container Tracking & Shipments
     containerTrackingDashboard: 'Панель отслеживания логистики и контейнеров',
     excelSyncEngine: 'Движок синхронизации Excel',
@@ -2416,10 +2520,64 @@ const translations = {
     rolesSystemRenameProhibited: "Tizim rolining nomini o'zgartirib bo'lmaydi.",
     rolesSystemDeleteProhibited: "Tizimning ichki rollarini o'chirish taqiqlangan.",
     rolesHasAssignedUsers:
-      "Ushbu rolga foydalanuvchilar biriktirilgani sababli uni o'chirib bo meydi.",
+      "Ushbu rolga foydalanuvchilar biriktirilgani sababli uni o'chirib bo'lmaydi.",
     successRoleCreated: 'Rol muvaffaqiyatli yaratildi!',
     successRoleUpdated: 'Rol huquqlari muvaffaqiyatli yangilandi!',
     successRoleDeleted: "Rol muvaffaqiyatli o'chirildi!",
+
+    // Permission Tooltips (3 Languages)
+    rolesPermCreateTooltip: 'Ushbu modulda yangi yozuvlar yaratishga ruxsat beradi',
+    rolesPermReadTooltip: "Ushbu modulda yozuvlarni ko'rish va qidirishga ruxsat beradi",
+    rolesPermUpdateTooltip:
+      'Ushbu modulda mavjud yozuvlarni tahrirlash va yangilashga ruxsat beradi',
+    rolesPermDeleteTooltip: "Ushbu modulda yozuvlarni o'chirish yoki arxivlashga ruxsat beradi",
+    rolesPermRegisterEveryoneTooltip:
+      "Boshqa xodimlar nomidan yuklarni ro'yxatdan o'tkazishga ruxsat beradi",
+
+    // System Modules Labels & Tooltips
+    module_clients: 'Mijozlarni boshqarish',
+    module_clients_desc: 'Mijozlar kontaktlari, bitimlari va holatlariga kirish',
+    module_employees: 'Xodimlarni boshqarish',
+    module_employees_desc: "Xodimlar profillari, hisoblari va bo'limlariga kirish",
+    module_departments: "Bo'limlarni boshqarish",
+    module_departments_desc: "Tashkiliy tuzilma va bo'limlarni boshqarishga kirish",
+    module_cargo_kpi: 'Yuk KPI',
+    module_cargo_kpi_desc: 'Yuk KPI monitoringi, tashuvlar va logistikaga kirish',
+    module_cargo_registrations: "Yuklarni ro'yxatdan o'tkazish",
+    module_cargo_registrations_desc:
+      "Yuklarni ro'yxatdan o'tkazish shakli va tranzaksiyalar jurnaliga kirish",
+    module_finance: 'Moliya va xarajatlar',
+    module_finance_desc: 'Moliyaviy xarajatlar, maoshlar va hisobotlarga kirish',
+    module_commercial_offers: 'Tijorat takliflari',
+    module_commercial_offers_desc: 'Tijorat takliflarini yaratish va boshqarishga kirish',
+    module_tasks: 'Kanban topshiriqlari',
+    module_tasks_desc: 'Kanban topshiriqlar paneli va topshiriqlarga kirish',
+    module_currency: 'Valyuta kurslari',
+    module_currency_desc: 'Valyuta kurslari va valyuta matritsasiga kirish',
+    module_attachments: 'Hujjatlar va fayllar',
+    module_attachments_desc: 'Hujjatlar va fayllar omboriga kirish',
+    module_roles: 'Rollar va ruxsatlarni boshqarish',
+    module_roles_desc: 'Rollar, huquqlar matritsasi va xavfsizlik sozlamalariga kirish',
+
+    // System Roles Names & Descriptions
+    role_CEO_name: 'Bosh direktor (CEO)',
+    role_CEO_desc: "Barcha modullar va tizim sozlamalariga to'liq ma'muriy kirish",
+    role_ROP_name: "Sotuvlar bo'limi boshlig'i (ROP)",
+    role_ROP_desc: "Yuklar, mijozlar va jamoani boshqaruvchi bo'lim boshlig'i huquqlari",
+    role_EMPLOYEE_name: 'Oddiy xodim',
+    role_EMPLOYEE_desc:
+      'Shaxsiy topshiriqlar va biriktirilgan vazifalar bilan cheklangan ishchi kirish',
+
+    // Additional UI keys
+    rolesLockedSystemName: 'Tizimiy nom bloklangan',
+    rolesModulesCount: 'modul',
+    rolesGranted: 'Berilgan',
+    rolesOff: "O'chirilgan",
+    rolesModuleAccess: 'Modullarga kirish',
+    rolesActive: 'faol',
+    rolesNoDescription: "Tavsif ko'rsatilmadi.",
+    rolesAssignedUsersWarning: 'Diqqat: {count} ta faol foydalanuvchi hisobiga biriktirilgan',
+    rolesActiveModulesCount: '{granted} / {total} faol',
 
     // Container Tracking & Shipments
     containerTrackingDashboard: 'Logistika va konteynerlarni kuzatish paneli',

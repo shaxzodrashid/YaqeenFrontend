@@ -1,4 +1,4 @@
-import { Modal, Button } from '@heroui/react';
+import { Modal, Button, Tooltip } from '@heroui/react';
 import { motion } from 'framer-motion';
 import {
   ShieldCheck,
@@ -13,6 +13,12 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import type { Role, SystemModule } from '../../services/roles.service';
+import {
+  getRoleDisplayName,
+  getRoleDescription,
+  getModuleName,
+  getModuleDescription,
+} from './roleUtils';
 
 interface RoleDetailDrawerProps {
   isOpen: boolean;
@@ -84,7 +90,9 @@ export function RoleDetailDrawer({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-xl font-bold font-serif truncate">{role.display_name}</h3>
+                  <h3 className="text-xl font-bold font-serif truncate">
+                    {getRoleDisplayName(role, t)}
+                  </h3>
                   <code className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-brand-gold">
                     {role.name}
                   </code>
@@ -110,11 +118,9 @@ export function RoleDetailDrawer({
             </div>
 
             {/* Description */}
-            {role.description && (
-              <p className="text-xs text-neutral-300 mt-3.5 italic bg-white/5 p-2.5 rounded-xl border border-white/10 leading-relaxed">
-                "{role.description}"
-              </p>
-            )}
+            <p className="text-xs text-neutral-300 mt-3.5 italic bg-white/5 p-2.5 rounded-xl border border-white/10 leading-relaxed">
+              "{getRoleDescription(role, t)}"
+            </p>
           </div>
 
           {/* Body Content */}
@@ -156,65 +162,99 @@ export function RoleDetailDrawer({
                     delete: false,
                   };
 
+                  const localizedName = getModuleName(mod.module, mod.label, t);
+                  const localizedDesc = getModuleDescription(mod.module, t);
+
                   return (
                     <div
                       key={mod.module}
                       className="p-3.5 rounded-xl border border-border/40 bg-surface dark:bg-night-field flex flex-col justify-between gap-2.5"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground">
-                          {mod.module === 'cargo_registrations'
-                            ? t('tabTransactions') || mod.label
-                            : mod.label}
-                        </span>
-                        <code className="text-[10px] font-mono text-muted">{mod.module}</code>
-                      </div>
+                      <Tooltip delay={200} closeDelay={0} isDisabled={!localizedDesc}>
+                        <Tooltip.Trigger>
+                          <div className="flex items-center justify-between cursor-help">
+                            <span className="text-xs font-bold text-foreground">
+                              {localizedName}
+                            </span>
+                            <code className="text-[10px] font-mono text-muted">{mod.module}</code>
+                          </div>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content placement="top">{localizedDesc}</Tooltip.Content>
+                      </Tooltip>
 
                       {/* Action Badges */}
                       <div className="grid grid-cols-4 gap-1.5 text-center">
-                        <div
-                          className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border ${
-                            p.create
-                              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                              : 'bg-default/20 border-border/30 text-muted/40'
-                          }`}
-                        >
-                          <PlusCircle className="size-2.5" />
-                          <span>{t('rolesActionCreate')}</span>
-                        </div>
+                        <Tooltip delay={150} closeDelay={0}>
+                          <Tooltip.Trigger>
+                            <div
+                              className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border cursor-help ${
+                                p.create
+                                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                                  : 'bg-default/20 border-border/30 text-muted/40'
+                              }`}
+                            >
+                              <PlusCircle className="size-2.5" />
+                              <span>{t('rolesActionCreate')}</span>
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content placement="top">
+                            {t('rolesPermCreateTooltip')}
+                          </Tooltip.Content>
+                        </Tooltip>
 
-                        <div
-                          className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border ${
-                            p.read
-                              ? 'bg-sky-500/15 border-sky-500/30 text-sky-600 dark:text-sky-400'
-                              : 'bg-default/20 border-border/30 text-muted/40'
-                          }`}
-                        >
-                          <Eye className="size-2.5" />
-                          <span>{t('rolesActionRead')}</span>
-                        </div>
+                        <Tooltip delay={150} closeDelay={0}>
+                          <Tooltip.Trigger>
+                            <div
+                              className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border cursor-help ${
+                                p.read
+                                  ? 'bg-sky-500/15 border-sky-500/30 text-sky-600 dark:text-sky-400'
+                                  : 'bg-default/20 border-border/30 text-muted/40'
+                              }`}
+                            >
+                              <Eye className="size-2.5" />
+                              <span>{t('rolesActionRead')}</span>
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content placement="top">
+                            {t('rolesPermReadTooltip')}
+                          </Tooltip.Content>
+                        </Tooltip>
 
-                        <div
-                          className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border ${
-                            p.update
-                              ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
-                              : 'bg-default/20 border-border/30 text-muted/40'
-                          }`}
-                        >
-                          <Edit3 className="size-2.5" />
-                          <span>{t('rolesActionUpdate')}</span>
-                        </div>
+                        <Tooltip delay={150} closeDelay={0}>
+                          <Tooltip.Trigger>
+                            <div
+                              className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border cursor-help ${
+                                p.update
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                                  : 'bg-default/20 border-border/30 text-muted/40'
+                              }`}
+                            >
+                              <Edit3 className="size-2.5" />
+                              <span>{t('rolesActionUpdate')}</span>
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content placement="top">
+                            {t('rolesPermUpdateTooltip')}
+                          </Tooltip.Content>
+                        </Tooltip>
 
-                        <div
-                          className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border ${
-                            p.delete
-                              ? 'bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                              : 'bg-default/20 border-border/30 text-muted/40'
-                          }`}
-                        >
-                          <Trash2 className="size-2.5" />
-                          <span>{t('rolesActionDelete')}</span>
-                        </div>
+                        <Tooltip delay={150} closeDelay={0}>
+                          <Tooltip.Trigger>
+                            <div
+                              className={`py-1 px-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border cursor-help ${
+                                p.delete
+                                  ? 'bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400'
+                                  : 'bg-default/20 border-border/30 text-muted/40'
+                              }`}
+                            >
+                              <Trash2 className="size-2.5" />
+                              <span>{t('rolesActionDelete')}</span>
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content placement="top">
+                            {t('rolesPermDeleteTooltip')}
+                          </Tooltip.Content>
+                        </Tooltip>
                       </div>
 
                       {/* Special Permission for Cargo Registrations */}
@@ -223,15 +263,22 @@ export function RoleDetailDrawer({
                           <span className="text-muted font-medium">
                             {t('rolesRegisterForEveryone')}
                           </span>
-                          <span
-                            className={`px-2 py-0.5 rounded font-bold border ${
-                              p.register_for_everyone
-                                ? 'bg-purple-500/15 border-purple-500/30 text-purple-600 dark:text-purple-300'
-                                : 'bg-default/20 border-border/30 text-muted/40'
-                            }`}
-                          >
-                            {p.register_for_everyone ? 'Granted' : 'Off'}
-                          </span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span
+                                className={`px-2 py-0.5 rounded font-bold border cursor-help ${
+                                  p.register_for_everyone
+                                    ? 'bg-purple-500/15 border-purple-500/30 text-purple-600 dark:text-purple-300'
+                                    : 'bg-default/20 border-border/30 text-muted/40'
+                                }`}
+                              >
+                                {p.register_for_everyone ? t('rolesGranted') : t('rolesOff')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermRegisterEveryoneTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
                         </div>
                       )}
                     </div>
