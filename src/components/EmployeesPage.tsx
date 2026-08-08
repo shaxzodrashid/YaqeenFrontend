@@ -29,7 +29,7 @@ type Currency = 'RUB' | 'USD' | 'UZS';
 
 interface EnrichedEmployee extends Employee {
   position_title: string;
-  online_status: 'online' | 'offline' | 'sick' | 'vacation';
+  user_status: 'Pending' | 'Open' | 'Banned' | 'Deleted' | string;
   revenue_rub: number;
   plan_target: string; // e.g. "3 800 000 ₽" or "20 шт"
   plan_percent: number;
@@ -43,7 +43,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Артём',
     last_name: 'Ковалёв',
     position_title: 'Менеджер по продажам',
-    online_status: 'online',
+    user_status: 'Open',
     revenue_rub: 4400000,
     plan_target: '3 800 000 ₽',
     plan_percent: 116,
@@ -55,7 +55,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Диана',
     last_name: 'Ким',
     position_title: 'Менеджер по продажам',
-    online_status: 'online',
+    user_status: 'Open',
     revenue_rub: 3410000,
     plan_target: '3 200 000 ₽',
     plan_percent: 107,
@@ -67,7 +67,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Руслан',
     last_name: 'Иманов',
     position_title: 'Ст. менеджер',
-    online_status: 'offline',
+    user_status: 'Pending',
     revenue_rub: 2695000,
     plan_target: '20 шт',
     plan_percent: 95,
@@ -79,7 +79,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Ольга',
     last_name: 'Северина',
     position_title: 'Менеджер СГ',
-    online_status: 'online',
+    user_status: 'Open',
     revenue_rub: 946000,
     plan_target: '900 000 ₽',
     plan_percent: 105,
@@ -91,7 +91,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Павел',
     last_name: 'Гриц',
     position_title: 'Менеджер СГ',
-    online_status: 'sick',
+    user_status: 'Banned',
     revenue_rub: 726000,
     plan_target: '700 000 ₽',
     plan_percent: 104,
@@ -103,7 +103,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Ева',
     last_name: 'Тарасова',
     position_title: 'Маркетолог',
-    online_status: 'online',
+    user_status: 'Open',
     revenue_rub: 0,
     plan_target: '10 шт',
     plan_percent: 0,
@@ -115,7 +115,7 @@ const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
     first_name: 'Игорь',
     last_name: 'Марченко',
     position_title: 'Декларант',
-    online_status: 'online',
+    user_status: 'Open',
     revenue_rub: 0,
     plan_target: '30 шт',
     plan_percent: 117,
@@ -159,42 +159,52 @@ const cardVariants = {
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
-function StatusBadge({ status }: { status: EnrichedEmployee['online_status'] }) {
-  const config = {
-    online: {
-      dot: 'bg-emerald-500',
-      text: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
-      key: 'statusOnline',
-    },
-    sick: {
+function StatusBadge({ status }: { status?: string }) {
+  const normalizedStatus = (status || 'Open').trim();
+  const lower = normalizedStatus.toLowerCase();
+
+  let config = {
+    dot: 'bg-emerald-500',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+    key: 'statusOpen',
+    pulse: true,
+  };
+
+  if (lower === 'pending') {
+    config = {
       dot: 'bg-amber-500',
       text: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-      key: 'statusSick',
-    },
-    vacation: {
-      dot: 'bg-blue-500',
-      text: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-500/10 dark:bg-blue-500/15',
-      key: 'statusVacation',
-    },
-    offline: {
+      key: 'statusPending',
+      pulse: false,
+    };
+  } else if (lower === 'banned') {
+    config = {
+      dot: 'bg-rose-500',
+      text: 'text-rose-600 dark:text-rose-400',
+      bg: 'bg-rose-500/10 dark:bg-rose-500/15',
+      key: 'statusBanned',
+      pulse: false,
+    };
+  } else if (lower === 'deleted') {
+    config = {
       dot: 'bg-neutral-400 dark:bg-slate-500',
       text: 'text-neutral-500 dark:text-slate-400',
       bg: 'bg-neutral-400/10 dark:bg-slate-500/15',
-      key: 'statusOffline',
-    },
-  }[status];
+      key: 'statusDeleted',
+      pulse: false,
+    };
+  }
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${config.bg} ${config.text}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${config.bg} ${config.text}`}
     >
       <span
-        className={`size-1.5 rounded-full ${config.dot} ${status === 'online' ? 'animate-pulse' : ''}`}
+        className={`size-1.5 rounded-full shrink-0 ${config.dot} ${config.pulse ? 'animate-pulse' : ''}`}
       />
-      <T k={config.key} />
+      <T k={config.key as any} text={normalizedStatus} />
     </span>
   );
 }
@@ -473,9 +483,11 @@ export function EmployeesPage() {
         positionTitle = t('posCustomsDeclarant');
     }
 
-    const onlineStatus: EnrichedEmployee['online_status'] = emp.is_active
-      ? preset.online_status || 'online'
-      : 'offline';
+    const userStatus =
+      emp.user_status ||
+      emp.user?.status ||
+      preset.user_status ||
+      (emp.is_active === false ? 'Banned' : 'Open');
     const revenueRub =
       emp.tushum?.amount !== undefined
         ? emp.tushum.amount
@@ -512,7 +524,7 @@ export function EmployeesPage() {
     return {
       ...emp,
       position_title: positionTitle,
-      online_status: onlineStatus,
+      user_status: userStatus,
       revenue_rub: revenueRub,
       plan_target: planTarget,
       plan_percent: planPercent,
@@ -577,7 +589,9 @@ export function EmployeesPage() {
 
   // Compute quick stats
   const totalRevenue = enrichedEmployeesList.reduce((sum, e) => sum + e.revenue_rub, 0);
-  const onlineCount = enrichedEmployeesList.filter((e) => e.online_status === 'online').length;
+  const openCount = enrichedEmployeesList.filter(
+    (e) => (e.user_status || '').toLowerCase() === 'open'
+  ).length;
   const planDoneCount = enrichedEmployeesList.filter((e) => e.plan_percent >= 100).length;
 
   const start = (page - 1) * meta.itemsPerPage + 1;
@@ -641,7 +655,7 @@ export function EmployeesPage() {
             },
             {
               key: 'empOnlineNow',
-              value: loading ? '—' : String(onlineCount),
+              value: loading ? '—' : String(openCount),
               icon: <Activity className="size-5" />,
               color: 'text-emerald-500',
               bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
@@ -962,7 +976,7 @@ export function EmployeesPage() {
 
                         {/* СТАТУС */}
                         <td className="py-4 px-5">
-                          <StatusBadge status={emp.online_status} />
+                          <StatusBadge status={emp.user_status} />
                         </td>
 
                         {/* ВЫРУЧКА */}
@@ -1193,7 +1207,7 @@ export function EmployeesPage() {
                       </span>
                       <span className="text-[11px] text-muted truncate">{emp.position_title}</span>
                       <div className="mt-1.5">
-                        <StatusBadge status={emp.online_status} />
+                        <StatusBadge status={emp.user_status} />
                       </div>
                     </div>
                   </div>

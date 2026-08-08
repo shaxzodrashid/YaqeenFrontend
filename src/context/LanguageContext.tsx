@@ -347,10 +347,10 @@ const translations = {
     // Status labels
     statusActive: 'Active',
     statusInactive: 'Inactive',
-    statusOpen: 'Open',
+    statusOpen: 'Ready',
     statusBanned: 'Banned',
-    statusPending: 'Pending',
-    statusDeleted: 'Deleted',
+    statusPending: 'Unregistered',
+    statusDeleted: 'Fired',
 
     // Departments page
     deptTitle: 'Departments',
@@ -1285,10 +1285,10 @@ const translations = {
     // Status labels
     statusActive: 'Активен',
     statusInactive: 'Неактивен',
-    statusOpen: 'Открыт',
+    statusOpen: 'Готов',
     statusBanned: 'Заблокирован',
-    statusPending: 'Ожидание',
-    statusDeleted: 'Удалён',
+    statusPending: 'Не зарегистр.',
+    statusDeleted: 'Уволен',
 
     // Departments page
     deptTitle: 'Отделы',
@@ -2223,10 +2223,10 @@ const translations = {
     // Status labels
     statusActive: 'Faol',
     statusInactive: 'Nofaol',
-    statusOpen: 'Ochiq',
+    statusOpen: 'Tayyor',
     statusBanned: 'Bloklangan',
-    statusPending: 'Kutilmoqda',
-    statusDeleted: "O'chirilgan",
+    statusPending: "Ro'yxatsiz",
+    statusDeleted: "Bo'shatilgan",
 
     // Departments page
     deptTitle: "Bo'limlar",
