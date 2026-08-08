@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Spinner } from '@heroui/react';
+import { Button, Spinner, InputOTP } from '@heroui/react';
 import { motion } from 'framer-motion';
 import {
   Shield,
@@ -452,7 +452,7 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
               )}
 
               {/* Telegram Instructions if phone not linked */}
-              {showTelegramGuide && <TelegramInstructions botUsername="YaqeenOtpBot" />}
+              {showTelegramGuide && <TelegramInstructions botUsername="servicing_probox_bot" />}
 
               {/* STEP 1: Phone Input */}
               {step === 'phone' && (
@@ -486,28 +486,35 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
                     <T k="otpSentMessage" />
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-neutral-700 dark:text-foreground flex items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-2">
+                    <label className="text-xs font-semibold text-neutral-700 dark:text-foreground flex items-center gap-1.5 self-start">
                       <KeyRound className="size-3.5 text-neutral-400" />
                       OTP Code *
                     </label>
-                    <input
-                      type="text"
+                    <InputOTP
                       maxLength={6}
                       value={otp}
-                      onChange={(e) => {
-                        setOtp(e.target.value.replace(/\D/g, ''));
+                      onChange={(val) => {
+                        setOtp(val);
                         setFieldErrors((p) => ({ ...p, otp: '' }));
                       }}
-                      placeholder={t('enterOtpPlaceholder') || 'Enter 6-digit code'}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-center text-base font-mono tracking-widest bg-neutral-50 dark:bg-field text-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold/30 ${
-                        fieldErrors.otp
-                          ? 'border-rose-500'
-                          : 'border-neutral-200 dark:border-field-border'
-                      }`}
-                    />
+                    >
+                      <InputOTP.Group>
+                        <InputOTP.Slot index={0} />
+                        <InputOTP.Slot index={1} />
+                        <InputOTP.Slot index={2} />
+                      </InputOTP.Group>
+                      <InputOTP.Separator />
+                      <InputOTP.Group>
+                        <InputOTP.Slot index={3} />
+                        <InputOTP.Slot index={4} />
+                        <InputOTP.Slot index={5} />
+                      </InputOTP.Group>
+                    </InputOTP>
                     {fieldErrors.otp && (
-                      <p className="text-[11px] text-rose-500 font-medium">{fieldErrors.otp}</p>
+                      <p className="text-[11px] text-rose-500 font-medium self-start">
+                        {fieldErrors.otp}
+                      </p>
                     )}
                   </div>
 

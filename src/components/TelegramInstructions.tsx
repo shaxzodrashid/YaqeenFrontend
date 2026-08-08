@@ -6,7 +6,9 @@ interface TelegramInstructionsProps {
   botUsername?: string;
 }
 
-export function TelegramInstructions({ botUsername = 'YaqeenOtpBot' }: TelegramInstructionsProps) {
+export function TelegramInstructions({
+  botUsername = 'servicing_probox_bot',
+}: TelegramInstructionsProps) {
   const { t } = useTranslation();
 
   return (
