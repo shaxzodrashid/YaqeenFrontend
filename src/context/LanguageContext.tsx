@@ -370,6 +370,14 @@ const translations = {
     deptFieldDisplayNameHint: 'Human-readable name (e.g., Marketing HQ)',
     deptCreatedAt: 'Created',
     deptEmployeeCount: 'employees',
+    deptSearchPlaceholder: 'Search departments...',
+    deptTotalCount: 'Total Departments',
+    deptTotalEmployees: 'Total Employees',
+    deptNoSearchResults: 'No matching departments found',
+    deptNoSearchResultsDesc: 'Try adjusting your search query or clear the filter.',
+    deptViewGrid: 'Grid View',
+    deptViewList: 'List View',
+    deptClearSearch: 'Clear search',
 
     // Common actions
     actionSave: 'Save Changes',
@@ -1308,6 +1316,14 @@ const translations = {
     deptFieldDisplayNameHint: 'Читаемое название (напр., Отдел маркетинга)',
     deptCreatedAt: 'Создан',
     deptEmployeeCount: 'сотрудников',
+    deptSearchPlaceholder: 'Поиск отделов...',
+    deptTotalCount: 'Всего отделов',
+    deptTotalEmployees: 'Всего сотрудников',
+    deptNoSearchResults: 'Отделы не найдены',
+    deptNoSearchResultsDesc: 'Попробуйте изменить поисковый запрос или сбросить фильтр.',
+    deptViewGrid: 'Сетка',
+    deptViewList: 'Список',
+    deptClearSearch: 'Сбросить поиск',
 
     // Common actions
     actionSave: 'Сохранить изменения',
@@ -2246,6 +2262,14 @@ const translations = {
     deptFieldDisplayNameHint: "O'qilishi oson nom (masalan, Marketing bo'limi)",
     deptCreatedAt: 'Yaratilgan',
     deptEmployeeCount: 'xodimlar',
+    deptSearchPlaceholder: "Bo'limlarni qidirish...",
+    deptTotalCount: "Jami bo'limlar",
+    deptTotalEmployees: 'Jami xodimlar',
+    deptNoSearchResults: "Bo'limlar topilmadi",
+    deptNoSearchResultsDesc: "Qidiruv so'rovini o'zgartiring yoki filterni tozalang.",
+    deptViewGrid: 'Kataksimon',
+    deptViewList: "Ro'yxat",
+    deptClearSearch: 'Tozalash',
 
     // Common actions
     actionSave: "O'zgarishlarni saqlash",
