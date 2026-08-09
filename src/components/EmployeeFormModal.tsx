@@ -329,22 +329,22 @@ export function EmployeeFormModal({
   return (
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Modal.Container>
-        <Modal.Dialog className="max-w-2xl bg-surface dark:bg-surface border border-border/40 rounded-2xl overflow-hidden relative shadow-2xl transition-all duration-300">
+        <Modal.Dialog className="w-[94vw] sm:w-full max-w-2xl max-h-[92vh] sm:max-h-[85vh] bg-surface dark:bg-surface border border-border/40 rounded-2xl overflow-hidden relative shadow-2xl transition-all duration-300 flex flex-col mx-auto my-auto">
           {/* Top visual color border line */}
           <div
             className="h-1.5 w-full transition-colors duration-300"
             style={{ backgroundColor: accentColor }}
           />
 
-          <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none z-10" />
+          <Modal.CloseTrigger className="absolute top-3.5 sm:top-4 right-3.5 sm:right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none z-10" />
 
-          <Modal.Header className="pt-6 pb-4 px-6">
-            <Modal.Heading className="font-serif font-bold text-xl flex items-center gap-2">
+          <Modal.Header className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-4 sm:px-6 shrink-0">
+            <Modal.Heading className="font-serif font-bold text-base sm:text-xl flex items-center gap-2">
               <span
                 className="p-1 rounded-lg"
                 style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
               >
-                <User className="size-5" />
+                <User className="size-4 sm:size-5" />
               </span>
               {mode === 'create'
                 ? t('empNewEmployee') || 'Register New Employee'
@@ -352,9 +352,9 @@ export function EmployeeFormModal({
             </Modal.Heading>
           </Modal.Header>
 
-          <Modal.Body className="flex flex-col gap-4 py-2 px-6 max-h-[70vh] overflow-y-auto">
+          <Modal.Body className="flex flex-col gap-3 sm:gap-4 py-2 px-3.5 sm:px-6 overflow-y-auto flex-1">
             {/* 1. Live Interactive Profile Header */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-default-50/50 dark:bg-default-50/5 border border-border/20">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-default-50/50 dark:bg-default-50/5 border border-border/20">
               <input
                 type="file"
                 ref={pictureInputRef}
@@ -366,14 +366,14 @@ export function EmployeeFormModal({
               {/* Dynamic Avatar Container */}
               <div className="relative group shrink-0">
                 <Avatar
-                  className="size-20 border-2 shadow-md relative overflow-hidden transition-all duration-300"
+                  className="size-16 sm:size-20 border-2 shadow-md relative overflow-hidden transition-all duration-300"
                   style={{ borderColor: accentColor }}
                 >
                   {pictureUrl && (
                     <Avatar.Image src={getImageUrl(pictureUrl)} alt={`${firstName} ${lastName}`} />
                   )}
                   <Avatar.Fallback
-                    className="text-xl font-bold tracking-wider"
+                    className="text-lg sm:text-xl font-bold tracking-wider"
                     style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
                   >
                     {initials}
@@ -416,17 +416,17 @@ export function EmployeeFormModal({
 
               {/* Live Preview Text Info */}
               <div className="flex-1 text-center sm:text-left min-w-0">
-                <h4 className="text-base font-bold text-foreground truncate">
+                <h4 className="text-sm sm:text-base font-bold text-foreground truncate">
                   {firstName.trim() || lastName.trim()
                     ? `${firstName} ${lastName}`
                     : t('empNewEmployee') || 'New Employee'}
                 </h4>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1">
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-brand-royal/10 dark:bg-night-royal/15 text-brand-royal dark:text-night-royal uppercase tracking-wider">
-                    {role}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-brand-royal/10 dark:bg-night-royal/15 text-brand-royal dark:text-night-royal uppercase tracking-wider">
+                    {role || 'Role'}
                   </span>
                   <span
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold border"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border"
                     style={{
                       borderColor: `${accentColor}40`,
                       color: accentColor,
@@ -437,7 +437,7 @@ export function EmployeeFormModal({
                     Accent: {accentColor.toUpperCase()}
                   </span>
                 </div>
-                <p className="text-[11px] text-muted mt-1.5 max-w-md">
+                <p className="text-[10px] sm:text-[11px] text-muted mt-1 max-w-md">
                   {mode === 'edit'
                     ? t('profileChangePicture') || 'Click camera overlay to upload a profile photo'
                     : 'Profile photo upload will be available after registration'}
@@ -446,8 +446,8 @@ export function EmployeeFormModal({
             </div>
 
             {/* 2. Automatic Linkage Banner */}
-            <div className="flex items-start gap-3 p-3 rounded-2xl bg-brand-gold/10 border border-brand-gold/20">
-              <ShieldCheck className="size-4.5 text-brand-gold shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-brand-gold/10 border border-brand-gold/20">
+              <ShieldCheck className="size-4 sm:size-4.5 text-brand-gold shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-foreground">
                   {t('autoAccountLinkage') || 'Automatic Account Linkage'}
@@ -460,13 +460,13 @@ export function EmployeeFormModal({
             </div>
 
             {/* 3. Form Grid: Group 1: Personal Details */}
-            <div className="p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-4 text-left">
-              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-1">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-3 sm:gap-4 text-left">
+              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-0.5 sm:mb-1">
                 <User className="size-3.5" />
                 {t('groupPersonalDetails') || 'Personal Details'}
               </h4>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-foreground">
                     {t('fieldFirstName') || 'First Name'} *
@@ -479,7 +479,7 @@ export function EmployeeFormModal({
                       setErrors((p) => ({ ...p, firstName: '' }));
                     }}
                     placeholder="Artyom"
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 ${
+                    className={`w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 ${
                       errors.firstName
                         ? 'border-rose-500 focus:ring-rose-500/30'
                         : 'border-field-border'
@@ -504,7 +504,7 @@ export function EmployeeFormModal({
                       setErrors((p) => ({ ...p, lastName: '' }));
                     }}
                     placeholder="Kovalyov"
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 ${
+                    className={`w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 ${
                       errors.lastName
                         ? 'border-rose-500 focus:ring-rose-500/30'
                         : 'border-field-border'
@@ -523,7 +523,7 @@ export function EmployeeFormModal({
                   {t('fieldRole') || 'System Access Role'} *
                 </label>
                 {loadingRoles ? (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-field-border bg-field text-sm text-muted">
+                  <div className="flex items-center gap-2 px-3 py-2 sm:py-2.5 rounded-xl border border-field-border bg-field text-xs sm:text-sm text-muted">
                     <Spinner size="sm" />
                     <span>{t('loadingRoles') || 'Loading roles...'}</span>
                   </div>
@@ -534,7 +534,7 @@ export function EmployeeFormModal({
                       setRole(e.target.value);
                       setErrors((p) => ({ ...p, role: '' }));
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
+                    className={`w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
                       errors.role ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'
                     }`}
                   >
@@ -553,13 +553,13 @@ export function EmployeeFormModal({
             </div>
 
             {/* 4. Form Grid: Group 2: Contact Info */}
-            <div className="p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-4 text-left">
-              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-1">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-3 sm:gap-4 text-left">
+              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-0.5 sm:mb-1">
                 <Phone className="size-3.5" />
                 {t('groupContactInfo') || 'Contact Information'}
               </h4>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <PhoneInput
                   value={phone}
                   onChange={(val) => {
@@ -593,14 +593,14 @@ export function EmployeeFormModal({
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Address details..."
                   rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 resize-none"
+                  className="w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 resize-none"
                 />
               </div>
             </div>
 
             {/* 5. Form Grid: Group 3: Work & Compensation */}
-            <div className="p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-4 text-left">
-              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-1">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-3 sm:gap-4 text-left">
+              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-0.5 sm:mb-1">
                 <Building className="size-3.5" />
                 {t('groupWorkDetails') || 'Work & Compensation'}
               </h4>
@@ -615,7 +615,7 @@ export function EmployeeFormModal({
                     setDepartmentId(e.target.value);
                     setErrors((p) => ({ ...p, departmentId: '' }));
                   }}
-                  className={`w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
+                  className={`w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
                     errors.departmentId
                       ? 'border-rose-500 focus:ring-rose-500/30'
                       : 'border-field-border'
@@ -635,8 +635,8 @@ export function EmployeeFormModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="md:col-span-2 flex flex-col gap-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
+                <div className="sm:col-span-2 flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Coins className="size-3.5 text-muted" />
                     {t('fieldSalary') || 'Fixed Base Salary'}
@@ -650,7 +650,7 @@ export function EmployeeFormModal({
                       value={fixedSalary}
                       onChange={(e) => setFixedSalary(e.target.value)}
                       placeholder="3500000"
-                      className="w-full pl-14 pr-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 font-mono"
+                      className="w-full pl-14 pr-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 font-mono"
                     />
                   </div>
                 </div>
@@ -662,7 +662,7 @@ export function EmployeeFormModal({
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer font-mono"
+                    className="w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer font-mono"
                   >
                     <option value="UZS">UZS</option>
                     <option value="USD">USD</option>
@@ -673,13 +673,13 @@ export function EmployeeFormModal({
             </div>
 
             {/* 6. Form Grid: Group 4: Visual Accent & Status */}
-            <div className="p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-4 text-left">
-              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-1">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-default-50/30 dark:bg-default-50/5 border border-border/25 flex flex-col gap-3 sm:gap-4 text-left">
+              <h4 className="text-xs font-bold text-brand-royal dark:text-night-royal flex items-center gap-1.5 uppercase tracking-wider mb-0.5 sm:mb-1">
                 <Palette className="size-3.5" />
                 {t('fieldColor') || 'Personalization & Accent Color'}
               </h4>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2.5 sm:gap-3">
                 <label className="text-xs font-semibold text-foreground">
                   {t('selectTagColor') || 'Choose Employee Accent Color:'}
                 </label>
@@ -690,7 +690,7 @@ export function EmployeeFormModal({
                       key={preset}
                       type="button"
                       onClick={() => setColor(preset)}
-                      className={`size-8 rounded-full border-2 transition-all relative cursor-pointer`}
+                      className="size-7 sm:size-8 rounded-full border-2 transition-all relative cursor-pointer"
                       style={{
                         backgroundColor: preset,
                         borderColor: color === preset ? '#ffffff' : 'transparent',
@@ -705,7 +705,7 @@ export function EmployeeFormModal({
                   ))}
 
                   {/* Custom color picker row */}
-                  <div className="flex items-center gap-1.5 border border-field-border bg-field rounded-xl px-2.5 py-1.5 shrink-0 ml-auto transition-colors focus-within:ring-2 focus-within:ring-focus/25">
+                  <div className="flex items-center gap-1.5 border border-field-border bg-field rounded-xl px-2 py-1 shrink-0 transition-colors focus-within:ring-2 focus-within:ring-focus/25">
                     <input
                       type="color"
                       value={color}
@@ -721,7 +721,7 @@ export function EmployeeFormModal({
 
               {/* Status toggler (Active / Inactive) */}
               {mode === 'edit' && (
-                <div className="flex items-center justify-between border border-border/20 rounded-2xl p-3 bg-default-100/35 dark:bg-default-50/10 mt-1">
+                <div className="flex items-center justify-between border border-border/20 rounded-2xl p-2.5 sm:p-3 bg-default-100/35 dark:bg-default-50/10 mt-1">
                   <div>
                     <span className="text-xs font-bold text-foreground">
                       {t('fieldIsActive') || 'Employee Work Status'}
@@ -750,11 +750,11 @@ export function EmployeeFormModal({
             </div>
           </Modal.Body>
 
-          <Modal.Footer className="px-6 py-4 border-t border-border/20 flex justify-end gap-3 bg-default-50/20 dark:bg-default-50/2 shrink-0">
+          <Modal.Footer className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border/20 flex items-center justify-end gap-2.5 sm:gap-3 bg-default-50/20 dark:bg-default-50/2 shrink-0">
             <Button
               variant="ghost"
               onPress={onClose}
-              className="font-semibold text-sm rounded-xl text-muted hover:text-foreground border border-border/40 hover:bg-default/50"
+              className="flex-1 sm:flex-initial font-semibold text-xs sm:text-sm rounded-xl text-muted hover:text-foreground border border-border/40 hover:bg-default/50"
             >
               {t('actionCancel') || 'Cancel'}
             </Button>
@@ -765,7 +765,7 @@ export function EmployeeFormModal({
                 backgroundColor: accentColor,
                 color: isDarkText ? '#ffffff' : '#11213D',
               }}
-              className="font-semibold text-sm rounded-xl min-w-[130px] shadow-md hover:brightness-95 active:brightness-90 active:scale-98 transition-all"
+              className="flex-1 sm:flex-initial font-semibold text-xs sm:text-sm rounded-xl min-w-[110px] sm:min-w-[130px] shadow-md hover:brightness-95 active:brightness-90 active:scale-98 transition-all"
             >
               {loading ? (
                 <>

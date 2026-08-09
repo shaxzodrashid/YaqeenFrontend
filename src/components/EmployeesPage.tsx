@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Button, Pagination, Skeleton, Avatar, Modal, Spinner } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -131,35 +131,30 @@ const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.08 },
+    transition: { staggerChildren: 0.02, delayChildren: 0.01 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 320, damping: 26 } },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' as const } },
 };
 
 const rowVariants = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 350, damping: 26 } },
-  exit: { opacity: 0, y: -8 },
+  hidden: { opacity: 0, y: 4 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.12, ease: 'easeOut' as const } },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.08 } },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.97 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
-  },
-  exit: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' as const } },
+  exit: { opacity: 0, y: -6, transition: { duration: 0.08 } },
 };
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
-function StatusBadge({ status }: { status?: string }) {
+const StatusBadge = React.memo(function StatusBadge({ status }: { status?: string }) {
   const normalizedStatus = (status || 'Open').trim();
   const lower = normalizedStatus.toLowerCase();
 
@@ -207,9 +202,9 @@ function StatusBadge({ status }: { status?: string }) {
       <T k={config.key as any} text={normalizedStatus} />
     </span>
   );
-}
+});
 
-function PlanProgressBar({
+const PlanProgressBar = React.memo(function PlanProgressBar({
   percent,
   statusLabel,
   statusCode,
@@ -244,6 +239,33 @@ function PlanProgressBar({
       </div>
     </div>
   );
+});
+
+function LiveClock() {
+  const [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      setCurrentTime(`${hours}:${minutes}:${seconds}`);
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-emerald-500/20 shadow-inner shrink-0">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <span>{currentTime || '00:00:00'}</span>
+    </div>
+  );
 }
 
 /* ── Main Component ──────────────────────────────────────── */
@@ -264,9 +286,6 @@ export function EmployeesPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Live clock state
-  const [currentTime, setCurrentTime] = useState('');
-
   // Top bar filter states
   const [selectedYear, setSelectedYear] = useState('2026');
   const [selectedPeriod, setSelectedPeriod] = useState('Июл');
@@ -279,7 +298,7 @@ export function EmployeesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInputValue, setSearchInputValue] = useState('');
   const [page, setPage] = useState(1);
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -298,20 +317,6 @@ export function EmployeesPage() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusEmployee, setStatusEmployee] = useState<Employee | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
-
-  // Live time ticker
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      setCurrentTime(`${hours}:${minutes}:${seconds}`);
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -357,12 +362,11 @@ export function EmployeesPage() {
   // Debounced search
   const handleSearchChange = (value: string) => {
     setSearchInputValue(value);
-    if (searchTimeout) clearTimeout(searchTimeout);
-    const timeout = setTimeout(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
       setSearchQuery(value);
       setPage(1);
     }, 300);
-    setSearchTimeout(timeout);
   };
 
   const handleCreateEmployee = () => {
@@ -464,75 +468,101 @@ export function EmployeesPage() {
   };
 
   // Enrich employee with display properties matching design
-  const getEnrichedEmployee = (emp: Employee, index: number): EnrichedEmployee => {
-    const preset = DEFAULT_PRESETS[index % DEFAULT_PRESETS.length] || {};
+  const getEnrichedEmployee = useCallback(
+    (emp: Employee, index: number): EnrichedEmployee => {
+      const preset = DEFAULT_PRESETS[index % DEFAULT_PRESETS.length] || {};
 
-    let positionTitle =
-      emp.user_role === 'CEO'
-        ? t('posCEO')
-        : emp.user_role === 'ROP'
-          ? t('posROP')
-          : t('posSalesManager');
-    if (!emp.user_role && preset.position_title) {
-      if (preset.position_title.includes('продаж')) positionTitle = t('posSalesManager');
-      else if (preset.position_title.includes('Ст.')) positionTitle = t('posSeniorManager');
-      else if (preset.position_title.includes('СГ')) positionTitle = t('posGroupageManager');
-      else if (preset.position_title.includes('Маркетолог'))
-        positionTitle = t('posMarketingSpecialist');
-      else if (preset.position_title.includes('Декларант'))
-        positionTitle = t('posCustomsDeclarant');
-    }
-
-    const userStatus =
-      emp.user_status ||
-      emp.user?.status ||
-      preset.user_status ||
-      (emp.is_active === false ? 'Banned' : 'Open');
-    const revenueRub =
-      emp.tushum?.amount !== undefined
-        ? emp.tushum.amount
-        : preset.revenue_rub !== undefined
-          ? preset.revenue_rub
-          : emp.fixed_salary
-            ? parseFloat(emp.fixed_salary) * 1.5
-            : 3000000;
-    const planTarget = emp.reja_fakt?.formatted_plan || preset.plan_target || '3 000 000 ₽';
-    const planPercent =
-      emp.reja_fakt?.percentage !== undefined
-        ? emp.reja_fakt.percentage
-        : preset.plan_percent !== undefined
-          ? preset.plan_percent
-          : 100;
-
-    let planStatusLabel = emp.reja_fakt?.status || t('planDone');
-    if (!emp.reja_fakt) {
-      if (preset.plan_status_label === 'В процессе' || (planPercent >= 80 && planPercent < 100)) {
-        planStatusLabel = t('planInProgress');
-      } else if (preset.plan_status_label === 'Отстаёт' || planPercent < 80) {
-        planStatusLabel = t('planLagging');
+      let positionTitle =
+        emp.user_role === 'CEO'
+          ? t('posCEO')
+          : emp.user_role === 'ROP'
+            ? t('posROP')
+            : t('posSalesManager');
+      if (!emp.user_role && preset.position_title) {
+        if (preset.position_title.includes('продаж')) positionTitle = t('posSalesManager');
+        else if (preset.position_title.includes('Ст.')) positionTitle = t('posSeniorManager');
+        else if (preset.position_title.includes('СГ')) positionTitle = t('posGroupageManager');
+        else if (preset.position_title.includes('Маркетолог'))
+          positionTitle = t('posMarketingSpecialist');
+        else if (preset.position_title.includes('Декларант'))
+          positionTitle = t('posCustomsDeclarant');
       }
-    }
 
-    const clientsCount =
-      emp.mijozlar_count !== undefined
-        ? emp.mijozlar_count
-        : preset.clients_count !== undefined
-          ? preset.clients_count
-          : 1;
-    const accentColor = emp.color || preset.accent_color || '#F59E0B';
+      const userStatus =
+        emp.user_status ||
+        emp.user?.status ||
+        preset.user_status ||
+        (emp.is_active === false ? 'Banned' : 'Open');
+      const revenueRub =
+        emp.tushum?.amount !== undefined
+          ? emp.tushum.amount
+          : preset.revenue_rub !== undefined
+            ? preset.revenue_rub
+            : emp.fixed_salary
+              ? parseFloat(emp.fixed_salary) * 1.5
+              : 3000000;
+      const planTarget = emp.reja_fakt?.formatted_plan || preset.plan_target || '3 000 000 ₽';
+      const planPercent =
+        emp.reja_fakt?.percentage !== undefined
+          ? emp.reja_fakt.percentage
+          : preset.plan_percent !== undefined
+            ? preset.plan_percent
+            : 100;
 
-    return {
-      ...emp,
-      position_title: positionTitle,
-      user_status: userStatus,
-      revenue_rub: revenueRub,
-      plan_target: planTarget,
-      plan_percent: planPercent,
-      plan_status_label: planStatusLabel as any,
-      clients_count: clientsCount,
-      accent_color: accentColor,
-    };
-  };
+      let planStatusLabel = emp.reja_fakt?.status || t('planDone');
+      if (!emp.reja_fakt) {
+        if (preset.plan_status_label === 'В процессе' || (planPercent >= 80 && planPercent < 100)) {
+          planStatusLabel = t('planInProgress');
+        } else if (preset.plan_status_label === 'Отстаёт' || planPercent < 80) {
+          planStatusLabel = t('planLagging');
+        }
+      }
+
+      const clientsCount =
+        emp.mijozlar_count !== undefined
+          ? emp.mijozlar_count
+          : preset.clients_count !== undefined
+            ? preset.clients_count
+            : 1;
+      const accentColor = emp.color || preset.accent_color || '#F59E0B';
+
+      return {
+        ...emp,
+        position_title: positionTitle,
+        user_status: userStatus,
+        revenue_rub: revenueRub,
+        plan_target: planTarget,
+        plan_percent: planPercent,
+        plan_status_label: planStatusLabel as any,
+        clients_count: clientsCount,
+        accent_color: accentColor,
+      };
+    },
+    [t]
+  );
+
+  const enrichedEmployeesList = useMemo(
+    () => employees.map((emp, i) => getEnrichedEmployee(emp, i)),
+    [employees, getEnrichedEmployee]
+  );
+
+  // Department tab filtering
+  const filteredList = useMemo(() => {
+    return enrichedEmployeesList.filter((emp) => {
+      if (activeTab === 'all') return true;
+      return emp.department_id === activeTab;
+    });
+  }, [enrichedEmployeesList, activeTab]);
+
+  // Compute quick stats
+  const { totalRevenue, openCount, planDoneCount } = useMemo(() => {
+    const totalRevenue = enrichedEmployeesList.reduce((sum, e) => sum + e.revenue_rub, 0);
+    const openCount = enrichedEmployeesList.filter(
+      (e) => (e.user_status || '').toLowerCase() === 'open'
+    ).length;
+    const planDoneCount = enrichedEmployeesList.filter((e) => e.plan_percent >= 100).length;
+    return { totalRevenue, openCount, planDoneCount };
+  }, [enrichedEmployeesList]);
 
   // If viewing a profile, show it
   if (viewingEmployee) {
@@ -579,21 +609,6 @@ export function EmployeesPage() {
     );
   }
 
-  const enrichedEmployeesList = employees.map((emp, i) => getEnrichedEmployee(emp, i));
-
-  // Department tab filtering
-  const filteredList = enrichedEmployeesList.filter((emp) => {
-    if (activeTab === 'all') return true;
-    return emp.department_id === activeTab;
-  });
-
-  // Compute quick stats
-  const totalRevenue = enrichedEmployeesList.reduce((sum, e) => sum + e.revenue_rub, 0);
-  const openCount = enrichedEmployeesList.filter(
-    (e) => (e.user_status || '').toLowerCase() === 'open'
-  ).length;
-  const planDoneCount = enrichedEmployeesList.filter((e) => e.plan_percent >= 100).length;
-
   const start = (page - 1) * meta.itemsPerPage + 1;
   const end = Math.min(page * meta.itemsPerPage, meta.totalItems);
   const pages = Array.from({ length: meta.totalPages }, (_, i) => i + 1);
@@ -603,7 +618,7 @@ export function EmployeesPage() {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="flex flex-col gap-5 text-foreground min-h-screen pb-12"
+      className="flex flex-col gap-4 sm:gap-5 text-foreground min-h-screen pb-12"
     >
       {/* ─── Top Header Row ────────────────────────────── */}
       <motion.div
@@ -611,7 +626,7 @@ export function EmployeesPage() {
         className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
       >
         <div>
-          <h1 className="text-2xl font-bold font-serif text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight">
             <T k="empTitle" />
           </h1>
           <p className="text-xs text-muted mt-0.5">
@@ -619,17 +634,11 @@ export function EmployeesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {/* Live Clock Indicator */}
-          <div className="flex items-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 shadow-inner">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>{currentTime || '00:00:00'}</span>
-          </div>
+          <LiveClock />
 
-          {/* Add Employee — visible on larger screens here, also below on mobile */}
+          {/* Add Employee — visible on larger screens here */}
           {canCreate('employees') && (
             <Button
               onPress={handleCreateEmployee}
@@ -644,51 +653,51 @@ export function EmployeesPage() {
 
       {/* ─── Summary Stat Cards ────────────────────────── */}
       <motion.div variants={itemVariants}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           {[
             {
               key: 'ovTotalEmployees',
               value: loading ? '—' : String(meta.totalItems),
-              icon: <Users className="size-5" />,
+              icon: <Users className="size-4 sm:size-5" />,
               color: 'text-blue-500',
               bg: 'bg-blue-500/10 dark:bg-blue-500/15',
             },
             {
               key: 'empOnlineNow',
               value: loading ? '—' : String(openCount),
-              icon: <Activity className="size-5" />,
+              icon: <Activity className="size-4 sm:size-5" />,
               color: 'text-emerald-500',
               bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
             },
             {
               key: 'empPlanCompleted',
               value: loading ? '—' : String(planDoneCount),
-              icon: <TrendingUp className="size-5" />,
+              icon: <TrendingUp className="size-4 sm:size-5" />,
               color: 'text-amber-500',
               bg: 'bg-amber-500/10 dark:bg-amber-500/15',
             },
             {
               key: 'empTotalRevenue',
               value: loading ? '—' : formatMoney(totalRevenue),
-              icon: <Briefcase className="size-5" />,
+              icon: <Briefcase className="size-4 sm:size-5" />,
               color: 'text-violet-500',
               bg: 'bg-violet-500/10 dark:bg-violet-500/15',
             },
           ].map((stat) => (
             <div
               key={stat.key}
-              className="flex items-center gap-3 p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:shadow-lg hover:border-brand-gold/30 transition-all duration-300"
+              className="flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:shadow-lg hover:border-brand-gold/30 transition-all duration-300 min-w-0"
             >
               <div
-                className={`size-10 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} shrink-0`}
+                className={`size-9 sm:size-10 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} shrink-0`}
               >
                 {stat.icon}
               </div>
-              <div className="flex flex-col min-w-0">
+              <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-[10px] sm:text-xs font-medium text-muted truncate">
                   <T k={stat.key} />
                 </span>
-                <span className="text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
+                <span className="text-sm sm:text-lg font-bold text-foreground tracking-tight truncate">
                   {stat.value}
                 </span>
               </div>
@@ -700,19 +709,19 @@ export function EmployeesPage() {
       {/* ─── Control Filters & Currency Switcher Bar ──── */}
       <motion.div
         variants={itemVariants}
-        className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
+        className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3"
       >
         {/* Left Filter Dropdowns */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
           {/* Year Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-muted font-medium">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-muted font-medium text-[11px] sm:text-xs">
               <T k="filterYear" />
             </span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-surface dark:bg-surface border border-border text-foreground text-xs font-semibold px-3 py-2 rounded-xl focus:outline-none focus:border-brand-gold/50 cursor-pointer transition-colors"
+              className="bg-surface dark:bg-surface border border-border text-foreground text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl focus:outline-none focus:border-brand-gold/50 cursor-pointer transition-colors"
             >
               <option value="2026">2026</option>
               <option value="2025">2025</option>
@@ -721,14 +730,14 @@ export function EmployeesPage() {
           </div>
 
           {/* Period Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-muted font-medium">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-muted font-medium text-[11px] sm:text-xs">
               <T k="filterPeriod" />
             </span>
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-surface dark:bg-surface border border-border text-foreground text-xs font-semibold px-3 py-2 rounded-xl focus:outline-none focus:border-brand-gold/50 cursor-pointer min-w-[70px] transition-colors"
+              className="bg-surface dark:bg-surface border border-border text-foreground text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl focus:outline-none focus:border-brand-gold/50 cursor-pointer min-w-[65px] sm:min-w-[70px] transition-colors"
             >
               <option value="Июл">{t('monthJul')}</option>
               <option value="Июн">{t('monthJun')}</option>
@@ -742,7 +751,7 @@ export function EmployeesPage() {
         </div>
 
         {/* Right Currency Segmented Toggle */}
-        <div className="flex items-center bg-surface dark:bg-surface border border-border p-1 rounded-xl text-xs font-medium">
+        <div className="flex items-center justify-between sm:justify-start bg-surface dark:bg-surface border border-border p-1 rounded-xl text-xs font-medium">
           {(['RUB', 'USD', 'UZS'] as Currency[]).map((cur) => {
             const labels = {
               RUB: '₽ RUB',
@@ -753,7 +762,7 @@ export function EmployeesPage() {
               <button
                 key={cur}
                 onClick={() => setCurrency(cur)}
-                className={`px-3 py-1.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer ${
+                className={`flex-1 sm:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer text-center text-[11px] sm:text-xs ${
                   currency === cur
                     ? 'bg-brand-gold text-brand-navy font-bold shadow-md'
                     : 'text-muted hover:text-foreground'
@@ -769,7 +778,7 @@ export function EmployeesPage() {
       {/* ─── Category Tabs & Actions Bar ─────────────── */}
       <motion.div variants={itemVariants} className="flex flex-col gap-3">
         {/* Department / Category Pills */}
-        <div className="flex items-center overflow-x-auto no-scrollbar gap-1.5 bg-surface dark:bg-surface border border-border/40 p-1.5 rounded-xl">
+        <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-1.5 bg-surface dark:bg-surface border border-border/40 p-1.5 rounded-xl">
           {[
             { id: 'all', label: <T k="tabAll" /> },
             ...departments.map((dept) => ({
@@ -789,7 +798,7 @@ export function EmployeesPage() {
                   setActiveTab(tab.id);
                   setPage(1);
                 }}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                   isActive
                     ? 'bg-brand-gold text-brand-navy shadow-md'
                     : 'text-muted hover:text-foreground hover:bg-border/30'
@@ -802,7 +811,7 @@ export function EmployeesPage() {
         </div>
 
         {/* Search Box & Add Employee */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
@@ -811,51 +820,53 @@ export function EmployeesPage() {
               placeholder={t('empSearch')}
               value={searchInputValue}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-surface dark:bg-surface border border-border text-foreground placeholder:text-muted focus:outline-none focus:border-brand-gold/60 focus:ring-2 focus:ring-brand-gold/20 transition-all"
+              className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-surface dark:bg-surface border border-border text-foreground placeholder:text-muted focus:outline-none focus:border-brand-gold/60 focus:ring-2 focus:ring-brand-gold/20 transition-all"
             />
           </div>
 
           {/* Add Employee — visible on mobile here */}
-          <Button
-            onPress={handleCreateEmployee}
-            className="sm:hidden bg-brand-gold text-brand-navy hover:opacity-90 font-bold text-xs rounded-xl px-3 py-2 h-10 shrink-0 shadow-md"
-            isIconOnly
-          >
-            <Plus className="size-5" />
-          </Button>
+          {canCreate('employees') && (
+            <Button
+              onPress={handleCreateEmployee}
+              className="sm:hidden bg-brand-gold text-brand-navy hover:opacity-90 font-bold text-xs rounded-xl px-3 py-2 h-9 sm:h-10 shrink-0 shadow-md min-w-[36px]"
+              isIconOnly
+            >
+              <Plus className="size-5" />
+            </Button>
+          )}
         </div>
       </motion.div>
 
       {/* ─── Main Employee Content ────────────────────── */}
 
-      {/* ══ DESKTOP TABLE VIEW (hidden on mobile) ═════ */}
+      {/* ══ TABLE VIEW (Tablet & PC screens >= 768px) ═════ */}
       <motion.div
         variants={itemVariants}
         className="hidden md:block bg-surface dark:bg-surface border border-border/40 rounded-2xl overflow-hidden shadow-lg"
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[850px]">
+          <table className="w-full text-left border-collapse min-w-[750px]">
             <thead>
               <tr className="border-b border-border/60 text-[10px] uppercase font-bold text-muted tracking-wider">
-                <th className="py-3.5 px-5 w-[240px]">
+                <th className="py-3 px-3 sm:px-4 w-[180px] sm:w-[220px]">
                   <T k="colName" />
                 </th>
-                <th className="py-3.5 px-5">
+                <th className="py-3 px-3 sm:px-4">
                   <T k="colRole" />
                 </th>
-                <th className="py-3.5 px-5">
+                <th className="py-3 px-3 sm:px-4">
                   <T k="colStatus" />
                 </th>
-                <th className="py-3.5 px-5">
+                <th className="py-3 px-3 sm:px-4">
                   <T k="colRevenue" />
                 </th>
-                <th className="py-3.5 px-5">
+                <th className="py-3 px-3 sm:px-4">
                   <T k="colPlanFact" />
                 </th>
-                <th className="py-3.5 px-5 text-center">
+                <th className="py-3 px-3 sm:px-4 text-center">
                   <T k="colClients" />
                 </th>
-                <th className="py-3.5 px-5 text-right">
+                <th className="py-3 px-3 sm:px-4 text-right min-w-[120px]">
                   <T k="colActions" />
                 </th>
               </tr>
@@ -864,7 +875,7 @@ export function EmployeesPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="py-4 px-5">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                       <div className="flex items-center gap-3">
                         <Skeleton className="size-10 rounded-full" />
                         <div className="flex flex-col gap-1.5">
@@ -873,22 +884,22 @@ export function EmployeesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-5">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                       <Skeleton className="h-4 w-32 rounded" />
                     </td>
-                    <td className="py-4 px-5">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                       <Skeleton className="h-6 w-20 rounded-full" />
                     </td>
-                    <td className="py-4 px-5">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                       <Skeleton className="h-4 w-24 rounded" />
                     </td>
-                    <td className="py-4 px-5">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                       <Skeleton className="h-4 w-32 rounded" />
                     </td>
-                    <td className="py-4 px-5 text-center">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-center">
                       <Skeleton className="size-6 rounded-md mx-auto" />
                     </td>
-                    <td className="py-4 px-5 text-right">
+                    <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-right">
                       <Skeleton className="h-6 w-20 rounded ml-auto" />
                     </td>
                   </tr>
@@ -926,14 +937,14 @@ export function EmployeesPage() {
                         className="group hover:bg-brand-gold/5 dark:hover:bg-brand-gold/5 transition-colors duration-200 relative"
                       >
                         {/* Left accent */}
-                        <td className="py-4 px-5 relative">
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4 relative">
                           <div
                             className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full opacity-80"
                             style={{ backgroundColor: emp.accent_color }}
                           />
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5 sm:gap-3">
                             <Avatar
-                              className="size-10 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                              className="size-9 sm:size-10 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
                               style={{ borderColor: emp.accent_color }}
                               onClick={() => handleViewEmployee(emp)}
                             >
@@ -955,12 +966,12 @@ export function EmployeesPage() {
                             </Avatar>
                             <div className="flex flex-col min-w-0">
                               <span
-                                className="text-sm font-semibold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
+                                className="text-xs sm:text-sm font-semibold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
                                 onClick={() => handleViewEmployee(emp)}
                               >
                                 {emp.first_name} {emp.last_name}
                               </span>
-                              <span className="text-[11px] text-muted truncate">
+                              <span className="text-[10px] sm:text-[11px] text-muted truncate">
                                 {emp.position_title}
                               </span>
                             </div>
@@ -968,26 +979,26 @@ export function EmployeesPage() {
                         </td>
 
                         {/* ДОЛЖНОСТЬ */}
-                        <td className="py-4 px-5">
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                           <span className="text-xs text-foreground/80 font-medium">
                             {emp.position_title}
                           </span>
                         </td>
 
                         {/* СТАТУС */}
-                        <td className="py-4 px-5">
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                           <StatusBadge status={emp.user_status} />
                         </td>
 
                         {/* ВЫРУЧКА */}
-                        <td className="py-4 px-5">
-                          <span className="text-sm font-bold text-foreground tracking-wide">
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
+                          <span className="text-xs sm:text-sm font-bold text-foreground tracking-wide">
                             {emp.tushum?.formatted || formatMoney(emp.revenue_rub)}
                           </span>
                         </td>
 
                         {/* ПЛАН / ФАКТ */}
-                        <td className="py-4 px-5">
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
                           <div className="flex flex-col gap-1">
                             <span className="text-xs font-semibold text-foreground">
                               {emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}
@@ -1001,18 +1012,18 @@ export function EmployeesPage() {
                         </td>
 
                         {/* КЛИЕНТЫ */}
-                        <td className="py-4 px-5 text-center">
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-center">
                           <span
-                            className="inline-flex items-center justify-center size-7 rounded-lg text-xs font-bold text-white shadow-sm"
+                            className="inline-flex items-center justify-center size-6.5 sm:size-7 rounded-lg text-xs font-bold text-white shadow-sm"
                             style={{ backgroundColor: emp.accent_color }}
                           >
                             {emp.mijozlar_count ?? emp.clients_count}
                           </span>
                         </td>
 
-                        {/* ДЕЙСТВИЯ */}
-                        <td className="py-4 px-5 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {/* ДЕЙСТВИЯ — Always visible on tablet & desktop */}
+                        <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-right">
+                          <div className="flex items-center justify-end gap-0.5 sm:gap-1 text-muted transition-all duration-200">
                             <Button
                               isIconOnly
                               size="sm"
@@ -1120,29 +1131,29 @@ export function EmployeesPage() {
         )}
       </motion.div>
 
-      {/* ══ MOBILE/TABLET CARD VIEW (hidden on desktop) ═ */}
-      <div className="md:hidden flex flex-col gap-3">
+      {/* ══ MOBILE CARD VIEW (< 768px screens ONLY) ════════ */}
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40"
+              className="p-3.5 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40"
             >
               <div className="flex items-center gap-3 mb-4">
-                <Skeleton className="size-12 rounded-full" />
+                <Skeleton className="size-11 sm:size-12 rounded-full" />
                 <div className="flex flex-col gap-1.5 flex-1">
                   <Skeleton className="h-4 w-32 rounded" />
                   <Skeleton className="h-3 w-24 rounded" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Skeleton className="h-12 rounded-xl" />
-                <Skeleton className="h-12 rounded-xl" />
+              <div className="grid grid-cols-2 gap-2.5">
+                <Skeleton className="h-11 sm:h-12 rounded-xl" />
+                <Skeleton className="h-11 sm:h-12 rounded-xl" />
               </div>
             </div>
           ))
         ) : filteredList.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-16">
+          <div className="col-span-full flex flex-col items-center gap-4 py-16">
             <div className="size-16 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center text-brand-gold">
               <Users className="size-8" />
             </div>
@@ -1166,86 +1177,90 @@ export function EmployeesPage() {
                   initial="hidden"
                   animate="show"
                   exit="exit"
-                  transition={{ delay: i * 0.04 }}
-                  className="relative p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:border-brand-gold/30 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                  transition={{ delay: i * 0.03 }}
+                  className="relative p-3.5 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:border-brand-gold/30 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between"
                 >
                   {/* Left accent stripe */}
                   <div
-                    className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full"
+                    className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full"
                     style={{ backgroundColor: emp.accent_color }}
                   />
 
-                  {/* Top row: avatar + name + status */}
-                  <div className="flex items-start gap-3 mb-4 pl-2">
-                    <Avatar
-                      className="size-12 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
-                      style={{ borderColor: emp.accent_color }}
-                      onClick={() => handleViewEmployee(emp)}
-                    >
-                      {emp.picture_url && (
-                        <Avatar.Image
-                          src={getImageUrl(emp.picture_url)}
-                          alt={`${emp.first_name} ${emp.last_name}`}
-                        />
-                      )}
-                      <Avatar.Fallback
-                        className="text-sm font-bold"
-                        style={{
-                          backgroundColor: `${emp.accent_color}15`,
-                          color: emp.accent_color,
-                        }}
-                      >
-                        {initials}
-                      </Avatar.Fallback>
-                    </Avatar>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span
-                        className="text-sm font-bold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
+                  <div>
+                    {/* Top row: avatar + name + status */}
+                    <div className="flex items-start gap-2.5 sm:gap-3 mb-3 pl-1.5">
+                      <Avatar
+                        className="size-11 sm:size-12 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                        style={{ borderColor: emp.accent_color }}
                         onClick={() => handleViewEmployee(emp)}
                       >
-                        {emp.first_name} {emp.last_name}
-                      </span>
-                      <span className="text-[11px] text-muted truncate">{emp.position_title}</span>
-                      <div className="mt-1.5">
-                        <StatusBadge status={emp.user_status} />
+                        {emp.picture_url && (
+                          <Avatar.Image
+                            src={getImageUrl(emp.picture_url)}
+                            alt={`${emp.first_name} ${emp.last_name}`}
+                          />
+                        )}
+                        <Avatar.Fallback
+                          className="text-xs sm:text-sm font-bold"
+                          style={{
+                            backgroundColor: `${emp.accent_color}15`,
+                            color: emp.accent_color,
+                          }}
+                        >
+                          {initials}
+                        </Avatar.Fallback>
+                      </Avatar>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span
+                          className="text-xs sm:text-sm font-bold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
+                          onClick={() => handleViewEmployee(emp)}
+                        >
+                          {emp.first_name} {emp.last_name}
+                        </span>
+                        <span className="text-[10px] sm:text-[11px] text-muted truncate">
+                          {emp.position_title}
+                        </span>
+                        <div className="mt-1">
+                          <StatusBadge status={emp.user_status} />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Metrics grid */}
-                  <div className="grid grid-cols-2 gap-2.5 mb-4 pl-2">
-                    <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
-                      <span className="text-[10px] text-muted font-medium">
-                        <T k="colRevenue" />
-                      </span>
-                      <span className="text-sm font-bold text-foreground truncate">
-                        {emp.tushum?.formatted || formatMoney(emp.revenue_rub)}
-                      </span>
+                    {/* Metrics grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-3 pl-1.5">
+                      <div className="flex flex-col gap-0.5 p-2 sm:p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
+                        <span className="text-[9px] sm:text-[10px] text-muted font-medium">
+                          <T k="colRevenue" />
+                        </span>
+                        <span className="text-xs sm:text-sm font-bold text-foreground truncate">
+                          {emp.tushum?.formatted || formatMoney(emp.revenue_rub)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-0.5 p-2 sm:p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
+                        <span className="text-[9px] sm:text-[10px] text-muted font-medium">
+                          <T k="colPlanFact" />
+                        </span>
+                        <span className="text-xs sm:text-sm font-bold text-foreground truncate">
+                          {emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
-                      <span className="text-[10px] text-muted font-medium">
-                        <T k="colPlanFact" />
-                      </span>
-                      <span className="text-sm font-bold text-foreground truncate">
-                        {emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}
-                      </span>
+
+                    {/* Progress bar */}
+                    <div className="pl-1.5 mb-3">
+                      <PlanProgressBar
+                        percent={emp.reja_fakt?.percentage ?? emp.plan_percent}
+                        statusLabel={emp.reja_fakt?.status || emp.plan_status_label}
+                        statusCode={emp.reja_fakt?.status_code}
+                      />
                     </div>
                   </div>
 
-                  {/* Progress bar */}
-                  <div className="pl-2 mb-4">
-                    <PlanProgressBar
-                      percent={emp.reja_fakt?.percentage ?? emp.plan_percent}
-                      statusLabel={emp.reja_fakt?.status || emp.plan_status_label}
-                      statusCode={emp.reja_fakt?.status_code}
-                    />
-                  </div>
-
-                  {/* Bottom: clients badge + always-visible action buttons */}
-                  <div className="flex items-center justify-between pl-2">
-                    <div className="flex items-center gap-2">
+                  {/* Bottom: clients badge + touch action buttons */}
+                  <div className="flex items-center justify-between pl-1.5 pt-2 border-t border-border/20">
+                    <div className="flex items-center gap-1.5">
                       <span
-                        className="inline-flex items-center justify-center size-7 rounded-lg text-xs font-bold text-white shadow-sm"
+                        className="inline-flex items-center justify-center size-6.5 sm:size-7 rounded-lg text-[11px] sm:text-xs font-bold text-white shadow-sm"
                         style={{ backgroundColor: emp.accent_color }}
                       >
                         {emp.mijozlar_count ?? emp.clients_count}
@@ -1255,8 +1270,8 @@ export function EmployeesPage() {
                       </span>
                     </div>
 
-                    {/* Always visible action buttons on mobile */}
-                    <div className="flex items-center gap-1">
+                    {/* Always visible action buttons */}
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                       <Button
                         isIconOnly
                         size="sm"
@@ -1266,41 +1281,47 @@ export function EmployeesPage() {
                       >
                         <Eye className="size-4" />
                       </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="ghost"
-                        onPress={() => handleEditEmployee(emp)}
-                        className="text-muted hover:text-brand-gold hover:bg-brand-gold/10 rounded-lg size-8"
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="ghost"
-                        onPress={() => handleToggleStatus(emp)}
-                        className={`rounded-lg size-8 ${
-                          emp.is_active
-                            ? 'text-muted hover:text-amber-500 hover:bg-amber-500/10'
-                            : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
-                        }`}
-                      >
-                        {emp.is_active ? (
-                          <UserX className="size-4" />
-                        ) : (
-                          <UserCheck className="size-4" />
-                        )}
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="ghost"
-                        onPress={() => handleDeleteEmployee(emp)}
-                        className="text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-lg size-8"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      {canUpdate('employees') && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => handleEditEmployee(emp)}
+                          className="text-muted hover:text-brand-gold hover:bg-brand-gold/10 rounded-lg size-8"
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      )}
+                      {canUpdate('employees') && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => handleToggleStatus(emp)}
+                          className={`rounded-lg size-8 ${
+                            emp.is_active
+                              ? 'text-muted hover:text-amber-500 hover:bg-amber-500/10'
+                              : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
+                          }`}
+                        >
+                          {emp.is_active ? (
+                            <UserX className="size-4" />
+                          ) : (
+                            <UserCheck className="size-4" />
+                          )}
+                        </Button>
+                      )}
+                      {canDelete('employees') && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => handleDeleteEmployee(emp)}
+                          className="text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-lg size-8"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -1309,23 +1330,23 @@ export function EmployeesPage() {
           </AnimatePresence>
         )}
 
-        {/* Mobile Pagination */}
+        {/* Mobile & Tablet Pagination */}
         {!loading && meta.totalPages > 1 && filteredList.length > 0 && (
-          <div className="flex items-center justify-between px-2 py-3 text-xs">
-            <span className="text-muted">
+          <div className="col-span-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-surface dark:bg-surface border border-border/40 text-xs">
+            <span className="text-muted text-[11px] sm:text-xs">
               {start}–{end} / {meta.totalItems}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Button
                 size="sm"
                 variant="ghost"
                 isDisabled={page === 1}
                 onPress={() => setPage((p) => Math.max(1, p - 1))}
-                className="text-xs text-foreground/70 rounded-lg"
+                className="text-xs text-foreground/70 rounded-lg h-8 px-2.5"
               >
                 <T k="pagPrev" />
               </Button>
-              <span className="text-xs font-bold text-foreground px-2">
+              <span className="text-xs font-bold text-foreground px-1.5 sm:px-2">
                 {page} / {meta.totalPages}
               </span>
               <Button
@@ -1333,7 +1354,7 @@ export function EmployeesPage() {
                 variant="ghost"
                 isDisabled={page === meta.totalPages}
                 onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-                className="text-xs text-foreground/70 rounded-lg"
+                className="text-xs text-foreground/70 rounded-lg h-8 px-2.5"
               >
                 <T k="pagNext" />
               </Button>
@@ -1358,22 +1379,22 @@ export function EmployeesPage() {
       {/* ─── Delete Confirmation Modal ────────────────── */}
       <Modal.Backdrop isOpen={deleteOpen} onOpenChange={setDeleteOpen}>
         <Modal.Container>
-          <Modal.Dialog className="sm:max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl">
-            <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
-            <Modal.Body className="flex flex-col items-center text-center py-8 gap-4">
-              <div className="size-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 flex items-center justify-center text-rose-500">
-                <AlertTriangle className="size-7" />
+          <Modal.Dialog className="w-[90vw] max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl mx-auto my-auto">
+            <Modal.CloseTrigger className="absolute top-3.5 sm:top-4 right-3.5 sm:right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
+            <Modal.Body className="flex flex-col items-center text-center py-6 sm:py-8 px-4 sm:px-6 gap-3.5 sm:gap-4">
+              <div className="size-12 sm:size-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 flex items-center justify-center text-rose-500">
+                <AlertTriangle className="size-6 sm:size-7" />
               </div>
-              <h3 className="text-lg font-bold text-foreground font-serif">
+              <h3 className="text-base sm:text-lg font-bold text-foreground font-serif">
                 <T k="empDeleteTitle" />
               </h3>
               <p className="text-xs text-muted leading-relaxed max-w-xs">
                 <T k="empDeleteDesc" />
               </p>
               {deletingEmployee && (
-                <div className="flex items-center gap-3 bg-border/20 dark:bg-border/10 px-4 py-2.5 rounded-xl border border-border/40">
+                <div className="flex items-center gap-2.5 sm:gap-3 bg-border/20 dark:bg-border/10 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-border/40">
                   <Avatar
-                    className="size-8"
+                    className="size-7 sm:size-8"
                     style={{ borderColor: deletingEmployee.color || '#CCC', borderWidth: 2 }}
                   >
                     {deletingEmployee.picture_url && (
@@ -1399,18 +1420,18 @@ export function EmployeesPage() {
                 </div>
               )}
             </Modal.Body>
-            <Modal.Footer className="flex justify-center gap-3 pb-6">
+            <Modal.Footer className="flex items-center justify-center gap-2.5 sm:gap-3 px-4 pb-5 sm:pb-6">
               <Button
                 variant="ghost"
                 onPress={() => setDeleteOpen(false)}
-                className="text-xs font-semibold text-muted"
+                className="text-xs font-semibold text-muted flex-1 sm:flex-initial"
               >
                 <T k="actionCancel" />
               </Button>
               <Button
                 onPress={handleConfirmDelete}
                 isDisabled={deleteLoading}
-                className="bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold min-w-[160px] rounded-xl"
+                className="bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold flex-1 sm:flex-initial min-w-[120px] sm:min-w-[160px] rounded-xl"
               >
                 {deleteLoading ? (
                   <span className="inline-flex items-center gap-2">
@@ -1428,19 +1449,19 @@ export function EmployeesPage() {
       {/* ─── Status Toggle Confirmation Modal ─────────── */}
       <Modal.Backdrop isOpen={statusOpen} onOpenChange={setStatusOpen}>
         <Modal.Container>
-          <Modal.Dialog className="sm:max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl">
-            <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
-            <Modal.Body className="flex flex-col items-center text-center py-8 gap-4">
+          <Modal.Dialog className="w-[90vw] max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl mx-auto my-auto">
+            <Modal.CloseTrigger className="absolute top-3.5 sm:top-4 right-3.5 sm:right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
+            <Modal.Body className="flex flex-col items-center text-center py-6 sm:py-8 px-4 sm:px-6 gap-3.5 sm:gap-4">
               <div
-                className={`size-14 rounded-2xl flex items-center justify-center ${statusEmployee?.is_active ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-500' : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500'}`}
+                className={`size-12 sm:size-14 rounded-2xl flex items-center justify-center ${statusEmployee?.is_active ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-500' : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500'}`}
               >
                 {statusEmployee?.is_active ? (
-                  <UserX className="size-7" />
+                  <UserX className="size-6 sm:size-7" />
                 ) : (
-                  <UserCheck className="size-7" />
+                  <UserCheck className="size-6 sm:size-7" />
                 )}
               </div>
-              <h3 className="text-lg font-bold text-foreground font-serif">
+              <h3 className="text-base sm:text-lg font-bold text-foreground font-serif">
                 {statusEmployee?.is_active ? (
                   <T k="empDeactivateTitle" />
                 ) : (
@@ -1455,18 +1476,18 @@ export function EmployeesPage() {
                 )}
               </p>
             </Modal.Body>
-            <Modal.Footer className="flex justify-center gap-3 pb-6">
+            <Modal.Footer className="flex items-center justify-center gap-2.5 sm:gap-3 px-4 pb-5 sm:pb-6">
               <Button
                 variant="ghost"
                 onPress={() => setStatusOpen(false)}
-                className="text-xs font-semibold text-muted"
+                className="text-xs font-semibold text-muted flex-1 sm:flex-initial"
               >
                 <T k="actionCancel" />
               </Button>
               <Button
                 onPress={handleConfirmToggleStatus}
                 isDisabled={statusLoading}
-                className={`text-xs font-semibold min-w-[120px] rounded-xl ${statusEmployee?.is_active ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                className={`text-xs font-semibold flex-1 sm:flex-initial min-w-[110px] sm:min-w-[120px] rounded-xl ${statusEmployee?.is_active ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
               >
                 {statusLoading ? <Spinner size="sm" /> : <T k="actionConfirm" />}
               </Button>
