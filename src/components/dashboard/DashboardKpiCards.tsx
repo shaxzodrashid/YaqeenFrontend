@@ -37,6 +37,8 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
 
     if (!summary) return null;
 
+    const currency = summary.currency || 'UZS';
+
     const salesGrowth = summary.salesGrowthVsPriorPeriod ?? 0;
     const isSalesPositive = salesGrowth >= 0;
 
@@ -54,7 +56,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
     }[] = [
       {
         titleKey: 'ovKpiTotalRevenue',
-        value: formatMoney(summary.totalSales, 'USD'),
+        value: formatMoney(summary.totalSales, currency),
         subtitleKey: 'ovSubTotalRegisteredOrders',
         subtitleReplacements: { count: summary.totalOrders },
         icon: <DollarSign className="size-5" />,
@@ -79,7 +81,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
       },
       {
         titleKey: 'ovKpiNetMargin',
-        value: formatMoney(summary.totalMargin, 'USD'),
+        value: formatMoney(summary.totalMargin, currency),
         subtitleKey: 'ovSubMarginYield',
         subtitleReplacements: { pct: summary.marginPercentage },
         icon: <Percent className="size-5" />,
@@ -108,7 +110,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
       },
       {
         titleKey: 'ovKpiCarrierCost',
-        value: formatMoney(summary.totalPurchaseCost, 'USD'),
+        value: formatMoney(summary.totalPurchaseCost, currency),
         subtitleKey: 'ovSubCogsCost',
         icon: <Receipt className="size-5" />,
         iconBg: 'bg-purple-500/10 text-purple-500 dark:bg-purple-500/15',
@@ -132,7 +134,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
       },
       {
         titleKey: 'ovKpiAov',
-        value: formatMoney(summary.averageOrderValue, 'USD'),
+        value: formatMoney(summary.averageOrderValue, currency),
         subtitleKey: 'ovSubMeanRevenue',
         icon: <Package className="size-5" />,
         iconBg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/15',
@@ -155,22 +157,25 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
     ];
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
         {cards.map((card) => (
           <div
             key={card.titleKey}
-            className="p-4 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border hover:border-brand-gold/40 dark:hover:border-brand-gold/40 shadow-xs hover:shadow-md transition-colors duration-200 flex flex-col justify-between"
+            className="p-4 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border hover:border-brand-gold/40 dark:hover:border-brand-gold/40 shadow-xs hover:shadow-md transition-colors duration-200 flex flex-col justify-between min-w-0"
           >
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className={`p-2.5 rounded-xl ${card.iconBg} shrink-0`}>{card.icon}</div>
               {card.badge}
             </div>
 
-            <div className="mt-3 flex flex-col">
+            <div className="mt-3 flex flex-col min-w-0">
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted dark:text-night-muted">
                 <T k={card.titleKey} />
               </span>
-              <span className="text-xl font-black text-foreground dark:text-night-text tracking-tight mt-0.5">
+              <span
+                className="text-lg sm:text-xl font-black text-foreground dark:text-night-text tracking-tight mt-0.5 break-words"
+                title={card.value}
+              >
                 {card.value}
               </span>
               <span className="text-[11px] text-muted dark:text-night-muted mt-1 leading-tight line-clamp-1">

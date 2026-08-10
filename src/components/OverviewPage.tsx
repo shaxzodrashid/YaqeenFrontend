@@ -43,6 +43,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
   // Filter State
   const [filters, setFilters] = useState<DashboardFilterParams>({
     period: '1M',
+    currency: 'UZS',
     cargo_type: '',
     status: '',
     employee_id: '',
@@ -116,6 +117,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
   const handleResetFilters = () => {
     setFilters({
       period: '1M',
+      currency: 'UZS',
       cargo_type: '',
       status: '',
       employee_id: '',
@@ -233,12 +235,20 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
 
       {/* 5. Donut Cargo & Status Distribution Charts */}
       <div>
-        <CargoDistributionCharts data={cargoDistData} loading={loading} />
+        <CargoDistributionCharts
+          data={cargoDistData}
+          loading={loading}
+          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'UZS'}
+        />
       </div>
 
       {/* 6. Top Performers Leaderboards */}
       <div>
-        <TopPerformersLeaderboard data={topPerformersData} loading={loading} />
+        <TopPerformersLeaderboard
+          data={topPerformersData}
+          loading={loading}
+          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'UZS'}
+        />
       </div>
 
       {/* 7. Quick Operational Actions */}

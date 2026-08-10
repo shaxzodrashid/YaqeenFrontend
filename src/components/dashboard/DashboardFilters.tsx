@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Filter, RefreshCw, RotateCcw } from 'lucide-react';
+import { Calendar, Filter, RefreshCw, RotateCcw, Coins } from 'lucide-react';
 import type { DashboardPeriod, DashboardFilterParams } from '../../types/dashboard';
 import type { Employee, Client } from '../../services/api';
 import { T } from '../T';
@@ -25,6 +25,14 @@ const PERIOD_OPTIONS: { label: string; value: DashboardPeriod }[] = [
   { label: '5Y', value: '5Y' },
   { label: 'MAX', value: 'MAX' },
   { label: 'Custom', value: 'CUSTOM' },
+];
+
+const CURRENCY_OPTIONS = [
+  { label: "UZS (So'm)", value: 'UZS' },
+  { label: 'USD ($)', value: 'USD' },
+  { label: 'RUB (₽)', value: 'RUB' },
+  { label: 'RMB (¥)', value: 'RMB' },
+  { label: 'CNY (¥)', value: 'CNY' },
 ];
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
@@ -132,7 +140,23 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
       )}
 
       {/* Dropdown Filters Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-border/30 dark:border-night-border/30">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t border-border/30 dark:border-night-border/30">
+        {/* Currency Filter */}
+        <div className="flex items-center gap-2">
+          <Coins className="size-3.5 text-brand-gold shrink-0" />
+          <select
+            value={filters.currency || 'UZS'}
+            onChange={(e) => onFilterChange({ currency: e.target.value })}
+            className="w-full px-3 py-1.5 text-xs bg-background dark:bg-night-bg text-foreground dark:text-night-text rounded-xl border border-border/60 dark:border-night-border/60 focus:outline-none focus:border-brand-gold cursor-pointer font-semibold"
+          >
+            {CURRENCY_OPTIONS.map((cur) => (
+              <option key={cur.value} value={cur.value}>
+                {cur.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Cargo Type Filter */}
         <div className="flex items-center gap-2">
           <Filter className="size-3.5 text-brand-gold shrink-0" />

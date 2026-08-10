@@ -12,6 +12,7 @@ export interface DashboardFilterParams {
   status?: string;
   cargo_type?: string;
   limit?: number;
+  currency?: 'UZS' | 'USD' | 'RUB' | 'RMB' | 'CNY' | string;
 }
 
 export interface DashboardSalesProgressMeta {
@@ -24,6 +25,7 @@ export interface DashboardSalesProgressMeta {
 }
 
 export interface DashboardSalesProgressSummary {
+  currency?: string;
   totalSales: number;
   totalPurchaseCost: number;
   totalMargin: number;
@@ -57,6 +59,7 @@ export interface DashboardSalesProgressResponse {
 }
 
 export interface DashboardSummaryResponse {
+  currency?: string;
   totalSales: number;
   totalPurchaseCost: number;
   totalMargin: number;
@@ -88,6 +91,7 @@ export interface StatusDistributionItem {
 }
 
 export interface DashboardCargoDistributionResponse {
+  currency?: string;
   cargoTypeDistribution: CargoTypeDistributionItem[];
   statusDistribution: StatusDistributionItem[];
 }
@@ -111,6 +115,7 @@ export interface TopClientItem {
 }
 
 export interface DashboardTopPerformersResponse {
+  currency?: string;
   topManagers: TopManagerItem[];
   topClients: TopClientItem[];
 }

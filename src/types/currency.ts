@@ -45,19 +45,27 @@ export interface SyncRatesResponse {
 /**
  * Format currency numbers with locale-appropriate formatting.
  */
-export function formatMoney(amount: number, currency: SupportedCurrency = 'UZS'): string {
+export function formatMoney(amount: number, currency: string = 'UZS'): string {
   const num = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
-  const localeMap: Record<SupportedCurrency, string> = {
+  const curr = (currency || 'UZS').toUpperCase() as SupportedCurrency;
+  const localeMap: Record<string, string> = {
     UZS: 'uz-UZ',
     USD: 'en-US',
     RUB: 'ru-RU',
     RMB: 'zh-CN',
     CNY: 'zh-CN',
+    EUR: 'de-DE',
   };
 
-  return new Intl.NumberFormat(localeMap[currency] || 'uz-UZ', {
-    style: 'currency',
-    currency: currency === 'RMB' ? 'CNY' : currency,
-    maximumFractionDigits: currency === 'UZS' ? 0 : 2,
-  }).format(num);
+  const hasDecimals = num % 1 !== 0;
+
+  try {
+    return new Intl.NumberFormat(localeMap[curr] || 'uz-UZ', {
+      style: 'currency',
+      currency: curr === 'RMB' ? 'CNY' : curr,
+      maximumFractionDigits: hasDecimals ? 2 : curr === 'UZS' ? 0 : 2,
+    }).format(num);
+  } catch {
+    return `${num.toLocaleString()} ${curr}`;
+  }
 }

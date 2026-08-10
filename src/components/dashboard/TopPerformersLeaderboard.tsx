@@ -7,10 +7,11 @@ import { T } from '../T';
 interface TopPerformersLeaderboardProps {
   data: DashboardTopPerformersResponse | null;
   loading: boolean;
+  currency?: string;
 }
 
 export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> = React.memo(
-  ({ data, loading }) => {
+  ({ data, loading, currency: propCurrency }) => {
     if (loading) {
       return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -23,6 +24,7 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
     if (!data) return null;
 
     const { topManagers, topClients } = data;
+    const currency = data.currency || propCurrency || 'UZS';
 
     const maxManagerSales = Math.max(...topManagers.map((m) => m.totalSales), 1);
     const maxClientSales = Math.max(...topClients.map((c) => c.totalSales), 1);
@@ -61,10 +63,10 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                 return (
                   <div
                     key={mgr.employeeId}
-                    className="p-3 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 hover:border-brand-gold/40 transition-all"
+                    className="p-3 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 hover:border-brand-gold/40 transition-all min-w-0"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span
                           className={`size-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
                             idx === 0
@@ -78,25 +80,28 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                         >
                           {idx + 1}
                         </span>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-foreground dark:text-night-text">
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
                             {mgr.employeeName}
                           </span>
-                          <span className="text-[10px] text-muted">
+                          <span className="text-[10px] text-muted truncate">
                             {mgr.departmentName || 'Sales Dept'}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-xs font-extrabold text-foreground dark:text-night-text">
-                          {formatMoney(mgr.totalSales, 'USD')}
+                      <div className="text-left sm:text-right shrink-0 min-w-0">
+                        <span
+                          className="text-xs font-extrabold text-foreground dark:text-night-text block truncate"
+                          title={formatMoney(mgr.totalSales, currency)}
+                        >
+                          {formatMoney(mgr.totalSales, currency)}
                         </span>
-                        <div className="flex items-center justify-end gap-1.5 text-[10px]">
-                          <span className="text-emerald-500 font-bold">
-                            +{formatMoney(mgr.totalMargin, 'USD')} net
+                        <div className="flex items-center justify-start sm:justify-end gap-1.5 text-[10px]">
+                          <span className="text-emerald-500 font-bold truncate">
+                            +{formatMoney(mgr.totalMargin, currency)} net
                           </span>
-                          <span className="text-muted">• {mgr.orderCount} orders</span>
+                          <span className="text-muted shrink-0">• {mgr.orderCount} orders</span>
                         </div>
                       </div>
                     </div>
@@ -147,10 +152,10 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                 return (
                   <div
                     key={cli.clientId}
-                    className="p-3 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 hover:border-blue-500/40 transition-all"
+                    className="p-3 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 hover:border-blue-500/40 transition-all min-w-0"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span
                           className={`size-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
                             idx === 0
@@ -162,23 +167,26 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                         >
                           {idx + 1}
                         </span>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-foreground dark:text-night-text">
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
                             {cli.companyName || cli.clientName}
                           </span>
-                          <span className="text-[10px] text-muted">{cli.clientName}</span>
+                          <span className="text-[10px] text-muted truncate">{cli.clientName}</span>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-xs font-extrabold text-foreground dark:text-night-text">
-                          {formatMoney(cli.totalSales, 'USD')}
+                      <div className="text-left sm:text-right shrink-0 min-w-0">
+                        <span
+                          className="text-xs font-extrabold text-foreground dark:text-night-text block truncate"
+                          title={formatMoney(cli.totalSales, currency)}
+                        >
+                          {formatMoney(cli.totalSales, currency)}
                         </span>
-                        <div className="flex items-center justify-end gap-1.5 text-[10px]">
-                          <span className="text-emerald-500 font-bold">
-                            +{formatMoney(cli.totalMargin, 'USD')} net
+                        <div className="flex items-center justify-start sm:justify-end gap-1.5 text-[10px]">
+                          <span className="text-emerald-500 font-bold truncate">
+                            +{formatMoney(cli.totalMargin, currency)} net
                           </span>
-                          <span className="text-muted">• {cli.orderCount} orders</span>
+                          <span className="text-muted shrink-0">• {cli.orderCount} orders</span>
                         </div>
                       </div>
                     </div>

@@ -7,6 +7,7 @@ import { T } from '../T';
 interface CargoDistributionChartsProps {
   data: DashboardCargoDistributionResponse | null;
   loading: boolean;
+  currency?: string;
 }
 
 const CARGO_TYPE_COLORS: Record<string, string> = {
@@ -81,7 +82,7 @@ function DonutSegment({
 }
 
 export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = React.memo(
-  ({ data, loading }) => {
+  ({ data, loading, currency: propCurrency }) => {
     const [hoveredCargoIdx, setHoveredCargoIdx] = useState<number | null>(null);
     const [hoveredStatusIdx, setHoveredStatusIdx] = useState<number | null>(null);
 
@@ -97,6 +98,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
     if (!data) return null;
 
     const { cargoTypeDistribution, statusDistribution } = data;
+    const currency = data.currency || propCurrency || 'UZS';
 
     // Donut chart calculations helper
     function buildDonutSegments(items: { category: string; percentage: number }[]) {
@@ -132,7 +134,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
             <span className="text-[11px] font-semibold text-muted">FTL vs LTL Breakdown</span>
           </div>
 
-          <div className="flex items-center justify-between my-4 gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between my-4 gap-4">
             {/* SVG Donut */}
             <div className="relative shrink-0">
               <svg
@@ -172,7 +174,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
             </div>
 
             {/* Legend Details */}
-            <div className="flex flex-col gap-2.5 flex-1 min-w-0">
+            <div className="flex flex-col gap-2.5 flex-1 w-full sm:w-auto min-w-0">
               {cargoTypeDistribution.map((item, idx) => {
                 const color = CARGO_TYPE_COLORS[item.category] || '#6b7280';
                 return (
@@ -186,7 +188,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
                         : 'hover:bg-border/20 dark:hover:bg-night-border/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-xs font-bold">
+                    <div className="flex items-center justify-between text-xs font-bold gap-2">
                       <div className="flex items-center gap-1.5 truncate">
                         <span
                           className="size-2.5 rounded-full shrink-0"
@@ -196,11 +198,16 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
                           {item.category}
                         </span>
                       </div>
-                      <span className="text-brand-gold">{item.percentage}%</span>
+                      <span className="text-brand-gold shrink-0">{item.percentage}%</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-muted mt-0.5">
-                      <span>{item.count} orders</span>
-                      <span className="font-semibold">{formatMoney(item.totalSales, 'USD')}</span>
+                    <div className="flex items-center justify-between text-[11px] text-muted mt-0.5 gap-2">
+                      <span className="shrink-0">{item.count} orders</span>
+                      <span
+                        className="font-semibold truncate max-w-[140px] text-right"
+                        title={formatMoney(item.totalSales, currency)}
+                      >
+                        {formatMoney(item.totalSales, currency)}
+                      </span>
                     </div>
                   </div>
                 );
@@ -221,7 +228,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
             <span className="text-[11px] font-semibold text-muted">Pipeline Progress</span>
           </div>
 
-          <div className="flex items-center justify-between my-4 gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between my-4 gap-4">
             {/* SVG Donut */}
             <div className="relative shrink-0">
               <svg
@@ -261,7 +268,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
             </div>
 
             {/* Legend Details */}
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0 max-h-[160px] overflow-y-auto pr-1">
+            <div className="flex flex-col gap-1.5 flex-1 w-full sm:w-auto min-w-0 max-h-[160px] overflow-y-auto pr-1">
               {statusDistribution.map((item, idx) => {
                 const color = STATUS_COLORS[item.category] || '#9ca3af';
                 return (
@@ -275,7 +282,7 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
                         : 'hover:bg-border/20 dark:hover:bg-night-border/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-xs font-bold">
+                    <div className="flex items-center justify-between text-xs font-bold gap-2">
                       <div className="flex items-center gap-1.5 truncate">
                         <span
                           className="size-2.5 rounded-full shrink-0"
@@ -285,11 +292,16 @@ export const CargoDistributionCharts: React.FC<CargoDistributionChartsProps> = R
                           {item.category}
                         </span>
                       </div>
-                      <span className="text-emerald-500">{item.percentage}%</span>
+                      <span className="text-emerald-500 shrink-0">{item.percentage}%</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-muted">
-                      <span>{item.count} orders</span>
-                      <span className="font-semibold">{formatMoney(item.totalSales, 'USD')}</span>
+                    <div className="flex items-center justify-between text-[11px] text-muted gap-2">
+                      <span className="shrink-0">{item.count} orders</span>
+                      <span
+                        className="font-semibold truncate max-w-[140px] text-right"
+                        title={formatMoney(item.totalSales, currency)}
+                      >
+                        {formatMoney(item.totalSales, currency)}
+                      </span>
                     </div>
                   </div>
                 );

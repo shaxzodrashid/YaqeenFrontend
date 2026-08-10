@@ -42,6 +42,15 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
 
     const { dataPoints, summary, meta } = data;
     const pointsCount = dataPoints.length;
+    const currency = meta.currency || summary.currency || 'UZS';
+
+    // Format compact Y-axis numbers (e.g. 250M, 500k)
+    const formatCompactVal = (val: number) => {
+      if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)}B`;
+      if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
+      if (val >= 1_000) return `${(val / 1_000).toFixed(0)}k`;
+      return `${val}`;
+    };
 
     // Determine max values for scaling
     const maxVal = Math.max(
@@ -56,7 +65,7 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
     // Canvas bounds
     const svgWidth = 800;
     const svgHeight = 280;
-    const paddingX = 40;
+    const paddingX = 52;
     const paddingY = 30;
     const usableWidth = svgWidth - paddingX * 2;
     const usableHeight = svgHeight - paddingY * 2;
@@ -145,29 +154,35 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
         </div>
 
         {/* Metric Summary Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-background/60 dark:bg-night-bg/60 border border-border/40 dark:border-night-border/40">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3.5 rounded-xl bg-background/60 dark:bg-night-bg/60 border border-border/40 dark:border-night-border/40">
+          <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted">Total Sales</span>
-            <p className="text-sm font-extrabold text-foreground dark:text-night-text">
-              {formatMoney(summary.totalSales, 'USD')}
+            <p
+              className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text truncate"
+              title={formatMoney(summary.totalSales, currency)}
+            >
+              {formatMoney(summary.totalSales, currency)}
             </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted">Net Margin</span>
-            <p className="text-sm font-extrabold text-emerald-500">
-              {formatMoney(summary.totalMargin, 'USD')} ({summary.marginPercentage}%)
+            <p
+              className="text-xs sm:text-sm font-extrabold text-emerald-500 truncate"
+              title={`${formatMoney(summary.totalMargin, currency)} (${summary.marginPercentage}%)`}
+            >
+              {formatMoney(summary.totalMargin, currency)} ({summary.marginPercentage}%)
             </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted">Order Volume</span>
-            <p className="text-sm font-extrabold text-foreground dark:text-night-text">
+            <p className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text truncate">
               {summary.totalOrders} Orders ({summary.completedOrders} done)
             </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted">Sales Growth Rate</span>
             <p
-              className={`text-sm font-extrabold flex items-center gap-1 ${
+              className={`text-xs sm:text-sm font-extrabold flex items-center gap-1 ${
                 (summary.growthRateSales ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
               }`}
             >
@@ -216,7 +231,7 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
                     textAnchor="end"
                     className="text-[10px] fill-muted dark:fill-night-muted font-mono"
                   >
-                    ${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}
+                    {formatCompactVal(val)}
                   </text>
                 </g>
               );
@@ -308,39 +323,45 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
 
           {/* Floating Tooltip Card */}
           {hoverPoint && (
-            <div className="absolute top-2 right-4 p-3 rounded-xl bg-surface/95 dark:bg-night-surface/95 border border-border/80 dark:border-night-border shadow-lg backdrop-blur-md text-xs pointer-events-none min-w-[200px] animate-fadeIn">
-              <div className="flex items-center justify-between font-bold border-b border-border/40 pb-1.5 mb-2">
-                <span className="text-foreground dark:text-night-text">
+            <div className="absolute top-2 right-4 p-3 rounded-xl bg-surface/95 dark:bg-night-surface/95 border border-border/80 dark:border-night-border shadow-lg backdrop-blur-md text-xs pointer-events-none min-w-[200px] max-w-[260px] animate-fadeIn z-10">
+              <div className="flex items-center justify-between font-bold border-b border-border/40 pb-1.5 mb-2 gap-2">
+                <span className="text-foreground dark:text-night-text truncate">
                   {hoverPoint.dataPoint.label}
                 </span>
-                <span className="text-[10px] text-muted">{hoverPoint.dataPoint.dateKey}</span>
+                <span className="text-[10px] text-muted shrink-0">
+                  {hoverPoint.dataPoint.dateKey}
+                </span>
               </div>
               <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
-                  <span>{mode === 'period' ? 'Sales Revenue:' : 'Cumulative Sales:'}</span>
-                  <span className="font-bold">
+                <div className="flex items-center justify-between gap-2 text-blue-600 dark:text-blue-400">
+                  <span className="shrink-0">
+                    {mode === 'period' ? 'Sales Revenue:' : 'Cumulative Sales:'}
+                  </span>
+                  <span className="font-bold truncate text-right">
                     {formatMoney(
                       mode === 'period'
                         ? hoverPoint.dataPoint.sales
                         : hoverPoint.dataPoint.cumulativeSales,
-                      'USD'
+                      currency
                     )}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-purple-500">
-                  <span>Carrier Cost:</span>
-                  <span className="font-medium">
-                    {formatMoney(hoverPoint.dataPoint.purchaseCost, 'USD')}
+                <div className="flex items-center justify-between gap-2 text-purple-500">
+                  <span className="shrink-0">Carrier Cost:</span>
+                  <span className="font-medium truncate text-right">
+                    {formatMoney(hoverPoint.dataPoint.purchaseCost, currency)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-emerald-500">
-                  <span>{mode === 'period' ? 'Net Margin:' : 'Cumulative Margin:'}</span>
-                  <span className="font-bold">
+                <div className="flex items-center justify-between gap-2 text-emerald-500">
+                  <span className="shrink-0">
+                    {mode === 'period' ? 'Net Margin:' : 'Cumulative Margin:'}
+                  </span>
+                  <span className="font-bold truncate text-right">
                     {formatMoney(
                       mode === 'period'
                         ? hoverPoint.dataPoint.margin
                         : hoverPoint.dataPoint.cumulativeMargin,
-                      'USD'
+                      currency
                     )}
                   </span>
                 </div>
@@ -356,17 +377,21 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-6 pt-2 text-xs font-semibold">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 text-xs font-semibold">
           <div className="flex items-center gap-2">
-            <span className="size-3 rounded-full bg-blue-600" />
+            <span className="size-3 rounded-full bg-blue-600 shrink-0" />
             <span className="text-foreground dark:text-night-text">
-              {mode === 'period' ? 'Sales Revenue ($)' : 'Cumulative Revenue ($)'}
+              {mode === 'period'
+                ? `Sales Revenue (${currency})`
+                : `Cumulative Revenue (${currency})`}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="size-3 rounded-full bg-emerald-500" />
+            <span className="size-3 rounded-full bg-emerald-500 shrink-0" />
             <span className="text-foreground dark:text-night-text">
-              {mode === 'period' ? 'Net Profit Margin ($)' : 'Cumulative Net Margin ($)'}
+              {mode === 'period'
+                ? `Net Profit Margin (${currency})`
+                : `Cumulative Net Margin (${currency})`}
             </span>
           </div>
         </div>

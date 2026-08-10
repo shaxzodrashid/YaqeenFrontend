@@ -19,6 +19,7 @@ function buildQueryString(params?: DashboardFilterParams): string {
   if (params.client_id) searchParams.append('client_id', params.client_id);
   if (params.status) searchParams.append('status', params.status);
   if (params.cargo_type) searchParams.append('cargo_type', params.cargo_type);
+  if (params.currency) searchParams.append('currency', params.currency);
   if (params.limit !== undefined) searchParams.append('limit', String(params.limit));
 
   const str = searchParams.toString();
@@ -71,9 +72,10 @@ function getDemoSalesProgress(period: string = '1M'): DashboardSalesProgressResp
       endDate: new Date().toISOString(),
       granularity: period === '1D' ? 'hour' : 'day',
       totalBuckets: pointsCount,
-      currency: 'USD',
+      currency: 'UZS',
     },
     summary: {
+      currency: 'UZS',
       totalSales,
       totalPurchaseCost,
       totalMargin,
@@ -91,6 +93,7 @@ function getDemoSalesProgress(period: string = '1M'): DashboardSalesProgressResp
 
 function getDemoSummary(): DashboardSummaryResponse {
   return {
+    currency: 'UZS',
     totalSales: 124500.0,
     totalPurchaseCost: 81200.0,
     totalMargin: 43300.0,
