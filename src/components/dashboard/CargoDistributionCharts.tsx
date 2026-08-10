@@ -47,8 +47,36 @@ function DonutSegment({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
-  const rad = (deg: number) => (deg - 90) * (Math.PI / 180);
+  const diff = endAngle - startAngle;
+  if (diff <= 0.01) return null;
+
   const currentR = isHovered ? r + 5 : r;
+
+  // SVG arcs fail to render when start and end points are identical (360 degrees / 100% slice)
+  // Draw full donut using two 180-degree semi-circles when slice is full circle
+  if (diff >= 359.9) {
+    return (
+      <path
+        d={`
+          M ${cx} ${cy - currentR}
+          A ${currentR} ${currentR} 0 1 1 ${cx} ${cy + currentR}
+          A ${currentR} ${currentR} 0 1 1 ${cx} ${cy - currentR}
+          Z
+          M ${cx} ${cy - innerR}
+          A ${innerR} ${innerR} 0 1 0 ${cx} ${cy + innerR}
+          A ${innerR} ${innerR} 0 1 0 ${cx} ${cy - innerR}
+          Z
+        `}
+        fill={color}
+        fillRule="evenodd"
+        className="transition-all duration-200 cursor-pointer opacity-90 hover:opacity-100"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      />
+    );
+  }
+
+  const rad = (deg: number) => (deg - 90) * (Math.PI / 180);
 
   const x1 = cx + currentR * Math.cos(rad(startAngle));
   const y1 = cy + currentR * Math.sin(rad(startAngle));
@@ -60,7 +88,7 @@ function DonutSegment({
   const ix2 = cx + innerR * Math.cos(rad(startAngle));
   const iy2 = cy + innerR * Math.sin(rad(startAngle));
 
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+  const largeArc = diff > 180 ? 1 : 0;
 
   const d = `
     M ${x1} ${y1}
