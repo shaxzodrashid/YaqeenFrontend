@@ -10,11 +10,15 @@ import {
   CheckCircle,
   RefreshCw,
   Calculator,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cargoKpiApi, calculateSeoKpi } from '../../services/cargoKpi.service';
 import type { RopSummaryResponse, SeoCalculateResult } from '../../services/cargoKpi.service';
+import { SalesCareerSystemVisual } from './SalesCareerSystemVisual';
 
 const ROP_TEAM_BONUS_TIERS = [
   { range: '< $25,000', rate: '0%', minVal: 0, maxVal: 25000 },
@@ -41,6 +45,7 @@ export function RopSeoModuleTab() {
   const [month, setMonth] = useState<string>('2026-07');
   const [ropData, setRopData] = useState<RopSummaryResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showCareerSystem, setShowCareerSystem] = useState<boolean>(false);
 
   // SEO calculator state
   const [seoProfitInput, setSeoProfitInput] = useState<string>('15000');
@@ -89,12 +94,29 @@ export function RopSeoModuleTab() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowCareerSystem(!showCareerSystem)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                showCareerSystem
+                  ? 'bg-brand-gold text-brand-navy font-extrabold shadow-md'
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+              }`}
+            >
+              <BookOpen className="size-4" />
+              <span>Manager Career System Poster</span>
+              {showCareerSystem ? (
+                <ChevronUp className="size-4" />
+              ) : (
+                <ChevronDown className="size-4" />
+              )}
+            </button>
+
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 text-white text-xs font-semibold focus:outline-none cursor-pointer"
+              className="px-3 py-2 rounded-xl border border-white/20 bg-white/10 text-white text-xs font-semibold focus:outline-none cursor-pointer"
             />
             <button
               onClick={loadRopData}
@@ -105,6 +127,13 @@ export function RopSeoModuleTab() {
             </button>
           </div>
         </div>
+
+        {/* Collapsible Sales Career System Visual */}
+        {showCareerSystem && (
+          <div className="pt-2">
+            <SalesCareerSystemVisual />
+          </div>
+        )}
 
         {/* ROP Total KPI Grand Summary Banner */}
         {ropData && (

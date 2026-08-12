@@ -6,7 +6,6 @@ import {
   CheckCircle,
   AlertTriangle,
   Award,
-  ShieldAlert,
   ArrowDownRight,
   ShieldCheck,
 } from 'lucide-react';
@@ -324,8 +323,8 @@ export function ReviewDemotionModal({
         >
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30">
-                <ShieldAlert className="size-5" />
+              <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                <ShieldCheck className="size-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">
@@ -344,14 +343,16 @@ export function ReviewDemotionModal({
             </button>
           </div>
 
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs space-y-2 text-foreground">
-            <p className="font-semibold text-rose-600 dark:text-rose-400">
+          <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs space-y-2 text-foreground">
+            <p className="font-semibold text-indigo-700 dark:text-indigo-300">
               <T k="smkReviewDemotionModalDesc" />
             </p>
             <div className="flex items-center gap-3 pt-2 text-muted-foreground">
               <div>
                 Consecutive Missed Months:{' '}
-                <strong className="text-rose-500">{evaluation.consecutive_failures}</strong>
+                <strong className="text-indigo-600 dark:text-indigo-400">
+                  {evaluation.consecutive_failures}
+                </strong>
               </div>
             </div>
           </div>

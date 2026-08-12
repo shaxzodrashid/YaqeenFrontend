@@ -33,6 +33,7 @@ import type {
   CareerLevel,
 } from '../../types/salesManagerKpi';
 import { EmployeeSelect } from './EmployeeSelect';
+import { SalesCareerSystemVisual } from './SalesCareerSystemVisual';
 import {
   CalculateEvaluationsModal,
   ApproveSrCheckModal,
@@ -51,6 +52,7 @@ export function SalesManagerKpiTab() {
   const [evaluations, setEvaluations] = useState<SalesManagerEvaluation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showMatrix, setShowMatrix] = useState<boolean>(false);
+  const [showVisualPoster, setShowVisualPoster] = useState<boolean>(false);
 
   // Modal States
   const [isCalcModalOpen, setIsCalcModalOpen] = useState<boolean>(false);
@@ -180,36 +182,34 @@ export function SalesManagerKpiTab() {
     switch (status) {
       case 'APPROVED':
         return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1.5">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
             <CheckCircle className="size-3.5" />
             <T k="smkStatusApproved" />
           </span>
         );
       case 'PENDING_SR_CHECK_APPROVAL':
         return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center gap-1.5 animate-pulse">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5 animate-pulse shadow-xs">
             <AlertTriangle className="size-3.5" />
             <T k="smkStatusPendingSrCheck" />
           </span>
         );
       case 'DEMOTION_PENDING_REVIEW':
         return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center gap-1.5 animate-pulse">
-            <ShieldAlert className="size-3.5" />
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center gap-1.5 animate-pulse shadow-xs">
+            <TrendingUp className="size-3.5" />
             <T k="smkStatusDemotionPending" />
           </span>
         );
       case 'DEMOTION_APPROVED':
         return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-500/15 text-gray-400 border border-gray-500/30 flex items-center gap-1.5">
-            <ArrowDownRight className="size-3.5" />
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/30 flex items-center gap-1.5 shadow-xs">
             <T k="smkStatusDemotionApproved" />
           </span>
         );
       case 'DEMOTION_REJECTED':
         return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-500 border border-blue-500/30 flex items-center gap-1.5">
-            <CheckCircle className="size-3.5" />
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
             <T k="smkStatusDemotionRejected" />
           </span>
         );
@@ -240,6 +240,23 @@ export function SalesManagerKpiTab() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowVisualPoster(!showVisualPoster)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                showVisualPoster
+                  ? 'bg-brand-gold text-brand-navy font-extrabold shadow-md'
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+              }`}
+            >
+              <Crown className="size-4" />
+              <span>Career Rules System</span>
+              {showVisualPoster ? (
+                <ChevronUp className="size-4" />
+              ) : (
+                <ChevronDown className="size-4" />
+              )}
+            </button>
+
             <button
               onClick={() => setShowMatrix(!showMatrix)}
               className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all flex items-center gap-2 cursor-pointer"
@@ -319,6 +336,22 @@ export function SalesManagerKpiTab() {
           </button>
         </div>
       </div>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* VISUAL CAREER SYSTEM INFOGRAPHIC POSTER                           */}
+      {/* ----------------------------------------------------------------- */}
+      <AnimatePresence>
+        {showVisualPoster && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <SalesCareerSystemVisual />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ----------------------------------------------------------------- */}
       {/* COLLAPSIBLE MATRIX REFERENCE PANEL                                */}

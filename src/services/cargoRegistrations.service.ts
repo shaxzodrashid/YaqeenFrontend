@@ -86,6 +86,10 @@ export interface CargoRegistrationListParams {
   loaded_end_date?: string;
   arrived_start_date?: string;
   arrived_end_date?: string;
+  created_start_date?: string;
+  created_end_date?: string;
+  created_at_start?: string;
+  created_at_end?: string;
 }
 
 export interface CargoRegistrationPriceAmount {
@@ -434,6 +438,10 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const loadedEnd = urlObj.searchParams.get('loaded_end_date');
     const arrivedStart = urlObj.searchParams.get('arrived_start_date');
     const arrivedEnd = urlObj.searchParams.get('arrived_end_date');
+    const createdStart =
+      urlObj.searchParams.get('created_start_date') || urlObj.searchParams.get('created_at_start');
+    const createdEnd =
+      urlObj.searchParams.get('created_end_date') || urlObj.searchParams.get('created_at_end');
 
     let filtered = [...demoRecords];
 
@@ -479,6 +487,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
     if (arrivedEnd) {
       filtered = filtered.filter((r) => r.arrived_date && r.arrived_date <= arrivedEnd);
+    }
+    if (createdStart) {
+      const startClean = createdStart.slice(0, 10);
+      filtered = filtered.filter((r) => r.created_at && r.created_at.slice(0, 10) >= startClean);
+    }
+    if (createdEnd) {
+      const endClean = createdEnd.slice(0, 10);
+      filtered = filtered.filter((r) => r.created_at && r.created_at.slice(0, 10) <= endClean);
     }
 
     const calculated_net_yield = {
@@ -1043,6 +1059,11 @@ export const cargoRegistrationsApi = {
     if (params?.arrived_start_date)
       searchParams.set('arrived_start_date', params.arrived_start_date);
     if (params?.arrived_end_date) searchParams.set('arrived_end_date', params.arrived_end_date);
+    if (params?.created_start_date)
+      searchParams.set('created_start_date', params.created_start_date);
+    if (params?.created_end_date) searchParams.set('created_end_date', params.created_end_date);
+    if (params?.created_at_start) searchParams.set('created_at_start', params.created_at_start);
+    if (params?.created_at_end) searchParams.set('created_at_end', params.created_at_end);
 
     const query = searchParams.toString();
     return request<CargoRegistrationPaginatedResponse>(

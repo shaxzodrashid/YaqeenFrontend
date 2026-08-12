@@ -132,7 +132,7 @@ export function Dashboard({
           </div>
         </div>
 
-        <div className="w-full max-w-6xl mx-auto px-4 py-6 md:px-10 md:py-10">
+        <div className="w-full max-w-[1920px] mx-auto px-5 py-6 md:px-6 md:py-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPage}

@@ -4,7 +4,6 @@ import {
   Truck,
   Plus,
   Trash2,
-  Edit2,
   DollarSign,
   TrendingUp,
   RefreshCw,
@@ -12,86 +11,37 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
-  Building2,
   UserCheck,
   FileSpreadsheet,
-  Save,
   Search,
   Filter,
   LayoutGrid,
   Kanban,
   BarChart3,
-  Check,
-  Copy,
   ChevronRight,
   ChevronLeft,
   AlertCircle,
   ArrowUpRight,
   Layers,
-  CheckSquare,
-  Square,
   Coins,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { cargoKpiApi } from '../../services/cargoKpi.service';
+import { cargoRegistrationsApi } from '../../services/api';
+import type { CargoRegistrationPaginatedResponse } from '../../services/api';
 import type {
   Shipment,
   ShipmentStatus,
   ShipmentsSummaryResponse,
 } from '../../services/cargoKpi.service';
 import { CargoRegistrationModal } from './CargoRegistrationModal';
+import { CargoTransactionsTable } from './CargoTransactionsTable';
+import { CargoFilterModal, INITIAL_CARGO_FILTERS } from './CargoFilterModal';
+import type { CargoFilterState } from './CargoFilterModal';
 
 export type ViewMode = 'grid' | 'kanban' | 'analytics';
-
-function formatDateShort(dateStr?: string): string {
-  if (!dateStr || !dateStr.trim()) return '—';
-  try {
-    const cleanStr = dateStr.slice(0, 10);
-    const parts = cleanStr.split('-');
-    if (parts.length === 3) {
-      const monthNames = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      const day = parts[2];
-      if (mIdx >= 0 && mIdx < 12) {
-        return `${monthNames[mIdx]} ${day}`;
-      }
-    }
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return cleanStr;
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
-  } catch {
-    return dateStr.slice(0, 10);
-  }
-}
 
 const STATUS_CONFIG: {
   key: ShipmentStatus;
@@ -163,6 +113,8 @@ export function ContainerTrackingTab() {
 
   // Primary states
   const [data, setData] = useState<ShipmentsSummaryResponse | null>(null);
+  const [regData, setRegData] = useState<CargoRegistrationPaginatedResponse | null>(null);
+  const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -171,7 +123,6 @@ export function ContainerTrackingTab() {
 
   // Multi-select batch operations
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -181,9 +132,9 @@ export function ContainerTrackingTab() {
   // Global rate updater modal state
   const [globalRmbRate, setGlobalRmbRate] = useState<string>('7.25');
 
-  // Inline edit row state
-  const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
-  const [inlineDraft, setInlineDraft] = useState<Partial<Shipment>>({});
+  // Filter modal state
+  const [filters, setFilters] = useState<CargoFilterState>(INITIAL_CARGO_FILTERS);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
 
   const getStatusLabel = useCallback(
     (st: ShipmentStatus) => {
@@ -208,28 +159,64 @@ export function ContainerTrackingTab() {
   const loadShipments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await cargoKpiApi.getShipments();
-      setData(res);
-      if (res.current_rmb_rate) {
-        setGlobalRmbRate(String(res.current_rmb_rate));
+      const [resSummary, resList] = await Promise.all([
+        cargoKpiApi.getShipments(),
+        cargoRegistrationsApi.list({
+          page,
+          limit: 10,
+          search: searchQuery.trim() || undefined,
+          status: filters.status || (statusFilter !== 'all' ? statusFilter : undefined),
+          cargo_type: filters.cargo_type || undefined,
+          container_type: filters.container_type || undefined,
+          client_id: filters.client_id || undefined,
+          employee_id: filters.employee_id || undefined,
+          confirmed_start_date: filters.confirmed_start_date || undefined,
+          confirmed_end_date: filters.confirmed_end_date || undefined,
+          loaded_start_date: filters.loaded_start_date || undefined,
+          loaded_end_date: filters.loaded_end_date || undefined,
+          arrived_start_date: filters.arrived_start_date || undefined,
+          arrived_end_date: filters.arrived_end_date || undefined,
+          created_start_date: filters.created_start_date || undefined,
+          created_end_date: filters.created_end_date || undefined,
+        }),
+      ]);
+      setData(resSummary);
+      setRegData(resList);
+      if (resSummary.current_rmb_rate) {
+        setGlobalRmbRate(String(resSummary.current_rmb_rate));
       }
     } catch (err: any) {
       showNotification(err?.message || 'Failed to load shipments data', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, [page, searchQuery, statusFilter, filters, showNotification]);
+
+  // Calculate active filter count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status) count++;
+    if (filters.cargo_type) count++;
+    if (filters.container_type) count++;
+    if (filters.client_id) count++;
+    if (filters.employee_id) count++;
+    if (filters.confirmed_start_date || filters.confirmed_end_date) count++;
+    if (filters.loaded_start_date || filters.loaded_end_date) count++;
+    if (filters.arrived_start_date || filters.arrived_end_date) count++;
+    if (filters.created_start_date || filters.created_end_date) count++;
+    if (statusFilter !== 'all' && !filters.status) count++;
+    return count;
+  }, [filters, statusFilter]);
+
+  const handleClearAllFilters = () => {
+    setFilters(INITIAL_CARGO_FILTERS);
+    setStatusFilter('all');
+    setPage(1);
+  };
 
   useEffect(() => {
     loadShipments();
   }, [loadShipments]);
-
-  const handleCopyContainerId = (containerId: string) => {
-    navigator.clipboard.writeText(containerId);
-    setCopiedId(containerId);
-    showNotification(`Container ID "${containerId}" copied to clipboard`, 'info');
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   const handleOpenAdd = () => {
     setEditingShipmentId(null);
@@ -320,35 +307,6 @@ export function ContainerTrackingTab() {
 
     const newStatus = ORDERED_STATUSES[targetIndex];
     await handleStatusChangeInline(shipment.id, newStatus);
-  };
-
-  const handleSaveInline = async (shipment: Shipment) => {
-    if (!inlineEditingId) return;
-    try {
-      await cargoKpiApi.updateShipment(shipment.id, {
-        ...shipment,
-        ...inlineDraft,
-      });
-      showNotification(t('successRowSaved') || 'Row changes saved', 'success');
-      setInlineEditingId(null);
-      setInlineDraft({});
-      loadShipments();
-    } catch (err: any) {
-      showNotification(err?.message || 'Failed to save row changes', 'error');
-    }
-  };
-
-  // Multi-select batch handlers
-  const handleSelectAll = (checked: boolean) => {
-    if (checked && data?.shipments) {
-      setSelectedIds(data.shipments.map((s) => s.id));
-    } else {
-      setSelectedIds([]);
-    }
-  };
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   };
 
   const handleBatchStatusUpdate = async (newStatus: ShipmentStatus) => {
@@ -549,6 +507,43 @@ export function ContainerTrackingTab() {
             <Coins className="size-3.5 shrink-0" />
             <span>FX: {data?.current_rmb_rate || 7.25} RMB</span>
           </button>
+
+          {/* Filter Trigger Button (Filter | x when active, Filter when clear) */}
+          {activeFilterCount > 0 ? (
+            <div className="inline-flex items-center rounded-xl border border-brand-gold text-brand-gold bg-brand-gold/10 font-bold text-xs shadow-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsFilterModalOpen(true)}
+                className="px-3 py-2 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                title={t('cargoFilterModalTitle')}
+              >
+                <Filter className="size-4" />
+                <span>{t('filterBtn')}</span>
+                <span className="px-1.5 py-0.2 bg-brand-gold text-brand-navy text-[10px] font-extrabold rounded-full">
+                  {activeFilterCount}
+                </span>
+              </button>
+              <div className="w-[1px] h-4 bg-brand-gold/30" />
+              <button
+                type="button"
+                onClick={handleClearAllFilters}
+                className="p-2 flex items-center justify-center hover:bg-brand-gold/20 hover:text-rose-500 text-brand-gold transition-colors cursor-pointer"
+                title={t('cancelFiltersBtn')}
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsFilterModalOpen(true)}
+              className="px-3 py-2 rounded-xl border border-border hover:bg-muted text-foreground transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+              title={t('cargoFilterModalTitle')}
+            >
+              <Filter className="size-3.5 text-brand-gold shrink-0" />
+              <span>{t('filterBtn')}</span>
+            </button>
+          )}
 
           {/* Export CSV */}
           <button
@@ -818,391 +813,17 @@ export function ContainerTrackingTab() {
 
       {/* WORKSPACE VIEW 1: CLEAN DATA VISUALIZATION GRID */}
       {viewMode === 'grid' && (
-        <div className="rounded-2xl bg-surface border border-border shadow-sm overflow-hidden min-w-0 max-w-full">
-          <div className="overflow-x-auto w-full min-w-0">
-            <table className="w-full text-left text-xs border-collapse min-w-[900px]">
-              <thead className="bg-muted/60 text-muted-foreground font-semibold border-b border-border uppercase tracking-wider select-none sticky top-0 z-10 backdrop-blur-md">
-                <tr>
-                  <th className="p-3 w-10 text-center">
-                    <button
-                      onClick={() =>
-                        handleSelectAll(selectedIds.length !== (data?.shipments?.length ?? 0))
-                      }
-                      className="text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      {selectedIds.length > 0 && selectedIds.length === data?.shipments?.length ? (
-                        <CheckSquare className="size-4 text-brand-gold" />
-                      ) : (
-                        <Square className="size-4" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 min-w-[150px]">
-                    {t('colContainerNo') || 'Container ID'}
-                  </th>
-                  <th className="px-4 py-3 min-w-[150px]">{t('colClientName') || 'Client'}</th>
-                  <th className="px-4 py-3 min-w-[150px]">{t('colCargo') || 'Cargo'}</th>
-                  <th className="px-4 py-3 min-w-[200px]">
-                    <T k="colMilestoneProgress" />
-                  </th>
-                  <th className="px-3 py-3 min-w-[90px]">{t('colRmbRate') || 'RMB Rate'}</th>
-                  <th className="px-4 py-3 min-w-[130px]">
-                    <T k="colAgentName" />
-                  </th>
-                  <th className="px-4 py-3 min-w-[120px]">
-                    <T k="colBuyPrice" />
-                  </th>
-                  <th className="px-4 py-3 min-w-[110px]">
-                    <T k="colSellPrice" />
-                  </th>
-                  <th className="px-4 py-3 min-w-[130px]">
-                    <T k="colNetYield" />
-                  </th>
-                  <th className="px-4 py-3 min-w-[140px]">
-                    <T k="colStatusStage" />
-                  </th>
-                  <th className="px-3 py-3 text-right min-w-[90px]">
-                    {t('colActions') || 'Actions'}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {loading ? (
-                  <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-muted-foreground">
-                      <RefreshCw className="size-6 animate-spin mx-auto mb-2 text-brand-gold" />
-                      <span>{t('loadingShipments') || 'Loading container stream...'}</span>
-                    </td>
-                  </tr>
-                ) : filteredShipments.length === 0 ? (
-                  <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-muted-foreground">
-                      <Truck className="size-8 mx-auto mb-2 text-muted-foreground/40" />
-                      <p className="font-bold text-foreground text-sm">
-                        {t('noShipmentsFound') || 'No containers found'}
-                      </p>
-                      <p className="text-xs mt-1">
-                        {t('noShipmentsDesc') ||
-                          'Try adjusting your search query or status filters'}
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredShipments.map((shp) => {
-                    const isSelected = selectedIds.includes(shp.id);
-                    const isInlineEditing = inlineEditingId === shp.id;
-                    const currentStatusOpt =
-                      STATUS_CONFIG.find((o) => o.key === shp.status) || STATUS_CONFIG[0];
-                    const py = density === 'compact' ? 'py-2' : 'py-3.5';
-
-                    const buyCostUSD =
-                      shp.buyCostCurrency === 'RMB'
-                        ? shp.buyCost / (shp.rmbRate || 7.25)
-                        : shp.buyCost;
-                    const marginPct = shp.sellPrice > 0 ? (shp.profit / shp.sellPrice) * 100 : 0;
-
-                    return (
-                      <tr
-                        key={shp.id}
-                        className={`hover:bg-muted/30 transition-colors ${
-                          isSelected ? 'bg-brand-gold/10 dark:bg-brand-gold/5' : ''
-                        } ${isInlineEditing ? 'bg-amber-500/10' : ''}`}
-                      >
-                        {/* Select checkbox */}
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleToggleSelect(shp.id)}
-                            className="text-muted-foreground hover:text-foreground cursor-pointer"
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="size-4 text-brand-gold" />
-                            ) : (
-                              <Square className="size-4" />
-                            )}
-                          </button>
-                        </td>
-
-                        {/* Container ID */}
-                        <td className={`px-4 ${py} font-bold font-mono text-foreground`}>
-                          {isInlineEditing ? (
-                            <input
-                              type="text"
-                              value={inlineDraft.containerNo ?? shp.containerNo}
-                              onChange={(e) =>
-                                setInlineDraft({ ...inlineDraft, containerNo: e.target.value })
-                              }
-                              className="w-full px-2 py-1 rounded border border-brand-gold bg-background font-mono text-xs"
-                            />
-                          ) : (
-                            <div className="flex items-center gap-1.5 group">
-                              <span className="p-1 rounded-md bg-brand-gold/15 text-brand-gold shrink-0">
-                                <Truck className="size-3.5" />
-                              </span>
-                              <span className="tracking-tight whitespace-nowrap">
-                                {shp.containerNo}
-                              </span>
-                              <button
-                                onClick={() => handleCopyContainerId(shp.containerNo)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-foreground cursor-pointer ml-auto"
-                                title={t('btnCopyId') || 'Copy ID'}
-                              >
-                                {copiedId === shp.containerNo ? (
-                                  <Check className="size-3 text-emerald-500" />
-                                ) : (
-                                  <Copy className="size-3" />
-                                )}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Client Name */}
-                        <td className={`px-4 ${py} font-semibold text-foreground`}>
-                          {isInlineEditing ? (
-                            <input
-                              type="text"
-                              value={inlineDraft.clientName ?? shp.clientName}
-                              onChange={(e) =>
-                                setInlineDraft({ ...inlineDraft, clientName: e.target.value })
-                              }
-                              className="w-full px-2 py-1 rounded border border-brand-gold bg-background text-xs"
-                            />
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <Building2 className="size-3.5 text-muted-foreground shrink-0" />
-                              <span className="truncate max-w-[140px]">{shp.clientName}</span>
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Cargo Type */}
-                        <td className={`px-4 ${py} text-muted-foreground font-medium`}>
-                          {isInlineEditing ? (
-                            <input
-                              type="text"
-                              value={inlineDraft.cargoType ?? shp.cargoType}
-                              onChange={(e) =>
-                                setInlineDraft({ ...inlineDraft, cargoType: e.target.value })
-                              }
-                              className="w-full px-2 py-1 rounded border border-brand-gold bg-background text-xs"
-                            />
-                          ) : (
-                            <span className="line-clamp-2 text-xs">{shp.cargoType}</span>
-                          )}
-                        </td>
-
-                        {/* Visual Milestone Lifecycle Progress */}
-                        <td className={`px-4 ${py}`}>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1">
-                              {STATUS_CONFIG.map((st, idx) => {
-                                const isPassed = currentStatusOpt.stepIndex >= idx;
-                                const isCurrent = currentStatusOpt.stepIndex === idx;
-                                return (
-                                  <div key={st.key} className="flex items-center flex-1">
-                                    <div
-                                      className={`size-2.5 rounded-full transition-all ${
-                                        isCurrent
-                                          ? `${st.dotClass} ring-4 ring-${st.dotClass}/20 scale-110`
-                                          : isPassed
-                                            ? st.dotClass
-                                            : 'bg-muted-foreground/30'
-                                      }`}
-                                      title={st.key}
-                                    />
-                                    {idx < STATUS_CONFIG.length - 1 && (
-                                      <div
-                                        className={`h-0.5 flex-1 mx-0.5 rounded-full transition-colors ${
-                                          isPassed && currentStatusOpt.stepIndex > idx
-                                            ? 'bg-brand-gold'
-                                            : 'bg-border'
-                                        }`}
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                              <span>
-                                <T k="lblConfShort" />: {formatDateShort(shp.confirmedDate)}
-                              </span>
-                              <span>
-                                <T k="lblArrShort" />: {formatDateShort(shp.arrivedDate)}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* RMB Rate */}
-                        <td className={`px-3 ${py} font-semibold text-brand-gold`}>
-                          {isInlineEditing ? (
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={inlineDraft.rmbRate ?? shp.rmbRate}
-                              onChange={(e) =>
-                                setInlineDraft({
-                                  ...inlineDraft,
-                                  rmbRate: parseFloat(e.target.value) || 7.25,
-                                })
-                              }
-                              className="w-16 px-1.5 py-1 rounded border border-brand-gold bg-background text-xs"
-                            />
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold">
-                              {shp.rmbRate}
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Freight Agent Name */}
-                        <td className={`px-4 ${py} text-foreground font-medium`}>
-                          {isInlineEditing ? (
-                            <input
-                              type="text"
-                              value={inlineDraft.agentName ?? shp.agentName}
-                              onChange={(e) =>
-                                setInlineDraft({ ...inlineDraft, agentName: e.target.value })
-                              }
-                              className="w-full px-2 py-1 rounded border border-brand-gold bg-background text-xs"
-                            />
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <UserCheck className="size-3.5 text-muted-foreground shrink-0" />
-                              <span className="truncate max-w-[120px]">{shp.agentName}</span>
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Buy Cost (USD preview + RMB tag) */}
-                        <td className={`px-4 ${py} font-semibold whitespace-nowrap`}>
-                          {isInlineEditing ? (
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                value={inlineDraft.buyCost ?? shp.buyCost}
-                                onChange={(e) =>
-                                  setInlineDraft({
-                                    ...inlineDraft,
-                                    buyCost: parseFloat(e.target.value) || 0,
-                                  })
-                                }
-                                className="w-20 px-1.5 py-1 rounded border border-brand-gold bg-background text-xs"
-                              />
-                              <span className="text-[10px] font-bold text-muted-foreground">
-                                {shp.buyCostCurrency || 'RMB'}
-                              </span>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="font-bold text-foreground">
-                                ${Math.round(buyCostUSD).toLocaleString()}
-                              </div>
-                              {shp.buyCostCurrency === 'RMB' && (
-                                <div className="text-[10px] font-medium text-muted-foreground">
-                                  ¥{shp.buyCost.toLocaleString()} RMB
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Sell Price */}
-                        <td
-                          className={`px-4 ${py} font-bold text-foreground whitespace-nowrap text-sm`}
-                        >
-                          {isInlineEditing ? (
-                            <input
-                              type="number"
-                              value={inlineDraft.sellPrice ?? shp.sellPrice}
-                              onChange={(e) =>
-                                setInlineDraft({
-                                  ...inlineDraft,
-                                  sellPrice: parseFloat(e.target.value) || 0,
-                                })
-                              }
-                              className="w-20 px-1.5 py-1 rounded border border-brand-gold bg-background text-xs"
-                            />
-                          ) : (
-                            <span>${shp.sellPrice.toLocaleString()}</span>
-                          )}
-                        </td>
-
-                        {/* Net Yield Profit & Margin % */}
-                        <td className={`px-4 ${py} whitespace-nowrap`}>
-                          <div className="inline-flex flex-col">
-                            <span className="font-black text-emerald-500 text-sm">
-                              +$
-                              {shp.profit.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </span>
-                            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
-                              {marginPct.toFixed(1)}% <T k="lblYieldMargin" />
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Status Stage Selection Dropdown */}
-                        <td className={`px-4 ${py}`}>
-                          <select
-                            value={shp.status}
-                            onChange={(e) =>
-                              handleStatusChangeInline(shp.id, e.target.value as ShipmentStatus)
-                            }
-                            className={`px-3 py-1 rounded-full text-[11px] font-extrabold border focus:outline-none cursor-pointer ${currentStatusOpt.badgeClass}`}
-                          >
-                            {STATUS_CONFIG.map((opt) => (
-                              <option
-                                key={opt.key}
-                                value={opt.key}
-                                className="bg-background text-foreground font-semibold"
-                              >
-                                {getStatusLabel(opt.key)}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-
-                        {/* Actions */}
-                        <td className={`px-3 ${py} text-right`}>
-                          <div className="flex items-center justify-end gap-1">
-                            {isInlineEditing ? (
-                              <button
-                                onClick={() => handleSaveInline(shp)}
-                                className="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors cursor-pointer"
-                                title={t('btnSaveChanges') || 'Save Changes'}
-                              >
-                                <Save className="size-3.5" />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleOpenEdit(shp)}
-                                className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                                title={t('btnEditDetails') || 'Edit Details'}
-                              >
-                                <Edit2 className="size-3.5" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDelete(shp.id)}
-                              className="p-1.5 rounded-lg border border-rose-500/20 hover:bg-rose-500/10 text-rose-500 transition-colors cursor-pointer"
-                              title={t('btnDeleteContainer') || 'Delete Container'}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <CargoTransactionsTable
+          data={regData}
+          loading={loading}
+          page={page}
+          setPage={setPage}
+          onEdit={(item) => {
+            setEditingShipmentId(item.id);
+            setIsModalOpen(true);
+          }}
+          onDelete={handleDelete}
+        />
       )}
 
       {/* WORKSPACE VIEW 2: LOGISTICS KANBAN BOARD PIPELINE (RESPONSIVE SNAP-SCROLL BOARD) */}
@@ -1570,6 +1191,21 @@ export function ContainerTrackingTab() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* DEDICATED CARGO FILTER MODAL */}
+      <CargoFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filters={filters}
+        onApplyFilters={(newFilters) => {
+          setFilters(newFilters);
+          if (newFilters.status) {
+            setStatusFilter(newFilters.status.toLowerCase());
+          }
+          setPage(1);
+        }}
+        onResetFilters={handleClearAllFilters}
+      />
     </div>
   );
 }
