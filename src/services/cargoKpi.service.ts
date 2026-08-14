@@ -1452,15 +1452,106 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // 8. Container & Truck Shipment Tracking Demo Handlers
   if (isPath('/cargo-kpi/shipments') && method === 'GET') {
-    const activeCount = demoShipments.filter((s) => s.status !== 'Delivered').length;
-    const totalMargin = demoShipments.reduce((sum, s) => sum + s.profit, 0);
+    const urlObj = new URL(path, 'http://localhost');
+    const search = (urlObj.searchParams.get('search') || '').toLowerCase().trim();
+    const status = urlObj.searchParams.get('status');
+    const cargoType = urlObj.searchParams.get('cargo_type');
+    const clientId = urlObj.searchParams.get('client_id');
+    const confirmedStart = urlObj.searchParams.get('confirmed_start_date');
+    const confirmedEnd = urlObj.searchParams.get('confirmed_end_date');
+    const loadedStart = urlObj.searchParams.get('loaded_start_date');
+    const loadedEnd = urlObj.searchParams.get('loaded_end_date');
+    const arrivedStart = urlObj.searchParams.get('arrived_start_date');
+    const arrivedEnd = urlObj.searchParams.get('arrived_end_date');
+    const createdStart =
+      urlObj.searchParams.get('created_start_date') || urlObj.searchParams.get('created_at_start');
+    const createdEnd =
+      urlObj.searchParams.get('created_end_date') || urlObj.searchParams.get('created_at_end');
+
+    let filtered = [...demoShipments];
+
+    if (search) {
+      filtered = filtered.filter(
+        (s) =>
+          s.containerNo.toLowerCase().includes(search) ||
+          s.clientName.toLowerCase().includes(search) ||
+          s.agentName.toLowerCase().includes(search) ||
+          s.cargoType.toLowerCase().includes(search)
+      );
+    }
+    if (status && status !== 'all') {
+      filtered = filtered.filter((s) => s.status.toLowerCase() === status.toLowerCase());
+    }
+    if (cargoType) {
+      filtered = filtered.filter((s) =>
+        s.cargoType.toLowerCase().includes(cargoType.toLowerCase())
+      );
+    }
+    if (clientId) {
+      filtered = filtered.filter((s) => s.clientId === clientId);
+    }
+
+    const cleanDate = (d?: string | null) => (d ? d.slice(0, 10) : '');
+    if (confirmedStart) {
+      filtered = filtered.filter((s) => cleanDate(s.confirmedDate) >= confirmedStart);
+    }
+    if (confirmedEnd) {
+      filtered = filtered.filter((s) => {
+        const cd = cleanDate(s.confirmedDate);
+        return cd !== '' && cd <= confirmedEnd;
+      });
+    }
+    if (loadedStart) {
+      filtered = filtered.filter((s) => cleanDate(s.loadedDate) >= loadedStart);
+    }
+    if (loadedEnd) {
+      filtered = filtered.filter((s) => {
+        const ld = cleanDate(s.loadedDate);
+        return ld !== '' && ld <= loadedEnd;
+      });
+    }
+    if (arrivedStart) {
+      filtered = filtered.filter((s) => cleanDate(s.arrivedDate) >= arrivedStart);
+    }
+    if (arrivedEnd) {
+      filtered = filtered.filter((s) => {
+        const ad = cleanDate(s.arrivedDate);
+        return ad !== '' && ad <= arrivedEnd;
+      });
+    }
+    if (createdStart) {
+      filtered = filtered.filter((s) => cleanDate(s.created_at) >= createdStart);
+    }
+    if (createdEnd) {
+      filtered = filtered.filter((s) => {
+        const cd = cleanDate(s.created_at);
+        return cd !== '' && cd <= createdEnd;
+      });
+    }
+
+    const statusCounts: Record<string, number> = {
+      Waiting: 0,
+      'In Transit': 0,
+      Border: 0,
+      'At Station': 0,
+      Delivered: 0,
+    };
+    demoShipments.forEach((s) => {
+      if (statusCounts[s.status] !== undefined) {
+        statusCounts[s.status]++;
+      }
+    });
+
+    const activeCount = filtered.filter((s) => s.status !== 'Delivered').length;
+    const totalMargin = filtered.reduce((sum, s) => sum + s.profit, 0);
     const currentRate = demoShipments[0]?.rmbRate || 7.25;
 
     const result: ShipmentsSummaryResponse = {
-      shipments: demoShipments,
+      shipments: filtered,
       total_active_shipments: activeCount,
       total_net_margin: Math.round(totalMargin * 100) / 100,
       current_rmb_rate: currentRate,
+      status_counts: statusCounts,
     };
     return { handled: true, result };
   }
@@ -2263,9 +2354,9 @@ export const cargoKpiApi = {
     request<{ message: string; success: boolean }>('/cargo-kpi/reset-all', { method: 'POST' }),
 
   // Container & Truck Shipment Tracking Module
-  getShipments: async (): Promise<ShipmentsSummaryResponse> => {
-    const raw: any = await cargoRegistrationsApi.list({ limit: 100 });
-    const shipmentsList: Shipment[] = (raw?.data || []).map((s: any) => {
+  getShipments: async (params?: Record<string, any>): Promise<ShipmentsSummaryResponse> => {
+    const rawList: any = await cargoRegistrationsApi.list({ limit: 100, ...params });
+    const shipmentsList: Shipment[] = (rawList?.data || []).map((s: any) => {
       const rmbRate = Number(s.usd_rmb_rate ?? 7.25);
       const buyCost = Number(s.purchase_price?.amount ?? 0);
       const sellPrice = Number(s.sell_price?.amount ?? 0);
@@ -2295,6 +2386,19 @@ export const cargoKpiApi = {
       };
     });
 
+    const statusCounts: Record<string, number> = {
+      Waiting: 0,
+      'In Transit': 0,
+      Border: 0,
+      'At Station': 0,
+      Delivered: 0,
+    };
+    shipmentsList.forEach((s) => {
+      if (statusCounts[s.status] !== undefined) {
+        statusCounts[s.status]++;
+      }
+    });
+
     const activeCount = shipmentsList.filter((s) => s.status !== 'Delivered').length;
     const totalMargin = shipmentsList.reduce((sum, s) => sum + s.profit, 0);
     const currentRate = shipmentsList[0]?.rmbRate || 7.25;
@@ -2304,7 +2408,8 @@ export const cargoKpiApi = {
       total_active_shipments: activeCount,
       total_net_margin: Math.round(totalMargin * 100) / 100,
       current_rmb_rate: currentRate,
-      meta: raw?.meta,
+      status_counts: statusCounts,
+      meta: rawList?.meta,
     };
   },
 

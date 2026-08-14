@@ -159,26 +159,29 @@ export function ContainerTrackingTab() {
   const loadShipments = useCallback(async () => {
     setLoading(true);
     try {
+      const activeStatus = filters.status || (statusFilter !== 'all' ? statusFilter : undefined);
+      const queryParams = {
+        page,
+        limit: 10,
+        search: searchQuery.trim() || undefined,
+        status: activeStatus,
+        cargo_type: filters.cargo_type || undefined,
+        container_type: filters.container_type || undefined,
+        client_id: filters.client_id || undefined,
+        employee_id: filters.employee_id || undefined,
+        confirmed_start_date: filters.confirmed_start_date || undefined,
+        confirmed_end_date: filters.confirmed_end_date || undefined,
+        loaded_start_date: filters.loaded_start_date || undefined,
+        loaded_end_date: filters.loaded_end_date || undefined,
+        arrived_start_date: filters.arrived_start_date || undefined,
+        arrived_end_date: filters.arrived_end_date || undefined,
+        created_start_date: filters.created_start_date || undefined,
+        created_end_date: filters.created_end_date || undefined,
+      };
+
       const [resSummary, resList] = await Promise.all([
-        cargoKpiApi.getShipments(),
-        cargoRegistrationsApi.list({
-          page,
-          limit: 10,
-          search: searchQuery.trim() || undefined,
-          status: filters.status || (statusFilter !== 'all' ? statusFilter : undefined),
-          cargo_type: filters.cargo_type || undefined,
-          container_type: filters.container_type || undefined,
-          client_id: filters.client_id || undefined,
-          employee_id: filters.employee_id || undefined,
-          confirmed_start_date: filters.confirmed_start_date || undefined,
-          confirmed_end_date: filters.confirmed_end_date || undefined,
-          loaded_start_date: filters.loaded_start_date || undefined,
-          loaded_end_date: filters.loaded_end_date || undefined,
-          arrived_start_date: filters.arrived_start_date || undefined,
-          arrived_end_date: filters.arrived_end_date || undefined,
-          created_start_date: filters.created_start_date || undefined,
-          created_end_date: filters.created_end_date || undefined,
-        }),
+        cargoKpiApi.getShipments(queryParams),
+        cargoRegistrationsApi.list(queryParams),
       ]);
       setData(resSummary);
       setRegData(resList);
@@ -214,6 +217,16 @@ export function ContainerTrackingTab() {
     setPage(1);
   };
 
+  const handleSelectStatusFilter = (st: string) => {
+    const nextStatus = st.toLowerCase();
+    setStatusFilter(nextStatus);
+    setFilters((prev) => ({
+      ...prev,
+      status: nextStatus === 'all' ? '' : st,
+    }));
+    setPage(1);
+  };
+
   useEffect(() => {
     loadShipments();
   }, [loadShipments]);
@@ -236,7 +249,7 @@ export function ContainerTrackingTab() {
     )
       return;
     try {
-      await cargoKpiApi.deleteShipment(id);
+      await Promise.allSettled([cargoKpiApi.deleteShipment(id), cargoRegistrationsApi.delete(id)]);
       showNotification(t('successShipmentDeleted') || 'Shipment deleted successfully', 'success');
       setSelectedIds((prev) => prev.filter((i) => i !== id));
       loadShipments();
@@ -292,7 +305,10 @@ export function ContainerTrackingTab() {
 
   const handleStatusChangeInline = async (id: string, newStatus: ShipmentStatus) => {
     try {
-      await cargoKpiApi.updateShipment(id, { status: newStatus });
+      await Promise.allSettled([
+        cargoKpiApi.updateShipment(id, { status: newStatus }),
+        cargoRegistrationsApi.update(id, { status: newStatus }),
+      ]);
       showNotification(t('successShipmentUpdated') || 'Shipment updated successfully', 'success');
       loadShipments();
     } catch (err: any) {
@@ -755,38 +771,29 @@ export function ContainerTrackingTab() {
         <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none min-w-0">
           <Filter className="size-3.5 text-muted-foreground shrink-0 hidden sm:block" />
           <button
-            onClick={() => setStatusFilter('all')}
+            onClick={() => handleSelectStatusFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               statusFilter === 'all'
                 ? 'bg-brand-navy dark:bg-brand-gold text-white dark:text-brand-navy shadow-sm'
                 : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
-            All ({data?.shipments?.length ?? 0})
+            All ({data?.meta?.total ?? regData?.meta?.total ?? data?.shipments?.length ?? 0})
           </button>
-          {STATUS_CONFIG.map((opt) => {
-            const count =
-              data?.status_counts?.[opt.key] ??
-              data?.shipments?.filter((s) => s.status === opt.key).length ??
-              0;
-            return (
-              <button
-                key={opt.key}
-                onClick={() => setStatusFilter(opt.key.toLowerCase())}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                  statusFilter === opt.key.toLowerCase()
-                    ? 'bg-brand-gold/20 border border-brand-gold text-brand-gold'
-                    : 'bg-muted/30 hover:bg-muted text-muted-foreground'
-                }`}
-              >
-                {opt.icon}
-                <span>{getStatusLabel(opt.key)}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background border border-border">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+          {STATUS_CONFIG.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => handleSelectStatusFilter(opt.key)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                statusFilter === opt.key.toLowerCase()
+                  ? 'bg-brand-gold/20 border border-brand-gold text-brand-gold'
+                  : 'bg-muted/30 hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              {opt.icon}
+              <span>{getStatusLabel(opt.key)}</span>
+            </button>
+          ))}
 
           {/* Density Toggle (Grid Mode - Desktop only) */}
           {viewMode === 'grid' && (
@@ -1199,9 +1206,7 @@ export function ContainerTrackingTab() {
         filters={filters}
         onApplyFilters={(newFilters) => {
           setFilters(newFilters);
-          if (newFilters.status) {
-            setStatusFilter(newFilters.status.toLowerCase());
-          }
+          setStatusFilter(newFilters.status ? newFilters.status.toLowerCase() : 'all');
           setPage(1);
         }}
         onResetFilters={handleClearAllFilters}

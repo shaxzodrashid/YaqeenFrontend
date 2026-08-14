@@ -379,6 +379,96 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     created_at: '2026-08-04T09:30:00.000Z',
     updated_at: '2026-08-04T09:30:00.000Z',
   },
+  {
+    id: 'b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+    cargo_type: 'FTL',
+    volume: null,
+    weight: null,
+    container_type: '40GP',
+    container_truck_id: 'TRK-904-UZ',
+    agent_name: 'Yiwu Express Ltd',
+    cargo: 'Automotive Spare Parts',
+    confirmed_date: '2026-07-10',
+    loaded_date: '2026-07-12',
+    arrived_date: '2026-07-22',
+    purchase_price: 18000,
+    purchase_currency: 'RMB',
+    purchase_date: '2026-07-10',
+    purchase_usd_rate: 12800,
+    purchase_custom_rate: null,
+    sell_price: 4800,
+    sell_currency: 'USD',
+    sell_date: '2026-07-12',
+    sell_usd_rate: 12800,
+    sell_custom_rate: null,
+    usd_rmb_rate: 7.25,
+    status: 'Border',
+    description: 'Brake pads and filter elements',
+    client_id: 'c-client-1',
+    employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
+    created_at: '2026-07-10T08:00:00.000Z',
+    updated_at: '2026-07-10T08:00:00.000Z',
+  },
+  {
+    id: 'c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+    cargo_type: 'FTL',
+    volume: null,
+    weight: null,
+    container_type: '40HQ',
+    container_truck_id: 'TRK-512-CN',
+    agent_name: 'Shenzhen Trans Lines',
+    cargo: 'Solar Panels & Inverters',
+    confirmed_date: '2026-07-18',
+    loaded_date: '2026-07-20',
+    arrived_date: '2026-08-05',
+    purchase_price: 28000,
+    purchase_currency: 'RMB',
+    purchase_date: '2026-07-18',
+    purchase_usd_rate: 12800,
+    purchase_custom_rate: null,
+    sell_price: 7900,
+    sell_currency: 'USD',
+    sell_date: '2026-07-20',
+    sell_usd_rate: 12800,
+    sell_custom_rate: null,
+    usd_rmb_rate: 7.25,
+    status: 'At Station',
+    description: 'Customs cleared at Tashkent terminal',
+    client_id: 'c-client-2',
+    employee_id: '2b78a1c9-34e5-4a1d-91b2-c8d9e0f1a2b3',
+    created_at: '2026-07-18T14:00:00.000Z',
+    updated_at: '2026-07-18T14:00:00.000Z',
+  },
+  {
+    id: 'd4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+    cargo_type: 'LTL',
+    volume: 18.0,
+    weight: 2200,
+    container_type: null,
+    container_truck_id: 'MSKU-441209-1',
+    agent_name: 'Ningbo Port Agents',
+    cargo: 'Furniture & Home Textiles',
+    confirmed_date: '2026-06-20',
+    loaded_date: '2026-06-25',
+    arrived_date: '2026-07-15',
+    purchase_price: 45000,
+    purchase_currency: 'RMB',
+    purchase_date: '2026-06-20',
+    purchase_usd_rate: 12800,
+    purchase_custom_rate: null,
+    sell_price: 11500,
+    sell_currency: 'USD',
+    sell_date: '2026-06-25',
+    sell_usd_rate: 12800,
+    sell_custom_rate: null,
+    usd_rmb_rate: 7.22,
+    status: 'Delivered',
+    description: 'Successfully delivered to client warehouse',
+    client_id: 'c-client-1',
+    employee_id: '11111111-2222-3333-4444-555555555555',
+    created_at: '2026-06-20T12:00:00.000Z',
+    updated_at: '2026-06-20T12:00:00.000Z',
+  },
 ];
 
 function getStoredDemoRecords(): InternalCargoRegistrationRecord[] {
@@ -446,14 +536,22 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     let filtered = [...demoRecords];
 
     if (search) {
-      filtered = filtered.filter(
-        (r) =>
+      filtered = filtered.filter((r) => {
+        const client = demoClientsDb.find((c) => c.id === r.client_id);
+        const clientName = client ? `${client.first_name} ${client.last_name}`.toLowerCase() : '';
+        const emp = demoEmployeesDb.get(r.employee_id);
+        const empName = emp ? `${emp.first_name} ${emp.last_name}`.toLowerCase() : '';
+
+        return (
           r.container_truck_id.toLowerCase().includes(search) ||
           r.cargo.toLowerCase().includes(search) ||
-          r.agent_name.toLowerCase().includes(search)
-      );
+          r.agent_name.toLowerCase().includes(search) ||
+          clientName.includes(search) ||
+          empName.includes(search)
+        );
+      });
     }
-    if (status) {
+    if (status && status !== 'all') {
       filtered = filtered.filter((r) => r.status.toLowerCase() === status.toLowerCase());
     }
     if (cargoType) {
@@ -470,31 +568,44 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     if (employeeId) {
       filtered = filtered.filter((r) => r.employee_id === employeeId);
     }
+
+    const cleanDate = (d?: string | null) => (d ? d.slice(0, 10) : '');
+
     if (confirmedStart) {
-      filtered = filtered.filter((r) => r.confirmed_date && r.confirmed_date >= confirmedStart);
+      filtered = filtered.filter((r) => cleanDate(r.confirmed_date) >= confirmedStart);
     }
     if (confirmedEnd) {
-      filtered = filtered.filter((r) => r.confirmed_date && r.confirmed_date <= confirmedEnd);
+      filtered = filtered.filter((r) => {
+        const cd = cleanDate(r.confirmed_date);
+        return cd !== '' && cd <= confirmedEnd;
+      });
     }
     if (loadedStart) {
-      filtered = filtered.filter((r) => r.loaded_date && r.loaded_date >= loadedStart);
+      filtered = filtered.filter((r) => cleanDate(r.loaded_date) >= loadedStart);
     }
     if (loadedEnd) {
-      filtered = filtered.filter((r) => r.loaded_date && r.loaded_date <= loadedEnd);
+      filtered = filtered.filter((r) => {
+        const ld = cleanDate(r.loaded_date);
+        return ld !== '' && ld <= loadedEnd;
+      });
     }
     if (arrivedStart) {
-      filtered = filtered.filter((r) => r.arrived_date && r.arrived_date >= arrivedStart);
+      filtered = filtered.filter((r) => cleanDate(r.arrived_date) >= arrivedStart);
     }
     if (arrivedEnd) {
-      filtered = filtered.filter((r) => r.arrived_date && r.arrived_date <= arrivedEnd);
+      filtered = filtered.filter((r) => {
+        const ad = cleanDate(r.arrived_date);
+        return ad !== '' && ad <= arrivedEnd;
+      });
     }
     if (createdStart) {
-      const startClean = createdStart.slice(0, 10);
-      filtered = filtered.filter((r) => r.created_at && r.created_at.slice(0, 10) >= startClean);
+      filtered = filtered.filter((r) => cleanDate(r.created_at) >= createdStart);
     }
     if (createdEnd) {
-      const endClean = createdEnd.slice(0, 10);
-      filtered = filtered.filter((r) => r.created_at && r.created_at.slice(0, 10) <= endClean);
+      filtered = filtered.filter((r) => {
+        const cd = cleanDate(r.created_at);
+        return cd !== '' && cd <= createdEnd;
+      });
     }
 
     const calculated_net_yield = {
