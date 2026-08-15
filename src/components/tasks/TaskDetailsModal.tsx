@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal, Button, Avatar } from '@heroui/react';
 import {
   Calendar,
@@ -17,6 +17,11 @@ import {
   FileCode,
   Image as ImageIcon,
   FileArchive,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -35,6 +40,7 @@ interface TaskDetailsModalProps {
 }
 
 const EXECUTABLE_EXTENSIONS = ['.exe', '.dll', '.bat', '.sh', '.cmd', '.msi'];
+const EMPLOYEE_PAGE_LIMIT = 6;
 
 export function TaskDetailsModal({
   isOpen,
@@ -61,6 +67,100 @@ export function TaskDetailsModal({
   const [dueDate, setDueDate] = useState('');
   const [targetTime, setTargetTime] = useState('');
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+
+  // Backend employee search and pagination state
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
+  const [debouncedEmployeeSearchQuery, setDebouncedEmployeeSearchQuery] = useState('');
+  const [employeePage, setEmployeePage] = useState(1);
+  const [employeeList, setEmployeeList] = useState<Employee[]>([]);
+  const [employeeMeta, setEmployeeMeta] = useState<{
+    totalPages: number;
+    totalItems: number;
+    currentPage: number;
+  }>({ totalPages: 1, totalItems: 0, currentPage: 1 });
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [knownEmployeesMap, setKnownEmployeesMap] = useState<Record<string, Employee>>({});
+
+  // Seed known employees cache from initial prop
+  useEffect(() => {
+    if (employees && employees.length > 0) {
+      setKnownEmployeesMap((prev) => {
+        const next = { ...prev };
+        employees.forEach((emp) => {
+          if (emp?.id) next[emp.id] = emp;
+        });
+        return next;
+      });
+    }
+  }, [employees]);
+
+  // Reset employee search query and page when modal opens or selected task changes
+  useEffect(() => {
+    if (isOpen) {
+      setEmployeeSearchQuery('');
+      setDebouncedEmployeeSearchQuery('');
+      setEmployeePage(1);
+    }
+  }, [isOpen, taskId]);
+
+  // Debounce search query input (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEmployeeSearchQuery(employeeSearchQuery.trim());
+      setEmployeePage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [employeeSearchQuery]);
+
+  // Fetch employees from backend with search and pagination
+  const fetchEmployees = useCallback(async (query: string, pageNum: number) => {
+    try {
+      setLoadingEmployees(true);
+      const res: any = await api.employees.list({
+        page: pageNum,
+        limit: EMPLOYEE_PAGE_LIMIT,
+        search: query || undefined,
+      });
+
+      let items: Employee[] = [];
+      let meta = { totalPages: 1, totalItems: 0, currentPage: pageNum };
+
+      if (Array.isArray(res)) {
+        items = res;
+        meta = { totalPages: 1, totalItems: res.length, currentPage: 1 };
+      } else if (res?.items) {
+        items = res.items;
+        meta = {
+          totalPages: res.meta?.totalPages || 1,
+          totalItems: res.meta?.totalItems ?? items.length,
+          currentPage: res.meta?.currentPage || pageNum,
+        };
+      }
+
+      setEmployeeList(items);
+      setEmployeeMeta(meta);
+
+      // Store into known cache
+      setKnownEmployeesMap((prev) => {
+        const next = { ...prev };
+        items.forEach((emp) => {
+          if (emp?.id) next[emp.id] = emp;
+        });
+        return next;
+      });
+    } catch (err) {
+      console.error('Failed to fetch employees for task modal:', err);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  }, []);
+
+  // Trigger backend fetch when modal is open, debounced query changes, or page changes
+  useEffect(() => {
+    if (isOpen) {
+      fetchEmployees(debouncedEmployeeSearchQuery, employeePage);
+    }
+  }, [isOpen, debouncedEmployeeSearchQuery, employeePage, fetchEmployees]);
 
   // Checklist state
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
@@ -98,6 +198,29 @@ export function TaskDetailsModal({
       const assigneeIds =
         data.assignees?.map((a) => a.id) || (data.assigneeId ? [data.assigneeId] : []);
       setSelectedAssigneeIds(assigneeIds);
+
+      if (data.assignees && data.assignees.length > 0) {
+        setKnownEmployeesMap((prev) => {
+          const next = { ...prev };
+          data.assignees?.forEach((a: any) => {
+            if (a?.id) {
+              const existing = next[a.id] || {};
+              next[a.id] = {
+                ...existing,
+                id: a.id,
+                first_name: a.firstName || a.first_name || existing.first_name || '',
+                last_name: a.lastName || a.last_name || existing.last_name || '',
+                phone: a.phone || existing.phone || '',
+                color: a.color || existing.color || '#3B82F6',
+                picture_url: a.picture_url || a.pictureUrl || existing.picture_url || null,
+                user_role: a.user_role || a.userRole || existing.user_role,
+                department_name: a.department_name || a.departmentName || existing.department_name,
+              } as Employee;
+            }
+          });
+          return next;
+        });
+      }
     } catch (err) {
       console.error('Failed to load task details:', err);
     }
@@ -126,10 +249,12 @@ export function TaskDetailsModal({
   const handleSaveMainDetails = async (overrides?: {
     columnId?: string;
     priority?: TaskPriority;
+    assigneeIds?: string[];
   }) => {
     if (!taskId || !title.trim()) return;
     const targetColumnId = overrides?.columnId ?? columnId;
     const targetPriority = overrides?.priority ?? priority;
+    const targetAssigneeIds = overrides?.assigneeIds ?? selectedAssigneeIds;
     try {
       await api.tasks.updateTask(taskId, {
         title: title.trim(),
@@ -138,7 +263,7 @@ export function TaskDetailsModal({
         column_id: targetColumnId,
         due_date: dueDate ? new Date(dueDate).toISOString() : null,
         target_time: targetTime ? new Date(targetTime).toISOString() : null,
-        assignee_ids: selectedAssigneeIds,
+        assignee_ids: targetAssigneeIds,
       });
       await fetchTaskDetails(taskId);
       onTaskUpdated();
@@ -289,11 +414,12 @@ export function TaskDetailsModal({
   };
 
   const toggleAssignee = (empId: string) => {
-    if (selectedAssigneeIds.includes(empId)) {
-      setSelectedAssigneeIds(selectedAssigneeIds.filter((id) => id !== empId));
-    } else {
-      setSelectedAssigneeIds([...selectedAssigneeIds, empId]);
-    }
+    if (!canUpdate('tasks')) return;
+    const newAssignees = selectedAssigneeIds.includes(empId)
+      ? selectedAssigneeIds.filter((id) => id !== empId)
+      : [...selectedAssigneeIds, empId];
+    setSelectedAssigneeIds(newAssignees);
+    handleSaveMainDetails({ assigneeIds: newAssignees });
   };
 
   // Helper calculations
@@ -838,40 +964,169 @@ export function TaskDetailsModal({
 
               {/* Assignees Selector */}
               <div>
-                <label className="text-[11px] font-bold text-foreground uppercase tracking-wider block mb-2">
-                  Assigned Employees ({selectedAssigneeIds.length})
-                </label>
-                <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1">
-                  {employees.map((emp) => {
-                    const empName =
-                      `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone;
-                    const isAssigned = selectedAssigneeIds.includes(emp.id);
-
-                    return (
-                      <button
-                        key={emp.id}
-                        type="button"
-                        onClick={() => {
-                          if (canUpdate('tasks')) toggleAssignee(emp.id);
-                        }}
-                        className={`flex items-center gap-2.5 p-2 rounded-xl border text-xs text-left transition-all cursor-pointer ${
-                          isAssigned
-                            ? 'bg-brand-gold/15 text-brand-gold border-brand-gold/50 font-bold'
-                            : 'bg-surface text-muted border-border hover:border-foreground/30'
-                        }`}
-                      >
-                        <Avatar className="size-6 border border-brand-gold/30 shrink-0">
-                          {emp.picture_url && <Avatar.Image src={getImageUrl(emp.picture_url)} />}
-                          <Avatar.Fallback className="text-[10px]">
-                            {empName.slice(0, 2).toUpperCase()}
-                          </Avatar.Fallback>
-                        </Avatar>
-                        <span className="truncate flex-1">{empName}</span>
-                        {isAssigned && <span className="text-brand-gold">✓</span>}
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-bold text-foreground uppercase tracking-wider block">
+                    Assigned Employees ({selectedAssigneeIds.length})
+                  </label>
+                  {selectedAssigneeIds.length > 0 && (
+                    <span className="text-[10px] font-semibold text-brand-gold bg-brand-gold/15 px-2 py-0.5 rounded-full border border-brand-gold/30">
+                      {selectedAssigneeIds.length} active
+                    </span>
+                  )}
                 </div>
+
+                {/* Selected Assignees Chips */}
+                {selectedAssigneeIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2.5 p-2 bg-neutral-100/60 dark:bg-surface/60 rounded-xl border border-border/40 max-h-[85px] overflow-y-auto">
+                    {selectedAssigneeIds.map((empId) => {
+                      const emp = knownEmployeesMap[empId];
+                      const name = emp
+                        ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim() ||
+                          emp.phone ||
+                          empId
+                        : empId;
+                      return (
+                        <div
+                          key={empId}
+                          className="inline-flex items-center gap-1.5 bg-brand-gold/15 border border-brand-gold/40 text-brand-gold px-2 py-0.5 rounded-lg text-[11px] font-medium max-w-full"
+                        >
+                          <Avatar className="size-4 border border-brand-gold/30 shrink-0">
+                            {emp?.picture_url && (
+                              <Avatar.Image src={getImageUrl(emp.picture_url)} />
+                            )}
+                            <Avatar.Fallback className="text-[8px]">
+                              {name.slice(0, 2).toUpperCase()}
+                            </Avatar.Fallback>
+                          </Avatar>
+                          <span className="truncate max-w-[110px]">{name}</span>
+                          {canUpdate('tasks') && (
+                            <button
+                              type="button"
+                              onClick={() => toggleAssignee(empId)}
+                              className="p-0.5 hover:bg-brand-gold/20 rounded text-brand-gold/70 hover:text-brand-gold transition-colors cursor-pointer"
+                              title={`Remove ${name}`}
+                            >
+                              <X className="size-2.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Employee Search Input */}
+                <div className="relative mb-2">
+                  <Search className="size-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={employeeSearchQuery}
+                    onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+                    placeholder="Search all employees..."
+                    className="w-full pl-8 pr-7 py-1.5 bg-surface border border-border rounded-xl text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-brand-gold transition-colors"
+                  />
+                  {loadingEmployees ? (
+                    <Loader2 className="size-3 text-brand-gold absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin pointer-events-none" />
+                  ) : employeeSearchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => setEmployeeSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-muted hover:text-foreground hover:bg-border/30 transition-colors cursor-pointer"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  ) : null}
+                </div>
+
+                {/* Employee List */}
+                <div className="flex flex-col gap-1.5 min-h-[140px] max-h-[220px] overflow-y-auto pr-1">
+                  {loadingEmployees && employeeList.length === 0 ? (
+                    <div className="py-8 flex flex-col items-center justify-center gap-2 text-xs text-muted">
+                      <Loader2 className="size-4 animate-spin text-brand-gold" />
+                      <span>Loading employees...</span>
+                    </div>
+                  ) : employeeList.length > 0 ? (
+                    employeeList.map((emp) => {
+                      const empName =
+                        `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone;
+                      const isAssigned = selectedAssigneeIds.includes(emp.id);
+
+                      return (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => {
+                            if (canUpdate('tasks')) toggleAssignee(emp.id);
+                          }}
+                          className={`flex items-center gap-2.5 p-2 rounded-xl border text-xs text-left transition-all cursor-pointer ${
+                            isAssigned
+                              ? 'bg-brand-gold/15 text-brand-gold border-brand-gold/50 font-bold'
+                              : 'bg-surface text-muted border-border hover:border-foreground/30'
+                          }`}
+                        >
+                          <Avatar className="size-6 border border-brand-gold/30 shrink-0">
+                            {emp.picture_url && <Avatar.Image src={getImageUrl(emp.picture_url)} />}
+                            <Avatar.Fallback className="text-[10px]">
+                              {empName.slice(0, 2).toUpperCase()}
+                            </Avatar.Fallback>
+                          </Avatar>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="truncate">{empName}</span>
+                            {(emp.user_role ||
+                              emp.user?.role ||
+                              emp.department_name ||
+                              emp.department_display_name) && (
+                              <span className="text-[9px] text-muted truncate font-normal">
+                                {emp.user_role ||
+                                  emp.user?.role ||
+                                  emp.department_name ||
+                                  emp.department_display_name}
+                              </span>
+                            )}
+                          </div>
+                          {isAssigned && <span className="text-brand-gold font-bold">✓</span>}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="py-6 text-center text-xs text-muted italic bg-surface/40 rounded-xl border border-border/40">
+                      {debouncedEmployeeSearchQuery
+                        ? `No employees found for "${debouncedEmployeeSearchQuery}"`
+                        : 'No employees found'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pagination Controls */}
+                {employeeMeta.totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 px-1 text-[11px] text-muted">
+                    <span className="text-[10px]">
+                      Page {employeeMeta.currentPage} of {employeeMeta.totalPages}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEmployeePage((p) => Math.max(1, p - 1))}
+                        disabled={employeePage <= 1 || loadingEmployees}
+                        className="p-1 rounded-lg border border-border bg-surface hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        title="Previous Page"
+                      >
+                        <ChevronLeft className="size-3 text-foreground" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEmployeePage((p) => Math.min(employeeMeta.totalPages, p + 1))
+                        }
+                        disabled={employeePage >= employeeMeta.totalPages || loadingEmployees}
+                        className="p-1 rounded-lg border border-border bg-surface hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        title="Next Page"
+                      >
+                        <ChevronRight className="size-3 text-foreground" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Due Date & Target Time */}
