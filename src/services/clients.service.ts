@@ -4,6 +4,7 @@ import {
   normalizePhone,
   makeApiError,
   registerDemoHandler,
+  tokenStore,
 } from './httpClient';
 import type { Attachment } from './httpClient';
 import { demoAttachmentsDb } from './attachments.service';
@@ -212,6 +213,18 @@ export const demoClientsDb: Client[] = [
   },
 ];
 
+function getDemoClientContext() {
+  const user = tokenStore.getUser();
+  const isAll = Boolean(
+    !user ||
+    user.role === 'CEO' ||
+    user.role === 'ROP' ||
+    user.permissions?.clients?.can_work_with_all_clients
+  );
+  const myEmpId = user?.employee_id || 'b1a2c3d4-e5f6-7890-abcd-ef1234567890';
+  return { isAll, myEmpId, user };
+}
+
 // Dedicated Client Mock Database Handlers
 registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // Color stats
@@ -219,7 +232,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     path === '/clients/stats/color-distribution' &&
     (options.method === 'GET' || !options.method)
   ) {
-    const activeClients = demoClientsDb.filter((c) => c.is_active);
+    const { isAll, myEmpId } = getDemoClientContext();
+    let activeClients = demoClientsDb.filter((c) => c.is_active);
+    if (!isAll) {
+      activeClients = activeClients.filter((c) => c.assigned_employee_id === myEmpId);
+    }
     const colorMap: Record<string, number> = {};
     const empMap: Record<
       string,
@@ -268,6 +285,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     (path === '/clients' || path.startsWith('/clients?')) &&
     (options.method === 'GET' || !options.method)
   ) {
+    const { isAll, myEmpId } = getDemoClientContext();
     const urlObj = new URL(path, 'http://localhost');
     const search = urlObj.searchParams.get('search')?.toLowerCase() || '';
     const empId = urlObj.searchParams.get('assigned_employee_id');
@@ -277,6 +295,10 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const limit = parseInt(urlObj.searchParams.get('limit') || '20', 10);
 
     let filtered = [...demoClientsDb];
+
+    if (!isAll) {
+      filtered = filtered.filter((c) => c.assigned_employee_id === myEmpId);
+    }
 
     if (search) {
       filtered = filtered.filter(
@@ -328,6 +350,18 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // Create
   if (path === '/clients' && options.method === 'POST') {
+    const { isAll, myEmpId } = getDemoClientContext();
+    if (!isAll) {
+      if (body.assigned_employee_id && body.assigned_employee_id !== myEmpId) {
+        throw makeApiError(
+          path,
+          403,
+          'permission_denied_for_other_employees',
+          'You do not have permission to assign clients to other employees'
+        );
+      }
+    }
+
     const normPhone = normalizePhone(body.phone || '');
     const exists = demoClientsDb.some((c) => normalizePhone(c.phone) === normPhone);
     if (exists) {
@@ -340,7 +374,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const newId = 'c-client-' + (demoClientsDb.length + 1);
-    const empId = body.assigned_employee_id || null;
+    const empId = body.assigned_employee_id || (!isAll ? myEmpId : null);
 
     let assignedEmp = null;
     if (empId) {
@@ -400,10 +434,19 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     (options.method === 'GET' || !options.method) &&
     !path.includes('/stats/')
   ) {
+    const { isAll, myEmpId } = getDemoClientContext();
     const clientId = path.split('/')[2];
     const client = demoClientsDb.find((c) => c.id === clientId);
     if (!client) {
       throw makeApiError(path, 404, 'client_not_found', 'Client not found');
+    }
+    if (!isAll && client.assigned_employee_id !== myEmpId) {
+      throw makeApiError(
+        path,
+        403,
+        'permission_denied_for_other_employees',
+        'You do not have permission to view clients assigned to other employees'
+      );
     }
     const fullClient = {
       ...client,
@@ -416,6 +459,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // Update client
   if (path.startsWith('/clients/') && options.method === 'PUT') {
+    const { isAll, myEmpId } = getDemoClientContext();
     const clientId = path.split('/')[2];
     const index = demoClientsDb.findIndex((c) => c.id === clientId);
     if (index === -1) {
@@ -423,6 +467,28 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const current = demoClientsDb[index];
+
+    if (!isAll) {
+      if (current.assigned_employee_id !== myEmpId) {
+        throw makeApiError(
+          path,
+          403,
+          'permission_denied_for_other_employees',
+          'You do not have permission to update clients assigned to other employees'
+        );
+      }
+      if (
+        body.assigned_employee_id !== undefined &&
+        body.assigned_employee_id !== current.assigned_employee_id
+      ) {
+        throw makeApiError(
+          path,
+          403,
+          'reassignment_prohibited',
+          'Reassignment of clients is prohibited'
+        );
+      }
+    }
 
     if (body.phone && normalizePhone(body.phone) !== normalizePhone(current.phone)) {
       const normPhone = normalizePhone(body.phone);
@@ -503,9 +569,19 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // Delete client
   if (path.startsWith('/clients/') && options.method === 'DELETE') {
+    const { isAll, myEmpId } = getDemoClientContext();
     const clientId = path.split('/')[2];
     const index = demoClientsDb.findIndex((c) => c.id === clientId);
     if (index !== -1) {
+      const target = demoClientsDb[index];
+      if (!isAll && target.assigned_employee_id !== myEmpId) {
+        throw makeApiError(
+          path,
+          403,
+          'permission_denied_for_other_employees',
+          'You do not have permission to delete clients assigned to other employees'
+        );
+      }
       demoClientsDb.splice(index, 1);
     }
     for (let i = demoAttachmentsDb.length - 1; i >= 0; i--) {

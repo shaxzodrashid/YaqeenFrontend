@@ -24,11 +24,20 @@ export type ModuleKey =
 
 export type UserPermissions = Record<
   string,
-  ModulePermissionAction & { register_for_everyone?: boolean }
+  ModulePermissionAction & {
+    register_for_everyone?: boolean;
+    can_work_with_all_clients?: boolean;
+  }
 >;
 
 export const FULL_PERMISSIONS: UserPermissions = {
-  clients: { create: true, read: true, update: true, delete: true },
+  clients: {
+    create: true,
+    read: true,
+    update: true,
+    delete: true,
+    can_work_with_all_clients: true,
+  },
   employees: { create: true, read: true, update: true, delete: true },
   departments: { create: true, read: true, update: true, delete: true },
   cargo_kpi: { create: true, read: true, update: true, delete: true },
@@ -53,12 +62,14 @@ interface PermissionsContextType {
   isCeo: boolean;
   isRop: boolean;
   loading: boolean;
+  currentEmployee: Employee | null;
   hasPermission: (module: ModuleKey | string, action: keyof ModulePermissionAction) => boolean;
   canRead: (module: ModuleKey | string) => boolean;
   canCreate: (module: ModuleKey | string) => boolean;
   canUpdate: (module: ModuleKey | string) => boolean;
   canDelete: (module: ModuleKey | string) => boolean;
   canRegisterForEveryone: () => boolean;
+  canWorkWithAllClients: () => boolean;
   refreshPermissions: () => Promise<void>;
 }
 
@@ -67,12 +78,14 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(und
 export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [permissions, setPermissions] = useState<UserPermissions>(FULL_PERMISSIONS);
   const [userRole, setUserRole] = useState<string>('');
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchPermissions = useCallback(async () => {
     const user = tokenStore.getUser();
     if (!tokenStore.getAccessToken()) {
       setPermissions(FULL_PERMISSIONS);
+      setCurrentEmployee(null);
       setLoading(false);
       return;
     }
@@ -80,6 +93,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       setLoading(true);
       const me: Employee = await api.employees.me();
+      setCurrentEmployee(me);
       const role = me.user_role || me.user?.role || user?.role || '';
       setUserRole(role);
 
@@ -141,6 +155,12 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return !!cargoPerm?.register_for_everyone;
   };
 
+  const canWorkWithAllClients = (): boolean => {
+    if (isCeo || isRop) return true;
+    const clientPerm = permissions['clients'];
+    return !!clientPerm?.can_work_with_all_clients;
+  };
+
   return (
     <PermissionsContext.Provider
       value={{
@@ -149,12 +169,14 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isCeo,
         isRop,
         loading,
+        currentEmployee,
         hasPermission,
         canRead,
         canCreate,
         canUpdate,
         canDelete,
         canRegisterForEveryone,
+        canWorkWithAllClients,
         refreshPermissions: fetchPermissions,
       }}
     >

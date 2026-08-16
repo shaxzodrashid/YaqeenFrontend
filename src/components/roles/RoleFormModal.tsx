@@ -77,7 +77,13 @@ export function RoleFormModal({
   // Toggle single action flag for a module
   const toggleAction = (
     moduleKey: string,
-    action: 'create' | 'read' | 'update' | 'delete' | 'register_for_everyone'
+    action:
+      | 'create'
+      | 'read'
+      | 'update'
+      | 'delete'
+      | 'register_for_everyone'
+      | 'can_work_with_all_clients'
   ) => {
     setPermissions((prev) => {
       const currentMod = prev[moduleKey] || {
@@ -86,6 +92,7 @@ export function RoleFormModal({
         update: false,
         delete: false,
         register_for_everyone: false,
+        can_work_with_all_clients: false,
       };
       return {
         ...prev,
@@ -107,6 +114,7 @@ export function RoleFormModal({
         update: true,
         delete: true,
         ...(moduleKey === 'cargo_registrations' ? { register_for_everyone: true } : {}),
+        ...(moduleKey === 'clients' ? { can_work_with_all_clients: true } : {}),
       },
     }));
   };
@@ -121,6 +129,7 @@ export function RoleFormModal({
         update: false,
         delete: false,
         ...(moduleKey === 'cargo_registrations' ? { register_for_everyone: false } : {}),
+        ...(moduleKey === 'clients' ? { can_work_with_all_clients: false } : {}),
       },
     }));
   };
@@ -136,6 +145,7 @@ export function RoleFormModal({
           update: true,
           delete: true,
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: true } : {}),
+          ...(mod.module === 'clients' ? { can_work_with_all_clients: true } : {}),
         };
       } else if (preset === 'readonly') {
         updated[mod.module] = {
@@ -144,6 +154,7 @@ export function RoleFormModal({
           update: false,
           delete: false,
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: false } : {}),
+          ...(mod.module === 'clients' ? { can_work_with_all_clients: false } : {}),
         };
       } else {
         updated[mod.module] = {
@@ -152,6 +163,7 @@ export function RoleFormModal({
           update: false,
           delete: false,
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: false } : {}),
+          ...(mod.module === 'clients' ? { can_work_with_all_clients: false } : {}),
         };
       }
     });
@@ -480,6 +492,34 @@ export function RoleFormModal({
                                     </Tooltip.Trigger>
                                     <Tooltip.Content placement="right">
                                       {t('rolesPermRegisterEveryoneTooltip')}
+                                    </Tooltip.Content>
+                                  </Tooltip>
+                                </div>
+                              )}
+
+                              {mod.module === 'clients' && (
+                                <div className="mt-2 pt-1.5 border-t border-border/30">
+                                  <Tooltip delay={150} closeDelay={0}>
+                                    <Tooltip.Trigger>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          toggleAction(mod.module, 'can_work_with_all_clients')
+                                        }
+                                        className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                          modPerms.can_work_with_all_clients
+                                            ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 shadow-xs'
+                                            : 'bg-default/20 text-muted/60 border border-border/30 hover:border-amber-500/30'
+                                        }`}
+                                      >
+                                        <span>
+                                          {modPerms.can_work_with_all_clients ? '✓' : '✕'}
+                                        </span>
+                                        <span>{t('rolesCanWorkWithAllClients')}</span>
+                                      </button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content placement="right">
+                                      {t('rolesPermCanWorkWithAllClientsTooltip')}
                                     </Tooltip.Content>
                                   </Tooltip>
                                 </div>

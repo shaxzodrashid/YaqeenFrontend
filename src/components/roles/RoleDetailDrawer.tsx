@@ -281,6 +281,31 @@ export function RoleDetailDrawer({
                           </Tooltip>
                         </div>
                       )}
+
+                      {/* Special Permission for Clients */}
+                      {mod.module === 'clients' && (
+                        <div className="pt-2 border-t border-border/30 flex items-center justify-between text-[10px]">
+                          <span className="text-muted font-medium">
+                            {t('rolesCanWorkWithAllClients')}
+                          </span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span
+                                className={`px-2 py-0.5 rounded font-bold border cursor-help ${
+                                  p.can_work_with_all_clients
+                                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-300'
+                                    : 'bg-default/20 border-border/30 text-muted/40'
+                                }`}
+                              >
+                                {p.can_work_with_all_clients ? t('rolesGranted') : t('rolesOff')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermCanWorkWithAllClientsTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

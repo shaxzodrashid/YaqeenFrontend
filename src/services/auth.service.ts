@@ -198,7 +198,13 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
         username: user.phone_number,
         role: user.role,
         permissions: {
-          clients: { create: true, read: true, update: true, delete: true },
+          clients: {
+            create: true,
+            read: true,
+            update: true,
+            delete: true,
+            can_work_with_all_clients: true,
+          },
           employees: { create: true, read: true, update: true, delete: true },
           cargo_registrations: {
             create: true,

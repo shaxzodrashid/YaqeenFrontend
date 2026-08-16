@@ -1,11 +1,13 @@
 export interface AuthUser {
   id: string;
   phone_number: string;
-  role: 'CEO' | 'ROP' | 'EMPLOYEE';
-  status: 'Pending' | 'Open' | 'Banned' | 'Deleted';
+  role: 'CEO' | 'ROP' | 'EMPLOYEE' | string;
+  status: 'Pending' | 'Open' | 'Banned' | 'Deleted' | string;
   first_name?: string;
   last_name?: string;
   name?: string;
+  employee_id?: string | null;
+  permissions?: any;
 }
 
 export interface LoginResponse {

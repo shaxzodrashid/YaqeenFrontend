@@ -146,7 +146,16 @@ export function ClientDrawer({
       onDeleteSuccess();
       onClose();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to delete client', 'error');
+      if (err?.location === 'permission_denied_for_other_employees') {
+        showNotification(
+          t('errorClientOtherEmployee') || 'You can only view and manage clients assigned to you.',
+          'error'
+        );
+      } else if (err?.location === 'client_not_found') {
+        showNotification(t('errorClientNotFound') || 'Client not found', 'error');
+      } else {
+        showNotification(err?.message || 'Failed to delete client', 'error');
+      }
     } finally {
       setDeletingClient(false);
     }

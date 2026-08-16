@@ -95,6 +95,7 @@ export type {
   Role,
   SystemModule,
   ModulePermissions,
+  ClientsModulePermissions,
   RolePermissions,
   CreateRoleDto,
   UpdateRoleDto,

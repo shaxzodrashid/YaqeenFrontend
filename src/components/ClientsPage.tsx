@@ -69,7 +69,9 @@ const headerVariants = {
 export function ClientsPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
-  const { canCreate, canUpdate, canDelete } = usePermissions();
+  const { canCreate, canUpdate, canDelete, canWorkWithAllClients, currentEmployee } =
+    usePermissions();
+  const canAllClients = canWorkWithAllClients();
 
   // Data states
   const [clients, setClients] = useState<Client[]>([]);
@@ -154,11 +156,32 @@ export function ClientsPage() {
       setTotalPages(res.pagination?.totalPages || 1);
       setTotalClients(res.pagination?.total || 0);
     } catch (err: any) {
-      showNotification(err?.message || 'Error fetching client records', 'error');
+      if (err?.location === 'permission_denied_for_other_employees') {
+        showNotification(
+          t('errorClientOtherEmployee') || 'You can only view and manage clients assigned to you.',
+          'error'
+        );
+      } else if (err?.location === 'user_not_linked_to_employee') {
+        showNotification(
+          t('errorClientNotLinked') ||
+            'Your user account is not linked to an employee profile. Please contact an administrator.',
+          'error'
+        );
+      } else {
+        showNotification(err?.message || 'Error fetching client records', 'error');
+      }
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, selectedEmployeeId, selectedColor, activeStatusFilter, showNotification]);
+  }, [
+    page,
+    searchQuery,
+    selectedEmployeeId,
+    selectedColor,
+    activeStatusFilter,
+    showNotification,
+    t,
+  ]);
 
   // Initial load
   useEffect(() => {
@@ -249,7 +272,16 @@ export function ClientsPage() {
       fetchClients();
       fetchColorStats();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to delete client', 'error');
+      if (err?.location === 'permission_denied_for_other_employees') {
+        showNotification(
+          t('errorClientOtherEmployee') || 'You can only view and manage clients assigned to you.',
+          'error'
+        );
+      } else if (err?.location === 'client_not_found') {
+        showNotification(t('errorClientNotFound') || 'Client not found', 'error');
+      } else {
+        showNotification(err?.message || 'Failed to delete client', 'error');
+      }
     } finally {
       setDeleting(false);
     }
@@ -280,7 +312,7 @@ export function ClientsPage() {
               <T k="clientTitle" />
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-brand-gold/15 text-brand-gold font-bold text-xs border border-brand-gold/30">
-              {totalClients} <T k="clientTotal" />
+              {totalClients} {!canAllClients ? t('clientMyAssignedClients') : t('clientTotal')}
             </span>
           </div>
           <p className="text-xs md:text-sm text-muted mt-1">
@@ -397,10 +429,14 @@ export function ClientsPage() {
               <div className="flex items-center gap-2">
                 <User className="size-4 text-brand-gold" />
                 <h3 className="text-sm font-bold text-foreground">
-                  <T k="clientManagerBreakdown" />
+                  {canAllClients ? (
+                    <T k="clientManagerBreakdown" />
+                  ) : (
+                    <T k="clientMyAssignedClients" />
+                  )}
                 </h3>
               </div>
-              {selectedEmployeeId && (
+              {canAllClients && selectedEmployeeId && (
                 <button
                   type="button"
                   onClick={() => setSelectedEmployeeId('')}
@@ -411,37 +447,61 @@ export function ClientsPage() {
               )}
             </div>
 
-            {/* Employee Filter Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto pr-1">
-              {stats && stats.by_employee && stats.by_employee.length > 0 ? (
-                stats.by_employee.map((emp, index) => {
-                  const isSelected = selectedEmployeeId === (emp.employee_id || '');
-                  return (
-                    <button
-                      key={emp.employee_id || `emp-${index}`}
-                      type="button"
-                      onClick={() => handleToggleEmployeeFilter(emp.employee_id)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-brand-gold text-brand-navy border-brand-gold shadow-sm scale-105'
-                          : 'bg-default-100/50 dark:bg-default-50/10 border-border/30 hover:border-border text-foreground'
-                      }`}
-                    >
-                      <span
-                        className="size-2.5 rounded-full shadow-sm shrink-0"
-                        style={{ backgroundColor: emp.default_color || '#808080' }}
-                      />
-                      <span className="truncate max-w-[100px]">{emp.employee_name}</span>
-                      <span className="px-1.5 py-0.2 rounded-md bg-default-200/60 dark:bg-default-100/20 text-[10px]">
-                        {emp.count}
-                      </span>
-                    </button>
-                  );
-                })
-              ) : (
-                <p className="text-xs text-muted italic">No employee data.</p>
-              )}
-            </div>
+            {/* Employee Filter Chips (All Managers if permitted, or Scoped Profile Card) */}
+            {canAllClients ? (
+              <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto pr-1">
+                {stats && stats.by_employee && stats.by_employee.length > 0 ? (
+                  stats.by_employee.map((emp, index) => {
+                    const isSelected = selectedEmployeeId === (emp.employee_id || '');
+                    return (
+                      <button
+                        key={emp.employee_id || `emp-${index}`}
+                        type="button"
+                        onClick={() => handleToggleEmployeeFilter(emp.employee_id)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-gold text-brand-navy border-brand-gold shadow-sm scale-105'
+                            : 'bg-default-100/50 dark:bg-default-50/10 border-border/30 hover:border-border text-foreground'
+                        }`}
+                      >
+                        <span
+                          className="size-2.5 rounded-full shadow-sm shrink-0"
+                          style={{ backgroundColor: emp.default_color || '#808080' }}
+                        />
+                        <span className="truncate max-w-[100px]">{emp.employee_name}</span>
+                        <span className="px-1.5 py-0.2 rounded-md bg-default-200/60 dark:bg-default-100/20 text-[10px]">
+                          {emp.count}
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-muted italic">No employee data.</p>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-default-100/50 dark:bg-default-50/10 border border-border/30 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="size-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-xs"
+                    style={{ backgroundColor: currentEmployee?.color || '#808080' }}
+                  >
+                    {currentEmployee?.first_name?.[0] || 'U'}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-foreground">
+                      {currentEmployee
+                        ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
+                        : t('clientMyAssignedClients')}
+                    </p>
+                    <p className="text-[10px] text-muted">{t('clientAutoAssignedToYou')}</p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-lg bg-brand-gold/15 text-brand-gold font-bold text-xs border border-brand-gold/30">
+                  {totalActiveCount}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Total Active Summary Pill */}
@@ -484,22 +544,24 @@ export function ClientsPage() {
 
           {/* Filter Dropdowns & Segment Switch */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Responsible Employee Select */}
-            <select
-              value={selectedEmployeeId}
-              onChange={(e) => {
-                setSelectedEmployeeId(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-default-100/50 dark:bg-default-50/10 border border-border/30 text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/40 transition-all cursor-pointer"
-            >
-              <option value="">All Managers</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name}
-                </option>
-              ))}
-            </select>
+            {/* Responsible Employee Select (Only if permitted to work with all clients) */}
+            {canAllClients && (
+              <select
+                value={selectedEmployeeId}
+                onChange={(e) => {
+                  setSelectedEmployeeId(e.target.value);
+                  setPage(1);
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold bg-default-100/50 dark:bg-default-50/10 border border-border/30 text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/40 transition-all cursor-pointer"
+              >
+                <option value="">{t('clientAllManagers') || 'All Managers'}</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.first_name} {emp.last_name}
+                  </option>
+                ))}
+              </select>
+            )}
 
             {/* Color Swatch Select */}
             <select

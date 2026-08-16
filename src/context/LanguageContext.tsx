@@ -250,6 +250,15 @@ const translations = {
     clientTableListView: 'Table List View',
     clientPhoneCopied: 'Phone number copied to clipboard',
     clientClearFilters: 'Clear All Filters',
+    clientMyAssignedClients: 'My Assigned Clients',
+    clientAutoAssignedToYou: 'Auto-assigned to your account',
+    clientReassignmentLocked: 'Client assignment cannot be modified with your current permissions.',
+    clientFilterRestrictedTooltip: 'Filter locked to your assigned clients.',
+    errorClientOtherEmployee: 'You can only view and manage clients assigned to you.',
+    errorClientReassignProhibited: 'You do not have permission to reassign clients.',
+    errorClientNotLinked:
+      'Your user account is not linked to an employee profile. Please contact an administrator.',
+    errorClientNotFound: 'Client not found.',
 
     // Overview page
     ovTotalEmployees: 'Total Employees',
@@ -668,6 +677,11 @@ const translations = {
     rolesPermDeleteTooltip: 'Allows deleting or archiving records within this module',
     rolesPermRegisterEveryoneTooltip:
       'Allows registering cargo entries on behalf of other employees',
+    rolesCanWorkWithAllClients: 'Can Work With All Clients',
+    rolesCanWorkWithAllClientsDesc:
+      'Allows the user to view, search, and manage clients assigned to all employees across the organization. When disabled, the user only sees their own assigned clients.',
+    rolesPermCanWorkWithAllClientsTooltip:
+      'Allows viewing and managing clients assigned to all employees across the organization',
 
     // System Modules Labels & Tooltips
     module_clients: 'Clients Management',
@@ -1230,6 +1244,16 @@ const translations = {
     clientTableListView: 'Таблица',
     clientPhoneCopied: 'Номер телефона скопирован',
     clientClearFilters: 'Сбросить все фильтры',
+    clientMyAssignedClients: 'Мои назначенные клиенты',
+    clientAutoAssignedToYou: 'Автоматически привязан к вашему аккаунту',
+    clientReassignmentLocked: 'Переназначение клиента заблокировано вашими правами доступа.',
+    clientFilterRestrictedTooltip: 'Фильтр заблокирован: отображаются только ваши клиенты.',
+    errorClientOtherEmployee:
+      'Вы можете просматривать и редактировать только своих назначенных клиентов.',
+    errorClientReassignProhibited: 'У вас нет прав для переназначения клиентов другим сотрудникам.',
+    errorClientNotLinked:
+      'Ваша учетная запись не привязана к профилю сотрудника. Обратитесь к администратору.',
+    errorClientNotFound: 'Клиент не найден.',
 
     // Overview page
     ovTotalEmployees: 'Всего сотрудников',
@@ -1647,6 +1671,11 @@ const translations = {
       'Разрешает редактирование и изменение существующих записей в данном модуле',
     rolesPermDeleteTooltip: 'Разрешает удаление или архивацию записей в данном модуле',
     rolesPermRegisterEveryoneTooltip: 'Разрешает регистрацию грузов от имени других сотрудников',
+    rolesCanWorkWithAllClients: 'Работа со всеми клиентами',
+    rolesCanWorkWithAllClientsDesc:
+      'Позволяет пользователю просматривать, искать и управлять клиентами всех сотрудников компании. При отключении доступны только свои клиенты.',
+    rolesPermCanWorkWithAllClientsTooltip:
+      'Разрешает просмотр и управление клиентами всех сотрудников организации',
 
     // System Modules Labels & Tooltips
     module_clients: 'Управление клиентами',
@@ -2212,6 +2241,18 @@ const translations = {
     clientTableListView: "Jadval ko'rinishi",
     clientPhoneCopied: 'Telefon raqami nusxalandi',
     clientClearFilters: 'Barcha filtrlarni tozalash',
+    clientMyAssignedClients: 'Menga biriktirilgan mijozlar',
+    clientAutoAssignedToYou: 'Avtomatik profilingizga biriktirilgan',
+    clientReassignmentLocked: "Mijoz birikmasini o'zgartirish huquqingiz cheklangan.",
+    clientFilterRestrictedTooltip:
+      "Filtr cheklangan: faqat sizga biriktirilgan mijozlar ko'rsatiladi.",
+    errorClientOtherEmployee:
+      "Siz faqat o'zingizga biriktirilgan mijozlarni ko'rishingiz va boshqarishingiz mumkin.",
+    errorClientReassignProhibited:
+      "Mijozlarni boshqa xodimlarga qayta biriktirish uchun sizda ruxsat yo'q.",
+    errorClientNotLinked:
+      "Hisobingiz xodim profiliga bog'lanmagan. Iltimos, administratorga murojaat qiling.",
+    errorClientNotFound: 'Mijoz topilmadi.',
 
     // Overview page
     ovTotalEmployees: 'Jami xodimlar',
@@ -2629,6 +2670,11 @@ const translations = {
     rolesPermDeleteTooltip: "Ushbu modulda yozuvlarni o'chirish yoki arxivlashga ruxsat beradi",
     rolesPermRegisterEveryoneTooltip:
       "Boshqa xodimlar nomidan yuklarni ro'yxatdan o'tkazishga ruxsat beradi",
+    rolesCanWorkWithAllClients: 'Barcha mijozlar bilan ishlash',
+    rolesCanWorkWithAllClientsDesc:
+      "Tashkilotdagi barcha xodimlarga biriktirilgan mijozlarni ko'rish, qidirish va boshqarish imkoniyati. O'chirilganda faqat o'ziga biriktirilgan mijozlar ko'rinadi.",
+    rolesPermCanWorkWithAllClientsTooltip:
+      "Tashkilotdagi barcha xodimlarga biriktirilgan mijozlarni ko'rish va boshqarish huquqi",
 
     // System Modules Labels & Tooltips
     module_clients: 'Mijozlarni boshqarish',

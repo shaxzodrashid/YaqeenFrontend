@@ -6,6 +6,15 @@ export interface ModulePermissions {
   update: boolean;
   delete: boolean;
   register_for_everyone?: boolean;
+  can_work_with_all_clients?: boolean;
+}
+
+export interface ClientsModulePermissions {
+  create: boolean;
+  read: boolean;
+  update: boolean;
+  delete: boolean;
+  can_work_with_all_clients: boolean;
 }
 
 export interface RolePermissions {
@@ -114,10 +123,23 @@ const DEFAULT_DEMO_ROLES: Role[] = [
     display_name: 'Chief Executive Officer',
     description: 'Full administrative access to all modules and system settings',
     permissions: {
-      clients: { create: true, read: true, update: true, delete: true },
+      clients: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        can_work_with_all_clients: true,
+      },
       employees: { create: true, read: true, update: true, delete: true },
       departments: { create: true, read: true, update: true, delete: true },
       cargo_kpi: { create: true, read: true, update: true, delete: true },
+      cargo_registrations: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        register_for_everyone: true,
+      },
       finance: { create: true, read: true, update: true, delete: true },
       commercial_offers: { create: true, read: true, update: true, delete: true },
       tasks: { create: true, read: true, update: true, delete: true },
@@ -136,10 +158,23 @@ const DEFAULT_DEMO_ROLES: Role[] = [
     display_name: 'Head of Sales & Operations (ROP)',
     description: 'Department manager privileges with cargo, clients, and team controls',
     permissions: {
-      clients: { create: true, read: true, update: true, delete: true },
+      clients: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        can_work_with_all_clients: true,
+      },
       employees: { create: false, read: true, update: true, delete: false },
       departments: { create: false, read: true, update: false, delete: false },
       cargo_kpi: { create: true, read: true, update: true, delete: true },
+      cargo_registrations: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        register_for_everyone: true,
+      },
       finance: { create: false, read: true, update: false, delete: false },
       commercial_offers: { create: true, read: true, update: true, delete: true },
       tasks: { create: true, read: true, update: true, delete: true },
@@ -158,10 +193,23 @@ const DEFAULT_DEMO_ROLES: Role[] = [
     display_name: 'Standard Staff',
     description: 'Standard employee privileges for daily operations and task tracking',
     permissions: {
-      clients: { create: false, read: true, update: true, delete: false },
+      clients: {
+        create: false,
+        read: true,
+        update: true,
+        delete: false,
+        can_work_with_all_clients: false,
+      },
       employees: { create: false, read: true, update: false, delete: false },
       departments: { create: false, read: true, update: false, delete: false },
       cargo_kpi: { create: false, read: true, update: false, delete: false },
+      cargo_registrations: {
+        create: true,
+        read: true,
+        update: false,
+        delete: false,
+        register_for_everyone: false,
+      },
       finance: { create: false, read: false, update: false, delete: false },
       commercial_offers: { create: true, read: true, update: false, delete: false },
       tasks: { create: true, read: true, update: true, delete: false },
@@ -180,10 +228,23 @@ const DEFAULT_DEMO_ROLES: Role[] = [
     display_name: 'Logistics & Cargo Manager',
     description: 'Custom role for cargo operations team leads',
     permissions: {
-      clients: { create: false, read: true, update: true, delete: false },
+      clients: {
+        create: false,
+        read: true,
+        update: true,
+        delete: false,
+        can_work_with_all_clients: false,
+      },
       employees: { create: false, read: true, update: false, delete: false },
       departments: { create: false, read: true, update: false, delete: false },
       cargo_kpi: { create: true, read: true, update: true, delete: true },
+      cargo_registrations: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        register_for_everyone: true,
+      },
       finance: { create: false, read: false, update: false, delete: false },
       commercial_offers: { create: true, read: true, update: true, delete: false },
       tasks: { create: true, read: true, update: true, delete: true },
@@ -247,6 +308,12 @@ export const rolesApi = {
           read: p?.read ?? false,
           update: p?.update ?? false,
           delete: p?.delete ?? false,
+          ...(mod.module === 'cargo_registrations'
+            ? { register_for_everyone: p?.register_for_everyone ?? false }
+            : {}),
+          ...(mod.module === 'clients'
+            ? { can_work_with_all_clients: p?.can_work_with_all_clients ?? false }
+            : {}),
         };
       });
 
