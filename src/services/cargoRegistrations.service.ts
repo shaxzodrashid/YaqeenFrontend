@@ -159,6 +159,56 @@ export interface CargoRegistrationMeta {
   };
 }
 
+export interface CargoRegistrationStatsParams {
+  status?: CargoRegistrationStatus | string;
+  employee_id?: string;
+  client_id?: string;
+  cargo_type?: CargoType | string;
+  created_start_date?: string;
+  created_end_date?: string;
+}
+
+export interface CargoRegistrationsStatsResponse {
+  summary: {
+    total_cargos: number;
+    gross_sales_revenue: {
+      UZS: number;
+      USD: number;
+      RUB: number;
+      RMB: number;
+      total_usd_equivalent: number;
+      total_uzs_equivalent: number;
+    };
+    calculated_net_yield: {
+      USD: number;
+      UZS: number;
+      total_usd: number;
+      total_uzs: number;
+    };
+  };
+  ltl_statistics: {
+    total_count: number;
+    total_volume_m3: number;
+    total_weight_kg: number;
+    avg_volume_m3: number;
+    avg_weight_kg: number;
+  };
+  ftl_statistics: {
+    total_count: number;
+    container_type_distribution: Record<string, number>;
+  };
+  status_distribution: Record<string, number>;
+  by_manager: {
+    employee_name: string;
+    total_cargos: number;
+    ltl_cargos: number;
+    ltl_volume: number;
+    ftl_cargos: number;
+    gross_sales_usd: number;
+    net_yield_usd: number;
+  }[];
+}
+
 export interface CargoRegistrationPaginatedResponse {
   meta: CargoRegistrationMeta;
   data: CargoRegistrationListItem[];
@@ -1133,6 +1183,142 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     };
   }
 
+  // Stats / Summary Statistics
+  if (
+    (pathname === '/cargo-registrations/stats' ||
+      pathname === '/cargo-registrations/stats/summary' ||
+      pathname.startsWith('/cargo-registrations/stats')) &&
+    method === 'GET'
+  ) {
+    const urlObj = new URL(path, 'http://localhost');
+    const status = urlObj.searchParams.get('status');
+    const empId = urlObj.searchParams.get('employee_id');
+    const clientId = urlObj.searchParams.get('client_id');
+    const cargoType = urlObj.searchParams.get('cargo_type');
+
+    let list = [...demoRecords];
+    if (status) list = list.filter((r) => r.status === status);
+    if (empId) list = list.filter((r) => r.employee_id === empId);
+    if (clientId) list = list.filter((r) => r.client_id === clientId);
+    if (cargoType) list = list.filter((r) => r.cargo_type === cargoType);
+
+    const ltlList = list.filter((r) => r.cargo_type === 'LTL');
+    const ftlList = list.filter((r) => r.cargo_type === 'FTL');
+
+    const totalLtlVol = ltlList.reduce((s, r) => s + (r.volume || 0), 0);
+    const totalLtlWeight = ltlList.reduce((s, r) => s + (r.weight || 0), 0);
+
+    const containerTypes: Record<string, number> = {};
+    ftlList.forEach((r) => {
+      const ct = r.container_type || 'Unknown';
+      containerTypes[ct] = (containerTypes[ct] || 0) + 1;
+    });
+
+    const statusDist: Record<string, number> = {};
+    list.forEach((r) => {
+      statusDist[r.status] = (statusDist[r.status] || 0) + 1;
+    });
+
+    const managerMap: Record<
+      string,
+      {
+        name: string;
+        total: number;
+        ltl: number;
+        ltlVol: number;
+        ftl: number;
+        grossUsd: number;
+        netUsd: number;
+      }
+    > = {};
+
+    list.forEach((r) => {
+      const emp = demoEmployeesDb.get(r.employee_id);
+      const name = emp
+        ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Employee'
+        : 'Unassigned';
+      if (!managerMap[name]) {
+        managerMap[name] = {
+          name,
+          total: 0,
+          ltl: 0,
+          ltlVol: 0,
+          ftl: 0,
+          grossUsd: 0,
+          netUsd: 0,
+        };
+      }
+      managerMap[name].total += 1;
+      if (r.cargo_type === 'LTL') {
+        managerMap[name].ltl += 1;
+        managerMap[name].ltlVol += r.volume || 0;
+      } else {
+        managerMap[name].ftl += 1;
+      }
+      const purConv = convertPriceToUsdAndUzs(
+        r.purchase_price,
+        r.purchase_currency,
+        r.purchase_date || '',
+        r.purchase_usd_rate || 11886.72,
+        r.usd_rmb_rate || 7.235
+      );
+      const sellConv = convertPriceToUsdAndUzs(
+        r.sell_price,
+        r.sell_currency,
+        r.sell_date || '',
+        r.sell_usd_rate || 11886.72,
+        r.usd_rmb_rate || 7.235
+      );
+      managerMap[name].grossUsd += sellConv.amount_usd;
+      managerMap[name].netUsd += Math.max(0, sellConv.amount_usd - purConv.amount_usd);
+    });
+
+    const statsResult: CargoRegistrationsStatsResponse = {
+      summary: {
+        total_cargos: list.length,
+        gross_sales_revenue: {
+          UZS: 120000000,
+          USD: 450000,
+          RUB: 350000,
+          RMB: 80000,
+          total_usd_equivalent: 472500.0,
+          total_uzs_equivalent: 6071625000.0,
+        },
+        calculated_net_yield: {
+          USD: 75000.0,
+          UZS: 963750000.0,
+          total_usd: 75000.0,
+          total_uzs: 963750000.0,
+        },
+      },
+      ltl_statistics: {
+        total_count: ltlList.length,
+        total_volume_m3: Math.round(totalLtlVol * 100) / 100,
+        total_weight_kg: Math.round(totalLtlWeight * 100) / 100,
+        avg_volume_m3:
+          ltlList.length > 0 ? Math.round((totalLtlVol / ltlList.length) * 100) / 100 : 0,
+        avg_weight_kg:
+          ltlList.length > 0 ? Math.round((totalLtlWeight / ltlList.length) * 100) / 100 : 0,
+      },
+      ftl_statistics: {
+        total_count: ftlList.length,
+        container_type_distribution: containerTypes,
+      },
+      status_distribution: statusDist,
+      by_manager: Object.values(managerMap).map((m) => ({
+        employee_name: m.name,
+        total_cargos: m.total,
+        ltl_cargos: m.ltl,
+        ltl_volume: Math.round(m.ltlVol * 100) / 100,
+        ftl_cargos: m.ftl,
+        gross_sales_usd: Math.round(m.grossUsd * 100) / 100,
+        net_yield_usd: Math.round(m.netUsd * 100) / 100,
+      })),
+    };
+
+    return { handled: true, result: statsResult };
+  }
+
   return null;
 });
 
@@ -1179,6 +1365,27 @@ export const cargoRegistrationsApi = {
     const query = searchParams.toString();
     return request<CargoRegistrationPaginatedResponse>(
       `/cargo-registrations${query ? `?${query}` : ''}`,
+      {
+        method: 'GET',
+      }
+    );
+  },
+
+  getStats: async (
+    params?: CargoRegistrationStatsParams
+  ): Promise<CargoRegistrationsStatsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
+    if (params?.client_id) searchParams.set('client_id', params.client_id);
+    if (params?.cargo_type) searchParams.set('cargo_type', params.cargo_type);
+    if (params?.created_start_date)
+      searchParams.set('created_start_date', params.created_start_date);
+    if (params?.created_end_date) searchParams.set('created_end_date', params.created_end_date);
+
+    const query = searchParams.toString();
+    return request<CargoRegistrationsStatsResponse>(
+      `/cargo-registrations/stats${query ? `?${query}` : ''}`,
       {
         method: 'GET',
       }

@@ -159,44 +159,162 @@ export interface SeoCalculateResult {
   seo_kpi: number;
 }
 
-// 6. Employee Plans & Progress
+// 6. Employee Plans & Progress (Dual Direction: LTL Volume & FTL Financial Value)
+export interface EmployeeLtlPlan {
+  target_volume: number; // m3
+  actual_volume: number; // m3
+  remaining_volume: number; // m3
+  completion_percentage: number;
+  is_completed: boolean;
+  cargo_count: number;
+}
+
+export interface EmployeeFtlPlan {
+  target_amount: number;
+  currency: SupportedCurrency;
+  actual_amount: number;
+  remaining_amount: number;
+  completion_percentage: number;
+  is_completed: boolean;
+  cargo_count: number;
+}
+
 export interface EmployeePlanProgress {
   id: string;
   employee_id: string;
   employee_name: string;
   department_id?: string | null;
   department_name?: string | null;
-  month: string; // YYYY-MM
-  target_sales: number;
+  color?: string | null;
+  period?: string; // YYYY-MM or YYYY-MM-DD
+  month?: string; // YYYY-MM
   currency?: SupportedCurrency;
+
+  // Direction 1: LTL Volume Plan (m3)
+  ltl_plan?: EmployeeLtlPlan;
+  ltl_target_volume: number;
+  ltl_actual_volume: number;
+  ltl_remaining_volume?: number;
+
+  // Direction 2: FTL Financial Value Plan
+  ftl_plan?: EmployeeFtlPlan;
+  ftl_target_amount: number;
+  ftl_actual_amount: number;
+  ftl_remaining_amount?: number;
+
+  // Blended & Progress Aggregates
+  total_cargos_count: number;
+  overall_completion_percentage: number;
+  is_completed: boolean;
+  rank?: number;
+  status: 'on_track' | 'ahead' | 'behind' | 'completed' | string;
+
+  // Backward compatibility fields
+  target_sales: number;
   actual_sales: number;
   remaining_target: number;
   completion_percentage: number;
-  rank?: number;
-  status: 'on_track' | 'ahead' | 'behind' | 'completed' | string;
+  target_amount?: number;
+  target_volume?: number;
+  actual_volume?: number;
+  remaining_volume?: number;
+
   created_at?: string;
   updated_at?: string;
 }
 
 export interface EmployeePlansResponse {
+  total_plans?: number;
   month: string;
+  period?: string;
+  currency?: SupportedCurrency;
   total_target: number;
   total_actual: number;
   overall_completion_percentage: number;
   plans: EmployeePlanProgress[];
+  leaderboard?: EmployeePlanProgress[];
 }
 
 export interface CreateEmployeePlanDto {
   employee_id: string;
-  department_id?: string;
+  ltl_target_volume?: number;
+  ftl_target_amount?: number;
+  currency?: SupportedCurrency;
   period?: string;
   month?: string;
+  department_id?: string;
+  // Backward compatibility
   target_amount?: number;
   target_sales?: number;
-  currency?: SupportedCurrency;
+  target_volume?: number;
 }
 
 export interface UpdateEmployeePlanDto extends Partial<CreateEmployeePlanDto> {}
+
+export interface PlansDepartmentBreakdown {
+  department_name: string;
+  employees_count: number;
+  ltl_target_volume: number;
+  ltl_actual_volume: number;
+  ftl_target_amount: number;
+  ftl_actual_amount: number;
+  total_cargos: number;
+  ltl_completion_percentage: number;
+  ftl_completion_percentage: number;
+  currency: SupportedCurrency;
+}
+
+export interface PlansAggregatedStatsResponse {
+  period: string;
+  currency: SupportedCurrency;
+  summary: {
+    total_plans: number;
+    completed_plans_count: number;
+    in_progress_plans_count: number;
+    overall_completion_percentage: number;
+    total_cargos_registered: number;
+  };
+  ltl_statistics: {
+    total_target_volume: number;
+    total_actual_volume: number;
+    total_remaining_volume: number;
+    completion_percentage: number;
+    total_cargo_count: number;
+    avg_volume_per_cargo: number;
+  };
+  ftl_statistics: {
+    total_target_amount: number;
+    total_actual_amount: number;
+    total_remaining_amount: number;
+    completion_percentage: number;
+    currency: SupportedCurrency;
+    total_cargo_count: number;
+    avg_amount_per_cargo: number;
+  };
+  leaderboard: EmployeePlanProgress[];
+  department_breakdown: PlansDepartmentBreakdown[];
+}
+
+export interface EmployeePersonalPlanStatsResponse {
+  employee: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    department_name?: string;
+    color?: string;
+  };
+  current_plan: EmployeePlanProgress | null;
+  totals: {
+    total_plans_set: number;
+    plans_completed: number;
+    total_ltl_volume_achieved: number;
+    total_ftl_sales_achieved: number;
+    currency: SupportedCurrency;
+    total_cargos_registered: number;
+  };
+  history: EmployeePlanProgress[];
+}
 
 // Standardized Response Envelope Meta Interface
 export interface ResponseMeta {
@@ -727,15 +845,47 @@ let demoEmployeePlans: EmployeePlanProgress[] = [
     employee_name: 'Jasur Yoldoshev',
     department_id: 'dep-sales',
     department_name: 'Sales HQ',
-    month: '2026-07',
-    target_sales: 50000,
+    color: '#336699',
+    period: '2026-08-01',
+    month: '2026-08',
     currency: 'USD',
-    actual_sales: 35000,
-    remaining_target: 15000,
-    completion_percentage: 70,
+    ltl_plan: {
+      target_volume: 100,
+      actual_volume: 85.5,
+      remaining_volume: 14.5,
+      completion_percentage: 85.5,
+      is_completed: false,
+      cargo_count: 6,
+    },
+    ftl_plan: {
+      target_amount: 50000,
+      currency: 'USD',
+      actual_amount: 55000,
+      remaining_amount: 0,
+      completion_percentage: 110.0,
+      is_completed: true,
+      cargo_count: 4,
+    },
+    total_cargos_count: 10,
+    overall_completion_percentage: 97.75,
+    is_completed: false,
+    ltl_target_volume: 100,
+    ltl_actual_volume: 85.5,
+    ltl_remaining_volume: 14.5,
+    ftl_target_amount: 50000,
+    ftl_actual_amount: 55000,
+    ftl_remaining_amount: 0,
+    target_sales: 50000,
+    actual_sales: 55000,
+    remaining_target: 0,
+    completion_percentage: 97.75,
+    target_amount: 50000,
+    target_volume: 100,
+    actual_volume: 85.5,
+    remaining_volume: 14.5,
     rank: 1,
     status: 'on_track',
-    created_at: '2026-07-01T00:00:00.000Z',
+    created_at: '2026-08-01T00:00:00.000Z',
   },
   {
     id: 'plan-2',
@@ -743,14 +893,142 @@ let demoEmployeePlans: EmployeePlanProgress[] = [
     employee_name: 'Rustam Rasulov',
     department_id: 'dep-sales',
     department_name: 'Sales HQ',
-    month: '2026-07',
-    target_sales: 40000,
+    color: '#059669',
+    period: '2026-08-01',
+    month: '2026-08',
     currency: 'USD',
-    actual_sales: 28000,
-    remaining_target: 12000,
-    completion_percentage: 70,
+    ltl_plan: {
+      target_volume: 80,
+      actual_volume: 68.0,
+      remaining_volume: 12.0,
+      completion_percentage: 85.0,
+      is_completed: false,
+      cargo_count: 5,
+    },
+    ftl_plan: {
+      target_amount: 40000,
+      currency: 'USD',
+      actual_amount: 38000,
+      remaining_amount: 2000,
+      completion_percentage: 95.0,
+      is_completed: false,
+      cargo_count: 3,
+    },
+    total_cargos_count: 8,
+    overall_completion_percentage: 90.0,
+    is_completed: false,
+    ltl_target_volume: 80,
+    ltl_actual_volume: 68.0,
+    ltl_remaining_volume: 12.0,
+    ftl_target_amount: 40000,
+    ftl_actual_amount: 38000,
+    ftl_remaining_amount: 2000,
+    target_sales: 40000,
+    actual_sales: 38000,
+    remaining_target: 2000,
+    completion_percentage: 90.0,
+    target_amount: 40000,
+    target_volume: 80,
+    actual_volume: 68.0,
+    remaining_volume: 12.0,
     rank: 2,
     status: 'on_track',
+    created_at: '2026-08-01T00:00:00.000Z',
+  },
+  {
+    id: 'plan-3',
+    employee_id: '1d63b635-8933-45d1-a233-d6902e3b27f1',
+    employee_name: 'Dilnoza Rahimova',
+    department_id: 'dep-logistics',
+    department_name: 'Logistics',
+    color: '#8B5CF6',
+    period: '2026-08-01',
+    month: '2026-08',
+    currency: 'USD',
+    ltl_plan: {
+      target_volume: 60,
+      actual_volume: 65.0,
+      remaining_volume: 0,
+      completion_percentage: 108.33,
+      is_completed: true,
+      cargo_count: 5,
+    },
+    ftl_plan: {
+      target_amount: 45000,
+      currency: 'USD',
+      actual_amount: 48000,
+      remaining_amount: 0,
+      completion_percentage: 106.67,
+      is_completed: true,
+      cargo_count: 4,
+    },
+    total_cargos_count: 9,
+    overall_completion_percentage: 107.5,
+    is_completed: true,
+    ltl_target_volume: 60,
+    ltl_actual_volume: 65.0,
+    ltl_remaining_volume: 0,
+    ftl_target_amount: 45000,
+    ftl_actual_amount: 48000,
+    ftl_remaining_amount: 0,
+    target_sales: 45000,
+    actual_sales: 48000,
+    remaining_target: 0,
+    completion_percentage: 107.5,
+    target_amount: 45000,
+    target_volume: 60,
+    actual_volume: 65.0,
+    remaining_volume: 0,
+    rank: 1,
+    status: 'completed',
+    created_at: '2026-08-01T00:00:00.000Z',
+  },
+  {
+    id: 'plan-4',
+    employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
+    employee_name: 'Jasur Yoldoshev',
+    department_id: 'dep-sales',
+    department_name: 'Sales HQ',
+    color: '#336699',
+    period: '2026-07-01',
+    month: '2026-07',
+    currency: 'USD',
+    ltl_plan: {
+      target_volume: 90,
+      actual_volume: 90,
+      remaining_volume: 0,
+      completion_percentage: 100.0,
+      is_completed: true,
+      cargo_count: 7,
+    },
+    ftl_plan: {
+      target_amount: 45000,
+      currency: 'USD',
+      actual_amount: 48000,
+      remaining_amount: 0,
+      completion_percentage: 106.67,
+      is_completed: true,
+      cargo_count: 4,
+    },
+    total_cargos_count: 11,
+    overall_completion_percentage: 103.33,
+    is_completed: true,
+    ltl_target_volume: 90,
+    ltl_actual_volume: 90,
+    ltl_remaining_volume: 0,
+    ftl_target_amount: 45000,
+    ftl_actual_amount: 48000,
+    ftl_remaining_amount: 0,
+    target_sales: 45000,
+    actual_sales: 48000,
+    remaining_target: 0,
+    completion_percentage: 103.33,
+    target_amount: 45000,
+    target_volume: 90,
+    actual_volume: 90,
+    remaining_volume: 0,
+    rank: 1,
+    status: 'completed',
     created_at: '2026-07-01T00:00:00.000Z',
   },
 ];
@@ -1120,54 +1398,338 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     return { handled: true, result };
   }
 
-  // 6. Employee Plans & Progress
-  if (isPath('/cargo-kpi/plans') && method === 'GET') {
+  // 6. Employee Plans & Progress (Dual Direction: LTL Volume & FTL Financial Value)
+  if (
+    (isPath('/cargo-kpi/plans/stats') || isPath('/cargo-kpi/plans/statistics')) &&
+    method === 'GET'
+  ) {
     const urlObj = new URL(path, 'http://localhost');
     const reqMonth =
-      urlObj.searchParams.get('period') || urlObj.searchParams.get('month') || '2026-07';
+      urlObj.searchParams.get('period') || urlObj.searchParams.get('month') || '2026-08';
     const empId = urlObj.searchParams.get('employee_id');
+    const search = urlObj.searchParams.get('search')?.toLowerCase();
 
-    let filtered = demoEmployeePlans.filter((p) => p.month === reqMonth);
+    let filtered = demoEmployeePlans.filter((p) => {
+      const pMonth = (p.period || p.month || '').slice(0, 7);
+      return pMonth === reqMonth.slice(0, 7);
+    });
+
     if (empId) {
       filtered = filtered.filter((p) => p.employee_id === empId);
     }
+    if (search) {
+      filtered = filtered.filter(
+        (p) =>
+          p.employee_name.toLowerCase().includes(search) ||
+          (p.department_name && p.department_name.toLowerCase().includes(search))
+      );
+    }
 
-    const total_target = filtered.reduce((s, p) => s + p.target_sales, 0);
-    const total_actual = filtered.reduce((s, p) => s + p.actual_sales, 0);
+    const totalPlans = filtered.length;
+    const completedPlans = filtered.filter(
+      (p) => p.is_completed || p.overall_completion_percentage >= 100
+    ).length;
+    const inProgressPlans = totalPlans - completedPlans;
+
+    // LTL Totals
+    const ltlTargetVol = filtered.reduce(
+      (s, p) => s + (p.ltl_plan?.target_volume ?? p.ltl_target_volume ?? 0),
+      0
+    );
+    const ltlActualVol = filtered.reduce(
+      (s, p) => s + (p.ltl_plan?.actual_volume ?? p.ltl_actual_volume ?? 0),
+      0
+    );
+    const ltlRemVol = Math.max(0, ltlTargetVol - ltlActualVol);
+    const ltlCompPct =
+      ltlTargetVol > 0 ? Math.round((ltlActualVol / ltlTargetVol) * 10000) / 100 : 0;
+    const ltlCargoCount = filtered.reduce((s, p) => s + (p.ltl_plan?.cargo_count ?? 0), 0);
+    const avgVolumePerCargo =
+      ltlCargoCount > 0 ? Math.round((ltlActualVol / ltlCargoCount) * 100) / 100 : 0;
+
+    // FTL Totals
+    const ftlTargetAmount = filtered.reduce(
+      (s, p) => s + (p.ftl_plan?.target_amount ?? p.ftl_target_amount ?? 0),
+      0
+    );
+    const ftlActualAmount = filtered.reduce(
+      (s, p) => s + (p.ftl_plan?.actual_amount ?? p.ftl_actual_amount ?? 0),
+      0
+    );
+    const ftlRemAmount = Math.max(0, ftlTargetAmount - ftlActualAmount);
+    const ftlCompPct =
+      ftlTargetAmount > 0 ? Math.round((ftlActualAmount / ftlTargetAmount) * 10000) / 100 : 0;
+    const ftlCargoCount = filtered.reduce((s, p) => s + (p.ftl_plan?.cargo_count ?? 0), 0);
+    const avgAmountPerCargo =
+      ftlCargoCount > 0 ? Math.round((ftlActualAmount / ftlCargoCount) * 100) / 100 : 0;
+
+    const totalCargosRegistered = ltlCargoCount + ftlCargoCount;
+    const overallCompPct =
+      totalPlans > 0
+        ? Math.round(
+            (filtered.reduce((s, p) => s + p.overall_completion_percentage, 0) / totalPlans) * 100
+          ) / 100
+        : 0;
+
+    // Department Breakdown
+    const deptMap: Record<
+      string,
+      {
+        employees: Set<string>;
+        ltl_target: number;
+        ltl_actual: number;
+        ftl_target: number;
+        ftl_actual: number;
+        cargos: number;
+      }
+    > = {};
+
+    filtered.forEach((p) => {
+      const dName = p.department_name || 'Sales Department';
+      if (!deptMap[dName]) {
+        deptMap[dName] = {
+          employees: new Set(),
+          ltl_target: 0,
+          ltl_actual: 0,
+          ftl_target: 0,
+          ftl_actual: 0,
+          cargos: 0,
+        };
+      }
+      deptMap[dName].employees.add(p.employee_id);
+      deptMap[dName].ltl_target += p.ltl_plan?.target_volume ?? p.ltl_target_volume ?? 0;
+      deptMap[dName].ltl_actual += p.ltl_plan?.actual_volume ?? p.ltl_actual_volume ?? 0;
+      deptMap[dName].ftl_target += p.ftl_plan?.target_amount ?? p.ftl_target_amount ?? 0;
+      deptMap[dName].ftl_actual += p.ftl_plan?.actual_amount ?? p.ftl_actual_amount ?? 0;
+      deptMap[dName].cargos += p.total_cargos_count || 0;
+    });
+
+    const department_breakdown: PlansDepartmentBreakdown[] = Object.entries(deptMap).map(
+      ([name, d]) => {
+        const ltlComp =
+          d.ltl_target > 0 ? Math.round((d.ltl_actual / d.ltl_target) * 10000) / 100 : 0;
+        const ftlComp =
+          d.ftl_target > 0 ? Math.round((d.ftl_actual / d.ftl_target) * 10000) / 100 : 0;
+        return {
+          department_name: name,
+          employees_count: d.employees.size,
+          ltl_target_volume: Math.round(d.ltl_target * 100) / 100,
+          ltl_actual_volume: Math.round(d.ltl_actual * 100) / 100,
+          ftl_target_amount: d.ftl_target,
+          ftl_actual_amount: d.ftl_actual,
+          total_cargos: d.cargos,
+          ltl_completion_percentage: ltlComp,
+          ftl_completion_percentage: ftlComp,
+          currency: 'USD',
+        };
+      }
+    );
+
+    const statsResult: PlansAggregatedStatsResponse = {
+      period: reqMonth,
+      currency: 'USD',
+      summary: {
+        total_plans: totalPlans,
+        completed_plans_count: completedPlans,
+        in_progress_plans_count: inProgressPlans,
+        overall_completion_percentage: overallCompPct,
+        total_cargos_registered: totalCargosRegistered,
+      },
+      ltl_statistics: {
+        total_target_volume: Math.round(ltlTargetVol * 100) / 100,
+        total_actual_volume: Math.round(ltlActualVol * 100) / 100,
+        total_remaining_volume: Math.round(ltlRemVol * 100) / 100,
+        completion_percentage: ltlCompPct,
+        total_cargo_count: ltlCargoCount,
+        avg_volume_per_cargo: avgVolumePerCargo,
+      },
+      ftl_statistics: {
+        total_target_amount: ftlTargetAmount,
+        total_actual_amount: ftlActualAmount,
+        total_remaining_amount: ftlRemAmount,
+        completion_percentage: ftlCompPct,
+        currency: 'USD',
+        total_cargo_count: ftlCargoCount,
+        avg_amount_per_cargo: avgAmountPerCargo,
+      },
+      leaderboard: [...filtered].sort((a, b) => (a.rank || 99) - (b.rank || 99)),
+      department_breakdown,
+    };
+
+    return { handled: true, result: statsResult };
+  }
+
+  if (startsWith('/cargo-kpi/plans/employee/') && path.endsWith('/stats') && method === 'GET') {
+    const parts = path.split('/plans/employee/')[1]?.split('/');
+    const empId = parts ? parts[0] : '';
+    const urlObj = new URL(path, 'http://localhost');
+    const reqMonth =
+      urlObj.searchParams.get('period') || urlObj.searchParams.get('month') || '2026-08';
+
+    const empPlans = demoEmployeePlans.filter((p) => p.employee_id === empId);
+    const sampleEmp = empPlans[0] || {
+      employee_id: empId,
+      employee_name: 'Employee',
+      department_name: 'Sales HQ',
+      color: '#336699',
+    };
+
+    const currentPlan =
+      empPlans.find((p) => (p.period || p.month || '').slice(0, 7) === reqMonth.slice(0, 7)) ||
+      empPlans[0] ||
+      null;
+
+    const totalPlansSet = empPlans.length;
+    const plansCompleted = empPlans.filter(
+      (p) => p.is_completed || p.overall_completion_percentage >= 100
+    ).length;
+    const totalLtlVolume = empPlans.reduce(
+      (s, p) => s + (p.ltl_plan?.actual_volume ?? p.ltl_actual_volume ?? 0),
+      0
+    );
+    const totalFtlSales = empPlans.reduce(
+      (s, p) => s + (p.ftl_plan?.actual_amount ?? p.ftl_actual_amount ?? 0),
+      0
+    );
+    const totalCargos = empPlans.reduce((s, p) => s + (p.total_cargos_count || 0), 0);
+
+    const empStatsResult: EmployeePersonalPlanStatsResponse = {
+      employee: {
+        id: sampleEmp.employee_id,
+        full_name: sampleEmp.employee_name,
+        department_name: sampleEmp.department_name || 'Sales HQ',
+        color: sampleEmp.color || '#336699',
+      },
+      current_plan: currentPlan,
+      totals: {
+        total_plans_set: totalPlansSet,
+        plans_completed: plansCompleted,
+        total_ltl_volume_achieved: Math.round(totalLtlVolume * 100) / 100,
+        total_ftl_sales_achieved: totalFtlSales,
+        currency: 'USD',
+        total_cargos_registered: totalCargos,
+      },
+      history: [...empPlans].sort((a, b) =>
+        (b.period || b.month || '').localeCompare(a.period || a.month || '')
+      ),
+    };
+
+    return { handled: true, result: empStatsResult };
+  }
+
+  if (isPath('/cargo-kpi/plans') && method === 'GET') {
+    const urlObj = new URL(path, 'http://localhost');
+    const reqMonth =
+      urlObj.searchParams.get('period') || urlObj.searchParams.get('month') || '2026-08';
+    const empId = urlObj.searchParams.get('employee_id');
+    const search = urlObj.searchParams.get('search')?.toLowerCase();
+
+    let filtered = demoEmployeePlans.filter((p) => {
+      const pMonth = (p.period || p.month || '').slice(0, 7);
+      return pMonth === reqMonth.slice(0, 7);
+    });
+
+    if (empId) {
+      filtered = filtered.filter((p) => p.employee_id === empId);
+    }
+    if (search) {
+      filtered = filtered.filter(
+        (p) =>
+          p.employee_name.toLowerCase().includes(search) ||
+          (p.department_name && p.department_name.toLowerCase().includes(search))
+      );
+    }
+
+    const total_target = filtered.reduce(
+      (s, p) => s + (p.ftl_plan?.target_amount ?? p.ftl_target_amount ?? p.target_sales ?? 0),
+      0
+    );
+    const total_actual = filtered.reduce(
+      (s, p) => s + (p.ftl_plan?.actual_amount ?? p.ftl_actual_amount ?? p.actual_sales ?? 0),
+      0
+    );
     const overall_completion_percentage =
-      total_target > 0 ? Math.round((total_actual / total_target) * 100) : 0;
+      filtered.length > 0
+        ? Math.round(
+            (filtered.reduce((s, p) => s + p.overall_completion_percentage, 0) / filtered.length) *
+              10
+          ) / 10
+        : 0;
+
+    const sortedLeaderboard = [...filtered].sort((a, b) => (a.rank || 99) - (b.rank || 99));
 
     const result: EmployeePlansResponse = {
+      total_plans: filtered.length,
       month: reqMonth,
+      period: reqMonth,
+      currency: 'USD',
       total_target,
       total_actual,
       overall_completion_percentage,
-      plans: filtered,
+      plans: sortedLeaderboard,
+      leaderboard: sortedLeaderboard,
     };
     return { handled: true, result };
   }
 
   if (isPath('/cargo-kpi/plans') && method === 'POST') {
-    const target = Number(body.target_amount ?? body.target_sales) || 0;
-    const actual = 0;
-    const remaining = Math.max(0, target - actual);
-    const compPct = target > 0 ? Math.round((actual / target) * 100) : 0;
-    const period = body.period || body.month || '2026-07';
-    const currency: SupportedCurrency = (body.currency as SupportedCurrency) || 'UZS';
+    const period = body.period || body.month || '2026-08';
+    const currency: SupportedCurrency = (body.currency as SupportedCurrency) || 'USD';
+    const ltlTarget = Number(body.ltl_target_volume ?? body.target_volume ?? 0);
+    const ftlTarget = Number(
+      body.ftl_target_amount ?? body.target_amount ?? body.target_sales ?? 0
+    );
+
+    const ltlPlan: EmployeeLtlPlan = {
+      target_volume: ltlTarget,
+      actual_volume: 0,
+      remaining_volume: ltlTarget,
+      completion_percentage: 0,
+      is_completed: false,
+      cargo_count: 0,
+    };
+
+    const ftlPlan: EmployeeFtlPlan = {
+      target_amount: ftlTarget,
+      currency,
+      actual_amount: 0,
+      remaining_amount: ftlTarget,
+      completion_percentage: 0,
+      is_completed: false,
+      cargo_count: 0,
+    };
 
     const newPlan: EmployeePlanProgress = {
       id: `plan-${demoEmployeePlans.length + 1}`,
       employee_id: body.employee_id || 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
       employee_name: body.employee_name || 'Employee',
       department_id: body.department_id || null,
+      department_name: body.department_name || 'Sales HQ',
+      color: '#336699',
+      period,
       month: period,
-      target_sales: target,
       currency,
-      actual_sales: actual,
-      remaining_target: remaining,
-      completion_percentage: compPct,
+      ltl_plan: ltlPlan,
+      ltl_target_volume: ltlTarget,
+      ltl_actual_volume: 0,
+      ltl_remaining_volume: ltlTarget,
+      ftl_plan: ftlPlan,
+      ftl_target_amount: ftlTarget,
+      ftl_actual_amount: 0,
+      ftl_remaining_amount: ftlTarget,
+      total_cargos_count: 0,
+      overall_completion_percentage: 0,
+      is_completed: false,
+      target_sales: ftlTarget,
+      actual_sales: 0,
+      remaining_target: ftlTarget,
+      completion_percentage: 0,
+      target_amount: ftlTarget,
+      target_volume: ltlTarget,
+      actual_volume: 0,
+      remaining_volume: ltlTarget,
       rank: demoEmployeePlans.length + 1,
-      status: compPct >= 100 ? 'completed' : compPct >= 50 ? 'on_track' : 'behind',
+      status: 'behind',
       created_at: new Date().toISOString(),
     };
 
@@ -1183,31 +1745,88 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const current = demoEmployeePlans[index];
-    const target =
-      body.target_amount !== undefined
-        ? Number(body.target_amount)
-        : body.target_sales !== undefined
-          ? Number(body.target_sales)
-          : current.target_sales;
-    const actual = current.actual_sales;
-    const remaining = Math.max(0, target - actual);
-    const compPct = target > 0 ? Math.round((actual / target) * 100) : 0;
-    const period = body.period || body.month || current.month;
-    const currency =
-      body.currency !== undefined ? (body.currency as SupportedCurrency) : current.currency;
+    const period = body.period || body.month || current.period || current.month;
+    const currency: SupportedCurrency =
+      (body.currency as SupportedCurrency) || current.currency || 'USD';
+
+    const ltlTarget =
+      body.ltl_target_volume !== undefined
+        ? Number(body.ltl_target_volume)
+        : body.target_volume !== undefined
+          ? Number(body.target_volume)
+          : current.ltl_target_volume;
+
+    const ftlTarget =
+      body.ftl_target_amount !== undefined
+        ? Number(body.ftl_target_amount)
+        : body.target_amount !== undefined
+          ? Number(body.target_amount)
+          : body.target_sales !== undefined
+            ? Number(body.target_sales)
+            : current.ftl_target_amount;
+
+    const ltlActual = current.ltl_actual_volume;
+    const ltlRem = Math.max(0, ltlTarget - ltlActual);
+    const ltlComp = ltlTarget > 0 ? Math.round((ltlActual / ltlTarget) * 10000) / 100 : 0;
+
+    const ftlActual = current.ftl_actual_amount;
+    const ftlRem = Math.max(0, ftlTarget - ftlActual);
+    const ftlComp = ftlTarget > 0 ? Math.round((ftlActual / ftlTarget) * 10000) / 100 : 0;
+
+    let overallComp = 0;
+    if (ltlTarget > 0 && ftlTarget > 0) {
+      overallComp = Math.round(((ltlComp + ftlComp) / 2) * 10) / 10;
+    } else if (ltlTarget > 0) {
+      overallComp = ltlComp;
+    } else if (ftlTarget > 0) {
+      overallComp = ftlComp;
+    }
+
+    const isCompleted =
+      (ltlTarget === 0 || ltlActual >= ltlTarget) &&
+      (ftlTarget === 0 || ftlActual >= ftlTarget) &&
+      (ltlTarget > 0 || ftlTarget > 0);
 
     const updated: EmployeePlanProgress = {
       ...current,
-      employee_id: body.employee_id !== undefined ? body.employee_id : current.employee_id,
-      employee_name: body.employee_name !== undefined ? body.employee_name : current.employee_name,
-      department_id: body.department_id !== undefined ? body.department_id : current.department_id,
+      period,
       month: period,
-      target_sales: target,
       currency,
-      actual_sales: actual,
-      remaining_target: remaining,
-      completion_percentage: compPct,
-      status: compPct >= 100 ? 'completed' : compPct >= 50 ? 'on_track' : 'behind',
+      ltl_target_volume: ltlTarget,
+      ltl_actual_volume: ltlActual,
+      ltl_remaining_volume: ltlRem,
+      ltl_plan: {
+        target_volume: ltlTarget,
+        actual_volume: ltlActual,
+        remaining_volume: ltlRem,
+        completion_percentage: ltlComp,
+        is_completed: ltlTarget > 0 ? ltlActual >= ltlTarget : false,
+        cargo_count: current.ltl_plan?.cargo_count || 0,
+      },
+      ftl_target_amount: ftlTarget,
+      ftl_actual_amount: ftlActual,
+      ftl_remaining_amount: ftlRem,
+      ftl_plan: {
+        target_amount: ftlTarget,
+        currency,
+        actual_amount: ftlActual,
+        remaining_amount: ftlRem,
+        completion_percentage: ftlComp,
+        is_completed: ftlTarget > 0 ? ftlActual >= ftlTarget : false,
+        cargo_count: current.ftl_plan?.cargo_count || 0,
+      },
+      overall_completion_percentage: overallComp,
+      is_completed: isCompleted,
+      status:
+        isCompleted || overallComp >= 100 ? 'completed' : overallComp >= 50 ? 'on_track' : 'behind',
+      target_sales: ftlTarget,
+      actual_sales: ftlActual,
+      remaining_target: ftlRem,
+      completion_percentage: overallComp,
+      target_amount: ftlTarget,
+      target_volume: ltlTarget,
+      actual_volume: ltlActual,
+      remaining_volume: ltlRem,
       updated_at: new Date().toISOString(),
     };
 
@@ -1218,7 +1837,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   if (startsWith('/cargo-kpi/plans/') && method === 'DELETE') {
     const id = path.split('/plans/')[1]?.split('?')[0];
     demoEmployeePlans = demoEmployeePlans.filter((p) => p.id !== id && p.employee_id !== id);
-    return { handled: true, result: {} };
+    return { handled: true, result: { message: 'Plan deleted successfully' } };
   }
 
   // 7. Cargo Transactions Ledger
@@ -1797,14 +2416,47 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         employee_name: 'Jasur Yoldoshev',
         department_id: 'dep-sales',
         department_name: 'Sales HQ',
-        month: '2026-07',
+        color: '#336699',
+        period: '2026-08-01',
+        month: '2026-08',
+        currency: 'USD',
+        ltl_plan: {
+          target_volume: 100,
+          actual_volume: 85.5,
+          remaining_volume: 14.5,
+          completion_percentage: 85.5,
+          is_completed: false,
+          cargo_count: 6,
+        },
+        ftl_plan: {
+          target_amount: 50000,
+          currency: 'USD',
+          actual_amount: 55000,
+          remaining_amount: 0,
+          completion_percentage: 110.0,
+          is_completed: true,
+          cargo_count: 4,
+        },
+        total_cargos_count: 10,
+        overall_completion_percentage: 97.75,
+        is_completed: false,
+        ltl_target_volume: 100,
+        ltl_actual_volume: 85.5,
+        ltl_remaining_volume: 14.5,
+        ftl_target_amount: 50000,
+        ftl_actual_amount: 55000,
+        ftl_remaining_amount: 0,
         target_sales: 50000,
-        actual_sales: 35000,
-        remaining_target: 15000,
-        completion_percentage: 70,
+        actual_sales: 55000,
+        remaining_target: 0,
+        completion_percentage: 97.75,
+        target_amount: 50000,
+        target_volume: 100,
+        actual_volume: 85.5,
+        remaining_volume: 14.5,
         rank: 1,
         status: 'on_track',
-        created_at: '2026-07-01T00:00:00.000Z',
+        created_at: '2026-08-01T00:00:00.000Z',
       },
     ];
 
@@ -2013,19 +2665,20 @@ export const cargoKpiApi = {
       body: JSON.stringify(dto),
     }),
 
-  // Employee Plans & Progress
+  // Employee Plans & Progress (Dual Direction: LTL Volume & FTL Financial Value)
   getPlans: async (params?: {
     month?: string;
     period?: string;
     employee_id?: string;
+    search?: string;
   }): Promise<EmployeePlansResponse> => {
     const searchParams = new URLSearchParams();
     const period = params?.period || params?.month;
     if (period) {
       searchParams.set('period', period);
-      searchParams.set('month', period);
     }
     if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
+    if (params?.search) searchParams.set('search', params.search);
     const query = searchParams.toString();
     const raw: any = await request<any>(`/cargo-kpi/plans${query ? `?${query}` : ''}`, {
       method: 'GET',
@@ -2033,24 +2686,95 @@ export const cargoKpiApi = {
 
     const rawPlans = raw?.plans || raw?.leaderboard || raw?.data || [];
     const normalizedPlans: EmployeePlanProgress[] = rawPlans.map((p: any, idx: number) => {
-      const target = Number(p.target_amount ?? p.target_sales ?? 0);
-      const actual = Number(p.actual_sales ?? p.actual_amount ?? 0);
-      const remaining = Number(
-        p.remaining_target ?? p.remaining_amount ?? Math.max(0, target - actual)
+      const ltlTarget = Number(
+        p.ltl_target_volume ?? p.target_volume ?? p.ltl_plan?.target_volume ?? 0
       );
-      const compPct = Number(
-        p.completion_percentage ?? (target > 0 ? Math.round((actual / target) * 100) : 0)
+      const ltlActual = Number(
+        p.ltl_actual_volume ?? p.actual_volume ?? p.ltl_plan?.actual_volume ?? 0
       );
+      const ltlRemaining = Number(
+        p.ltl_remaining_volume ?? p.ltl_plan?.remaining_volume ?? Math.max(0, ltlTarget - ltlActual)
+      );
+      const ltlComp = Number(
+        p.ltl_plan?.completion_percentage ??
+          (ltlTarget > 0
+            ? Math.round((ltlActual / ltlTarget) * 1000) / 10
+            : ltlActual > 0
+              ? 100
+              : 0)
+      );
+      const ltlCargoCount = Number(p.ltl_plan?.cargo_count ?? p.ltl_cargos_count ?? 0);
+
+      const currency =
+        (p.currency as SupportedCurrency) || (p.ftl_plan?.currency as SupportedCurrency) || 'USD';
+      const ftlTarget = Number(
+        p.ftl_target_amount ?? p.target_amount ?? p.target_sales ?? p.ftl_plan?.target_amount ?? 0
+      );
+      const ftlActual = Number(
+        p.ftl_actual_amount ?? p.actual_sales ?? p.actual_amount ?? p.ftl_plan?.actual_amount ?? 0
+      );
+      const ftlRemaining = Number(
+        p.ftl_remaining_amount ??
+          p.remaining_target ??
+          p.remaining_amount ??
+          p.ftl_plan?.remaining_amount ??
+          Math.max(0, ftlTarget - ftlActual)
+      );
+      const ftlComp = Number(
+        p.ftl_plan?.completion_percentage ??
+          (ftlTarget > 0
+            ? Math.round((ftlActual / ftlTarget) * 1000) / 10
+            : ftlActual > 0
+              ? 100
+              : 0)
+      );
+      const ftlCargoCount = Number(p.ftl_plan?.cargo_count ?? p.ftl_cargos_count ?? 0);
+
+      const totalCargos = Number(p.total_cargos_count ?? ltlCargoCount + ftlCargoCount);
+      let overallComp = Number(p.overall_completion_percentage ?? p.completion_percentage ?? 0);
+      if (!overallComp || isNaN(overallComp)) {
+        if (ltlTarget > 0 && ftlTarget > 0) {
+          overallComp = Math.round(((ltlComp + ftlComp) / 2) * 10) / 10;
+        } else if (ltlTarget > 0) {
+          overallComp = ltlComp;
+        } else if (ftlTarget > 0) {
+          overallComp = ftlComp;
+        }
+      }
+
+      const isCompleted = Boolean(
+        p.is_completed ??
+        ((ltlTarget === 0 || ltlActual >= ltlTarget) &&
+          (ftlTarget === 0 || ftlActual >= ftlTarget) &&
+          (ltlTarget > 0 || ftlTarget > 0))
+      );
+
       const status =
         p.status ||
-        (p.is_completed
+        (isCompleted || overallComp >= 100
           ? 'completed'
-          : compPct >= 100
-            ? 'completed'
-            : compPct >= 50
-              ? 'on_track'
-              : 'behind');
-      const currency = (p.currency as SupportedCurrency) || 'UZS';
+          : overallComp >= 50
+            ? 'on_track'
+            : 'behind');
+
+      const ltl_plan: EmployeeLtlPlan = {
+        target_volume: ltlTarget,
+        actual_volume: ltlActual,
+        remaining_volume: ltlRemaining,
+        completion_percentage: ltlComp,
+        is_completed: ltlTarget > 0 ? ltlActual >= ltlTarget : false,
+        cargo_count: ltlCargoCount,
+      };
+
+      const ftl_plan: EmployeeFtlPlan = {
+        target_amount: ftlTarget,
+        currency,
+        actual_amount: ftlActual,
+        remaining_amount: ftlRemaining,
+        completion_percentage: ftlComp,
+        is_completed: ftlTarget > 0 ? ftlActual >= ftlTarget : false,
+        cargo_count: ftlCargoCount,
+      };
 
       return {
         id: String(p.id || `plan-${idx + 1}`),
@@ -2059,48 +2783,84 @@ export const cargoKpiApi = {
           p.employee_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Employee',
         department_id: p.department_id || null,
         department_name: p.department_name || null,
-        month: p.period || p.month || period || '2026-07',
-        target_sales: target,
+        color: p.color || '#336699',
+        period: p.period || p.month || period || '2026-08',
+        month: p.month || p.period || period || '2026-08',
         currency,
-        actual_sales: actual,
-        remaining_target: remaining,
-        completion_percentage: compPct,
+
+        ltl_plan,
+        ltl_target_volume: ltlTarget,
+        ltl_actual_volume: ltlActual,
+        ltl_remaining_volume: ltlRemaining,
+
+        ftl_plan,
+        ftl_target_amount: ftlTarget,
+        ftl_actual_amount: ftlActual,
+        ftl_remaining_amount: ftlRemaining,
+
+        total_cargos_count: totalCargos,
+        overall_completion_percentage: overallComp,
+        is_completed: isCompleted,
         rank: p.rank || idx + 1,
         status,
+
+        target_sales: ftlTarget,
+        actual_sales: ftlActual,
+        remaining_target: ftlRemaining,
+        completion_percentage: overallComp,
+        target_amount: ftlTarget,
+        target_volume: ltlTarget,
+        actual_volume: ltlActual,
+        remaining_volume: ltlRemaining,
+
         created_at: p.created_at,
         updated_at: p.updated_at,
       };
     });
 
     const total_target = Number(
-      raw?.total_target ?? normalizedPlans.reduce((s, p) => s + p.target_sales, 0)
+      raw?.total_target ?? normalizedPlans.reduce((s, p) => s + p.ftl_target_amount, 0)
     );
     const total_actual = Number(
-      raw?.total_actual ?? normalizedPlans.reduce((s, p) => s + p.actual_sales, 0)
+      raw?.total_actual ?? normalizedPlans.reduce((s, p) => s + p.ftl_actual_amount, 0)
     );
     const overall_completion_percentage = Number(
       raw?.overall_completion_percentage ??
-        (total_target > 0 ? Math.round((total_actual / total_target) * 100) : 0)
+        (normalizedPlans.length > 0
+          ? Math.round(
+              (normalizedPlans.reduce((s, p) => s + p.overall_completion_percentage, 0) /
+                normalizedPlans.length) *
+                10
+            ) / 10
+          : 0)
     );
 
     return {
-      month: raw?.period || raw?.month || period || '2026-07',
+      total_plans: Number(raw?.total_plans ?? normalizedPlans.length),
+      month: raw?.period || raw?.month || period || '2026-08',
+      period: raw?.period || raw?.month || period || '2026-08',
+      currency: (raw?.currency as SupportedCurrency) || 'USD',
       total_target,
       total_actual,
       overall_completion_percentage,
       plans: normalizedPlans,
+      leaderboard: normalizedPlans,
     };
   },
 
   createPlan: (dto: CreateEmployeePlanDto) => {
     const { employee_name, month, target_sales, ...cleanDto } = dto as any;
     const period = dto.period || dto.month;
-    const target_amount = Number(dto.target_amount ?? dto.target_sales ?? 0);
-    const currency = dto.currency || 'UZS';
+    const ltl_target_volume = Number(dto.ltl_target_volume ?? dto.target_volume ?? 0);
+    const ftl_target_amount = Number(
+      dto.ftl_target_amount ?? dto.target_amount ?? dto.target_sales ?? 0
+    );
+    const currency = dto.currency || 'USD';
     const bodyObj: any = {
       ...cleanDto,
       period,
-      target_amount,
+      ltl_target_volume,
+      ftl_target_amount,
       currency,
     };
     return request<EmployeePlanProgress>('/cargo-kpi/plans', {
@@ -2112,18 +2872,22 @@ export const cargoKpiApi = {
   updatePlan: (id: string, dto: UpdateEmployeePlanDto) => {
     const { employee_id, employee_name, month, target_sales, ...cleanDto } = dto as any;
     const period = dto.period || dto.month;
-    const target_amount =
-      dto.target_amount !== undefined
-        ? Number(dto.target_amount)
-        : dto.target_sales !== undefined
-          ? Number(dto.target_sales)
-          : undefined;
-
     const bodyObj: any = {
       ...cleanDto,
     };
     if (period !== undefined) bodyObj.period = period;
-    if (target_amount !== undefined) bodyObj.target_amount = target_amount;
+    if (dto.ltl_target_volume !== undefined)
+      bodyObj.ltl_target_volume = Number(dto.ltl_target_volume);
+    if (dto.target_volume !== undefined && bodyObj.ltl_target_volume === undefined)
+      bodyObj.ltl_target_volume = Number(dto.target_volume);
+
+    if (dto.ftl_target_amount !== undefined)
+      bodyObj.ftl_target_amount = Number(dto.ftl_target_amount);
+    if (dto.target_amount !== undefined && bodyObj.ftl_target_amount === undefined)
+      bodyObj.ftl_target_amount = Number(dto.target_amount);
+    if (dto.target_sales !== undefined && bodyObj.ftl_target_amount === undefined)
+      bodyObj.ftl_target_amount = Number(dto.target_sales);
+
     if (dto.currency !== undefined) bodyObj.currency = dto.currency;
     delete bodyObj.employee_id;
 
@@ -2134,6 +2898,40 @@ export const cargoKpiApi = {
   },
 
   deletePlan: (id: string) => requestNoContent(`/cargo-kpi/plans/${id}`, { method: 'DELETE' }),
+
+  getPlansStats: async (params?: {
+    period?: string;
+    month?: string;
+    employee_id?: string;
+    search?: string;
+  }): Promise<PlansAggregatedStatsResponse> => {
+    const searchParams = new URLSearchParams();
+    const period = params?.period || params?.month;
+    if (period) {
+      searchParams.set('period', period);
+    }
+    if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
+    if (params?.search) searchParams.set('search', params.search);
+    const query = searchParams.toString();
+    return request<PlansAggregatedStatsResponse>(
+      `/cargo-kpi/plans/stats${query ? `?${query}` : ''}`,
+      { method: 'GET' }
+    );
+  },
+
+  getEmployeePlanStats: async (
+    employeeId: string,
+    params?: { period?: string; month?: string }
+  ): Promise<EmployeePersonalPlanStatsResponse> => {
+    const searchParams = new URLSearchParams();
+    const period = params?.period || params?.month;
+    if (period) searchParams.set('period', period);
+    const query = searchParams.toString();
+    return request<EmployeePersonalPlanStatsResponse>(
+      `/cargo-kpi/plans/employee/${employeeId}/stats${query ? `?${query}` : ''}`,
+      { method: 'GET' }
+    );
+  },
 
   // Cargo Transactions Ledger
   getTransactions: async (
