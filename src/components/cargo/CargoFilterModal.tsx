@@ -14,6 +14,7 @@ import { CONTAINER_TYPES } from '../../services/api';
 import type { CargoRegistrationStatus, CargoType } from '../../services/api';
 import { ClientSelect } from './ClientSelect';
 import { EmployeeSelect } from './EmployeeSelect';
+import { DateRangePicker } from './DateRangePicker';
 import { useTranslation } from '../../context/LanguageContext';
 
 export interface CargoFilterState {
@@ -66,66 +67,6 @@ const CARGO_TYPE_OPTIONS: { labelKey: string; value: CargoType | '' }[] = [
   { labelKey: 'typeLTL', value: 'LTL' },
   { labelKey: 'typeFTL', value: 'FTL' },
 ];
-
-interface DateRangePickerProps {
-  label: string;
-  icon?: React.ReactNode;
-  startDate: string;
-  endDate: string;
-  onStartDateChange: (val: string) => void;
-  onEndDateChange: (val: string) => void;
-  onClear?: () => void;
-}
-
-function DateRangePicker({
-  label,
-  icon,
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange,
-  onClear,
-}: DateRangePickerProps) {
-  const { t } = useTranslation();
-  const hasValue = Boolean(startDate || endDate);
-
-  return (
-    <div className="p-3 rounded-xl bg-muted/20 border border-border space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
-          {icon}
-          {label}
-        </span>
-        {hasValue && onClear && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="text-[10px] text-rose-500 hover:underline font-semibold cursor-pointer"
-          >
-            {t('clear')}
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-2 p-1.5 rounded-lg border border-border bg-background focus-within:ring-2 focus-within:ring-brand-gold/50 transition-all">
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => onStartDateChange(e.target.value)}
-          placeholder={t('startDatePlaceholder')}
-          className="w-full bg-transparent text-foreground text-xs font-semibold focus:outline-none cursor-pointer"
-        />
-        <span className="text-muted-foreground font-bold text-xs select-none">→</span>
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => onEndDateChange(e.target.value)}
-          placeholder={t('endDatePlaceholder')}
-          className="w-full bg-transparent text-foreground text-xs font-semibold focus:outline-none cursor-pointer"
-        />
-      </div>
-    </div>
-  );
-}
 
 export interface CargoFilterModalProps {
   isOpen: boolean;
@@ -423,11 +364,12 @@ export function CargoFilterModal({
                     icon={<Calendar className="size-3.5 text-brand-gold" />}
                     startDate={localFilters.created_start_date}
                     endDate={localFilters.created_end_date}
-                    onStartDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, created_start_date: val }))
-                    }
-                    onEndDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, created_end_date: val }))
+                    onChange={(start, end) =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        created_start_date: start,
+                        created_end_date: end,
+                      }))
                     }
                     onClear={() =>
                       setLocalFilters((p) => ({
@@ -436,6 +378,7 @@ export function CargoFilterModal({
                         created_end_date: '',
                       }))
                     }
+                    align="left"
                   />
 
                   <DateRangePicker
@@ -443,11 +386,12 @@ export function CargoFilterModal({
                     icon={<Truck className="size-3.5 text-blue-500" />}
                     startDate={localFilters.confirmed_start_date}
                     endDate={localFilters.confirmed_end_date}
-                    onStartDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, confirmed_start_date: val }))
-                    }
-                    onEndDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, confirmed_end_date: val }))
+                    onChange={(start, end) =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        confirmed_start_date: start,
+                        confirmed_end_date: end,
+                      }))
                     }
                     onClear={() =>
                       setLocalFilters((p) => ({
@@ -456,6 +400,7 @@ export function CargoFilterModal({
                         confirmed_end_date: '',
                       }))
                     }
+                    align="right"
                   />
 
                   <DateRangePicker
@@ -463,15 +408,17 @@ export function CargoFilterModal({
                     icon={<Calendar className="size-3.5 text-amber-500" />}
                     startDate={localFilters.loaded_start_date}
                     endDate={localFilters.loaded_end_date}
-                    onStartDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, loaded_start_date: val }))
-                    }
-                    onEndDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, loaded_end_date: val }))
+                    onChange={(start, end) =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        loaded_start_date: start,
+                        loaded_end_date: end,
+                      }))
                     }
                     onClear={() =>
                       setLocalFilters((p) => ({ ...p, loaded_start_date: '', loaded_end_date: '' }))
                     }
+                    align="left"
                   />
 
                   <DateRangePicker
@@ -479,11 +426,12 @@ export function CargoFilterModal({
                     icon={<Check className="size-3.5 text-emerald-500" />}
                     startDate={localFilters.arrived_start_date}
                     endDate={localFilters.arrived_end_date}
-                    onStartDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, arrived_start_date: val }))
-                    }
-                    onEndDateChange={(val) =>
-                      setLocalFilters((p) => ({ ...p, arrived_end_date: val }))
+                    onChange={(start, end) =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        arrived_start_date: start,
+                        arrived_end_date: end,
+                      }))
                     }
                     onClear={() =>
                       setLocalFilters((p) => ({
@@ -492,6 +440,7 @@ export function CargoFilterModal({
                         arrived_end_date: '',
                       }))
                     }
+                    align="right"
                   />
                 </div>
               </div>
