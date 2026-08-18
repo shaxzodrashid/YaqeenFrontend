@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
   Layers,
   Coins,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
@@ -119,8 +120,8 @@ export function ContainerTrackingTab() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('created_at');
-  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC' | undefined>(undefined);
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
   // Multi-select batch operations
@@ -171,8 +172,8 @@ export function ContainerTrackingTab() {
         container_type: filters.container_type || undefined,
         client_id: filters.client_id || undefined,
         employee_id: filters.employee_id || undefined,
-        sort_by: sortBy,
-        sort_order: sortOrder,
+        sort_by: sortBy || undefined,
+        sort_order: sortOrder || undefined,
         confirmed_start_date: filters.confirmed_start_date || undefined,
         confirmed_end_date: filters.confirmed_end_date || undefined,
         loaded_start_date: filters.loaded_start_date || undefined,
@@ -199,28 +200,86 @@ export function ContainerTrackingTab() {
     }
   }, [page, searchQuery, statusFilter, filters, sortBy, sortOrder, showNotification]);
 
+  // Tri-state column sorting: Primary Order -> Inverted Order -> Cancel sort (undefined)
   const handleSort = (field: string) => {
+    const isDescDefault = [
+      'created_at',
+      'confirmed_date',
+      'loaded_date',
+      'arrived_date',
+      'purchase_date',
+      'sell_date',
+      'purchase_price',
+      'sell_price',
+      'net_yield',
+    ].includes(field);
+
+    const currentOrder = sortOrder?.toUpperCase();
+
     if (sortBy === field) {
-      setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+      if (isDescDefault) {
+        if (currentOrder === 'DESC') {
+          // 2nd click: Invert to ASC
+          setSortOrder('ASC');
+        } else {
+          // 3rd click: Cancel sorting completely!
+          setSortBy(undefined);
+          setSortOrder(undefined);
+        }
+      } else {
+        if (currentOrder === 'ASC') {
+          // 2nd click: Invert to DESC
+          setSortOrder('DESC');
+        } else {
+          // 3rd click: Cancel sorting completely!
+          setSortBy(undefined);
+          setSortOrder(undefined);
+        }
+      }
     } else {
+      // 1st click on new column: Start with default direction
       setSortBy(field);
-      setSortOrder(
-        [
-          'created_at',
-          'confirmed_date',
-          'loaded_date',
-          'arrived_date',
-          'purchase_date',
-          'sell_date',
-          'purchase_price',
-          'sell_price',
-          'net_yield',
-        ].includes(field)
-          ? 'DESC'
-          : 'ASC'
-      );
+      setSortOrder(isDescDefault ? 'DESC' : 'ASC');
     }
     setPage(1);
+  };
+
+  const handleResetSort = () => {
+    setSortBy(undefined);
+    setSortOrder(undefined);
+    setPage(1);
+  };
+
+  const getSortFieldLabel = (field?: string) => {
+    if (!field) return '';
+    switch (field) {
+      case 'container_truck_id':
+        return t('colContainerNo') || 'Container / Truck';
+      case 'cargo':
+        return t('colCargoAndAgent') || 'Cargo & Agent';
+      case 'client_name':
+        return t('colClient') || 'Client';
+      case 'employee_name':
+        return t('colEmployee') || 'Employee';
+      case 'purchase_price':
+        return t('colBuyPrice') || 'Buy Price';
+      case 'sell_price':
+        return t('colSellPrice') || 'Sell Price';
+      case 'net_yield':
+        return t('colNetYield') || 'Net Yield';
+      case 'confirmed_date':
+        return t('colConfirmedDate') || 'Confirmed Date';
+      case 'loaded_date':
+        return t('colLoadedDate') || 'Loaded Date';
+      case 'arrived_date':
+        return t('colArrivedDate') || 'Arrived Date';
+      case 'created_at':
+        return t('colCreatedAt') || 'Created At';
+      case 'status':
+        return t('colStatus') || 'Status';
+      default:
+        return field;
+    }
   };
 
   // Calculate active filter count
@@ -239,9 +298,29 @@ export function ContainerTrackingTab() {
     return count;
   }, [filters, statusFilter]);
 
+  const handleRemoveFilterTag = (key: keyof CargoFilterState) => {
+    setFilters((prev) => {
+      const next = { ...prev, [key]: '' };
+      if (key === 'client_id') next.client_name = '';
+      if (key === 'employee_id') next.employee_name = '';
+      return next;
+    });
+    if (key === 'status') {
+      setStatusFilter('all');
+    }
+    setPage(1);
+  };
+
+  const isCustomSortActive = Boolean(sortBy);
+  const hasActiveFiltersOrSort =
+    activeFilterCount > 0 || isCustomSortActive || Boolean(searchQuery.trim());
+
   const handleClearAllFilters = () => {
     setFilters(INITIAL_CARGO_FILTERS);
     setStatusFilter('all');
+    setSearchQuery('');
+    setSortBy(undefined);
+    setSortOrder(undefined);
     setPage(1);
   };
 
@@ -846,6 +925,187 @@ export function ContainerTrackingTab() {
           </button>
         </div>
       </div>
+
+      {/* Active Filters, Search & Sort Tag Pills Bar */}
+      {hasActiveFiltersOrSort && (
+        <div className="p-3 rounded-2xl bg-surface dark:bg-surface border border-border/80 shadow-xs flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-muted-foreground font-bold text-[11px] uppercase tracking-wider mr-1">
+            {t('activeFiltersLabel', {
+              count:
+                activeFilterCount + (isCustomSortActive ? 1 : 0) + (searchQuery.trim() ? 1 : 0),
+            })}
+            :
+          </span>
+
+          {searchQuery.trim() && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted text-foreground border border-border font-semibold text-[11px]">
+              <Search className="size-3 text-brand-gold shrink-0" />
+              <span className="truncate max-w-[140px]">"{searchQuery.trim()}"</span>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setPage(1);
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+                title={t('clearSearch') || 'Clear search'}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {isCustomSortActive && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-semibold text-[11px]">
+              <ArrowUpDown className="size-3 shrink-0" />
+              <span>
+                {getSortFieldLabel(sortBy)} (
+                {String(sortOrder).toUpperCase() === 'ASC'
+                  ? t('sortOrderAsc') || 'ASC'
+                  : t('sortOrderDesc') || 'DESC'}
+                )
+              </span>
+              <button
+                onClick={handleResetSort}
+                className="hover:text-rose-500 transition-colors cursor-pointer"
+                title={t('cancelSort') || 'Reset sorting'}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.status && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-semibold text-[11px]">
+              {t('statusSectionTitle') || 'Status'}: {filters.status}
+              <button
+                onClick={() => handleRemoveFilterTag('status')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.cargo_type && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-500 border border-indigo-500/30 font-semibold text-[11px]">
+              {t('cargoTypeLabel') || 'Cargo Type'}: {filters.cargo_type}
+              <button
+                onClick={() => handleRemoveFilterTag('cargo_type')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.container_type && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-500 border border-blue-500/30 font-semibold text-[11px]">
+              {t('containerTypeLabel') || 'Container Type'}: {filters.container_type}
+              <button
+                onClick={() => handleRemoveFilterTag('container_type')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.client_id && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 font-semibold text-[11px]">
+              {t('clientLabel') || 'Client'}: {filters.client_name || 'Selected'}
+              <button
+                onClick={() => handleRemoveFilterTag('client_id')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.employee_id && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-semibold text-[11px]">
+              {t('assignedEmployeeLabel') || 'Employee'}: {filters.employee_name || 'Selected'}
+              <button
+                onClick={() => handleRemoveFilterTag('employee_id')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {(filters.created_start_date || filters.created_end_date) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted text-foreground border border-border font-semibold text-[11px]">
+              {t('creationDateRange') || 'Created'}: {filters.created_start_date || '...'} ~{' '}
+              {filters.created_end_date || '...'}
+              <button
+                onClick={() => {
+                  handleRemoveFilterTag('created_start_date');
+                  handleRemoveFilterTag('created_end_date');
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {(filters.confirmed_start_date || filters.confirmed_end_date) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted text-foreground border border-border font-semibold text-[11px]">
+              {t('confirmedDateRange') || 'Confirmed'}: {filters.confirmed_start_date || '...'} ~{' '}
+              {filters.confirmed_end_date || '...'}
+              <button
+                onClick={() => {
+                  handleRemoveFilterTag('confirmed_start_date');
+                  handleRemoveFilterTag('confirmed_end_date');
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {(filters.loaded_start_date || filters.loaded_end_date) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted text-foreground border border-border font-semibold text-[11px]">
+              {t('loadedDateRange') || 'Loaded'}: {filters.loaded_start_date || '...'} ~{' '}
+              {filters.loaded_end_date || '...'}
+              <button
+                onClick={() => {
+                  handleRemoveFilterTag('loaded_start_date');
+                  handleRemoveFilterTag('loaded_end_date');
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {(filters.arrived_start_date || filters.arrived_end_date) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted text-foreground border border-border font-semibold text-[11px]">
+              {t('arrivedDateRange') || 'Arrived'}: {filters.arrived_start_date || '...'} ~{' '}
+              {filters.arrived_end_date || '...'}
+              <button
+                onClick={() => {
+                  handleRemoveFilterTag('arrived_start_date');
+                  handleRemoveFilterTag('arrived_end_date');
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          <button
+            onClick={handleClearAllFilters}
+            className="ml-auto text-[11px] font-bold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer transition-colors"
+          >
+            {t('clearAllFiltersBtn') || 'Clear all'}
+          </button>
+        </div>
+      )}
 
       {/* WORKSPACE VIEW 1: CLEAN DATA VISUALIZATION GRID */}
       {viewMode === 'grid' && (

@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Receipt, Plus, Search, TrendingUp, RefreshCw, Coins, Filter, X } from 'lucide-react';
+import {
+  Receipt,
+  Plus,
+  Search,
+  TrendingUp,
+  RefreshCw,
+  Coins,
+  Filter,
+  X,
+  ArrowUpDown,
+} from 'lucide-react';
 import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -27,8 +37,8 @@ export function CargoTransactionsTab() {
   const [limit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
   const [filters, setFilters] = useState<CargoFilterState>(INITIAL_CARGO_FILTERS);
-  const [sortBy, setSortBy] = useState<string>('created_at');
-  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC' | undefined>(undefined);
 
   const [data, setData] = useState<CargoRegistrationPaginatedResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -70,28 +80,86 @@ export function CargoTransactionsTab() {
     }
   }, [page, limit, search, filters, sortBy, sortOrder, showNotification]);
 
+  // Tri-state column sorting: Primary Order -> Inverted Order -> Cancel sort (undefined)
   const handleSort = (field: string) => {
+    const isDescDefault = [
+      'created_at',
+      'confirmed_date',
+      'loaded_date',
+      'arrived_date',
+      'purchase_date',
+      'sell_date',
+      'purchase_price',
+      'sell_price',
+      'net_yield',
+    ].includes(field);
+
+    const currentOrder = sortOrder?.toUpperCase();
+
     if (sortBy === field) {
-      setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+      if (isDescDefault) {
+        if (currentOrder === 'DESC') {
+          // 2nd click: Invert to ASC
+          setSortOrder('ASC');
+        } else {
+          // 3rd click: Cancel sorting completely!
+          setSortBy(undefined);
+          setSortOrder(undefined);
+        }
+      } else {
+        if (currentOrder === 'ASC') {
+          // 2nd click: Invert to DESC
+          setSortOrder('DESC');
+        } else {
+          // 3rd click: Cancel sorting completely!
+          setSortBy(undefined);
+          setSortOrder(undefined);
+        }
+      }
     } else {
+      // 1st click on new column: Start with default direction
       setSortBy(field);
-      setSortOrder(
-        [
-          'created_at',
-          'confirmed_date',
-          'loaded_date',
-          'arrived_date',
-          'purchase_date',
-          'sell_date',
-          'purchase_price',
-          'sell_price',
-          'net_yield',
-        ].includes(field)
-          ? 'DESC'
-          : 'ASC'
-      );
+      setSortOrder(isDescDefault ? 'DESC' : 'ASC');
     }
     setPage(1);
+  };
+
+  const handleResetSort = () => {
+    setSortBy(undefined);
+    setSortOrder(undefined);
+    setPage(1);
+  };
+
+  const getSortFieldLabel = (field?: string) => {
+    if (!field) return '';
+    switch (field) {
+      case 'container_truck_id':
+        return t('colContainerNo');
+      case 'cargo':
+        return t('colCargoAndAgent');
+      case 'client_name':
+        return t('colClient');
+      case 'employee_name':
+        return t('colEmployee');
+      case 'purchase_price':
+        return t('colBuyPrice');
+      case 'sell_price':
+        return t('colSellPrice');
+      case 'net_yield':
+        return t('colNetYield');
+      case 'confirmed_date':
+        return t('colConfirmedDate');
+      case 'loaded_date':
+        return t('colLoadedDate');
+      case 'arrived_date':
+        return t('colArrivedDate');
+      case 'created_at':
+        return t('colCreatedAt');
+      case 'status':
+        return t('colStatus');
+      default:
+        return field;
+    }
   };
 
   useEffect(() => {
@@ -147,6 +215,18 @@ export function CargoTransactionsTab() {
     setPage(1);
   };
 
+  const isCustomSortActive = Boolean(sortBy);
+  const hasActiveFiltersOrSort =
+    activeFilterCount > 0 || isCustomSortActive || Boolean(search.trim());
+
+  const handleClearAll = () => {
+    setFilters(INITIAL_CARGO_FILTERS);
+    setSearch('');
+    setSortBy(undefined);
+    setSortOrder(undefined);
+    setPage(1);
+  };
+
   const meta = data?.meta;
 
   return (
@@ -168,7 +248,7 @@ export function CargoTransactionsTab() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Quick Search */}
+          {/* Quick Search with Clear button */}
           <div className="relative rounded-xl shadow-sm">
             <input
               type="text"
@@ -178,9 +258,22 @@ export function CargoTransactionsTab() {
                 setPage(1);
               }}
               placeholder={t('searchCargoPlaceholder') || 'Search truck ID, cargo...'}
-              className="pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 w-44 sm:w-56"
+              className="pl-9 pr-8 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 w-44 sm:w-56"
             />
             <Search className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground absolute right-2 top-2 transition-colors cursor-pointer"
+                title={t('clearSearch') || 'Clear search'}
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Filter Trigger Button (Filter | x when active, Filter when clear) */}
@@ -243,12 +336,49 @@ export function CargoTransactionsTab() {
         </div>
       </div>
 
-      {/* Active Filters Tag Pills Bar */}
-      {activeFilterCount > 0 && (
+      {/* Active Filters, Search & Sort Tag Pills Bar */}
+      {hasActiveFiltersOrSort && (
         <div className="p-3 rounded-2xl bg-surface dark:bg-surface border border-border/80 shadow-xs flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted-foreground font-bold text-[11px] uppercase tracking-wider mr-1">
-            {t('activeFiltersLabel', { count: activeFilterCount })}:
+            {t('activeFiltersLabel', {
+              count: activeFilterCount + (isCustomSortActive ? 1 : 0) + (search ? 1 : 0),
+            })}
+            :
           </span>
+
+          {search.trim() && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-muted text-foreground border border-border font-semibold text-[11px]">
+              <Search className="size-3 text-brand-gold shrink-0" />
+              <span className="truncate max-w-[140px]">"{search.trim()}"</span>
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+                title={t('clearSearch') || 'Clear search'}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {isCustomSortActive && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-semibold text-[11px]">
+              <ArrowUpDown className="size-3 shrink-0" />
+              <span>
+                {getSortFieldLabel(sortBy)} (
+                {sortOrder === 'ASC' ? t('sortOrderAsc') || 'ASC' : t('sortOrderDesc') || 'DESC'})
+              </span>
+              <button
+                onClick={handleResetSort}
+                className="hover:text-rose-500 transition-colors cursor-pointer"
+                title={t('cancelSort') || 'Reset sorting'}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
 
           {filters.status && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-semibold text-[11px]">
@@ -375,7 +505,7 @@ export function CargoTransactionsTab() {
           )}
 
           <button
-            onClick={handleClearAllFilters}
+            onClick={handleClearAll}
             className="ml-auto text-[11px] text-rose-500 hover:underline font-bold cursor-pointer"
           >
             {t('cancelFiltersBtn')}
