@@ -9,6 +9,8 @@ import {
   Filter,
   X,
   ArrowUpDown,
+  Truck,
+  AlertCircle,
 } from 'lucide-react';
 import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
@@ -16,7 +18,6 @@ import { usePermissions } from '../../context/PermissionsContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { cargoRegistrationsApi, formatMoney } from '../../services/api';
 import type {
-  CurrencyType,
   CargoRegistrationListItem,
   CargoRegistrationPaginatedResponse,
 } from '../../services/api';
@@ -24,8 +25,6 @@ import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { CargoTransactionsTable } from './CargoTransactionsTable';
 import { CargoFilterModal, INITIAL_CARGO_FILTERS } from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
-
-const CURRENCIES: CurrencyType[] = ['USD', 'UZS', 'RUB', 'RMB'];
 
 export function CargoTransactionsTab() {
   const { t } = useTranslation();
@@ -531,136 +530,113 @@ export function CargoTransactionsTab() {
         </div>
       )}
 
-      {/* Financial Summary KPI Cards */}
+      {/* Operational & Financial 4-Card Summary Metrics (Clean Single USD Layout) */}
       {meta ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Calculated Net Yield Card */}
-          <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                <TrendingUp className="size-4" />
-                <span>
-                  <T k="lblCalculatedNetYield" />
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {meta.calculated_net_yield.total_usd !== undefined && (
-                  <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                    Eq: {formatMoney(meta.calculated_net_yield.total_usd, 'USD')}
-                  </span>
-                )}
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  <T k="lblProfitLoss" />
-                </span>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 min-w-0">
+          {/* Card 1: Active Containers */}
+          <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+            <div className="space-y-1 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground block truncate">
+                <T k="lblActiveContainers" />
+              </span>
+              <h3 className="text-2xl font-black text-foreground tracking-tight truncate">
+                {meta.active_containers ?? 0}
+              </h3>
+              <span className="text-[11px] text-muted-foreground block truncate">
+                {meta.total} <T k="lblUnits" /> <T k="lblEnRoute" />
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {CURRENCIES.map((curr) => {
-                const val = (meta.calculated_net_yield as any)[curr] || 0;
-                return (
-                  <div key={curr} className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                    <span className="text-[10px] font-bold text-muted-foreground block">
-                      {curr}
-                    </span>
-                    <span
-                      className={`text-xs font-extrabold truncate block ${
-                        val > 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : val < 0
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-foreground'
-                      }`}
-                    >
-                      {formatMoney(val, curr)}
-                    </span>
-                  </div>
-                );
-              })}
+            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
+              <Truck className="size-5" />
             </div>
           </div>
 
-          {/* Gross Sales Revenue Card */}
-          <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-brand-gold">
-                <Coins className="size-4" />
-                <span>
-                  <T k="lblGrossSalesRevenue" />
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {meta.gross_sales_revenue.total_usd_equivalent !== undefined && (
-                  <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20">
-                    Eq: {formatMoney(meta.gross_sales_revenue.total_usd_equivalent, 'USD')}
-                  </span>
-                )}
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20">
-                  <T k="lblTurnover" />
-                </span>
-              </div>
+          {/* Card 2: Action Required */}
+          <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+            <div className="space-y-1 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground block truncate">
+                <T k="lblActionRequired" />
+              </span>
+              <h3
+                className={`text-2xl font-black tracking-tight truncate ${
+                  (meta.action_required ?? 0) > 0 ? 'text-amber-500' : 'text-foreground'
+                }`}
+              >
+                {meta.action_required ?? 0}
+              </h3>
+              <span className="text-[11px] text-muted-foreground block truncate">
+                {(meta.action_required ?? 0) > 0
+                  ? t('subActionRequired') || 'Waiting & reload checkpoints'
+                  : t('subAllClear') || 'All operations on track'}
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {CURRENCIES.map((curr) => {
-                const val = (meta.gross_sales_revenue as any)[curr] || 0;
-                return (
-                  <div key={curr} className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                    <span className="text-[10px] font-bold text-muted-foreground block">
-                      {curr}
-                    </span>
-                    <span className="text-xs font-extrabold text-foreground truncate block">
-                      {formatMoney(val, curr)}
-                    </span>
-                  </div>
-                );
-              })}
+            <div
+              className={`p-3 rounded-xl border shrink-0 ${
+                (meta.action_required ?? 0) > 0
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                  : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+              }`}
+            >
+              <AlertCircle className="size-5" />
+            </div>
+          </div>
+
+          {/* Card 3: Total Net Profit Yield (Single USD Amount) */}
+          <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+            <div className="space-y-1 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground block truncate">
+                <T k="lblCalculatedNetYield" />
+              </span>
+              <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight truncate">
+                {formatMoney(
+                  meta.calculated_net_yield.total_usd ?? meta.calculated_net_yield.USD,
+                  'USD'
+                )}
+              </h3>
+              <span className="text-[11px] text-muted-foreground block truncate">
+                <T k="lblProfitLoss" />
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+              <TrendingUp className="size-5" />
+            </div>
+          </div>
+
+          {/* Card 4: Gross Sales Revenue (Single USD Amount) */}
+          <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+            <div className="space-y-1 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground block truncate">
+                <T k="lblGrossSalesRevenue" />
+              </span>
+              <h3 className="text-2xl font-black text-brand-gold tracking-tight truncate">
+                {formatMoney(
+                  meta.gross_sales_revenue.total_usd_equivalent ?? meta.gross_sales_revenue.USD,
+                  'USD'
+                )}
+              </h3>
+              <span className="text-[11px] text-muted-foreground block truncate">
+                <T k="lblTurnover" />
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-brand-gold/10 text-brand-gold border border-brand-gold/20 shrink-0">
+              <Coins className="size-5" />
             </div>
           </div>
         </div>
       ) : loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Skeleton Calculated Net Yield Card */}
-          <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between min-h-[126px]">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="size-4 rounded-md skeleton-shimmer-emerald" />
-                <div className="w-32 h-4 rounded-md skeleton-shimmer" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 min-w-0">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 h-[92px]"
+            >
+              <div className="space-y-2">
+                <div className="w-24 h-3.5 rounded skeleton-shimmer" />
+                <div className="w-16 h-6 rounded skeleton-shimmer" />
               </div>
-              <div className="w-20 h-5 rounded-full skeleton-shimmer-emerald" />
+              <div className="size-11 rounded-xl skeleton-shimmer shrink-0" />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {CURRENCIES.map((curr) => (
-                <div
-                  key={curr}
-                  className="p-2.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5"
-                >
-                  <div className="w-8 h-3 rounded skeleton-shimmer" />
-                  <div className="w-16 h-4 rounded skeleton-shimmer" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Skeleton Gross Sales Revenue Card */}
-          <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between min-h-[126px]">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="size-4 rounded-md skeleton-shimmer-gold" />
-                <div className="w-36 h-4 rounded-md skeleton-shimmer" />
-              </div>
-              <div className="w-20 h-5 rounded-full skeleton-shimmer-gold" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {CURRENCIES.map((curr) => (
-                <div
-                  key={curr}
-                  className="p-2.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5"
-                >
-                  <div className="w-8 h-3 rounded skeleton-shimmer" />
-                  <div className="w-16 h-4 rounded skeleton-shimmer" />
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       ) : null}
 

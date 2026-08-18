@@ -4,7 +4,6 @@ import {
   Truck,
   Plus,
   Trash2,
-  DollarSign,
   TrendingUp,
   RefreshCw,
   X,
@@ -21,7 +20,6 @@ import {
   ChevronRight,
   ChevronLeft,
   AlertCircle,
-  ArrowUpRight,
   Layers,
   Coins,
   ArrowUpDown,
@@ -32,7 +30,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { cargoKpiApi } from '../../services/cargoKpi.service';
-import { cargoRegistrationsApi } from '../../services/api';
+import { cargoRegistrationsApi, formatMoney } from '../../services/api';
 import type { CargoRegistrationPaginatedResponse } from '../../services/api';
 import type {
   Shipment,
@@ -383,26 +381,6 @@ export function ContainerTrackingTab() {
     }
   };
 
-  const handleResetDemoData = async () => {
-    if (
-      !window.confirm(
-        t('confirmResetDemo') || 'Reset all shipment tracking data to default demo entries?'
-      )
-    )
-      return;
-    try {
-      await cargoKpiApi.resetShipments();
-      showNotification(
-        t('successShipmentsReset') || 'Shipments reset to default demo state',
-        'success'
-      );
-      setSelectedIds([]);
-      loadShipments();
-    } catch (err: any) {
-      showNotification(err?.message || 'Failed to reset shipments', 'error');
-    }
-  };
-
   const handleUpdateGlobalRate = async (e: React.FormEvent) => {
     e.preventDefault();
     const rate = parseFloat(globalRmbRate);
@@ -597,6 +575,8 @@ export function ContainerTrackingTab() {
     return { agents, totalSell, totalBuyUSD, avgMarginPct };
   }, [data?.shipments, data?.total_net_margin]);
 
+  const meta = regData?.meta;
+
   return (
     <div className="space-y-4 sm:space-y-6 pb-8 min-w-0 max-w-full">
       {/* Workspace Header Controls Toolbar */}
@@ -728,99 +708,103 @@ export function ContainerTrackingTab() {
         </div>
       </div>
 
-      {/* KPI Overview Summary Bar (Vertical clean layout that NEVER overflows) */}
+      {/* KPI Overview Summary Bar — 4 Clean Single-USD Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 min-w-0">
-        {/* Total Active Containers Card */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex flex-col justify-between space-y-3 min-w-0">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
-              <Truck className="size-5" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 border border-blue-500/20 truncate shrink-0">
-              {data?.shipments?.filter(
-                (s) => s.status === 'On the way' || s.status === 'In Transit'
-              ).length ?? 0}{' '}
-              <T k="lblTransit" />
-            </span>
-          </div>
-          <div className="min-w-0">
+        {/* Card 1: Total Active Containers */}
+        <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+          <div className="space-y-1 min-w-0">
             <span className="text-xs font-medium text-muted-foreground block truncate">
               <T k="lblActiveContainers" />
             </span>
-            <h3 className="text-xl sm:text-2xl font-black text-foreground mt-1 truncate">
-              {data?.total_active_shipments ?? 0}{' '}
-              <span className="text-xs font-medium text-muted-foreground">
-                <T k="lblUnits" />
-              </span>
+            <h3 className="text-2xl font-black text-foreground tracking-tight truncate">
+              {meta?.active_containers ?? data?.total_active_shipments ?? 0}
             </h3>
+            <span className="text-[11px] text-muted-foreground block truncate">
+              {meta?.total ?? data?.shipments?.length ?? 0} <T k="lblUnits" /> <T k="lblEnRoute" />
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
+            <Truck className="size-5" />
           </div>
         </div>
 
-        {/* Total Net Profit Yield */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex flex-col justify-between space-y-3 min-w-0">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
-              <DollarSign className="size-5" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 flex items-center gap-0.5 shrink-0">
-              <ArrowUpRight className="size-3" />
-              {analyticsMetrics.avgMarginPct.toFixed(1)}%
-            </span>
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs font-medium text-muted-foreground block truncate">
-              <T k="lblCalculatedNetYield" />
-            </span>
-            <h3 className="text-xl sm:text-2xl font-black text-emerald-500 mt-1 truncate font-mono">
-              $
-              {(data?.total_net_margin ?? 0).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </h3>
-          </div>
-        </div>
-
-        {/* Total Revenue */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex flex-col justify-between space-y-3 min-w-0">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shrink-0">
-              <TrendingUp className="size-5" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 border border-indigo-500/20 shrink-0">
-              USD
-            </span>
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs font-medium text-muted-foreground block truncate">
-              <T k="lblGrossSalesRevenue" />
-            </span>
-            <h3 className="text-xl sm:text-2xl font-black text-foreground mt-1 truncate font-mono">
-              ${Math.round(analyticsMetrics.totalSell).toLocaleString()}
-            </h3>
-          </div>
-        </div>
-
-        {/* Action Required / Pending Arrival */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex flex-col justify-between space-y-3 min-w-0">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
-              <AlertCircle className="size-5" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20 shrink-0">
-              <T k="lblPendingEta" />
-            </span>
-          </div>
-          <div className="min-w-0">
+        {/* Card 2: Action Required */}
+        <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+          <div className="space-y-1 min-w-0">
             <span className="text-xs font-medium text-muted-foreground block truncate">
               <T k="lblActionRequired" />
             </span>
-            <h3 className="text-xl sm:text-2xl font-black text-foreground mt-1 truncate">
-              {delayedShipmentsCount}{' '}
-              <span className="text-xs font-medium text-muted-foreground">
-                <T k="lblEnRoute" />
-              </span>
+            <h3
+              className={`text-2xl font-black tracking-tight truncate ${
+                (meta?.action_required ?? delayedShipmentsCount ?? 0) > 0
+                  ? 'text-amber-500'
+                  : 'text-foreground'
+              }`}
+            >
+              {meta?.action_required ?? delayedShipmentsCount ?? 0}
             </h3>
+            <span className="text-[11px] text-muted-foreground block truncate">
+              {(meta?.action_required ?? delayedShipmentsCount ?? 0) > 0
+                ? t('subActionRequired') || 'Waiting & reload checkpoints'
+                : t('subAllClear') || 'All operations on track'}
+            </span>
+          </div>
+          <div
+            className={`p-3 rounded-xl border shrink-0 ${
+              (meta?.action_required ?? delayedShipmentsCount ?? 0) > 0
+                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+            }`}
+          >
+            <AlertCircle className="size-5" />
+          </div>
+        </div>
+
+        {/* Card 3: Total Net Profit Yield (Single USD Amount) */}
+        <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+          <div className="space-y-1 min-w-0">
+            <span className="text-xs font-medium text-muted-foreground block truncate">
+              <T k="lblCalculatedNetYield" />
+            </span>
+            <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight truncate">
+              {formatMoney(
+                meta?.calculated_net_yield?.total_usd ??
+                  meta?.calculated_net_yield?.USD ??
+                  data?.total_net_margin ??
+                  0,
+                'USD'
+              )}
+            </h3>
+            <span className="text-[11px] text-muted-foreground block truncate">
+              <T k="lblProfitLoss" />
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+            <TrendingUp className="size-5" />
+          </div>
+        </div>
+
+        {/* Card 4: Gross Sales Revenue (Single USD Amount) */}
+        <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
+          <div className="space-y-1 min-w-0">
+            <span className="text-xs font-medium text-muted-foreground block truncate">
+              <T k="lblGrossSalesRevenue" />
+            </span>
+            <h3 className="text-2xl font-black text-brand-gold tracking-tight truncate">
+              {formatMoney(
+                meta?.gross_sales_revenue?.total_usd_equivalent ??
+                  meta?.gross_sales_revenue?.USD ??
+                  analyticsMetrics.totalSell ??
+                  0,
+                'USD'
+              )}
+            </h3>
+            <span className="text-[11px] text-muted-foreground block truncate">
+              <T k="lblTurnover" />
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-brand-gold/10 text-brand-gold border border-brand-gold/20 shrink-0">
+            <Coins className="size-5" />
           </div>
         </div>
       </div>
@@ -943,13 +927,6 @@ export function ContainerTrackingTab() {
               <span className="capitalize">{density}</span>
             </button>
           )}
-
-          <button
-            onClick={handleResetDemoData}
-            className="ml-auto text-[11px] font-semibold text-rose-500 hover:text-rose-600 px-2 py-1 transition-colors cursor-pointer shrink-0"
-          >
-            {t('resetDemo') || 'Reset Demo'}
-          </button>
         </div>
       </div>
 

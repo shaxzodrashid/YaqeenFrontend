@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calculator, Truck, Crown, Target, Receipt, RotateCcw, Award } from 'lucide-react';
-import { useTranslation } from '../../context/LanguageContext';
+import { Package, Calculator, Truck, Crown, Target, Receipt, Award } from 'lucide-react';
 import { T } from '../T';
-import { useNotification } from '../../context/NotificationContext';
-import { usePermissions } from '../../context/PermissionsContext';
-import { cargoKpiApi } from '../../services/cargoKpi.service';
 import { LtlCalcTab } from './LtlCalcTab';
 import { LtlModuleTab } from './LtlModuleTab';
 import { FtlModuleTab } from './FtlModuleTab';
@@ -14,7 +10,6 @@ import { EmployeePlansTab } from './EmployeePlansTab';
 import { CargoTransactionsTab } from './CargoTransactionsTab';
 import { ContainerTrackingTab } from './ContainerTrackingTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
-import { GlobalResetModal } from './GlobalResetModal';
 
 export type CargoTabId =
   | 'container-tracking'
@@ -27,12 +22,7 @@ export type CargoTabId =
   | 'transactions';
 
 export function CargoKpiPage() {
-  const { t } = useTranslation();
-  const { showNotification } = useNotification();
-  const { canDelete } = usePermissions();
-
   const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
-  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
 
   const tabs: { id: CargoTabId; labelKey: string; icon: React.ReactNode }[] = [
     {
@@ -48,20 +38,6 @@ export function CargoKpiPage() {
     { id: 'plans', labelKey: 'tabPlans', icon: <Target className="size-4" /> },
     { id: 'transactions', labelKey: 'tabTransactions', icon: <Receipt className="size-4" /> },
   ];
-
-  const handleGlobalReset = async () => {
-    try {
-      await cargoKpiApi.resetAll();
-      showNotification(
-        t('successResetCompleted') || 'Global reset completed successfully',
-        'success'
-      );
-      // Trigger re-render of current tab by re-setting active tab or triggering window event
-      window.dispatchEvent(new Event('yaqeen_cargo_reset'));
-    } catch (err: any) {
-      showNotification(err?.message || 'Failed to perform global reset', 'error');
-    }
-  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -100,23 +76,6 @@ export function CargoKpiPage() {
             </h1>
           </div>
         </div>
-
-        {/* Global Reset Action */}
-        {canDelete('cargo_kpi') && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsResetModalOpen(true)}
-              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer"
-              title={t('btnResetAll') || 'Global reset'}
-            >
-              <RotateCcw className="size-3.5 sm:size-4 shrink-0" />
-              <span className="hidden sm:inline">
-                <T k="btnResetAll" />
-              </span>
-              <span className="sm:hidden">Reset</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Animated Framer Motion Tab Switcher */}
@@ -166,13 +125,6 @@ export function CargoKpiPage() {
           {renderTabContent()}
         </motion.div>
       </AnimatePresence>
-
-      {/* Global Reset Modal Dialog */}
-      <GlobalResetModal
-        isOpen={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        onConfirm={handleGlobalReset}
-      />
     </div>
   );
 }
