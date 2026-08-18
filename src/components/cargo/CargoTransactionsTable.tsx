@@ -97,7 +97,7 @@ function SortableHeader({
   return (
     <th
       onClick={handleClick}
-      className={`py-3 px-3.5 text-[11px] uppercase tracking-wider font-bold transition-all select-none cursor-pointer group hover:bg-muted/70 ${
+      className={`py-3 px-3 text-[11px] uppercase tracking-wider font-bold transition-all select-none cursor-pointer group hover:bg-muted/70 overflow-hidden ${
         isActive
           ? 'text-brand-gold bg-brand-gold/10'
           : 'text-muted-foreground hover:text-foreground'
@@ -105,17 +105,19 @@ function SortableHeader({
       title={tooltipTitle}
     >
       <div
-        className={`inline-flex items-center gap-1.5 ${
+        className={`flex items-center gap-1.5 w-full min-w-0 max-w-full ${
           align === 'right'
-            ? 'justify-end w-full'
+            ? 'justify-end'
             : align === 'center'
-              ? 'justify-center w-full'
-              : ''
+              ? 'justify-center'
+              : 'justify-between'
         }`}
       >
-        <span className="truncate">{label}</span>
+        <span className="truncate min-w-0 block font-bold" title={label}>
+          {label}
+        </span>
         <span
-          className={`inline-flex items-center justify-center size-4.5 rounded-md transition-all ${
+          className={`inline-flex items-center justify-center size-4.5 rounded-md shrink-0 transition-all ${
             isActive
               ? 'text-brand-navy bg-brand-gold shadow-xs font-black'
               : 'text-muted-foreground/50 group-hover:text-foreground group-hover:bg-muted'
@@ -177,64 +179,64 @@ function CargoTableRowSkeleton({ index }: CargoTableRowSkeletonProps) {
       </td>
 
       {/* 3. Client */}
-      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
         <div
           className={`h-4 ${clientWidths[index % 4]} rounded-md skeleton-shimmer max-w-[110px]`}
         />
       </td>
 
       {/* 4. Employee */}
-      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
         <div
           className={`h-4 ${employeeWidths[index % 4]} rounded-md skeleton-shimmer opacity-80 max-w-[100px]`}
         />
       </td>
 
       {/* 5. Purchase Price & Date */}
-      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
         <div className="h-4 w-20 rounded-md skeleton-shimmer" />
         <div className="h-3 w-16 rounded-md skeleton-shimmer mt-1.5 opacity-70" />
       </td>
 
       {/* 6. Sell Price & Date */}
-      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
         <div className="h-4 w-20 rounded-md skeleton-shimmer" />
         <div className="h-3 w-16 rounded-md skeleton-shimmer mt-1.5 opacity-70" />
       </td>
 
       {/* 7. Net Yield & Rate */}
-      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[155px] min-w-[155px] max-w-[155px] overflow-hidden">
         <div className="h-4.5 w-20 rounded-md skeleton-shimmer-emerald" />
         <div className="h-3 w-14 rounded-md skeleton-shimmer mt-1.5 opacity-70" />
       </td>
 
       {/* 8. Confirmed Date */}
-      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[165px] min-w-[165px] max-w-[165px] overflow-hidden">
         <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
       </td>
 
       {/* 9. Loaded Date */}
-      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[155px] min-w-[155px] max-w-[155px] overflow-hidden">
         <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
       </td>
 
       {/* 10. Arrived Date */}
-      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
         <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
       </td>
 
       {/* 11. Created At */}
-      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
         <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
       </td>
 
       {/* 12. Status */}
-      <td className="py-3 px-3.5 w-[125px] min-w-[125px] max-w-[125px] overflow-hidden">
+      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
         <div className={`h-6 ${statusWidths[index % 4]} rounded-full skeleton-shimmer`} />
       </td>
 
       {/* 13. Actions */}
-      <td className="py-3 px-4 text-right w-[115px] min-w-[115px] max-w-[115px] overflow-hidden">
+      <td className="py-3 px-4 text-right w-[110px] min-w-[110px] max-w-[110px] overflow-hidden">
         <div className="flex items-center justify-end gap-1.5">
           <div className="size-7 rounded-lg skeleton-shimmer" />
           <div className="size-7 rounded-lg skeleton-shimmer" />
@@ -449,21 +451,21 @@ export function CargoTransactionsTable({
           onScroll={handleScroll}
           className="overflow-x-auto w-full min-w-0"
         >
-          <table className="w-full text-left border-collapse table-fixed min-w-[1920px]">
+          <table className="w-full text-left border-collapse table-fixed min-w-[2020px]">
             <colgroup>
               <col style={{ width: 220 }} /> {/* 1. Container / Truck ID */}
               <col style={{ width: 200 }} /> {/* 2. Cargo & Agent */}
-              <col style={{ width: 150 }} /> {/* 3. Client */}
-              <col style={{ width: 150 }} /> {/* 4. Employee */}
-              <col style={{ width: 140 }} /> {/* 5. Purchase Price */}
-              <col style={{ width: 140 }} /> {/* 6. Sell Price */}
-              <col style={{ width: 140 }} /> {/* 7. Net Yield */}
-              <col style={{ width: 135 }} /> {/* 8. Confirmed Date */}
-              <col style={{ width: 135 }} /> {/* 9. Loaded Date */}
-              <col style={{ width: 135 }} /> {/* 10. Arrived Date */}
-              <col style={{ width: 135 }} /> {/* 11. Created At */}
-              <col style={{ width: 125 }} /> {/* 12. Status */}
-              <col style={{ width: 115 }} /> {/* 13. Actions */}
+              <col style={{ width: 160 }} /> {/* 3. Client */}
+              <col style={{ width: 160 }} /> {/* 4. Employee */}
+              <col style={{ width: 150 }} /> {/* 5. Purchase Price */}
+              <col style={{ width: 150 }} /> {/* 6. Sell Price */}
+              <col style={{ width: 155 }} /> {/* 7. Net Yield */}
+              <col style={{ width: 165 }} /> {/* 8. Confirmed Date */}
+              <col style={{ width: 155 }} /> {/* 9. Loaded Date */}
+              <col style={{ width: 160 }} /> {/* 10. Arrived Date */}
+              <col style={{ width: 150 }} /> {/* 11. Created At */}
+              <col style={{ width: 135 }} /> {/* 12. Status */}
+              <col style={{ width: 110 }} /> {/* 13. Actions */}
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
@@ -489,7 +491,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[150px] min-w-[150px] max-w-[150px]"
+                  className="w-[160px] min-w-[160px] max-w-[160px]"
                 />
                 <SortableHeader
                   label={t('colEmployee')}
@@ -497,7 +499,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[150px] min-w-[150px] max-w-[150px]"
+                  className="w-[160px] min-w-[160px] max-w-[160px]"
                 />
                 <SortableHeader
                   label={t('colBuyPrice')}
@@ -505,7 +507,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[140px] min-w-[140px] max-w-[140px]"
+                  className="w-[150px] min-w-[150px] max-w-[150px]"
                 />
                 <SortableHeader
                   label={t('colSellPrice')}
@@ -513,7 +515,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[140px] min-w-[140px] max-w-[140px]"
+                  className="w-[150px] min-w-[150px] max-w-[150px]"
                 />
                 <SortableHeader
                   label={t('colNetYield')}
@@ -521,7 +523,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[140px] min-w-[140px] max-w-[140px]"
+                  className="w-[155px] min-w-[155px] max-w-[155px]"
                 />
                 <SortableHeader
                   label={t('colConfirmedDate')}
@@ -529,7 +531,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                  className="w-[165px] min-w-[165px] max-w-[165px]"
                 />
                 <SortableHeader
                   label={t('colLoadedDate')}
@@ -537,7 +539,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                  className="w-[155px] min-w-[155px] max-w-[155px]"
                 />
                 <SortableHeader
                   label={t('colArrivedDate')}
@@ -545,7 +547,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                  className="w-[160px] min-w-[160px] max-w-[160px]"
                 />
                 <SortableHeader
                   label={t('colCreatedAt')}
@@ -553,7 +555,7 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                  className="w-[150px] min-w-[150px] max-w-[150px]"
                 />
                 <SortableHeader
                   label={t('colStatus')}
@@ -561,10 +563,12 @@ export function CargoTransactionsTable({
                   sortBy={currentSortBy}
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
-                  className="w-[125px] min-w-[125px] max-w-[125px]"
+                  className="w-[135px] min-w-[135px] max-w-[135px]"
                 />
-                <th className="py-3 px-4 text-right w-[115px] min-w-[115px] max-w-[115px]">
-                  {t('colActions')}
+                <th className="py-3 px-4 text-right w-[110px] min-w-[110px] max-w-[110px] overflow-hidden">
+                  <span className="truncate block font-bold" title={t('colActions')}>
+                    {t('colActions')}
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -663,14 +667,14 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 3. Client */}
-                      <td className="py-3 px-3.5 text-foreground font-semibold w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+                      <td className="py-3 px-3.5 text-foreground font-semibold w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
                         <div className="truncate" title={item.client_full_name || t('colClient')}>
                           {item.client_full_name || t('colClient')}
                         </div>
                       </td>
 
                       {/* 4. Employee */}
-                      <td className="py-3 px-3.5 text-muted-foreground w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+                      <td className="py-3 px-3.5 text-muted-foreground w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
                         <div
                           className="truncate"
                           title={item.employee_full_name || t('colEmployee')}
@@ -680,7 +684,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 5. Purchase Price & Date */}
-                      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+                      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
                         <div className="font-semibold text-foreground truncate">
                           {formatMoney(
                             item.purchase_price?.amount || 0,
@@ -697,7 +701,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 6. Sell Price & Date */}
-                      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+                      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
                         <div className="font-semibold text-foreground truncate">
                           {formatMoney(
                             item.sell_price?.amount || 0,
@@ -711,7 +715,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 7. Net Yield & Rate */}
-                      <td className="py-3 px-3.5 font-extrabold w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+                      <td className="py-3 px-3.5 font-extrabold w-[155px] min-w-[155px] max-w-[155px] overflow-hidden">
                         <div
                           className={`truncate ${
                             isPositive
@@ -732,7 +736,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 8. Confirmed Date */}
-                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[165px] min-w-[165px] max-w-[165px] overflow-hidden">
                         {item.confirmed_date ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
                             <Calendar className="size-3 text-brand-gold shrink-0" />
@@ -746,7 +750,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 9. Loaded Date */}
-                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[155px] min-w-[155px] max-w-[155px] overflow-hidden">
                         {item.loaded_date ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
                             <Calendar className="size-3 text-blue-500 shrink-0" />
@@ -760,7 +764,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 10. Arrived Date */}
-                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
                         {item.arrived_date ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
                             <Calendar className="size-3 text-emerald-500 shrink-0" />
@@ -774,7 +778,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 11. Created At */}
-                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
                         {item.created_at ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
                             <Calendar className="size-3 text-muted-foreground shrink-0" />
@@ -788,7 +792,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 12. Status */}
-                      <td className="py-3 px-3.5 w-[125px] min-w-[125px] max-w-[125px] overflow-hidden">
+                      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-flex items-center gap-1 border truncate max-w-full ${
                             item.status === 'Delivered'
@@ -807,7 +811,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 13. Actions */}
-                      <td className="py-3 px-4 text-right w-[115px] min-w-[115px] max-w-[115px] overflow-hidden">
+                      <td className="py-3 px-4 text-right w-[110px] min-w-[110px] max-w-[110px] overflow-hidden">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleViewDetails(item.id)}
