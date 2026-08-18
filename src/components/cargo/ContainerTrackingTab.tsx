@@ -119,6 +119,8 @@ export function ContainerTrackingTab() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
   // Multi-select batch operations
@@ -169,6 +171,8 @@ export function ContainerTrackingTab() {
         container_type: filters.container_type || undefined,
         client_id: filters.client_id || undefined,
         employee_id: filters.employee_id || undefined,
+        sort_by: sortBy,
+        sort_order: sortOrder,
         confirmed_start_date: filters.confirmed_start_date || undefined,
         confirmed_end_date: filters.confirmed_end_date || undefined,
         loaded_start_date: filters.loaded_start_date || undefined,
@@ -193,7 +197,31 @@ export function ContainerTrackingTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, statusFilter, filters, showNotification]);
+  }, [page, searchQuery, statusFilter, filters, sortBy, sortOrder, showNotification]);
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+    } else {
+      setSortBy(field);
+      setSortOrder(
+        [
+          'created_at',
+          'confirmed_date',
+          'loaded_date',
+          'arrived_date',
+          'purchase_date',
+          'sell_date',
+          'purchase_price',
+          'sell_price',
+          'net_yield',
+        ].includes(field)
+          ? 'DESC'
+          : 'ASC'
+      );
+    }
+    setPage(1);
+  };
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
@@ -778,7 +806,8 @@ export function ContainerTrackingTab() {
                 : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
-            All ({data?.meta?.total ?? regData?.meta?.total ?? data?.shipments?.length ?? 0})
+            {t('statusAll')} (
+            {data?.meta?.total ?? regData?.meta?.total ?? data?.shipments?.length ?? 0})
           </button>
           {STATUS_CONFIG.map((opt) => (
             <button
@@ -825,6 +854,9 @@ export function ContainerTrackingTab() {
           loading={loading}
           page={page}
           setPage={setPage}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={handleSort}
           onEdit={(item) => {
             setEditingShipmentId(item.id);
             setIsModalOpen(true);

@@ -166,6 +166,97 @@ h4,
   animation: progressFill 0.8s ease-out forwards;
 }
 
+/* ==========================================================================
+   Yaqeen Skeleton Loader & Shimmer Animation System
+   ========================================================================== */
+@keyframes yaqeenShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(226, 232, 240, 0.65);
+  background-image: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.4) 0%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(226, 232, 240, 0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: yaqeenShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.dark .skeleton-shimmer {
+  background-color: rgba(34, 42, 60, 0.6);
+  background-image: linear-gradient(
+    90deg,
+    rgba(34, 42, 60, 0.4) 0%,
+    rgba(59, 73, 102, 0.65) 50%,
+    rgba(34, 42, 60, 0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: yaqeenShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.skeleton-shimmer-gold {
+  background-color: rgba(200, 169, 106, 0.12);
+  background-image: linear-gradient(
+    90deg,
+    rgba(200, 169, 106, 0.08) 0%,
+    rgba(200, 169, 106, 0.28) 50%,
+    rgba(200, 169, 106, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: yaqeenShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.skeleton-shimmer-indigo {
+  background-color: rgba(99, 102, 241, 0.12);
+  background-image: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.08) 0%,
+    rgba(99, 102, 241, 0.28) 50%,
+    rgba(99, 102, 241, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: yaqeenShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.skeleton-shimmer-emerald {
+  background-color: rgba(16, 185, 129, 0.12);
+  background-image: linear-gradient(
+    90deg,
+    rgba(16, 185, 129, 0.08) 0%,
+    rgba(16, 185, 129, 0.28) 50%,
+    rgba(16, 185, 129, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: yaqeenShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Linear Scanning Beam Animation for Background Revalidation */
+@keyframes yaqeenScanBar {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.animate-scan-bar {
+  animation: yaqeenScanBar 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 /* Soft Night utility helpers */
 .dark .surface-elevated {
   background-color: var(--overlay);

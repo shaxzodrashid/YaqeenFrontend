@@ -80,6 +80,9 @@ export interface CargoRegistrationListParams {
   container_type?: ContainerType | string;
   client_id?: string;
   employee_id?: string;
+  sort_by?: string;
+  sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
+  order?: 'ASC' | 'DESC' | 'asc' | 'desc';
   confirmed_start_date?: string;
   confirmed_end_date?: string;
   loaded_start_date?: string;
@@ -657,6 +660,171 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         return cd !== '' && cd <= createdEnd;
       });
     }
+
+    const sortBy = urlObj.searchParams.get('sort_by') || 'created_at';
+    const sortOrder = (
+      urlObj.searchParams.get('sort_order') ||
+      urlObj.searchParams.get('order') ||
+      'DESC'
+    ).toUpperCase();
+    const isAsc = sortOrder === 'ASC';
+
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'container_truck_id':
+          comparison = (a.container_truck_id || '').localeCompare(b.container_truck_id || '');
+          break;
+        case 'cargo':
+          comparison = (a.cargo || '').localeCompare(b.cargo || '');
+          break;
+        case 'agent_name':
+          comparison = (a.agent_name || '').localeCompare(b.agent_name || '');
+          break;
+        case 'cargo_type':
+          comparison = (a.cargo_type || '').localeCompare(b.cargo_type || '');
+          break;
+        case 'container_type':
+          comparison = (a.container_type || '').localeCompare(b.container_type || '');
+          break;
+        case 'client_name':
+        case 'client_first_name':
+        case 'client_last_name':
+        case 'client_company': {
+          const clientA = demoClientsDb.find((c) => c.id === a.client_id);
+          const nameA = clientA ? `${clientA.first_name} ${clientA.last_name}`.trim() : '';
+          const clientB = demoClientsDb.find((c) => c.id === b.client_id);
+          const nameB = clientB ? `${clientB.first_name} ${clientB.last_name}`.trim() : '';
+          comparison = nameA.localeCompare(nameB);
+          break;
+        }
+        case 'employee_name':
+        case 'emp_first_name':
+        case 'emp_last_name': {
+          const empA = demoEmployeesDb.get(a.employee_id);
+          const nameA = empA ? `${empA.first_name} ${empA.last_name}`.trim() : '';
+          const empB = demoEmployeesDb.get(b.employee_id);
+          const nameB = empB ? `${empB.first_name} ${empB.last_name}`.trim() : '';
+          comparison = nameA.localeCompare(nameB);
+          break;
+        }
+        case 'status':
+          comparison = (a.status || '').localeCompare(b.status || '');
+          break;
+        case 'purchase_price':
+          comparison = (Number(a.purchase_price) || 0) - (Number(b.purchase_price) || 0);
+          break;
+        case 'purchase_date': {
+          const dateA = a.purchase_date || a.confirmed_date || a.created_at || '';
+          const dateB = b.purchase_date || b.confirmed_date || b.created_at || '';
+          if (!dateA && !dateB) comparison = 0;
+          else if (!dateA) comparison = 1;
+          else if (!dateB) comparison = -1;
+          else comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'sell_price':
+          comparison = (Number(a.sell_price) || 0) - (Number(b.sell_price) || 0);
+          break;
+        case 'sell_date': {
+          const dateA = a.sell_date || a.created_at || '';
+          const dateB = b.sell_date || b.created_at || '';
+          if (!dateA && !dateB) comparison = 0;
+          else if (!dateA) comparison = 1;
+          else if (!dateB) comparison = -1;
+          else comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'net_yield': {
+          const convA_pur = convertPriceToUsdAndUzs(
+            a.purchase_price,
+            a.purchase_currency,
+            a.purchase_date,
+            a.purchase_custom_rate || a.purchase_usd_rate,
+            a.usd_rmb_rate
+          );
+          const convA_sell = convertPriceToUsdAndUzs(
+            a.sell_price,
+            a.sell_currency,
+            a.sell_date,
+            a.sell_custom_rate || a.sell_usd_rate,
+            a.usd_rmb_rate
+          );
+          const netA = convA_sell.amount_usd - convA_pur.amount_usd;
+
+          const convB_pur = convertPriceToUsdAndUzs(
+            b.purchase_price,
+            b.purchase_currency,
+            b.purchase_date,
+            b.purchase_custom_rate || b.purchase_usd_rate,
+            b.usd_rmb_rate
+          );
+          const convB_sell = convertPriceToUsdAndUzs(
+            b.sell_price,
+            b.sell_currency,
+            b.sell_date,
+            b.sell_custom_rate || b.sell_usd_rate,
+            b.usd_rmb_rate
+          );
+          const netB = convB_sell.amount_usd - convB_pur.amount_usd;
+
+          comparison = netA - netB;
+          break;
+        }
+        case 'confirmed_date': {
+          const dateA = a.confirmed_date || '';
+          const dateB = b.confirmed_date || '';
+          if (!dateA && !dateB) comparison = 0;
+          else if (!dateA) comparison = 1;
+          else if (!dateB) comparison = -1;
+          else comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'loaded_date': {
+          const dateA = a.loaded_date || '';
+          const dateB = b.loaded_date || '';
+          if (!dateA && !dateB) comparison = 0;
+          else if (!dateA) comparison = 1;
+          else if (!dateB) comparison = -1;
+          else comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'arrived_date': {
+          const dateA = a.arrived_date || '';
+          const dateB = b.arrived_date || '';
+          if (!dateA && !dateB) comparison = 0;
+          else if (!dateA) comparison = 1;
+          else if (!dateB) comparison = -1;
+          else comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'created_at': {
+          const dateA = a.created_at || '';
+          const dateB = b.created_at || '';
+          comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'updated_at': {
+          const dateA = a.updated_at || '';
+          const dateB = b.updated_at || '';
+          comparison = dateA.localeCompare(dateB);
+          break;
+        }
+        case 'usd_rmb_rate':
+          comparison = (a.usd_rmb_rate || 0) - (b.usd_rmb_rate || 0);
+          break;
+        case 'volume':
+          comparison = (a.volume || 0) - (b.volume || 0);
+          break;
+        case 'weight':
+          comparison = (a.weight || 0) - (b.weight || 0);
+          break;
+        default:
+          comparison = (a.created_at || '').localeCompare(b.created_at || '');
+          break;
+      }
+      return isAsc ? comparison : -comparison;
+    });
 
     const calculated_net_yield = {
       USD: 0,
@@ -1346,6 +1514,9 @@ export const cargoRegistrationsApi = {
     if (params?.container_type) searchParams.set('container_type', params.container_type);
     if (params?.client_id) searchParams.set('client_id', params.client_id);
     if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
+    if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
+    if (params?.sort_order) searchParams.set('sort_order', params.sort_order);
+    if (params?.order) searchParams.set('order', params.order);
 
     if (params?.confirmed_start_date)
       searchParams.set('confirmed_start_date', params.confirmed_start_date);

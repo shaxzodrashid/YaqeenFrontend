@@ -27,6 +27,8 @@ export function CargoTransactionsTab() {
   const [limit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
   const [filters, setFilters] = useState<CargoFilterState>(INITIAL_CARGO_FILTERS);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
 
   const [data, setData] = useState<CargoRegistrationPaginatedResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -49,6 +51,8 @@ export function CargoTransactionsTab() {
         container_type: filters.container_type || undefined,
         client_id: filters.client_id || undefined,
         employee_id: filters.employee_id || undefined,
+        sort_by: sortBy,
+        sort_order: sortOrder,
         confirmed_start_date: filters.confirmed_start_date || undefined,
         confirmed_end_date: filters.confirmed_end_date || undefined,
         loaded_start_date: filters.loaded_start_date || undefined,
@@ -64,7 +68,31 @@ export function CargoTransactionsTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, filters, showNotification]);
+  }, [page, limit, search, filters, sortBy, sortOrder, showNotification]);
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+    } else {
+      setSortBy(field);
+      setSortOrder(
+        [
+          'created_at',
+          'confirmed_date',
+          'loaded_date',
+          'arrived_date',
+          'purchase_date',
+          'sell_date',
+          'purchase_price',
+          'sell_price',
+          'net_yield',
+        ].includes(field)
+          ? 'DESC'
+          : 'ASC'
+      );
+    }
+    setPage(1);
+  };
 
   useEffect(() => {
     loadRegistrations();
@@ -81,10 +109,18 @@ export function CargoTransactionsTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this cargo registration?')) return;
+    if (
+      !window.confirm(
+        t('confirmDeleteCargoReg') || 'Are you sure you want to delete this cargo registration?'
+      )
+    )
+      return;
     try {
       await cargoRegistrationsApi.delete(id);
-      showNotification('Cargo registration deleted successfully', 'success');
+      showNotification(
+        t('successCargoRegDeleted') || 'Cargo registration deleted successfully',
+        'success'
+      );
       loadRegistrations();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to delete registration', 'error');
@@ -126,7 +162,7 @@ export function CargoTransactionsTab() {
               <T k="tabTransactions" />
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Unified Cargo Registrations Hub — Register and manage all LTL &amp; FTL shipments.
+              <T k="cargoTransactionsTabDesc" />
             </p>
           </div>
         </div>
@@ -141,7 +177,7 @@ export function CargoTransactionsTab() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search truck ID, cargo..."
+              placeholder={t('searchCargoPlaceholder') || 'Search truck ID, cargo...'}
               className="pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 w-44 sm:w-56"
             />
             <Search className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
@@ -188,7 +224,7 @@ export function CargoTransactionsTab() {
             onClick={loadRegistrations}
             disabled={loading}
             className="p-2.5 rounded-xl border border-border hover:bg-muted text-foreground transition-all cursor-pointer"
-            title="Refresh list"
+            title={t('refreshList') || 'Refresh list'}
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -199,7 +235,9 @@ export function CargoTransactionsTab() {
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-gold to-amber-500 hover:from-brand-gold/90 hover:to-amber-500/90 text-brand-navy font-bold text-xs shadow-md shadow-brand-gold/20 transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus className="size-4" />
-              <span>Register Cargo</span>
+              <span>
+                <T k="btnRegisterCargo" />
+              </span>
             </button>
           )}
         </div>
@@ -346,14 +384,16 @@ export function CargoTransactionsTab() {
       )}
 
       {/* Financial Summary KPI Cards */}
-      {meta && (
+      {meta ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Calculated Net Yield Card */}
           <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 <TrendingUp className="size-4" />
-                <span>Calculated Net Yield</span>
+                <span>
+                  <T k="lblCalculatedNetYield" />
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 {meta.calculated_net_yield.total_usd !== undefined && (
@@ -362,7 +402,7 @@ export function CargoTransactionsTab() {
                   </span>
                 )}
                 <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  Profit / Loss
+                  <T k="lblProfitLoss" />
                 </span>
               </div>
             </div>
@@ -396,7 +436,9 @@ export function CargoTransactionsTab() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs font-bold text-brand-gold">
                 <Coins className="size-4" />
-                <span>Gross Sales Revenue</span>
+                <span>
+                  <T k="lblGrossSalesRevenue" />
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 {meta.gross_sales_revenue.total_usd_equivalent !== undefined && (
@@ -405,7 +447,7 @@ export function CargoTransactionsTab() {
                   </span>
                 )}
                 <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20">
-                  Turnover
+                  <T k="lblTurnover" />
                 </span>
               </div>
             </div>
@@ -426,7 +468,53 @@ export function CargoTransactionsTab() {
             </div>
           </div>
         </div>
-      )}
+      ) : loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Skeleton Calculated Net Yield Card */}
+          <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between min-h-[126px]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="size-4 rounded-md skeleton-shimmer-emerald" />
+                <div className="w-32 h-4 rounded-md skeleton-shimmer" />
+              </div>
+              <div className="w-20 h-5 rounded-full skeleton-shimmer-emerald" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {CURRENCIES.map((curr) => (
+                <div
+                  key={curr}
+                  className="p-2.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5"
+                >
+                  <div className="w-8 h-3 rounded skeleton-shimmer" />
+                  <div className="w-16 h-4 rounded skeleton-shimmer" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Skeleton Gross Sales Revenue Card */}
+          <div className="p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm flex flex-col justify-between min-h-[126px]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="size-4 rounded-md skeleton-shimmer-gold" />
+                <div className="w-36 h-4 rounded-md skeleton-shimmer" />
+              </div>
+              <div className="w-20 h-5 rounded-full skeleton-shimmer-gold" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {CURRENCIES.map((curr) => (
+                <div
+                  key={curr}
+                  className="p-2.5 rounded-xl bg-muted/20 border border-border/40 space-y-1.5"
+                >
+                  <div className="w-8 h-3 rounded skeleton-shimmer" />
+                  <div className="w-16 h-4 rounded skeleton-shimmer" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Reusable Cargo Registrations Table Component */}
       <CargoTransactionsTable
@@ -434,6 +522,9 @@ export function CargoTransactionsTab() {
         loading={loading}
         page={page}
         setPage={setPage}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={handleSort}
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
       />

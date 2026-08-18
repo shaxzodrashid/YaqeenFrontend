@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Receipt,
@@ -6,11 +6,17 @@ import {
   Edit2,
   Trash2,
   Box,
-  RefreshCw,
   ChevronLeft,
   ChevronRight,
   X,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Calendar,
+  Copy,
+  Check,
 } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cargoRegistrationsApi, formatMoney, currencyApi } from '../../services/api';
@@ -18,87 +24,225 @@ import type {
   CargoRegistrationListItem,
   CargoRegistrationPaginatedResponse,
   CargoRegistrationDetail,
-  CargoRegistrationStatus,
 } from '../../services/api';
 
-const STATUS_CONFIG: {
-  key: CargoRegistrationStatus;
-  dotClass: string;
-  stepIndex: number;
-}[] = [
-  {
-    key: 'Waiting',
-    dotClass: 'bg-yellow-500',
-    stepIndex: 0,
-  },
-  {
-    key: 'In Transit',
-    dotClass: 'bg-blue-500',
-    stepIndex: 1,
-  },
-  {
-    key: 'Border',
-    dotClass: 'bg-amber-500',
-    stepIndex: 2,
-  },
-  {
-    key: 'At Station',
-    dotClass: 'bg-indigo-500',
-    stepIndex: 3,
-  },
-  {
-    key: 'Delivered',
-    dotClass: 'bg-emerald-500',
-    stepIndex: 4,
-  },
-];
-
-function formatDateShort(dateStr?: string): string {
+function formatDateDisplay(dateStr?: string | null, localeCode: string = 'en'): string {
   if (!dateStr || !dateStr.trim()) return '—';
   try {
     const cleanStr = dateStr.slice(0, 10);
     const parts = cleanStr.split('-');
+    let dateObj: Date;
     if (parts.length === 3) {
-      const monthNames = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      const day = parts[2];
-      if (mIdx >= 0 && mIdx < 12) {
-        return `${monthNames[mIdx]} ${day}`;
-      }
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      dateObj = new Date(year, month, day);
+    } else {
+      dateObj = new Date(dateStr);
     }
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return cleanStr;
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
+    if (isNaN(dateObj.getTime())) return cleanStr;
+    const localeMap: Record<string, string> = {
+      uz: 'uz-UZ',
+      ru: 'ru-RU',
+      en: 'en-US',
+    };
+    const targetLocale = localeMap[localeCode] || 'en-US';
+    return dateObj.toLocaleDateString(targetLocale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   } catch {
     return dateStr.slice(0, 10);
   }
+}
+
+interface SortableHeaderProps {
+  label: string;
+  field: string;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC' | 'asc' | 'desc';
+  onSort?: (field: string) => void;
+  align?: 'left' | 'right' | 'center';
+  className?: string;
+}
+
+function SortableHeader({
+  label,
+  field,
+  sortBy,
+  sortOrder = 'DESC',
+  onSort,
+  align = 'left',
+  className = '',
+}: SortableHeaderProps) {
+  const { t } = useTranslation();
+  const isActive = sortBy === field;
+  const isAsc = isActive && (sortOrder === 'ASC' || sortOrder === 'asc');
+
+  const handleClick = () => {
+    if (onSort) {
+      onSort(field);
+    }
+  };
+
+  const sortHint = isActive
+    ? isAsc
+      ? t('sortAscendingHint') || 'Ascending (click for Descending)'
+      : t('sortDescendingHint') || 'Descending (click for Ascending)'
+    : t('clickToSortHint') || 'Click to sort';
+
+  const tooltipTitle = `${t('sortByTitle', { label }) || `Sort by ${label}`} (${sortHint})`;
+
+  return (
+    <th
+      onClick={handleClick}
+      className={`py-3 px-3.5 text-[11px] uppercase tracking-wider font-bold transition-all select-none cursor-pointer group hover:bg-muted/70 ${
+        isActive
+          ? 'text-brand-gold bg-brand-gold/10'
+          : 'text-muted-foreground hover:text-foreground'
+      } ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} ${className}`}
+      title={tooltipTitle}
+    >
+      <div
+        className={`inline-flex items-center gap-1.5 ${
+          align === 'right'
+            ? 'justify-end w-full'
+            : align === 'center'
+              ? 'justify-center w-full'
+              : ''
+        }`}
+      >
+        <span className="truncate">{label}</span>
+        <span
+          className={`inline-flex items-center justify-center size-4.5 rounded-md transition-all ${
+            isActive
+              ? 'text-brand-navy bg-brand-gold shadow-xs font-black'
+              : 'text-muted-foreground/50 group-hover:text-foreground group-hover:bg-muted'
+          }`}
+        >
+          {isActive ? (
+            isAsc ? (
+              <ArrowUp className="size-3.5 stroke-[2.5]" />
+            ) : (
+              <ArrowDown className="size-3.5 stroke-[2.5]" />
+            )
+          ) : (
+            <ArrowUpDown className="size-3 opacity-60 group-hover:opacity-100" />
+          )}
+        </span>
+      </div>
+    </th>
+  );
+}
+
+interface CargoTableRowSkeletonProps {
+  index: number;
+}
+
+function CargoTableRowSkeleton({ index }: CargoTableRowSkeletonProps) {
+  const isIndigo = index % 3 === 0;
+
+  const truckWidths = ['w-24', 'w-28', 'w-20', 'w-26'];
+  const cargoWidths = ['w-32', 'w-24', 'w-36', 'w-28'];
+  const agentWidths = ['w-20', 'w-16', 'w-24', 'w-18'];
+  const clientWidths = ['w-28', 'w-20', 'w-24', 'w-32'];
+  const employeeWidths = ['w-24', 'w-20', 'w-28', 'w-16'];
+  const statusWidths = ['w-20', 'w-24', 'w-18', 'w-22'];
+
+  return (
+    <tr className="border-b border-border/40 hover:bg-muted/10 transition-colors h-[62px]">
+      {/* 1. Container / Truck ID */}
+      <td className="py-3 px-3.5 w-[220px] min-w-[220px] max-w-[220px] overflow-hidden">
+        <div className="flex items-center gap-2 w-full min-w-0">
+          <div
+            className={`h-5 w-9 rounded-md shrink-0 ${
+              isIndigo ? 'skeleton-shimmer-indigo' : 'skeleton-shimmer-gold'
+            }`}
+          />
+          <div
+            className={`h-4 ${truckWidths[index % 4]} rounded-md skeleton-shimmer flex-1 max-w-[120px]`}
+          />
+        </div>
+      </td>
+
+      {/* 2. Cargo & Agent */}
+      <td className="py-3 px-3.5 w-[200px] min-w-[200px] max-w-[200px] overflow-hidden">
+        <div
+          className={`h-4 ${cargoWidths[index % 4]} rounded-md skeleton-shimmer max-w-[150px]`}
+        />
+        <div
+          className={`h-3 ${agentWidths[index % 4]} rounded-md skeleton-shimmer mt-1.5 opacity-70 max-w-[100px]`}
+        />
+      </td>
+
+      {/* 3. Client */}
+      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+        <div
+          className={`h-4 ${clientWidths[index % 4]} rounded-md skeleton-shimmer max-w-[110px]`}
+        />
+      </td>
+
+      {/* 4. Employee */}
+      <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+        <div
+          className={`h-4 ${employeeWidths[index % 4]} rounded-md skeleton-shimmer opacity-80 max-w-[100px]`}
+        />
+      </td>
+
+      {/* 5. Purchase Price & Date */}
+      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+        <div className="h-4 w-20 rounded-md skeleton-shimmer" />
+        <div className="h-3 w-16 rounded-md skeleton-shimmer mt-1.5 opacity-70" />
+      </td>
+
+      {/* 6. Sell Price & Date */}
+      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+        <div className="h-4 w-20 rounded-md skeleton-shimmer" />
+        <div className="h-3 w-16 rounded-md skeleton-shimmer mt-1.5 opacity-70" />
+      </td>
+
+      {/* 7. Net Yield & Rate */}
+      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+        <div className="h-4.5 w-20 rounded-md skeleton-shimmer-emerald" />
+        <div className="h-3 w-14 rounded-md skeleton-shimmer mt-1.5 opacity-70" />
+      </td>
+
+      {/* 8. Confirmed Date */}
+      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+        <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
+      </td>
+
+      {/* 9. Loaded Date */}
+      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+        <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
+      </td>
+
+      {/* 10. Arrived Date */}
+      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+        <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
+      </td>
+
+      {/* 11. Created At */}
+      <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+        <div className="h-6 w-24 rounded-md skeleton-shimmer border border-border/40" />
+      </td>
+
+      {/* 12. Status */}
+      <td className="py-3 px-3.5 w-[125px] min-w-[125px] max-w-[125px] overflow-hidden">
+        <div className={`h-6 ${statusWidths[index % 4]} rounded-full skeleton-shimmer`} />
+      </td>
+
+      {/* 13. Actions */}
+      <td className="py-3 px-4 text-right w-[115px] min-w-[115px] max-w-[115px] overflow-hidden">
+        <div className="flex items-center justify-end gap-1.5">
+          <div className="size-7 rounded-lg skeleton-shimmer" />
+          <div className="size-7 rounded-lg skeleton-shimmer" />
+          <div className="size-7 rounded-lg skeleton-shimmer" />
+        </div>
+      </td>
+    </tr>
+  );
 }
 
 export interface CargoTransactionsTableProps {
@@ -106,10 +250,14 @@ export interface CargoTransactionsTableProps {
   loading: boolean;
   page: number;
   setPage: (page: number | ((prev: number) => number)) => void;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC' | 'asc' | 'desc';
+  onSort?: (field: string) => void;
   onEdit?: (item: CargoRegistrationListItem) => void;
   onDelete?: (id: string) => void;
   emptyTitle?: string;
   emptySubtitle?: string;
+  skeletonRowCount?: number;
 }
 
 export function CargoTransactionsTable({
@@ -117,15 +265,106 @@ export function CargoTransactionsTable({
   loading,
   page,
   setPage,
+  sortBy: controlledSortBy,
+  sortOrder: controlledSortOrder,
+  onSort: controlledOnSort,
   onEdit,
   onDelete,
-  emptyTitle = 'No cargo registrations found',
-  emptySubtitle = 'Click "Register Cargo" above to submit a new LTL or FTL registration.',
+  emptyTitle,
+  emptySubtitle,
+  skeletonRowCount,
 }: CargoTransactionsTableProps) {
+  const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
   const { canUpdate, canDelete } = usePermissions();
 
   const [detailsItem, setDetailsItem] = useState<CargoRegistrationDetail | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const getStatusLabel = useCallback(
+    (status: string) => {
+      switch (status) {
+        case 'Delivered':
+          return t('statusDelivered');
+        case 'In Transit':
+          return t('statusInTransit');
+        case 'Border':
+          return t('statusBorder');
+        case 'At Station':
+          return t('statusAtStation');
+        case 'Waiting':
+          return t('statusWaiting');
+        default:
+          return status;
+      }
+    },
+    [t]
+  );
+
+  // Horizontal scroll retention ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef<number>(0);
+  const isRestoringScrollRef = useRef<boolean>(false);
+
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current && !isRestoringScrollRef.current) {
+      scrollPosRef.current = scrollContainerRef.current.scrollLeft;
+    }
+  }, []);
+
+  // Restore horizontal scroll on data or status updates
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const targetScroll = scrollPosRef.current;
+    if (targetScroll > 0) {
+      isRestoringScrollRef.current = true;
+      container.scrollLeft = targetScroll;
+
+      const rId = requestAnimationFrame(() => {
+        if (container) {
+          container.scrollLeft = targetScroll;
+        }
+        isRestoringScrollRef.current = false;
+      });
+      return () => cancelAnimationFrame(rId);
+    }
+  }, [data, loading]);
+
+  // Fallback internal sort state if uncontrolled
+  const [internalSortBy, setInternalSortBy] = useState<string>('created_at');
+  const [internalSortOrder, setInternalSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
+  const currentSortBy = controlledSortBy ?? internalSortBy;
+  const currentSortOrder = controlledSortOrder ?? internalSortOrder;
+
+  const handleSortClick = (field: string) => {
+    if (controlledOnSort) {
+      controlledOnSort(field);
+    } else {
+      if (internalSortBy === field) {
+        setInternalSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+      } else {
+        setInternalSortBy(field);
+        setInternalSortOrder(
+          [
+            'created_at',
+            'confirmed_date',
+            'loaded_date',
+            'arrived_date',
+            'purchase_date',
+            'sell_date',
+            'purchase_price',
+            'sell_price',
+            'net_yield',
+          ].includes(field)
+            ? 'DESC'
+            : 'ASC'
+        );
+      }
+    }
+  };
 
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 12800,
@@ -191,41 +430,163 @@ export function CargoTransactionsTable({
     }
   };
 
+  const isInitialLoading = loading && (!data || !data.data || data.data.length === 0);
+  const isRevalidating = loading && !!(data && data.data && data.data.length > 0);
+  const rowCount = skeletonRowCount || (data?.meta?.limit ? Math.min(data.meta.limit, 10) : 10);
+
   return (
     <>
-      <div className="rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm overflow-hidden min-w-0 max-w-full">
-        <div className="overflow-x-auto w-full min-w-0">
-          <table className="w-full text-left border-collapse">
+      <div className="rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm overflow-hidden min-w-0 max-w-full relative">
+        {/* Sleek Scanning Beam during background revalidations & updates */}
+        {isRevalidating && (
+          <div className="absolute top-0 left-0 right-0 h-0.5 z-20 overflow-hidden bg-brand-gold/20">
+            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-brand-gold to-transparent animate-scan-bar shadow-[0_0_8px_rgba(200,169,106,0.6)]" />
+          </div>
+        )}
+
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="overflow-x-auto w-full min-w-0"
+        >
+          <table className="w-full text-left border-collapse table-fixed min-w-[1920px]">
+            <colgroup>
+              <col style={{ width: 220 }} /> {/* 1. Container / Truck ID */}
+              <col style={{ width: 200 }} /> {/* 2. Cargo & Agent */}
+              <col style={{ width: 150 }} /> {/* 3. Client */}
+              <col style={{ width: 150 }} /> {/* 4. Employee */}
+              <col style={{ width: 140 }} /> {/* 5. Purchase Price */}
+              <col style={{ width: 140 }} /> {/* 6. Sell Price */}
+              <col style={{ width: 140 }} /> {/* 7. Net Yield */}
+              <col style={{ width: 135 }} /> {/* 8. Confirmed Date */}
+              <col style={{ width: 135 }} /> {/* 9. Loaded Date */}
+              <col style={{ width: 135 }} /> {/* 10. Arrived Date */}
+              <col style={{ width: 135 }} /> {/* 11. Created At */}
+              <col style={{ width: 125 }} /> {/* 12. Status */}
+              <col style={{ width: 115 }} /> {/* 13. Actions */}
+            </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
-                <th className="py-3 px-4">Container / Truck ID</th>
-                <th className="py-3 px-4">Cargo &amp; Agent</th>
-                <th className="py-3 px-4">Client</th>
-                <th className="py-3 px-4 min-w-[180px]">Milestone Lifecycle Progress</th>
-                <th className="py-3 px-4">Assigned Employee</th>
-                <th className="py-3 px-4">Purchase Price</th>
-                <th className="py-3 px-4">Sell Price</th>
-                <th className="py-3 px-4">Net Yield</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <SortableHeader
+                  label={t('colContainerNo')}
+                  field="container_truck_id"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[220px] min-w-[220px] max-w-[220px]"
+                />
+                <SortableHeader
+                  label={t('colCargoAndAgent')}
+                  field="cargo"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[200px] min-w-[200px] max-w-[200px]"
+                />
+                <SortableHeader
+                  label={t('colClient')}
+                  field="client_name"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[150px] min-w-[150px] max-w-[150px]"
+                />
+                <SortableHeader
+                  label={t('colEmployee')}
+                  field="employee_name"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[150px] min-w-[150px] max-w-[150px]"
+                />
+                <SortableHeader
+                  label={t('colBuyPrice')}
+                  field="purchase_price"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[140px] min-w-[140px] max-w-[140px]"
+                />
+                <SortableHeader
+                  label={t('colSellPrice')}
+                  field="sell_price"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[140px] min-w-[140px] max-w-[140px]"
+                />
+                <SortableHeader
+                  label={t('colNetYield')}
+                  field="net_yield"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[140px] min-w-[140px] max-w-[140px]"
+                />
+                <SortableHeader
+                  label={t('colConfirmedDate')}
+                  field="confirmed_date"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                />
+                <SortableHeader
+                  label={t('colLoadedDate')}
+                  field="loaded_date"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                />
+                <SortableHeader
+                  label={t('colArrivedDate')}
+                  field="arrived_date"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                />
+                <SortableHeader
+                  label={t('colCreatedAt')}
+                  field="created_at"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[135px] min-w-[135px] max-w-[135px]"
+                />
+                <SortableHeader
+                  label={t('colStatus')}
+                  field="status"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[125px] min-w-[125px] max-w-[125px]"
+                />
+                <th className="py-3 px-4 text-right w-[115px] min-w-[115px] max-w-[115px]">
+                  {t('colActions')}
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border text-xs">
-              {loading ? (
-                <tr>
-                  <td colSpan={10} className="py-12 text-center text-muted-foreground">
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="size-5 animate-spin text-brand-gold" />
-                      <span>Loading cargo registrations...</span>
-                    </div>
-                  </td>
-                </tr>
+            <tbody
+              className={`divide-y divide-border text-xs transition-opacity duration-200 ${
+                isRevalidating ? 'opacity-65 pointer-events-none select-none' : 'opacity-100'
+              }`}
+            >
+              {isInitialLoading ? (
+                Array.from({ length: rowCount }).map((_, idx) => (
+                  <CargoTableRowSkeleton key={`cargo-skel-${idx}`} index={idx} />
+                ))
               ) : !data || data.data.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-muted-foreground">
+                  <td colSpan={13} className="py-16 text-center text-muted-foreground">
                     <Box className="size-8 mx-auto mb-2 opacity-40" />
-                    <p className="font-semibold text-sm">{emptyTitle}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{emptySubtitle}</p>
+                    <p className="font-semibold text-sm">
+                      {emptyTitle || t('noCargoRegistrationsFound')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {emptySubtitle || t('noCargoRegistrationsDesc')}
+                    </p>
                   </td>
                 </tr>
               ) : (
@@ -240,16 +601,13 @@ export function CargoTransactionsTable({
                   const isPositive = netYieldVal > 0;
                   const isNegative = netYieldVal < 0;
 
-                  const currentStatusOpt =
-                    STATUS_CONFIG.find((o) => o.key === item.status) || STATUS_CONFIG[0];
-
                   return (
-                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                      {/* Truck ID & Cargo Type */}
-                      <td className="py-3 px-4 font-bold text-foreground whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                    <tr key={item.id} className="hover:bg-muted/30 transition-colors h-[62px]">
+                      {/* 1. Container / Truck ID (Resilient up to 50+ chars with quick copy) */}
+                      <td className="py-3 px-3.5 font-bold text-foreground w-[220px] min-w-[220px] max-w-[220px] overflow-hidden">
+                        <div className="flex items-center gap-1.5 w-full min-w-0">
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase shrink-0 ${
                               item.cargo_type === 'FTL'
                                 ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
                                 : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
@@ -257,116 +615,182 @@ export function CargoTransactionsTable({
                           >
                             {item.cargo_type || 'LTL'}
                           </span>
-                          <span>{item.container_truck_id}</span>
-                        </div>
-                      </td>
-
-                      {/* Cargo Description & Agent */}
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-foreground">{item.cargo}</div>
-                        <div className="text-[11px] text-muted-foreground">{item.agent_name}</div>
-                      </td>
-
-                      {/* Client */}
-                      <td className="py-3 px-4 text-foreground font-semibold">
-                        {item.client_full_name || 'Client'}
-                      </td>
-
-                      {/* Visual Milestone Lifecycle Progress */}
-                      <td className="py-3 px-4 min-w-[180px]">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-1">
-                            {STATUS_CONFIG.map((st, idx) => {
-                              const isPassed = currentStatusOpt.stepIndex >= idx;
-                              const isCurrent = currentStatusOpt.stepIndex === idx;
-                              return (
-                                <div key={st.key} className="flex items-center flex-1">
-                                  <div
-                                    className={`size-2.5 rounded-full transition-all ${
-                                      isCurrent
-                                        ? `${st.dotClass} ring-4 ring-${st.dotClass}/20 scale-110`
-                                        : isPassed
-                                          ? st.dotClass
-                                          : 'bg-muted-foreground/30'
-                                    }`}
-                                    title={st.key}
-                                  />
-                                  {idx < STATUS_CONFIG.length - 1 && (
-                                    <div
-                                      className={`h-0.5 flex-1 mx-0.5 rounded-full transition-colors ${
-                                        isPassed && currentStatusOpt.stepIndex > idx
-                                          ? 'bg-brand-gold'
-                                          : 'bg-border'
-                                      }`}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                            <span>Conf: {formatDateShort(item.confirmed_date || undefined)}</span>
-                            <span>Arr: {formatDateShort(item.arrived_date || undefined)}</span>
+                          <div className="min-w-0 flex-1 flex items-center justify-between gap-1 group/track">
+                            <span
+                              className="font-mono text-xs font-bold text-foreground truncate select-all block flex-1"
+                              title={item.container_truck_id}
+                            >
+                              {item.container_truck_id}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(item.container_truck_id);
+                                setCopiedId(item.id);
+                                setTimeout(() => setCopiedId(null), 1500);
+                                showNotification(
+                                  t('copiedTrackIdNotification', {
+                                    id: item.container_truck_id,
+                                  }) || `Copied Track ID: ${item.container_truck_id}`,
+                                  'info'
+                                );
+                              }}
+                              className="opacity-0 group-hover/track:opacity-100 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all shrink-0 cursor-pointer"
+                              title={t('copyTrackingIdTitle') || 'Copy full Tracking/Truck ID'}
+                            >
+                              {copiedId === item.id ? (
+                                <Check className="size-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="size-3" />
+                              )}
+                            </button>
                           </div>
                         </div>
                       </td>
 
-                      {/* Employee */}
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {item.employee_full_name || 'Employee'}
+                      {/* 2. Cargo Description & Agent */}
+                      <td className="py-3 px-3.5 w-[200px] min-w-[200px] max-w-[200px] overflow-hidden">
+                        <div className="font-bold text-foreground truncate" title={item.cargo}>
+                          {item.cargo}
+                        </div>
+                        <div
+                          className="text-[11px] text-muted-foreground truncate"
+                          title={item.agent_name}
+                        >
+                          {item.agent_name}
+                        </div>
                       </td>
 
-                      {/* Purchase Price */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-semibold text-foreground">
+                      {/* 3. Client */}
+                      <td className="py-3 px-3.5 text-foreground font-semibold w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+                        <div className="truncate" title={item.client_full_name || t('colClient')}>
+                          {item.client_full_name || t('colClient')}
+                        </div>
+                      </td>
+
+                      {/* 4. Employee */}
+                      <td className="py-3 px-3.5 text-muted-foreground w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
+                        <div
+                          className="truncate"
+                          title={item.employee_full_name || t('colEmployee')}
+                        >
+                          {item.employee_full_name || t('colEmployee')}
+                        </div>
+                      </td>
+
+                      {/* 5. Purchase Price & Date */}
+                      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+                        <div className="font-semibold text-foreground truncate">
                           {formatMoney(
                             item.purchase_price?.amount || 0,
                             item.purchase_price?.currency || 'USD'
                           )}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          Date: {item.purchase_price?.date || item.purchase_date || 'N/A'}
+                        <div className="text-[10px] text-muted-foreground font-medium truncate">
+                          {t('lblDatePrefix')}{' '}
+                          {formatDateDisplay(
+                            item.purchase_price?.date || item.purchase_date,
+                            locale
+                          )}
                         </div>
                       </td>
 
-                      {/* Sell Price */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-semibold text-foreground">
+                      {/* 6. Sell Price & Date */}
+                      <td className="py-3 px-3.5 w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
+                        <div className="font-semibold text-foreground truncate">
                           {formatMoney(
                             item.sell_price?.amount || 0,
                             item.sell_price?.currency || 'USD'
                           )}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          Date: {item.sell_price?.date || item.sell_date || 'N/A'}
+                        <div className="text-[10px] text-muted-foreground font-medium truncate">
+                          {t('lblDatePrefix')}{' '}
+                          {formatDateDisplay(item.sell_price?.date || item.sell_date, locale)}
                         </div>
                       </td>
 
-                      {/* Net Yield & Rate */}
-                      <td className="py-3 px-4 font-extrabold whitespace-nowrap">
+                      {/* 7. Net Yield & Rate */}
+                      <td className="py-3 px-3.5 font-extrabold w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
                         <div
-                          className={
+                          className={`truncate ${
                             isPositive
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : isNegative
                                 ? 'text-rose-600 dark:text-rose-400'
                                 : 'text-foreground'
-                          }
+                          }`}
                         >
                           {formatMoney(netYieldVal, item.sell_price?.currency || 'USD')}
                         </div>
                         {item.net_yield?.amount_usd !== undefined &&
                           item.sell_price?.currency !== 'USD' && (
-                            <div className="text-[10px] text-muted-foreground font-semibold">
+                            <div className="text-[10px] text-muted-foreground font-semibold truncate">
                               ≈ {formatMoney(item.net_yield.amount_usd, 'USD')}
                             </div>
                           )}
                       </td>
 
-                      {/* Status */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      {/* 8. Confirmed Date */}
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                        {item.confirmed_date ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
+                            <Calendar className="size-3 text-brand-gold shrink-0" />
+                            <span className="truncate">
+                              {formatDateDisplay(item.confirmed_date, locale)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
+                      {/* 9. Loaded Date */}
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                        {item.loaded_date ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
+                            <Calendar className="size-3 text-blue-500 shrink-0" />
+                            <span className="truncate">
+                              {formatDateDisplay(item.loaded_date, locale)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
+                      {/* 10. Arrived Date */}
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                        {item.arrived_date ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
+                            <Calendar className="size-3 text-emerald-500 shrink-0" />
+                            <span className="truncate">
+                              {formatDateDisplay(item.arrived_date, locale)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
+                      {/* 11. Created At */}
+                      <td className="py-3 px-3.5 text-foreground font-medium text-[11px] w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
+                        {item.created_at ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/50 font-mono text-[11px] whitespace-nowrap">
+                            <Calendar className="size-3 text-muted-foreground shrink-0" />
+                            <span className="truncate">
+                              {formatDateDisplay(item.created_at, locale)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
+                      {/* 12. Status */}
+                      <td className="py-3 px-3.5 w-[125px] min-w-[125px] max-w-[125px] overflow-hidden">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-flex items-center gap-1 border ${
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-flex items-center gap-1 border truncate max-w-full ${
                             item.status === 'Delivered'
                               ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                               : item.status === 'In Transit'
@@ -378,17 +802,17 @@ export function CargoTransactionsTable({
                                     : 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
                           }`}
                         >
-                          {item.status}
+                          <span className="truncate">{getStatusLabel(item.status)}</span>
                         </span>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                      {/* 13. Actions */}
+                      <td className="py-3 px-4 text-right w-[115px] min-w-[115px] max-w-[115px] overflow-hidden">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleViewDetails(item.id)}
                             className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            title="View Details"
+                            title={t('btnViewDetails') || 'View Details'}
                           >
                             <Eye className="size-4" />
                           </button>
@@ -396,7 +820,7 @@ export function CargoTransactionsTable({
                             <button
                               onClick={() => onEdit(item)}
                               className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-brand-gold transition-colors cursor-pointer"
-                              title="Edit Registration"
+                              title={t('btnEditRegistration') || 'Edit Registration'}
                             >
                               <Edit2 className="size-4" />
                             </button>
@@ -405,7 +829,7 @@ export function CargoTransactionsTable({
                             <button
                               onClick={() => onDelete(item.id)}
                               className="p-1.5 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors cursor-pointer"
-                              title="Delete Registration"
+                              title={t('btnDeleteRegistration') || 'Delete Registration'}
                             >
                               <Trash2 className="size-4" />
                             </button>
@@ -420,35 +844,48 @@ export function CargoTransactionsTable({
           </table>
         </div>
 
-        {/* Pagination Footer */}
-        {data && data.meta.total > 0 && (
+        {/* Stable Pagination Footer */}
+        {isInitialLoading ? (
+          <div className="flex items-center justify-between p-4 border-t border-border bg-muted/20 text-xs">
+            <div className="h-4 w-48 rounded-md skeleton-shimmer" />
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-20 rounded-lg skeleton-shimmer" />
+              <div className="h-4 w-16 rounded-md skeleton-shimmer mx-2" />
+              <div className="h-8 w-16 rounded-lg skeleton-shimmer" />
+            </div>
+          </div>
+        ) : data && data.meta.total > 0 ? (
           <div className="flex items-center justify-between p-4 border-t border-border bg-muted/20 text-xs">
             <span className="text-muted-foreground font-semibold">
-              Showing {data.meta.offset + 1} to{' '}
-              {Math.min(data.meta.offset + data.meta.limit, data.meta.total)} of {data.meta.total}{' '}
-              cargos
+              {t('showingCargosPagination', {
+                from: data.meta.offset + 1,
+                to: Math.min(data.meta.offset + data.meta.limit, data.meta.total),
+                total: data.meta.total,
+              })}
             </span>
             <div className="flex items-center gap-2">
               <button
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
                 onClick={() => setPage((p) => (typeof p === 'number' ? p - 1 : p))}
                 className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <ChevronLeft className="size-3.5" />
-                <span>Previous</span>
+                <span>{t('pagPrev') || 'Previous'}</span>
               </button>
-              <span className="font-bold text-foreground px-2">Page {page}</span>
+              <span className="font-bold text-foreground px-2">
+                {t('pageNumber', { page }) || `Page ${page}`}
+              </span>
               <button
-                disabled={data.meta.offset + data.meta.limit >= data.meta.total}
+                disabled={data.meta.offset + data.meta.limit >= data.meta.total || loading}
                 onClick={() => setPage((p) => (typeof p === 'number' ? p + 1 : p))}
                 className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1 cursor-pointer"
               >
-                <span>Next</span>
+                <span>{t('pagNext') || 'Next'}</span>
                 <ChevronRight className="size-3.5" />
               </button>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* DETAILS READ-ONLY MODAL */}
@@ -464,7 +901,7 @@ export function CargoTransactionsTable({
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <h3 className="text-base font-bold flex items-center gap-2">
                   <Receipt className="size-5 text-brand-gold" />
-                  Cargo Registration Details
+                  {t('cargoDetailsTitle') || 'Cargo Registration Details'}
                 </h3>
                 <button
                   onClick={() => setDetailsItem(null)}
@@ -475,45 +912,55 @@ export function CargoTransactionsTable({
               </div>
 
               <div className="space-y-3 text-xs">
-                <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Container / Truck ID:</span>
-                  <span className="font-extrabold text-foreground">
+                <div className="flex justify-between py-1 border-b border-border/50 items-start gap-3">
+                  <span className="text-muted-foreground font-semibold shrink-0">
+                    {t('colContainerNo')}:
+                  </span>
+                  <span className="font-extrabold text-foreground break-all font-mono select-all text-right max-w-[280px]">
                     {detailsItem.container_truck_id}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Cargo Type:</span>
+                  <span className="text-muted-foreground font-semibold">
+                    {t('cargoTypeLabel')}:
+                  </span>
                   <span className="font-bold text-foreground">{detailsItem.cargo_type}</span>
                 </div>
                 {detailsItem.cargo_type === 'LTL' ? (
                   <>
                     <div className="flex justify-between py-1 border-b border-border/50">
-                      <span className="text-muted-foreground font-semibold">Volume:</span>
+                      <span className="text-muted-foreground font-semibold">
+                        {t('cargoVolume')}:
+                      </span>
                       <span className="font-semibold text-foreground">{detailsItem.volume} m³</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-border/50">
-                      <span className="text-muted-foreground font-semibold">Weight:</span>
+                      <span className="text-muted-foreground font-semibold">
+                        {t('cargoWeight')}:
+                      </span>
                       <span className="font-semibold text-foreground">{detailsItem.weight} kg</span>
                     </div>
                   </>
                 ) : (
                   <div className="flex justify-between py-1 border-b border-border/50">
-                    <span className="text-muted-foreground font-semibold">Container Type:</span>
+                    <span className="text-muted-foreground font-semibold">
+                      {t('containerTypeLabel')}:
+                    </span>
                     <span className="font-semibold text-foreground">
                       {detailsItem.container_type || 'N/A'}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Agent Name:</span>
+                  <span className="text-muted-foreground font-semibold">{t('colAgentName')}:</span>
                   <span className="font-semibold text-foreground">{detailsItem.agent_name}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Cargo Item:</span>
+                  <span className="text-muted-foreground font-semibold">{t('colCargo')}:</span>
                   <span className="font-semibold text-foreground">{detailsItem.cargo}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Client:</span>
+                  <span className="text-muted-foreground font-semibold">{t('colClient')}:</span>
                   <span className="font-bold text-foreground">
                     {detailsItem.client
                       ? `${detailsItem.client.first_name} ${detailsItem.client.last_name}`
@@ -521,30 +968,66 @@ export function CargoTransactionsTable({
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Assigned Employee:</span>
+                  <span className="text-muted-foreground font-semibold">
+                    {t('assignedEmployeeLabel')}:
+                  </span>
                   <span className="font-bold text-foreground">
                     {detailsItem.employee
                       ? `${detailsItem.employee.first_name} ${detailsItem.employee.last_name}`
                       : 'N/A'}
                   </span>
                 </div>
+
+                {/* Milestone & Lifecycle Dates */}
+                <div className="p-3 rounded-xl bg-muted/20 border border-border/60 space-y-1.5">
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                    {t('lblMilestoneDates')}
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-muted-foreground">{t('colConfirmed')}:</span>
+                      <span className="font-semibold">
+                        {formatDateDisplay(detailsItem.confirmed_date, locale)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-muted-foreground">{t('colLoaded')}:</span>
+                      <span className="font-semibold">
+                        {formatDateDisplay(detailsItem.loaded_date, locale)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-muted-foreground">{t('colArrived')}:</span>
+                      <span className="font-semibold">
+                        {formatDateDisplay(detailsItem.arrived_date, locale)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-muted-foreground">{t('colCreatedAt')}:</span>
+                      <span className="font-semibold">
+                        {formatDateDisplay(detailsItem.created_at, locale)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-semibold">Purchase Price:</span>
+                    <span className="text-muted-foreground font-semibold">{t('colBuyPrice')}:</span>
                     <span className="font-bold text-foreground">
                       {formatMoney(detailsItem.purchase_price, detailsItem.purchase_currency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                    <span>Purchase Reg. Date:</span>
+                    <span>{t('purchaseRegDate')}</span>
                     <span className="font-semibold text-foreground">
-                      {detailsItem.purchase_date || 'N/A'}
+                      {formatDateDisplay(detailsItem.purchase_date, locale)}
                     </span>
                   </div>
                   {detailsItem.purchase_amount_usd !== undefined &&
                     detailsItem.purchase_amount_usd !== null && (
                       <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                        <span>Equivalents (USD / UZS):</span>
+                        <span>{t('lblEquivalentsUsdUzs')}</span>
                         <span className="font-semibold text-foreground">
                           {formatMoney(detailsItem.purchase_amount_usd, 'USD')} (
                           {formatMoney(detailsItem.purchase_amount_uzs || 0, 'UZS')})
@@ -553,7 +1036,7 @@ export function CargoTransactionsTable({
                     )}
                   {detailsItem.purchase_usd_rate && (
                     <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                      <span>Snapshot Rate (UZS/USD):</span>
+                      <span>{t('lblSnapshotRate')}</span>
                       <span className="font-semibold">{detailsItem.purchase_usd_rate}</span>
                     </div>
                   )}
@@ -561,21 +1044,23 @@ export function CargoTransactionsTable({
 
                 <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-semibold">Selling Price:</span>
+                    <span className="text-muted-foreground font-semibold">
+                      {t('colSellPrice')}:
+                    </span>
                     <span className="font-bold text-foreground">
                       {formatMoney(detailsItem.sell_price, detailsItem.sell_currency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                    <span>Sell Reg. Date:</span>
+                    <span>{t('sellRegDate')}</span>
                     <span className="font-semibold text-foreground">
-                      {detailsItem.sell_date || 'N/A'}
+                      {formatDateDisplay(detailsItem.sell_date, locale)}
                     </span>
                   </div>
                   {detailsItem.sell_amount_usd !== undefined &&
                     detailsItem.sell_amount_usd !== null && (
                       <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                        <span>Equivalents (USD / UZS):</span>
+                        <span>{t('lblEquivalentsUsdUzs')}</span>
                         <span className="font-semibold text-foreground">
                           {formatMoney(detailsItem.sell_amount_usd, 'USD')} (
                           {formatMoney(detailsItem.sell_amount_uzs || 0, 'UZS')})
@@ -584,7 +1069,7 @@ export function CargoTransactionsTable({
                     )}
                   {detailsItem.sell_usd_rate && (
                     <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                      <span>Snapshot Rate (UZS/USD):</span>
+                      <span>{t('lblSnapshotRate')}</span>
                       <span className="font-semibold">{detailsItem.sell_usd_rate}</span>
                     </div>
                   )}
@@ -597,7 +1082,7 @@ export function CargoTransactionsTable({
                     <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                          Standardized Net Yield:
+                          {t('lblCalculatedNetYield')}:
                         </span>
                         <span
                           className={`font-extrabold text-sm ${netUsd >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}
@@ -607,7 +1092,7 @@ export function CargoTransactionsTable({
                       </div>
                       {netUzs !== undefined && (
                         <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                          <span>UZS Equivalent:</span>
+                          <span>{t('lblUzsEquivalent')}</span>
                           <span
                             className={`font-semibold ${netUzs >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}
                           >
@@ -622,7 +1107,7 @@ export function CargoTransactionsTable({
                 {detailsItem.usd_rmb_rate && (
                   <div className="flex justify-between py-1 border-b border-border/50">
                     <span className="text-muted-foreground font-semibold">
-                      USD -&gt; RMB Cross Rate:
+                      {t('lblUsdRmbCrossRate')}
                     </span>
                     <span className="font-bold text-amber-500">
                       {detailsItem.usd_rmb_rate} RMB/USD
@@ -631,12 +1116,16 @@ export function CargoTransactionsTable({
                 )}
 
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground font-semibold">Status:</span>
-                  <span className="font-bold text-brand-gold">{detailsItem.status}</span>
+                  <span className="text-muted-foreground font-semibold">{t('colStatus')}:</span>
+                  <span className="font-bold text-brand-gold">
+                    {getStatusLabel(detailsItem.status)}
+                  </span>
                 </div>
                 {detailsItem.description && (
                   <div className="pt-2">
-                    <span className="text-muted-foreground font-semibold block mb-1">Notes:</span>
+                    <span className="text-muted-foreground font-semibold block mb-1">
+                      {t('lblNotes')}
+                    </span>
                     <p className="p-2.5 rounded-xl bg-muted/40 text-foreground font-medium">
                       {detailsItem.description}
                     </p>
@@ -647,9 +1136,9 @@ export function CargoTransactionsTable({
               <div className="pt-3 text-right">
                 <button
                   onClick={() => setDetailsItem(null)}
-                  className="px-4 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-bold text-xs"
+                  className="px-4 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-bold text-xs cursor-pointer"
                 >
-                  Close
+                  {t('actionClose') || 'Close'}
                 </button>
               </div>
             </motion.div>
