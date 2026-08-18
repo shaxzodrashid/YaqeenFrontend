@@ -238,9 +238,27 @@ export function CargoTransactionsTab() {
             <Receipt className="size-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">
-              <T k="tabTransactions" />
-            </h2>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-xl font-bold text-foreground">
+                <T k="tabTransactions" />
+              </h2>
+              {meta?.active_containers !== undefined && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1.5 shadow-xs">
+                  <span className="size-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  <span>
+                    {meta.active_containers} {t('activeCountLabel') || 'Active'}
+                  </span>
+                </span>
+              )}
+              {meta?.action_required !== undefined && meta.action_required > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1.5 shadow-xs">
+                  <span className="size-1.5 rounded-full bg-amber-500" />
+                  <span>
+                    {meta.action_required} {t('actionRequiredLabel') || 'Action Required'}
+                  </span>
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               <T k="cargoTransactionsTabDesc" />
             </p>

@@ -153,6 +153,8 @@ export interface CargoRegistrationMeta {
   total: number;
   limit: number;
   offset: number;
+  active_containers?: number;
+  action_required?: number;
   calculated_net_yield: {
     USD: number;
     UZS: number;
@@ -993,11 +995,20 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       };
     });
 
+    const active_containers = filtered.filter(
+      (r) => r.status !== 'Arrived' && (r as any).status !== 'Delivered'
+    ).length;
+    const action_required = filtered.filter(
+      (r) => r.status === 'Waiting' || r.status === 'Reload'
+    ).length;
+
     const response: CargoRegistrationPaginatedResponse = {
       meta: {
         total,
         limit,
         offset,
+        active_containers,
+        action_required,
         calculated_net_yield,
         gross_sales_revenue,
       },
