@@ -43,7 +43,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
   // Filter State
   const [filters, setFilters] = useState<DashboardFilterParams>({
     period: '1M',
-    currency: 'UZS',
+    currency: 'USD',
     cargo_type: '',
     status: '',
     employee_id: '',
@@ -117,7 +117,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
   const handleResetFilters = () => {
     setFilters({
       period: '1M',
-      currency: 'UZS',
+      currency: 'USD',
       cargo_type: '',
       status: '',
       employee_id: '',
@@ -238,7 +238,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
         <CargoDistributionCharts
           data={cargoDistData}
           loading={loading}
-          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'UZS'}
+          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
         />
       </div>
 
@@ -247,7 +247,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
         <TopPerformersLeaderboard
           data={topPerformersData}
           loading={loading}
-          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'UZS'}
+          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
         />
       </div>
 
