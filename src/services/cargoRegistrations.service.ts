@@ -35,8 +35,17 @@ export const CONTAINER_TYPES = [
 
 export type ContainerType = (typeof CONTAINER_TYPES)[number];
 
+export const CARGO_STATUSES = [
+  'Waiting',
+  'Station',
+  'On the way',
+  'On the border',
+  'Reload',
+  'Arrived',
+] as const;
+
 export type CargoRegistrationStatus =
-  'Waiting' | 'In Transit' | 'Border' | 'At Station' | 'Delivered';
+  (typeof CARGO_STATUSES)[number] | 'In Transit' | 'Border' | 'At Station' | 'Delivered';
 
 export type CurrencyType = 'UZS' | 'RUB' | 'USD' | 'RMB';
 
@@ -365,7 +374,7 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     sell_usd_rate: 11886.72,
     sell_custom_rate: null,
     usd_rmb_rate: null,
-    status: 'In Transit',
+    status: 'On the way',
     description: 'Documentation example cargo',
     client_id: '8e3b4a21-9951-40ef-a442-123456789abc',
     employee_id: '11111111-2222-3333-4444-555555555555',
@@ -425,7 +434,7 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     sell_usd_rate: 12800,
     sell_custom_rate: null,
     usd_rmb_rate: 7.235,
-    status: 'In Transit',
+    status: 'On the way',
     description: 'High efficiency photovoltaic modules',
     client_id: 'c-client-2',
     employee_id: '2b78a1c9-34e5-4a1d-91b2-c8d9e0f1a2b3',
@@ -455,7 +464,7 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     sell_usd_rate: 12800,
     sell_custom_rate: null,
     usd_rmb_rate: 7.25,
-    status: 'Border',
+    status: 'On the border',
     description: 'Brake pads and filter elements',
     client_id: 'c-client-1',
     employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -485,7 +494,7 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     sell_usd_rate: 12800,
     sell_custom_rate: null,
     usd_rmb_rate: 7.25,
-    status: 'At Station',
+    status: 'Station',
     description: 'Customs cleared at Tashkent terminal',
     client_id: 'c-client-2',
     employee_id: '2b78a1c9-34e5-4a1d-91b2-c8d9e0f1a2b3',
@@ -515,7 +524,7 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     sell_usd_rate: 12800,
     sell_custom_rate: null,
     usd_rmb_rate: 7.22,
-    status: 'Delivered',
+    status: 'Arrived',
     description: 'Successfully delivered to client warehouse',
     client_id: 'c-client-1',
     employee_id: '11111111-2222-3333-4444-555555555555',
@@ -1024,7 +1033,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       sell_usd_rate: 11886.72,
       sell_custom_rate: null,
       usd_rmb_rate: 7.235,
-      status: 'In Transit' as CargoRegistrationStatus,
+      status: 'On the way' as CargoRegistrationStatus,
       description: 'Cargo shipment entry',
       client_id: 'c-client-1',
       employee_id: '1d63b635-8933-45d1-a233-d6902e3b27f1',
@@ -1382,7 +1391,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       containerTypes[ct] = (containerTypes[ct] || 0) + 1;
     });
 
-    const statusDist: Record<string, number> = {};
+    const statusDist: Record<string, number> = {
+      Waiting: 0,
+      Station: 0,
+      'On the way': 0,
+      'On the border': 0,
+      Reload: 0,
+      Arrived: 0,
+    };
     list.forEach((r) => {
       statusDist[r.status] = (statusDist[r.status] || 0) + 1;
     });

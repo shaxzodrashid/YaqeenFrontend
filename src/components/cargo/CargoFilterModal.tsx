@@ -56,10 +56,11 @@ export const INITIAL_CARGO_FILTERS: CargoFilterState = {
 const CARGO_STATUS_OPTIONS: { labelKey: string; value: CargoRegistrationStatus | '' }[] = [
   { labelKey: 'allStatuses', value: '' },
   { labelKey: 'statusWaiting', value: 'Waiting' },
-  { labelKey: 'statusInTransit', value: 'In Transit' },
-  { labelKey: 'statusBorder', value: 'Border' },
-  { labelKey: 'statusAtStation', value: 'At Station' },
-  { labelKey: 'statusDelivered', value: 'Delivered' },
+  { labelKey: 'statusStation', value: 'Station' },
+  { labelKey: 'statusOnTheWay', value: 'On the way' },
+  { labelKey: 'statusOnTheBorder', value: 'On the border' },
+  { labelKey: 'statusReload', value: 'Reload' },
+  { labelKey: 'statusArrived', value: 'Arrived' },
 ];
 
 const CARGO_TYPE_OPTIONS: { labelKey: string; value: CargoType | '' }[] = [

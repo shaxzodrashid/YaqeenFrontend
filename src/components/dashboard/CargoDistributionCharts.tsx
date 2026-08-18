@@ -16,12 +16,18 @@ const CARGO_TYPE_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  Completed: '#10b981', // Green
-  'In Transit': '#06b6d4', // Cyan
   Waiting: '#f59e0b', // Amber
-  Border: '#8b5cf6', // Purple
-  'At Station': '#ec4899', // Pink
-  Delivered: '#3b82f6', // Indigo
+  Station: '#ec4899', // Pink
+  'On the way': '#06b6d4', // Cyan
+  'On the border': '#8b5cf6', // Purple
+  Reload: '#f97316', // Orange
+  Arrived: '#10b981', // Green
+  // Legacy / fallback aliases
+  Completed: '#10b981',
+  'In Transit': '#06b6d4',
+  Border: '#8b5cf6',
+  'At Station': '#ec4899',
+  Delivered: '#3b82f6',
 };
 
 function DonutSegment({

@@ -302,14 +302,20 @@ export function CargoTransactionsTable({
   const getStatusLabel = useCallback(
     (status: string) => {
       switch (status) {
+        case 'Arrived':
         case 'Delivered':
-          return t('statusDelivered');
+          return t('statusArrived');
+        case 'On the way':
         case 'In Transit':
-          return t('statusInTransit');
+          return t('statusOnTheWay');
+        case 'On the border':
         case 'Border':
-          return t('statusBorder');
+          return t('statusOnTheBorder');
+        case 'Station':
         case 'At Station':
-          return t('statusAtStation');
+          return t('statusStation');
+        case 'Reload':
+          return t('statusReload');
         case 'Waiting':
           return t('statusWaiting');
         default:
@@ -826,15 +832,17 @@ export function CargoTransactionsTable({
                       <td className="py-3 px-3.5 w-[135px] min-w-[135px] max-w-[135px] overflow-hidden">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-flex items-center gap-1 border truncate max-w-full ${
-                            item.status === 'Delivered'
+                            item.status === 'Arrived' || item.status === 'Delivered'
                               ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                              : item.status === 'In Transit'
+                              : item.status === 'On the way' || item.status === 'In Transit'
                                 ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30'
-                                : item.status === 'Border'
+                                : item.status === 'On the border' || item.status === 'Border'
                                   ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                                  : item.status === 'At Station'
+                                  : item.status === 'Station' || item.status === 'At Station'
                                     ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
-                                    : 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
+                                    : item.status === 'Reload'
+                                      ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30'
+                                      : 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
                           }`}
                         >
                           <span className="truncate">{getStatusLabel(item.status)}</span>

@@ -20,6 +20,8 @@ import {
   Percent,
   Check,
   Sparkles,
+  Shield,
+  Repeat,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -43,6 +45,7 @@ import { ClientSelect } from './ClientSelect';
 
 const STATUS_STAGE_CONFIG: {
   key: CargoRegistrationStatus;
+  labelKey: string;
   label: string;
   badgeClass: string;
   activeClass: string;
@@ -51,6 +54,7 @@ const STATUS_STAGE_CONFIG: {
 }[] = [
   {
     key: 'Waiting',
+    labelKey: 'statusWaiting',
     label: 'Waiting',
     badgeClass: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
     activeClass:
@@ -59,26 +63,9 @@ const STATUS_STAGE_CONFIG: {
     icon: <Clock className="size-3.5" />,
   },
   {
-    key: 'In Transit',
-    label: 'In Transit',
-    badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    activeClass:
-      'bg-blue-500/25 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40 shadow-sm',
-    dotClass: 'bg-blue-500',
-    icon: <Truck className="size-3.5" />,
-  },
-  {
-    key: 'Border',
-    label: 'Border',
-    badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-    activeClass:
-      'bg-amber-500/25 border-amber-500 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-sm',
-    dotClass: 'bg-amber-500',
-    icon: <Clock className="size-3.5" />,
-  },
-  {
-    key: 'At Station',
-    label: 'At Station',
+    key: 'Station',
+    labelKey: 'statusStation',
+    label: 'Station',
     badgeClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
     activeClass:
       'bg-indigo-500/25 border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/40 shadow-sm',
@@ -86,8 +73,39 @@ const STATUS_STAGE_CONFIG: {
     icon: <MapPin className="size-3.5" />,
   },
   {
-    key: 'Delivered',
-    label: 'Delivered',
+    key: 'On the way',
+    labelKey: 'statusOnTheWay',
+    label: 'On the way',
+    badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+    activeClass:
+      'bg-blue-500/25 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40 shadow-sm',
+    dotClass: 'bg-blue-500',
+    icon: <Truck className="size-3.5" />,
+  },
+  {
+    key: 'On the border',
+    labelKey: 'statusOnTheBorder',
+    label: 'On the border',
+    badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    activeClass:
+      'bg-amber-500/25 border-amber-500 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-sm',
+    dotClass: 'bg-amber-500',
+    icon: <Shield className="size-3.5" />,
+  },
+  {
+    key: 'Reload',
+    labelKey: 'statusReload',
+    label: 'Reload',
+    badgeClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+    activeClass:
+      'bg-purple-500/25 border-purple-500 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/40 shadow-sm',
+    dotClass: 'bg-purple-500',
+    icon: <Repeat className="size-3.5" />,
+  },
+  {
+    key: 'Arrived',
+    labelKey: 'statusArrived',
+    label: 'Arrived',
     badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
     activeClass:
       'bg-emerald-500/25 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/40 shadow-sm',
@@ -1019,7 +1037,7 @@ export function CargoRegistrationModal({
                     <label className="block text-xs font-semibold text-foreground mb-1.5">
                       Select Current Shipment Stage
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                       {STATUS_STAGE_CONFIG.map((st) => {
                         const isActive = status === st.key;
                         return (
@@ -1027,7 +1045,7 @@ export function CargoRegistrationModal({
                             key={st.key}
                             type="button"
                             onClick={() => setStatus(st.key)}
-                            className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                            className={`px-2.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
                               isActive
                                 ? st.activeClass
                                 : 'border-border bg-muted/20 text-muted-foreground hover:text-foreground hover:bg-muted/40'
@@ -1038,7 +1056,7 @@ export function CargoRegistrationModal({
                             ) : (
                               <span className={`size-2 rounded-full ${st.dotClass}`} />
                             )}
-                            <span className="truncate">{st.label}</span>
+                            <span className="truncate">{t(st.labelKey) || st.label}</span>
                           </button>
                         );
                       })}

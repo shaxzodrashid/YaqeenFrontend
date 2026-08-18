@@ -25,6 +25,8 @@ import {
   Layers,
   Coins,
   ArrowUpDown,
+  Shield,
+  Repeat,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
@@ -63,49 +65,59 @@ const STATUS_CONFIG: {
     stepIndex: 0,
   },
   {
-    key: 'In Transit',
-    labelKey: 'statusInTransit',
-    badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    dotClass: 'bg-blue-500',
-    bgLight: 'border-blue-500/20 bg-blue-500/5',
-    icon: <Truck className="size-3.5" />,
-    stepIndex: 1,
-  },
-  {
-    key: 'Border',
-    labelKey: 'statusBorder',
-    badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-    dotClass: 'bg-amber-500',
-    bgLight: 'border-amber-500/20 bg-amber-500/5',
-    icon: <Clock className="size-3.5" />,
-    stepIndex: 2,
-  },
-  {
-    key: 'At Station',
-    labelKey: 'statusAtStation',
+    key: 'Station',
+    labelKey: 'statusStation',
     badgeClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
     dotClass: 'bg-indigo-500',
     bgLight: 'border-indigo-500/20 bg-indigo-500/5',
     icon: <MapPin className="size-3.5" />,
+    stepIndex: 1,
+  },
+  {
+    key: 'On the way',
+    labelKey: 'statusOnTheWay',
+    badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+    dotClass: 'bg-blue-500',
+    bgLight: 'border-blue-500/20 bg-blue-500/5',
+    icon: <Truck className="size-3.5" />,
+    stepIndex: 2,
+  },
+  {
+    key: 'On the border',
+    labelKey: 'statusOnTheBorder',
+    badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    dotClass: 'bg-amber-500',
+    bgLight: 'border-amber-500/20 bg-amber-500/5',
+    icon: <Shield className="size-3.5" />,
     stepIndex: 3,
   },
   {
-    key: 'Delivered',
-    labelKey: 'statusDelivered',
+    key: 'Reload',
+    labelKey: 'statusReload',
+    badgeClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+    dotClass: 'bg-purple-500',
+    bgLight: 'border-purple-500/20 bg-purple-500/5',
+    icon: <Repeat className="size-3.5" />,
+    stepIndex: 4,
+  },
+  {
+    key: 'Arrived',
+    labelKey: 'statusArrived',
     badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
     dotClass: 'bg-emerald-500',
     bgLight: 'border-emerald-500/20 bg-emerald-500/5',
     icon: <CheckCircle2 className="size-3.5" />,
-    stepIndex: 4,
+    stepIndex: 5,
   },
 ];
 
 const ORDERED_STATUSES: ShipmentStatus[] = [
   'Waiting',
-  'In Transit',
-  'Border',
-  'At Station',
-  'Delivered',
+  'Station',
+  'On the way',
+  'On the border',
+  'Reload',
+  'Arrived',
 ];
 
 export function ContainerTrackingTab() {
@@ -140,16 +152,22 @@ export function ContainerTrackingTab() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
 
   const getStatusLabel = useCallback(
-    (st: ShipmentStatus) => {
+    (st: ShipmentStatus | string) => {
       switch (st) {
-        case 'In Transit':
-          return t('statusInTransit') || 'In Transit';
-        case 'At Station':
-          return t('statusAtStation') || 'At Station';
-        case 'Border':
-          return t('statusBorder') || 'Border';
+        case 'Arrived':
         case 'Delivered':
-          return t('statusDelivered') || 'Delivered';
+          return t('statusArrived') || 'Arrived';
+        case 'On the way':
+        case 'In Transit':
+          return t('statusOnTheWay') || 'On the way';
+        case 'On the border':
+        case 'Border':
+          return t('statusOnTheBorder') || 'On the border';
+        case 'Station':
+        case 'At Station':
+          return t('statusStation') || 'Station';
+        case 'Reload':
+          return t('statusReload') || 'Reload';
         case 'Waiting':
           return t('statusWaiting') || 'Waiting';
         default:
@@ -532,7 +550,14 @@ export function ContainerTrackingTab() {
   const delayedShipmentsCount = useMemo(() => {
     if (!data?.shipments) return 0;
     return data.shipments.filter(
-      (s) => (s.status === 'Border' || s.status === 'In Transit') && !s.arrivedDate
+      (s) =>
+        (s.status === 'On the border' ||
+          s.status === 'Border' ||
+          s.status === 'On the way' ||
+          s.status === 'In Transit' ||
+          s.status === 'Station' ||
+          s.status === 'Reload') &&
+        !s.arrivedDate
     ).length;
   }, [data?.shipments]);
 
@@ -712,7 +737,9 @@ export function ContainerTrackingTab() {
               <Truck className="size-5" />
             </div>
             <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 border border-blue-500/20 truncate shrink-0">
-              {data?.shipments?.filter((s) => s.status === 'In Transit').length ?? 0}{' '}
+              {data?.shipments?.filter(
+                (s) => s.status === 'On the way' || s.status === 'In Transit'
+              ).length ?? 0}{' '}
               <T k="lblTransit" />
             </span>
           </div>
@@ -1133,7 +1160,7 @@ export function ContainerTrackingTab() {
             <T k="lblKanbanSwipeHelp" />
           </p>
 
-          <div className="flex xl:grid xl:grid-cols-5 overflow-x-auto snap-x snap-mandatory max-w-full pb-4 gap-3.5 sm:gap-4 scrollbar-thin min-w-0">
+          <div className="flex xl:grid xl:grid-cols-6 overflow-x-auto snap-x snap-mandatory max-w-full pb-4 gap-3 sm:gap-3.5 scrollbar-thin min-w-0">
             {STATUS_CONFIG.map((col) => {
               const colShipments = filteredShipments.filter((s) => s.status === col.key);
               const totalColProfit = colShipments.reduce((sum, s) => sum + s.profit, 0);

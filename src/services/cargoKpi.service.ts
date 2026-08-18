@@ -413,7 +413,17 @@ export interface CreateCargoTransactionDto {
 }
 
 // 8. Container & Truck Shipment Tracking Module
-export type ShipmentStatus = 'In Transit' | 'At Station' | 'Border' | 'Delivered' | 'Waiting';
+export const SHIPMENT_STATUSES = [
+  'Waiting',
+  'Station',
+  'On the way',
+  'On the border',
+  'Reload',
+  'Arrived',
+] as const;
+
+export type ShipmentStatus =
+  (typeof SHIPMENT_STATUSES)[number] | 'In Transit' | 'Border' | 'At Station' | 'Delivered';
 
 export interface Shipment {
   id: string;
@@ -689,7 +699,7 @@ const INITIAL_DEMO_SHIPMENTS: Shipment[] = [
     buyCost: 32500,
     sellPrice: 9200,
     profit: 4717.24,
-    status: 'In Transit',
+    status: 'On the way',
     buyCostCurrency: 'RMB',
     created_at: '2026-07-01T10:00:00.000Z',
   },
@@ -706,7 +716,7 @@ const INITIAL_DEMO_SHIPMENTS: Shipment[] = [
     buyCost: 18000,
     sellPrice: 4800,
     profit: 2317.24,
-    status: 'Border',
+    status: 'On the border',
     buyCostCurrency: 'RMB',
     created_at: '2026-07-10T08:00:00.000Z',
   },
@@ -723,7 +733,7 @@ const INITIAL_DEMO_SHIPMENTS: Shipment[] = [
     buyCost: 45000,
     sellPrice: 11500,
     profit: 5267.31,
-    status: 'Delivered',
+    status: 'Arrived',
     buyCostCurrency: 'RMB',
     created_at: '2026-06-20T12:00:00.000Z',
   },
@@ -740,7 +750,7 @@ const INITIAL_DEMO_SHIPMENTS: Shipment[] = [
     buyCost: 28000,
     sellPrice: 7900,
     profit: 4037.93,
-    status: 'At Station',
+    status: 'Station',
     buyCostCurrency: 'RMB',
     created_at: '2026-07-18T14:00:00.000Z',
   },
@@ -1844,10 +1854,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   if (isPath('/cargo-kpi/transactions/viewable') && method === 'GET') {
     const statuses: ShipmentStatus[] = [
       'Waiting',
-      'In Transit',
-      'Border',
-      'At Station',
-      'Delivered',
+      'Station',
+      'On the way',
+      'On the border',
+      'Reload',
+      'Arrived',
     ];
     const groupedData: Record<string, ViewableStatusGroup> = {};
     const status_counts: Record<string, number> = {};
@@ -1935,10 +1946,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     const status_counts: Record<string, number> = {
       Waiting: 0,
-      'In Transit': 0,
-      Border: 0,
-      'At Station': 0,
-      Delivered: 0,
+      Station: 0,
+      'On the way': 0,
+      'On the border': 0,
+      Reload: 0,
+      Arrived: 0,
     };
 
     demoTransactions.forEach((t) => {
@@ -2150,10 +2162,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     const statusCounts: Record<string, number> = {
       Waiting: 0,
-      'In Transit': 0,
-      Border: 0,
-      'At Station': 0,
-      Delivered: 0,
+      Station: 0,
+      'On the way': 0,
+      'On the border': 0,
+      Reload: 0,
+      Arrived: 0,
     };
     demoShipments.forEach((s) => {
       if (statusCounts[s.status] !== undefined) {
@@ -2161,7 +2174,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       }
     });
 
-    const activeCount = filtered.filter((s) => s.status !== 'Delivered').length;
+    const activeCount = filtered.filter(
+      (s) => s.status !== 'Arrived' && s.status !== 'Delivered'
+    ).length;
     const totalMargin = filtered.reduce((sum, s) => sum + s.profit, 0);
     const currentRate = demoShipments[0]?.rmbRate || 7.25;
 
@@ -2195,7 +2210,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       buyCost,
       sellPrice,
       profit,
-      status: body.status || 'In Transit',
+      status: body.status || 'On the way',
       buyCostCurrency,
       created_at: new Date().toISOString(),
     };
@@ -3177,7 +3192,7 @@ export const cargoKpiApi = {
         buyCost,
         sellPrice,
         profit,
-        status: (s.status as ShipmentStatus) || 'In Transit',
+        status: (s.status as ShipmentStatus) || 'On the way',
         buyCostCurrency,
         created_at: s.created_at,
         updated_at: s.updated_at,
@@ -3186,10 +3201,11 @@ export const cargoKpiApi = {
 
     const statusCounts: Record<string, number> = {
       Waiting: 0,
-      'In Transit': 0,
-      Border: 0,
-      'At Station': 0,
-      Delivered: 0,
+      Station: 0,
+      'On the way': 0,
+      'On the border': 0,
+      Reload: 0,
+      Arrived: 0,
     };
     shipmentsList.forEach((s) => {
       if (statusCounts[s.status] !== undefined) {
@@ -3197,7 +3213,9 @@ export const cargoKpiApi = {
       }
     });
 
-    const activeCount = shipmentsList.filter((s) => s.status !== 'Delivered').length;
+    const activeCount = shipmentsList.filter(
+      (s) => s.status !== 'Arrived' && s.status !== 'Delivered'
+    ).length;
     const totalMargin = shipmentsList.reduce((sum, s) => sum + s.profit, 0);
     const currentRate = shipmentsList[0]?.rmbRate || 7.25;
 

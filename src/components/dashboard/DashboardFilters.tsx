@@ -57,10 +57,11 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const statuses = [
     { label: t('ovAllStatuses'), value: '' },
     { label: t('statusWaiting'), value: 'Waiting' },
-    { label: t('statusInTransit'), value: 'In Transit' },
-    { label: t('statusBorder'), value: 'Border' },
-    { label: t('statusDelivered'), value: 'Delivered' },
-    { label: t('statusCompleted'), value: 'Completed' },
+    { label: t('statusStation'), value: 'Station' },
+    { label: t('statusOnTheWay'), value: 'On the way' },
+    { label: t('statusOnTheBorder'), value: 'On the border' },
+    { label: t('statusReload'), value: 'Reload' },
+    { label: t('statusArrived'), value: 'Arrived' },
   ];
 
   return (

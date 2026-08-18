@@ -118,10 +118,10 @@ function getDemoCargoDistribution(): DashboardCargoDistributionResponse {
       { category: 'LTL', count: 18, totalSales: 46500.0, percentage: 37.35 },
     ],
     statusDistribution: [
-      { category: 'Completed', count: 22, totalSales: 68000.0, percentage: 54.62 },
-      { category: 'In Transit', count: 10, totalSales: 31000.0, percentage: 24.9 },
+      { category: 'Arrived', count: 22, totalSales: 68000.0, percentage: 54.62 },
+      { category: 'On the way', count: 10, totalSales: 31000.0, percentage: 24.9 },
       { category: 'Waiting', count: 6, totalSales: 16500.0, percentage: 13.25 },
-      { category: 'Border', count: 4, totalSales: 9000.0, percentage: 7.23 },
+      { category: 'On the border', count: 4, totalSales: 9000.0, percentage: 7.23 },
     ],
   };
 }

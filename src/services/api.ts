@@ -162,7 +162,11 @@ export type {
   CargoRegistrationPaginatedResponse,
   CargoRegistrationDetail,
 } from './cargoRegistrations.service';
-export { CONTAINER_TYPES, convertPriceToUsdAndUzs } from './cargoRegistrations.service';
+export {
+  CONTAINER_TYPES,
+  CARGO_STATUSES,
+  convertPriceToUsdAndUzs,
+} from './cargoRegistrations.service';
 
 // Re-export core HTTP & Token helpers
 export {
