@@ -9,6 +9,8 @@ import {
   User,
   Building2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Check,
   X,
   Search,
@@ -16,10 +18,11 @@ import {
   Layers,
   MoreHorizontal,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 import type { DashboardPeriod, DashboardFilterParams } from '../../types/dashboard';
 import type { Employee, Client } from '../../services/api';
-import { useTranslation } from '../../context/LanguageContext';
+import { useTranslation, type Locale } from '../../context/LanguageContext';
 
 interface DashboardFiltersProps {
   filters: DashboardFilterParams;
@@ -43,7 +46,6 @@ const PRIMARY_PERIODS: PeriodOption[] = [
   { shortLabel: 'YTD', labelKey: 'ovPeriodYTD', value: 'YTD' },
   { shortLabel: '1Y', labelKey: 'ovPeriod1Y', value: '1Y' },
   { shortLabel: 'MAX', labelKey: 'ovPeriodMax', value: 'MAX' },
-  { shortLabel: 'Custom', labelKey: 'ovPeriodCustom', value: 'CUSTOM' },
 ];
 
 const EXTRA_PERIODS: PeriodOption[] = [
@@ -59,6 +61,117 @@ const CURRENCIES = [
   { label: 'CNY', symbol: '¥', value: 'CNY' },
 ];
 
+const MONTH_NAMES: Record<Locale, string[]> = {
+  en: [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ],
+  ru: [
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь',
+  ],
+  uz: [
+    'Yanvar',
+    'Fevral',
+    'Mart',
+    'Aprel',
+    'May',
+    'Iyun',
+    'Iyul',
+    'Avgust',
+    'Sentabr',
+    'Oktabr',
+    'Noyabr',
+    'Dekabr',
+  ],
+};
+
+const SHORT_MONTH_NAMES: Record<Locale, string[]> = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  ru: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+  uz: ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'],
+};
+
+const WEEKDAY_NAMES: Record<Locale, string[]> = {
+  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+  ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+  uz: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
+};
+
+// Format Date object to 'YYYY-MM-DD' using local timezone
+function formatYMD(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Parse 'YYYY-MM-DD' string safely to local Date
+function parseYMD(dateStr?: string): Date | null {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Calculate total inclusive days between start and end
+function getDaysCount(startStr: string, endStr: string): number {
+  const s = parseYMD(startStr);
+  const e = parseYMD(endStr);
+  if (!s || !e) return 0;
+  const diffTime = Math.abs(e.getTime() - s.getTime());
+  return Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+
+// Format custom period button label nicely (e.g. "12 Feb – 19 Feb")
+function formatCustomPeriodLabel(
+  startDate?: string,
+  endDate?: string,
+  defaultLabel: string = 'Custom',
+  locale: Locale = 'en'
+): string {
+  if (!startDate && !endDate) return defaultLabel;
+  const s = parseYMD(startDate);
+  const e = parseYMD(endDate);
+  const mNames = SHORT_MONTH_NAMES[locale] || SHORT_MONTH_NAMES.en;
+
+  if (s && e) {
+    if (startDate === endDate) {
+      return `${s.getDate()} ${mNames[s.getMonth()]}`;
+    }
+    if (s.getFullYear() !== e.getFullYear()) {
+      return `${s.getDate()} ${mNames[s.getMonth()]} '${String(s.getFullYear()).slice(2)} – ${e.getDate()} ${mNames[e.getMonth()]} '${String(e.getFullYear()).slice(2)}`;
+    }
+    return `${s.getDate()} ${mNames[s.getMonth()]} – ${e.getDate()} ${mNames[e.getMonth()]}`;
+  }
+  if (s) {
+    return `${s.getDate()} ${mNames[s.getMonth()]} → ...`;
+  }
+  if (e) {
+    return `... → ${e.getDate()} ${mNames[e.getMonth()]}`;
+  }
+  return defaultLabel;
+}
+
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   filters,
   onFilterChange,
@@ -68,7 +181,8 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   employees = [],
   clients = [],
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const currentLocale = (locale in MONTH_NAMES ? locale : 'en') as Locale;
   const currentPeriod = filters.period || '1M';
   const isCustom = currentPeriod === 'CUSTOM';
 
@@ -84,6 +198,32 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   // Expandable filters drawer/row state (auto-expanded if secondary filters are present)
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
+  // Custom date picker temporary selection & calendar view state
+  const [tempRange, setTempRange] = useState<{ start: string; end: string }>({
+    start: filters.start_date || '',
+    end: filters.end_date || '',
+  });
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
+
+  const initialDate = parseYMD(filters.start_date) || parseYMD(filters.end_date) || new Date();
+  const [viewYear, setViewYear] = useState<number>(initialDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState<number>(initialDate.getMonth());
+
+  // Sync tempRange and calendar view month whenever external filter dates change
+  useEffect(() => {
+    setTempRange({
+      start: filters.start_date || '',
+      end: filters.end_date || '',
+    });
+    if (filters.start_date) {
+      const parsed = parseYMD(filters.start_date);
+      if (parsed) {
+        setViewYear(parsed.getFullYear());
+        setViewMonth(parsed.getMonth());
+      }
+    }
+  }, [filters.start_date, filters.end_date]);
+
   // Popover container ref for click-outside detection
   const filterBarRef = useRef<HTMLDivElement>(null);
 
@@ -92,11 +232,13 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (filterBarRef.current && !filterBarRef.current.contains(event.target as Node)) {
         setActivePopover(null);
+        setHoverDate(null);
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setActivePopover(null);
+        setHoverDate(null);
       }
     };
 
@@ -177,29 +319,242 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     if (filters.status) count++;
     if (filters.employee_id) count++;
     if (filters.client_id) count++;
-    if (filters.period === 'CUSTOM' && (filters.start_date || filters.end_date)) count++;
     return count;
   }, [filters]);
 
   const hasAnyCustomFilters =
     activeSecondaryFiltersCount > 0 ||
     filters.period !== '1M' ||
+    Boolean(filters.start_date || filters.end_date) ||
     (filters.currency && filters.currency !== 'USD');
 
-  // Quick date presets for custom range
-  const handleApplyDatePreset = (daysBack: number) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - daysBack);
+  // Month navigation helpers for calendar
+  const handlePrevMonth = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
 
-    const fmt = (d: Date) => d.toISOString().split('T')[0];
+  const handleNextMonth = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  // Quick date presets for custom range
+  const handleApplyPreset = (
+    preset:
+      | 'today'
+      | 'yesterday'
+      | 'thisWeek'
+      | 'last7'
+      | 'thisMonth'
+      | 'lastMonth'
+      | 'last30'
+      | 'last90'
+      | 'thisYear'
+  ) => {
+    const today = new Date();
+    let start = '';
+    let end = formatYMD(today);
+
+    if (preset === 'today') {
+      start = end;
+    } else if (preset === 'yesterday') {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 1);
+      start = formatYMD(d);
+      end = start;
+    } else if (preset === 'thisWeek') {
+      const d = new Date(today);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      d.setDate(diff);
+      start = formatYMD(d);
+    } else if (preset === 'last7') {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 6);
+      start = formatYMD(d);
+    } else if (preset === 'thisMonth') {
+      const d = new Date(today.getFullYear(), today.getMonth(), 1);
+      start = formatYMD(d);
+    } else if (preset === 'lastMonth') {
+      const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      start = formatYMD(firstDayLastMonth);
+      end = formatYMD(lastDayLastMonth);
+    } else if (preset === 'last30') {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 29);
+      start = formatYMD(d);
+    } else if (preset === 'last90') {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 89);
+      start = formatYMD(d);
+    } else if (preset === 'thisYear') {
+      const d = new Date(today.getFullYear(), 0, 1);
+      start = formatYMD(d);
+    }
+
+    setTempRange({ start, end });
     onFilterChange({
       period: 'CUSTOM',
-      start_date: fmt(start),
-      end_date: fmt(end),
+      start_date: start,
+      end_date: end,
+    });
+
+    const sDate = parseYMD(start);
+    if (sDate) {
+      setViewYear(sDate.getFullYear());
+      setViewMonth(sDate.getMonth());
+    }
+    setActivePopover(null);
+    setHoverDate(null);
+  };
+
+  // Day click logic in the calendar grid
+  const handleDayClick = (dateStr: string) => {
+    const { start, end } = tempRange;
+
+    // Case 1: No start yet, or range already complete -> pick start fresh
+    if (!start || (start && end)) {
+      setTempRange({ start: dateStr, end: '' });
+      setHoverDate(null);
+      return;
+    }
+
+    // Case 2: Start is set, waiting for End
+    if (start && !end) {
+      if (dateStr < start) {
+        // User clicked a date earlier than start -> reset start date to this earlier date
+        setTempRange({ start: dateStr, end: '' });
+      } else {
+        // Range completed!
+        setTempRange({ start, end: dateStr });
+        onFilterChange({
+          period: 'CUSTOM',
+          start_date: start,
+          end_date: dateStr,
+        });
+        setHoverDate(null);
+        setActivePopover(null);
+      }
+    }
+  };
+
+  // Apply button handler for manual inputs
+  const handleApplyManualDates = () => {
+    if (!tempRange.start && !tempRange.end) {
+      setActivePopover(null);
+      return;
+    }
+    let s = tempRange.start;
+    let e = tempRange.end;
+    if (s && e && s > e) {
+      const tmp = s;
+      s = e;
+      e = tmp;
+    }
+    onFilterChange({
+      period: 'CUSTOM',
+      start_date: s || undefined,
+      end_date: e || undefined,
+    });
+    setActivePopover(null);
+    setHoverDate(null);
+  };
+
+  // Clear custom dates
+  const handleClearCustomDates = () => {
+    setTempRange({ start: '', end: '' });
+    setHoverDate(null);
+    onFilterChange({
+      period: '1M',
+      start_date: undefined,
+      end_date: undefined,
     });
     setActivePopover(null);
   };
+
+  // Generate 42 calendar grid cells (current month with padding from prev and next)
+  const calendarCells = useMemo(() => {
+    const cells: Array<{
+      dateStr: string;
+      dayNumber: number;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+    }> = [];
+
+    const firstDayDate = new Date(viewYear, viewMonth, 1);
+    // Sunday is 0 in JS Date. Convert so Monday = 0, Sunday = 6
+    let firstDayIndex = firstDayDate.getDay() - 1;
+    if (firstDayIndex === -1) firstDayIndex = 6;
+
+    const daysInCurrentMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+    const todayStr = formatYMD(new Date());
+
+    // 1. Previous month trailing days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const prevDate = new Date(viewYear, viewMonth - 1, dayNum);
+      const dateStr = formatYMD(prevDate);
+      cells.push({
+        dateStr,
+        dayNumber: dayNum,
+        isCurrentMonth: false,
+        isToday: dateStr === todayStr,
+      });
+    }
+
+    // 2. Current month days
+    for (let day = 1; day <= daysInCurrentMonth; day++) {
+      const curDate = new Date(viewYear, viewMonth, day);
+      const dateStr = formatYMD(curDate);
+      cells.push({
+        dateStr,
+        dayNumber: day,
+        isCurrentMonth: true,
+        isToday: dateStr === todayStr,
+      });
+    }
+
+    // 3. Next month leading days to complete full grid (multiple of 7)
+    const remaining = (7 - (cells.length % 7)) % 7;
+    for (let day = 1; day <= remaining; day++) {
+      const nextDate = new Date(viewYear, viewMonth + 1, day);
+      const dateStr = formatYMD(nextDate);
+      cells.push({
+        dateStr,
+        dayNumber: day,
+        isCurrentMonth: false,
+        isToday: dateStr === todayStr,
+      });
+    }
+
+    return cells;
+  }, [viewYear, viewMonth]);
+
+  const customButtonLabel = useMemo(() => {
+    if (isCustom && (filters.start_date || filters.end_date)) {
+      return formatCustomPeriodLabel(
+        filters.start_date,
+        filters.end_date,
+        t('ovPeriodCustom'),
+        currentLocale
+      );
+    }
+    return t('ovPeriodCustom');
+  }, [isCustom, filters.start_date, filters.end_date, t, currentLocale]);
 
   return (
     <div
@@ -211,7 +566,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         {/* Left cluster: Period Pill Switcher & Currency */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Timeframe Segmented Control Capsule */}
-          <div className="flex items-center p-1 bg-border/20 dark:bg-night-border/50 rounded-xl border border-border/30 dark:border-night-border/30 relative">
+          <div className="flex flex-wrap items-center p-1 bg-border/20 dark:bg-night-border/50 rounded-xl border border-border/30 dark:border-night-border/30 relative">
             {PRIMARY_PERIODS.map((opt) => {
               const isActive = currentPeriod === opt.value;
               return (
@@ -219,13 +574,12 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   key={opt.value}
                   type="button"
                   onClick={() => {
-                    if (opt.value === 'CUSTOM') {
-                      onFilterChange({ period: 'CUSTOM' });
-                      setActivePopover('customDate');
-                    } else {
-                      onFilterChange({ period: opt.value });
-                      setActivePopover(null);
-                    }
+                    onFilterChange({
+                      period: opt.value,
+                      start_date: undefined,
+                      end_date: undefined,
+                    });
+                    setActivePopover(null);
                   }}
                   className={`relative px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
                     isActive
@@ -241,20 +595,304 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                     />
                   )}
                   <span className="relative z-10">
-                    {opt.value === 'CUSTOM' ? (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="size-3" />
-                        <span>{t('ovPeriodCustom')}</span>
-                      </span>
-                    ) : opt.labelKey ? (
-                      t(opt.labelKey)
-                    ) : (
-                      opt.shortLabel
-                    )}
+                    {opt.labelKey ? t(opt.labelKey) : opt.shortLabel}
                   </span>
                 </button>
               );
             })}
+
+            {/* Custom Period Button with Direct Popover Anchor */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isCustom) {
+                    onFilterChange({ period: 'CUSTOM' });
+                  }
+                  setActivePopover(activePopover === 'customDate' ? null : 'customDate');
+                }}
+                className={`relative px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
+                  isCustom
+                    ? 'text-neutral-950 font-bold'
+                    : 'text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text hover:bg-surface/50 dark:hover:bg-night-surface/50'
+                }`}
+              >
+                {isCustom && (
+                  <motion.div
+                    layoutId="overviewActivePeriod"
+                    className="absolute inset-0 bg-brand-gold rounded-lg shadow-xs"
+                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <Calendar className="size-3.5 shrink-0" />
+                  <span>{customButtonLabel}</span>
+                  <ChevronDown
+                    className={`size-3 transition-transform duration-200 opacity-70 ${
+                      activePopover === 'customDate' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </span>
+              </button>
+
+              {/* Custom Date Range Popover */}
+              <AnimatePresence>
+                {activePopover === 'customDate' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 mt-2 z-50 w-[310px] sm:w-[350px] p-3.5 rounded-2xl bg-surface dark:bg-night-surface border border-border dark:border-night-border shadow-2xl backdrop-blur-xl space-y-3"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground dark:text-night-text">
+                        <Calendar className="size-3.5 text-brand-gold" />
+                        <span>{t('selectDateRange')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActivePopover(null)}
+                        className="p-1 rounded-md text-muted hover:text-foreground dark:hover:text-night-text cursor-pointer transition-colors"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Quick Presets Grid */}
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1">
+                        <Sparkles className="size-3 text-brand-gold" />
+                        <span>{t('presetLabel')}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('today')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetToday')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('yesterday')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetYesterday')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('thisWeek')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetThisWeek')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('last7')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetLast7Days')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('thisMonth')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetThisMonth')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('lastMonth')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetLastMonth')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('last30')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetLast30Days')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('last90')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetLast90Days')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPreset('thisYear')}
+                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text transition-colors text-center font-medium cursor-pointer"
+                        >
+                          {t('presetThisYear')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Calendar Month & Navigation */}
+                    <div className="pt-2 border-t border-border/40 dark:border-night-border/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={handlePrevMonth}
+                          className="p-1 rounded-lg hover:bg-border/30 dark:hover:bg-night-border/50 text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
+                        >
+                          <ChevronLeft className="size-4" />
+                        </button>
+                        <span className="text-xs font-bold text-foreground dark:text-night-text">
+                          {MONTH_NAMES[currentLocale]?.[viewMonth] || MONTH_NAMES.en[viewMonth]}{' '}
+                          {viewYear}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleNextMonth}
+                          className="p-1 rounded-lg hover:bg-border/30 dark:hover:bg-night-border/50 text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
+                        >
+                          <ChevronRight className="size-4" />
+                        </button>
+                      </div>
+
+                      {/* Weekdays Header */}
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-muted">
+                        {(WEEKDAY_NAMES[currentLocale] || WEEKDAY_NAMES.en).map((day, idx) => (
+                          <div key={idx} className="py-0.5">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Calendar Days Grid */}
+                      <div className="grid grid-cols-7 gap-1">
+                        {calendarCells.map((cell) => {
+                          const isStart = cell.dateStr === tempRange.start;
+                          const isEnd = cell.dateStr === tempRange.end;
+                          const isHovering = Boolean(
+                            tempRange.start && !tempRange.end && hoverDate
+                          );
+                          const effectiveEnd = tempRange.end || (isHovering ? hoverDate : null);
+                          const inRange = Boolean(
+                            tempRange.start &&
+                            effectiveEnd &&
+                            cell.dateStr > tempRange.start &&
+                            cell.dateStr < effectiveEnd
+                          );
+                          const isHoverPreview = isHovering && cell.dateStr === hoverDate;
+
+                          return (
+                            <button
+                              key={cell.dateStr}
+                              type="button"
+                              onClick={() => handleDayClick(cell.dateStr)}
+                              onMouseEnter={() => {
+                                if (tempRange.start && !tempRange.end) {
+                                  setHoverDate(cell.dateStr);
+                                }
+                              }}
+                              className={`h-7 text-xs rounded-lg flex items-center justify-center font-medium transition-all relative cursor-pointer ${
+                                !cell.isCurrentMonth
+                                  ? 'text-muted/40 hover:text-muted'
+                                  : 'text-foreground dark:text-night-text'
+                              } ${
+                                isStart || isEnd || isHoverPreview
+                                  ? 'bg-brand-gold text-neutral-950 font-bold shadow-xs'
+                                  : inRange
+                                    ? 'bg-brand-gold/20 text-foreground dark:text-night-text rounded-none'
+                                    : 'hover:bg-border/30 dark:hover:bg-night-border/50'
+                              } ${isStart && effectiveEnd ? 'rounded-r-none' : ''} ${
+                                (isEnd || isHoverPreview) && tempRange.start ? 'rounded-l-none' : ''
+                              }`}
+                            >
+                              {cell.dayNumber}
+                              {cell.isToday && !isStart && !isEnd && (
+                                <span className="absolute bottom-0.5 size-1 rounded-full bg-brand-gold" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Manual Date Inputs */}
+                    <div className="pt-2 border-t border-border/40 dark:border-night-border/40 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-semibold text-muted uppercase tracking-wider block mb-0.5">
+                            {t('ovFrom')}
+                          </label>
+                          <input
+                            type="date"
+                            value={tempRange.start}
+                            onChange={(e) => {
+                              setTempRange((prev) => ({ ...prev, start: e.target.value }));
+                              const parsed = parseYMD(e.target.value);
+                              if (parsed) {
+                                setViewYear(parsed.getFullYear());
+                                setViewMonth(parsed.getMonth());
+                              }
+                            }}
+                            className="w-full px-2 py-1 text-xs bg-background dark:bg-night-bg text-foreground dark:text-night-text rounded-lg border border-border dark:border-night-border focus:outline-none focus:border-brand-gold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold text-muted uppercase tracking-wider block mb-0.5">
+                            {t('ovTo')}
+                          </label>
+                          <input
+                            type="date"
+                            value={tempRange.end}
+                            onChange={(e) =>
+                              setTempRange((prev) => ({ ...prev, end: e.target.value }))
+                            }
+                            className="w-full px-2 py-1 text-xs bg-background dark:bg-night-bg text-foreground dark:text-night-text rounded-lg border border-border dark:border-night-border focus:outline-none focus:border-brand-gold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Footer with Days Count & Actions */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div>
+                          {tempRange.start &&
+                          tempRange.end &&
+                          getDaysCount(tempRange.start, tempRange.end) > 0 ? (
+                            <span className="text-[11px] font-bold text-brand-gold">
+                              {t('daysCount', {
+                                count: getDaysCount(tempRange.start, tempRange.end),
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-muted">
+                              {!tempRange.start ? t('selectStartDate') : t('selectEndDate')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {(tempRange.start || tempRange.end) && (
+                            <button
+                              type="button"
+                              onClick={handleClearCustomDates}
+                              className="px-2.5 py-1 text-xs font-semibold text-muted hover:text-destructive dark:hover:text-red-400 rounded-lg hover:bg-destructive/10 transition-colors cursor-pointer"
+                            >
+                              {t('clear')}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleApplyManualDates}
+                            className="px-3 py-1 text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-neutral-950 rounded-lg shadow-xs transition-colors cursor-pointer"
+                          >
+                            {t('ovApply')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Extra Periods Dropdown Toggle (...) */}
             <div className="relative">
@@ -296,7 +934,11 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                         key={ep.value}
                         type="button"
                         onClick={() => {
-                          onFilterChange({ period: ep.value });
+                          onFilterChange({
+                            period: ep.value,
+                            start_date: undefined,
+                            end_date: undefined,
+                          });
                           setActivePopover(null);
                         }}
                         className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer text-left ${
@@ -707,101 +1349,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   </div>
                 )}
               </div>
-
-              {/* 5. Custom Date Range Popover Button (if custom period) */}
-              {isCustom && (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActivePopover(activePopover === 'customDate' ? null : 'customDate')
-                    }
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-xl border bg-brand-gold/15 border-brand-gold/50 text-foreground dark:text-night-text font-semibold shadow-xs cursor-pointer"
-                  >
-                    <Calendar className="size-3.5 text-brand-gold shrink-0" />
-                    <span>
-                      {filters.start_date || filters.end_date
-                        ? `${filters.start_date || '...'} → ${filters.end_date || '...'}`
-                        : t('ovSelectDateRange')}
-                    </span>
-                    <ChevronDown className="size-3 opacity-60 ml-0.5" />
-                  </button>
-
-                  {activePopover === 'customDate' && (
-                    <div className="absolute top-full left-0 sm:right-auto mt-1.5 z-40 w-72 p-3 rounded-2xl bg-surface dark:bg-night-surface border border-border dark:border-night-border shadow-xl backdrop-blur-lg animate-fadeIn flex flex-col gap-3">
-                      <div className="flex items-center justify-between text-xs font-bold text-foreground dark:text-night-text">
-                        <span>{t('ovSelectDateRange')}</span>
-                        <button
-                          type="button"
-                          onClick={() => setActivePopover(null)}
-                          className="p-1 rounded-md text-muted hover:text-foreground cursor-pointer"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Quick Presets */}
-                      <div className="grid grid-cols-3 gap-1 text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => handleApplyDatePreset(7)}
-                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted transition-colors cursor-pointer"
-                        >
-                          7 Days
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleApplyDatePreset(30)}
-                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted transition-colors cursor-pointer"
-                        >
-                          30 Days
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleApplyDatePreset(90)}
-                          className="px-2 py-1 rounded-lg bg-border/20 dark:bg-night-border/40 hover:bg-brand-gold/20 text-muted hover:text-foreground dark:text-night-muted transition-colors cursor-pointer"
-                        >
-                          90 Days
-                        </button>
-                      </div>
-
-                      {/* Date Inputs */}
-                      <div className="flex flex-col gap-2">
-                        <div>
-                          <label className="text-[10px] font-semibold text-muted uppercase">
-                            {t('ovFrom')}
-                          </label>
-                          <input
-                            type="date"
-                            value={filters.start_date || ''}
-                            onChange={(e) => onFilterChange({ start_date: e.target.value })}
-                            className="w-full mt-0.5 px-2.5 py-1.5 text-xs bg-background dark:bg-night-bg text-foreground dark:text-night-text rounded-xl border border-border dark:border-night-border focus:outline-none focus:border-brand-gold"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-semibold text-muted uppercase">
-                            {t('ovTo')}
-                          </label>
-                          <input
-                            type="date"
-                            value={filters.end_date || ''}
-                            onChange={(e) => onFilterChange({ end_date: e.target.value })}
-                            className="w-full mt-0.5 px-2.5 py-1.5 text-xs bg-background dark:bg-night-bg text-foreground dark:text-night-text rounded-xl border border-border dark:border-night-border focus:outline-none focus:border-brand-gold"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setActivePopover(null)}
-                        className="w-full py-1.5 text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-neutral-950 rounded-xl transition-colors cursor-pointer"
-                      >
-                        {t('ovApply')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </motion.div>
         )}
@@ -809,7 +1356,8 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
       {/* ── ACTIVE FILTER CHIPS STRIP ───────────────────────────────────── */}
       <AnimatePresence>
-        {activeSecondaryFiltersCount > 0 && (
+        {(activeSecondaryFiltersCount > 0 ||
+          (isCustom && Boolean(filters.start_date || filters.end_date))) && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -820,6 +1368,24 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             <span className="text-[11px] font-semibold text-muted dark:text-night-muted mr-1">
               {t('ovActiveFilters')}:
             </span>
+
+            {/* Custom date range chip */}
+            {isCustom && (filters.start_date || filters.end_date) && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-gold/10 text-foreground dark:text-night-text border border-brand-gold/30 text-[11px] font-medium">
+                <Calendar className="size-3 text-brand-gold shrink-0" />
+                <span>
+                  {filters.start_date || '...'} → {filters.end_date || '...'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleClearCustomDates}
+                  className="hover:text-destructive cursor-pointer p-0.5"
+                  title={t('clear')}
+                >
+                  <X className="size-2.5" />
+                </button>
+              </span>
+            )}
 
             {/* Cargo filter chip */}
             {filters.cargo_type && (
@@ -877,22 +1443,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
               </span>
             )}
 
-            {/* Custom date range chip */}
-            {filters.period === 'CUSTOM' && (filters.start_date || filters.end_date) && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-gold/10 text-foreground dark:text-night-text border border-brand-gold/30 text-[11px] font-medium">
-                <span>
-                  {filters.start_date || '...'} → {filters.end_date || '...'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onFilterChange({ start_date: undefined, end_date: undefined })}
-                  className="hover:text-destructive cursor-pointer p-0.5"
-                >
-                  <X className="size-2.5" />
-                </button>
-              </span>
-            )}
-
             {/* Clear all secondary filters link */}
             <button
               type="button"
@@ -902,6 +1452,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   status: '',
                   employee_id: '',
                   client_id: '',
+                  period: '1M',
                   start_date: undefined,
                   end_date: undefined,
                 })
