@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Users, DollarSign, Building2, Edit3, Check, Loader2, TrendingUp } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { T } from '../T';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -25,8 +26,9 @@ export function SalaryManagementTab({
   loading,
   onRefresh,
   onOpenBatchModal,
-  selectedCurrency = 'UZS',
+  selectedCurrency = 'USD',
 }: SalaryManagementTabProps) {
+  const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canUpdate } = usePermissions();
 
@@ -85,7 +87,9 @@ export function SalaryManagementTab({
   if (!salaryData) {
     return (
       <div className="p-12 text-center bg-surface dark:bg-night-surface rounded-2xl border border-border dark:border-night-border">
-        <p className="text-sm text-muted dark:text-night-muted">No salary data available.</p>
+        <p className="text-sm text-muted dark:text-night-muted">
+          <T k="finNoSalaryData" />
+        </p>
       </div>
     );
   }
@@ -107,17 +111,17 @@ export function SalaryManagementTab({
   const handleSaveSingleSalary = async (empId: string) => {
     const parsed = parseFloat(editSalaryValue);
     if (isNaN(parsed) || parsed < 0) {
-      showNotification('Please enter a valid salary amount.', 'warning');
+      showNotification(t('finWarnValidSalary'), 'warning');
       return;
     }
     setSavingEmpId(empId);
     try {
       await api.finance.updateEmployeeSalary(empId, parsed);
-      showNotification('Employee salary updated successfully', 'success');
+      showNotification(t('finNotifSalaryUpdated'), 'success');
       setEditingEmpId(null);
       onRefresh();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to update salary', 'error');
+      showNotification(err?.message || t('finNotifSalaryUpdateFailed'), 'error');
     } finally {
       setSavingEmpId(null);
     }
@@ -135,10 +139,10 @@ export function SalaryManagementTab({
             </div>
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-night-muted block">
-                Active Staff
+                <T k="finActiveStaff" />
               </span>
               <span className="text-xl font-bold text-foreground dark:text-night-text">
-                {total_active_employees} employees
+                {t('finEmployeesCount', { count: total_active_employees })}
               </span>
             </div>
           </div>
@@ -150,7 +154,7 @@ export function SalaryManagementTab({
             </div>
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-night-muted block">
-                Monthly Salary Burden ($E_sal$)
+                <T k="finMonthlySalaryBurden" />
               </span>
               <span className="text-xl font-bold text-brand-gold">
                 {formatMoney(
@@ -168,7 +172,7 @@ export function SalaryManagementTab({
             </div>
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-night-muted block">
-                Avg Salary / Staff
+                <T k="finAvgSalaryPerStaff" />
               </span>
               <span className="text-xl font-bold text-foreground dark:text-night-text">
                 {formatMoney(convertAmount(avgSalary, selectedCurrency), selectedCurrency)}
@@ -201,7 +205,7 @@ export function SalaryManagementTab({
               : 'bg-surface dark:bg-night-surface text-muted border border-border/50 hover:text-foreground'
           }`}
         >
-          All Departments ({departments.length})
+          {t('finAllDepartments', { count: departments.length })}
         </button>
         {departments.map((dept) => (
           <button
@@ -236,13 +240,13 @@ export function SalaryManagementTab({
                     {dept.department_name}
                   </h3>
                   <span className="text-[11px] text-muted dark:text-night-muted">
-                    {dept.employee_count} registered employee{dept.employee_count === 1 ? '' : 's'}
+                    {t('finDeptEmployeesBadge', { count: dept.employee_count })}
                   </span>
                 </div>
               </div>
               <div className="text-right">
                 <span className="text-[11px] text-muted dark:text-night-muted block uppercase font-semibold">
-                  Dept Fixed Salary Total
+                  <T k="finDeptFixedSalaryTotal" />
                 </span>
                 <span className="text-sm font-bold text-brand-gold">
                   {formatMoney(
@@ -282,7 +286,7 @@ export function SalaryManagementTab({
                           {emp.full_name}
                         </p>
                         <p className="text-[11px] text-muted dark:text-night-muted truncate">
-                          {emp.phone || 'No phone'}
+                          {emp.phone || t('finNoPhone')}
                         </p>
                       </div>
                       <span
@@ -292,14 +296,14 @@ export function SalaryManagementTab({
                             : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                         }`}
                       >
-                        {emp.is_active ? 'Active' : 'Inactive'}
+                        {emp.is_active ? t('finStatusActive') : t('finStatusInactive')}
                       </span>
                     </div>
 
                     {/* Salary Field / Editor */}
                     <div className="pt-2 border-t border-border/40 dark:border-night-border flex items-center justify-between gap-2">
                       <span className="text-[11px] text-muted dark:text-night-muted font-medium">
-                        Fixed Salary:
+                        <T k="finLabelFixedSalary" />
                       </span>
 
                       {isEditing ? (
@@ -340,7 +344,7 @@ export function SalaryManagementTab({
                             <button
                               onClick={() => handleStartEdit(emp)}
                               className="p-1 rounded-lg text-muted hover:text-brand-gold hover:bg-brand-gold/10 transition-colors cursor-pointer"
-                              title="Edit Salary"
+                              title={t('finEditSalaryTooltip')}
                             >
                               <Edit3 className="size-3.5" />
                             </button>

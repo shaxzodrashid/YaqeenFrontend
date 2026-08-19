@@ -42,7 +42,7 @@ export const CurrencyApiClient = {
     return currencyApi.syncRates();
   },
 
-  async getFinanceSummary(period: string, currency: SupportedCurrency = 'UZS') {
+  async getFinanceSummary(period: string, currency: SupportedCurrency = 'USD') {
     const q = new URLSearchParams();
     if (period) q.set('period', period);
     if (currency) q.set('currency', currency);

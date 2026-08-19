@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Coins,
 } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { FinanceSummaryTab } from './FinanceSummaryTab';
@@ -30,6 +31,7 @@ import type {
 type FinanceTabId = 'summary' | 'expenses' | 'salaries';
 
 export function FinancePage() {
+  const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canCreate } = usePermissions();
 
@@ -40,7 +42,7 @@ export function FinancePage() {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     return `${year}-${month}`;
   });
-  const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency>('UZS');
+  const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency>('USD');
 
   // API State
   const [summaryData, setSummaryData] = useState<FinanceSummaryResponse | null>(null);
@@ -61,11 +63,11 @@ export function FinancePage() {
       const res = await api.finance.getSummary({ period, currency: selectedCurrency });
       setSummaryData(res);
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to load financial summary', 'error');
+      showNotification(err?.message || t('finErrSummary'), 'error');
     } finally {
       setSummaryLoading(false);
     }
-  }, [period, selectedCurrency, showNotification]);
+  }, [period, selectedCurrency, showNotification, t]);
 
   // Fetch Salaries
   const fetchSalaries = useCallback(async () => {
@@ -74,11 +76,11 @@ export function FinancePage() {
       const res = await api.finance.getFixedSalaries();
       setSalariesData(res);
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to load fixed salaries', 'error');
+      showNotification(err?.message || t('finErrSalaries'), 'error');
     } finally {
       setSalariesLoading(false);
     }
-  }, [showNotification]);
+  }, [showNotification, t]);
 
   useEffect(() => {
     fetchSummary();
@@ -146,8 +148,8 @@ export function FinancePage() {
               onChange={(e) => setSelectedCurrency(e.target.value as SupportedCurrency)}
               className="bg-transparent font-bold text-foreground dark:text-night-text focus:outline-none cursor-pointer"
             >
-              <option value="UZS">UZS (So'm)</option>
               <option value="USD">USD ($)</option>
+              <option value="UZS">UZS (so'm)</option>
               <option value="RUB">RUB (₽)</option>
             </select>
           </div>
@@ -167,7 +169,7 @@ export function FinancePage() {
           <button
             onClick={handleRefreshAll}
             className="p-2.5 rounded-xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
-            title="Refresh Financial Data"
+            title={t('finRefreshTooltip')}
           >
             <RefreshCw className={`size-4 ${summaryLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -261,6 +263,7 @@ export function FinancePage() {
         onClose={() => setIsExpenseModalOpen(false)}
         onSuccess={handleRefreshAll}
         expenseToEdit={expenseToEdit}
+        defaultCurrency={selectedCurrency}
       />
 
       <BatchSalaryModal

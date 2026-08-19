@@ -44,14 +44,14 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
     return (
       <div className="p-12 text-center bg-surface dark:bg-night-surface rounded-2xl border border-border dark:border-night-border">
         <p className="text-sm text-muted dark:text-night-muted">
-          No summary data available for this period.
+          <T k="finNoSummaryData" />
         </p>
       </div>
     );
   }
 
   const { summary, comparison, expense_breakdown } = summaryData;
-  const activeCurrency: SupportedCurrency = summaryData.currency || 'UZS';
+  const activeCurrency: SupportedCurrency = summaryData.currency || 'USD';
 
   const netProfitGrowth = comparison?.net_profit_growth_percentage ?? 0;
   const isGrowthPositive = netProfitGrowth >= 0;
@@ -71,21 +71,21 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
           </div>
           <div>
             <span className="text-xs font-bold text-foreground dark:text-night-text">
-              Financial Summary Normalized Currency:
+              <T k="finNormalizedCurrency" />
             </span>
             <span className="ml-2 text-xs font-extrabold text-brand-gold uppercase">
               {activeCurrency} (
               {activeCurrency === 'UZS'
-                ? "O'zbek so'mi"
+                ? t('currUzsName')
                 : activeCurrency === 'USD'
-                  ? 'US Dollar'
-                  : 'Russian Ruble'}
+                  ? t('currUsdName')
+                  : t('currRubName')}
               )
             </span>
           </div>
         </div>
         <span className="text-[11px] px-2.5 py-1 rounded-full bg-brand-gold/10 text-brand-gold font-bold border border-brand-gold/20">
-          CBU Live Converted
+          <T k="finCbuLiveConverted" />
         </span>
       </div>
 
@@ -111,7 +111,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               {formatMoney(summary.gross_revenue || 0, activeCurrency)}
             </h3>
             <p className="text-[11px] text-muted dark:text-night-muted mt-1">
-              Total sales revenue from cargo operations
+              <T k="finGrossRevenueDesc" />
             </p>
           </div>
         </motion.div>
@@ -136,7 +136,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               {formatMoney(summary.cost_of_goods_sold || 0, activeCurrency)}
             </h3>
             <p className="text-[11px] text-muted dark:text-night-muted mt-1">
-              Direct shipping cost & cargo purchase price
+              <T k="finCogsDesc" />
             </p>
           </div>
         </motion.div>
@@ -161,7 +161,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               {formatMoney(summary.gross_profit || 0, activeCurrency)}
             </h3>
             <p className="text-[11px] text-muted dark:text-night-muted mt-1">
-              Revenue minus shipping cost (Gross Margin)
+              <T k="finGrossProfitDesc" />
             </p>
           </div>
         </motion.div>
@@ -187,13 +187,16 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             </h3>
             <div className="flex items-center gap-2 mt-2 text-[10px] text-muted dark:text-night-muted flex-wrap">
               <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">
-                Op: {formatMoney(summary.operational_expenses || 0, activeCurrency)}
+                <T k="finOpPrefix" />:{' '}
+                {formatMoney(summary.operational_expenses || 0, activeCurrency)}
               </span>
               <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">
-                Sal: {formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)}
+                <T k="finSalPrefix" />:{' '}
+                {formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)}
               </span>
               <span className="bg-rose-500/10 px-1.5 py-0.5 rounded">
-                KPI: {formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)}
+                <T k="finKpiPrefix" />:{' '}
+                {formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)}
               </span>
             </div>
           </div>
@@ -228,7 +231,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               {formatMoney(summary.net_profit || 0, activeCurrency)}
             </h3>
             <p className="text-[11px] text-muted dark:text-night-muted mt-1">
-              Final profit after all operational, salary & KPI costs
+              <T k="finNetProfitDesc" />
             </p>
           </div>
         </motion.div>
@@ -253,7 +256,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               {formatMoney(summary.seo_cut_10pc || 0, activeCurrency)}
             </h3>
             <p className="text-[11px] text-muted dark:text-night-muted mt-1">
-              Automated 10% cut on positive Net Profit
+              <T k="finSeoCutDesc" />
             </p>
           </div>
         </motion.div>
@@ -272,7 +275,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             <div className="flex items-center gap-2">
               <Calculator className="size-5 text-brand-gold" />
               <h3 className="text-base font-semibold text-foreground dark:text-night-text">
-                Financial Engine Flow Diagram
+                <T k="finFlowDiagramTitle" />
               </h3>
             </div>
             <span className="text-xs text-muted dark:text-night-muted font-mono">
@@ -284,7 +287,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             {/* Step 1: Gross Margin */}
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                Gross Margin
+                <T k="finGrossMargin" />
               </span>
               <p className="text-sm font-bold text-foreground dark:text-night-text mt-1">
                 {formatMoney(summary.gross_profit || 0, activeCurrency)}
@@ -297,7 +300,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             {/* Step 2: All Expenses */}
             <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center">
               <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                Total Expenses
+                <T k="finTotalExpenses" />
               </span>
               <p className="text-sm font-bold text-foreground dark:text-night-text mt-1">
                 {formatMoney(summary.total_expenses || 0, activeCurrency)}
@@ -310,7 +313,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
             {/* Step 3: Net Profit */}
             <div className="p-4 rounded-xl bg-brand-gold/15 border border-brand-gold/30 text-center sm:col-span-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gold">
-                Net Profit
+                <T k="finNetProfit" />
               </span>
               <p className="text-sm font-bold text-foreground dark:text-night-text mt-1">
                 {formatMoney(summary.net_profit || 0, activeCurrency)}
@@ -322,10 +325,10 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
           <div className="mt-4 pt-4 border-t border-border/40 dark:border-night-border">
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="font-semibold text-foreground dark:text-night-text">
-                All-In Expense Breakdown
+                <T k="finAllInExpenseBreakdown" />
               </span>
               <span className="text-muted dark:text-night-muted">
-                {formatMoney(summary.total_expenses || 0, activeCurrency)} Total
+                {formatMoney(summary.total_expenses || 0, activeCurrency)} <T k="finTotalSuffix" />
               </span>
             </div>
 
@@ -334,17 +337,17 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               <div
                 style={{ width: `${opPercent}%` }}
                 className="bg-amber-500 transition-all duration-500"
-                title={`Operational: ${opPercent}%`}
+                title={t('finOpExpensePct', { pct: opPercent })}
               />
               <div
                 style={{ width: `${salPercent}%` }}
                 className="bg-blue-500 transition-all duration-500"
-                title={`Fixed Salaries: ${salPercent}%`}
+                title={t('finSalExpensePct', { pct: salPercent })}
               />
               <div
                 style={{ width: `${kpiPercent}%` }}
                 className="bg-purple-500 transition-all duration-500"
-                title={`KPI Bonuses: ${kpiPercent}%`}
+                title={t('finKpiExpensePct', { pct: kpiPercent })}
               />
             </div>
 
@@ -352,19 +355,25 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-amber-500 inline-block" />
                 <span>
-                  Op Expenses ({formatMoney(summary.operational_expenses || 0, activeCurrency)})
+                  {t('finOpExpensesLegend', {
+                    amount: formatMoney(summary.operational_expenses || 0, activeCurrency),
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-blue-500 inline-block" />
                 <span>
-                  Salaries ({formatMoney(summary.fixed_salaries_expense || 0, activeCurrency)})
+                  {t('finSalariesLegend', {
+                    amount: formatMoney(summary.fixed_salaries_expense || 0, activeCurrency),
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-purple-500 inline-block" />
                 <span>
-                  KPI Bonuses ({formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency)})
+                  {t('finKpiBonusesLegend', {
+                    amount: formatMoney(summary.kpi_bonuses_expense || 0, activeCurrency),
+                  })}
                 </span>
               </div>
             </div>
@@ -380,15 +389,19 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
         >
           <div>
             <h3 className="text-base font-semibold text-foreground dark:text-night-text mb-1">
-              MoM Growth Comparison
+              <T k="finMomComparisonTitle" />
             </h3>
             <p className="text-xs text-muted dark:text-night-muted mb-4">
-              Comparing against previous period ({comparison?.previous_period?.start_date || 'N/A'})
+              {t('finComparingAgainstPrev', {
+                period: comparison?.previous_period?.start_date || 'N/A',
+              })}
             </p>
 
             <div className="flex flex-col gap-4">
               <div className="p-3 rounded-xl bg-background/50 dark:bg-night-field border border-border/50 dark:border-night-border flex items-center justify-between">
-                <span className="text-xs text-muted dark:text-night-muted">Net Profit Change:</span>
+                <span className="text-xs text-muted dark:text-night-muted">
+                  <T k="finNetProfitChange" />
+                </span>
                 <span
                   className={`text-sm font-bold ${comparison?.net_profit_change_amount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
                 >
@@ -399,7 +412,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
 
               <div className="p-3 rounded-xl bg-background/50 dark:bg-night-field border border-border/50 dark:border-night-border flex items-center justify-between">
                 <span className="text-xs text-muted dark:text-night-muted">
-                  Net Profit Growth %:
+                  <T k="finNetProfitGrowthPct" />
                 </span>
                 <span
                   className={`text-sm font-bold ${netProfitGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
@@ -410,7 +423,9 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
               </div>
 
               <div className="p-3 rounded-xl bg-background/50 dark:bg-night-field border border-border/50 dark:border-night-border flex items-center justify-between">
-                <span className="text-xs text-muted dark:text-night-muted">Expenses Change:</span>
+                <span className="text-xs text-muted dark:text-night-muted">
+                  <T k="finExpensesChange" />
+                </span>
                 <span className="text-sm font-bold text-foreground dark:text-night-text">
                   {comparison?.expenses_change_amount >= 0 ? '+' : ''}
                   {formatMoney(comparison?.expenses_change_amount || 0, activeCurrency)} (
@@ -425,7 +440,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
       {/* Expense Category Distribution Cards */}
       <div>
         <h3 className="text-base font-semibold text-foreground dark:text-night-text mb-4">
-          Expense Distribution by Category
+          <T k="finDistributionByCategory" />
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {(Object.keys(CATEGORY_CONFIG) as ExpenseCategory[]).map((catKey) => {
@@ -450,7 +465,7 @@ export function FinanceSummaryTab({ summaryData, loading }: FinanceSummaryTabPro
                 </div>
                 <div>
                   <span className="text-[11px] font-semibold text-foreground dark:text-night-text block truncate">
-                    {t(cfg.labelKey) || cfg.defaultLabel}
+                    <T k={cfg.labelKey} />
                   </span>
                   <p className="text-sm font-bold text-foreground dark:text-night-text mt-0.5">
                     {formatMoney(catAmount, activeCurrency)}

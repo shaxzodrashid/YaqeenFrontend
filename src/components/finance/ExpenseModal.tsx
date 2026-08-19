@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
+import { T } from '../T';
 import { api } from '../../services/api';
 import type {
   Expense,
@@ -33,6 +34,7 @@ interface ExpenseModalProps {
   onClose: () => void;
   onSuccess: () => void;
   expenseToEdit?: Expense | null;
+  defaultCurrency?: SupportedCurrency;
 }
 
 export const CATEGORY_CONFIG: Record<
@@ -98,13 +100,19 @@ export const CATEGORY_CONFIG: Record<
 
 const PRESET_AMOUNTS = [50, 100, 250, 500, 1000];
 
-export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: ExpenseModalProps) {
+export function ExpenseModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  expenseToEdit,
+  defaultCurrency = 'USD',
+}: ExpenseModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
 
   const [category, setCategory] = useState<ExpenseCategory>('other');
   const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
-  const [currency, setCurrency] = useState<SupportedCurrency>('UZS');
+  const [currency, setCurrency] = useState<SupportedCurrency>(defaultCurrency);
   const [amount, setAmount] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [expenseDate, setExpenseDate] = useState<string>(
@@ -173,20 +181,20 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
   useEffect(() => {
     if (expenseToEdit) {
       setCategory(expenseToEdit.category);
-      setCurrency(expenseToEdit.currency || 'UZS');
+      setCurrency(expenseToEdit.currency || defaultCurrency);
       setAmount(String(expenseToEdit.amount));
       setDescription(expenseToEdit.description);
       setExpenseDate(expenseToEdit.expense_date.split('T')[0]);
       setEmployeeId(expenseToEdit.employee_id || '');
     } else {
       setCategory('other');
-      setCurrency('UZS');
+      setCurrency(defaultCurrency);
       setAmount('');
       setDescription('');
       setExpenseDate(new Date().toISOString().split('T')[0]);
       setEmployeeId('');
     }
-  }, [expenseToEdit, isOpen]);
+  }, [expenseToEdit, isOpen, defaultCurrency]);
 
   const isSalaryPayout = category === 'salary_payout';
 
@@ -194,16 +202,16 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      showNotification('Please enter a valid expense amount.', 'warning');
+      showNotification(t('finWarnValidAmount'), 'warning');
       return;
     }
     if (!description.trim()) {
-      showNotification('Please enter a short description.', 'warning');
+      showNotification(t('finWarnEnterDesc'), 'warning');
       return;
     }
 
     if (isSalaryPayout && !employeeId) {
-      showNotification('Selecting an employee is required for salary payout expenses.', 'warning');
+      showNotification(t('finWarnSelectEmployee'), 'warning');
       return;
     }
 
@@ -219,7 +227,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
           ...(category === 'salary_payout' && employeeId ? { employee_id: employeeId } : {}),
         };
         await api.finance.updateExpense(expenseToEdit.id, dto);
-        showNotification('Expense record updated successfully', 'success');
+        showNotification(t('finNotifUpdated'), 'success');
       } else {
         const dto: CreateExpenseDto = {
           category,
@@ -230,12 +238,12 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
           ...(category === 'salary_payout' && employeeId ? { employee_id: employeeId } : {}),
         };
         await api.finance.createExpense(dto);
-        showNotification('New expense created successfully', 'success');
+        showNotification(t('finNotifCreated'), 'success');
       }
       onSuccess();
       onClose();
     } catch (err: any) {
-      const errMsg = err?.message || err?.data?.message || 'Failed to save expense';
+      const errMsg = err?.message || err?.data?.message || t('finNotifSaveFailed');
       showNotification(errMsg, 'error');
     } finally {
       setSubmitting(false);
@@ -274,9 +282,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                     {expenseToEdit ? t('finEditExpense') : t('finAddExpense')}
                   </h3>
                   <p className="text-xs text-muted dark:text-night-muted">
-                    {expenseToEdit
-                      ? 'Modify existing expense entry'
-                      : 'Log a new operational business expense'}
+                    {expenseToEdit ? t('finEditExpenseSubtitle') : t('finAddExpenseSubtitle')}
                   </p>
                 </div>
               </div>
@@ -378,11 +384,13 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                     <label className="block text-xs font-semibold uppercase tracking-wider text-muted dark:text-night-muted mb-1.5 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <User className="size-3.5 text-brand-gold" />
-                        <span>Select Employee</span>
+                        <span>
+                          <T k="finSelectEmployee" />
+                        </span>
                         <span className="text-rose-500 font-bold">*</span>
                       </span>
                       <span className="text-[10px] text-rose-500 font-normal lowercase">
-                        (Required for salary payout)
+                        <T k="finSalaryPayoutRequired" />
                       </span>
                     </label>
                     <div className="relative">
@@ -396,7 +404,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                             : 'border-border/80 dark:border-night-border'
                         }`}
                       >
-                        <option value="">-- Select Employee --</option>
+                        <option value="">{t('finSelectEmployeePlaceholder')}</option>
                         {employees.map((emp) => (
                           <option key={emp.id} value={emp.id}>
                             {emp.name} {emp.department ? `(${emp.department})` : ''}
@@ -419,7 +427,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                   {/* Amount Input */}
                   <div className="flex-1">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-muted dark:text-night-muted mb-1.5">
-                      Amount
+                      <T k="finFieldAmount" />
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted dark:text-night-muted font-bold text-xs">
@@ -442,15 +450,17 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                   <div className="w-32 shrink-0">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-muted dark:text-night-muted mb-1.5 flex items-center gap-1">
                       <Coins className="size-3.5 text-brand-gold" />
-                      <span>Currency</span>
+                      <span>
+                        <T k="finFieldCurrency" />
+                      </span>
                     </label>
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
                       className="w-full py-2.5 px-3.5 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-xl text-sm font-semibold text-foreground dark:text-night-text focus:outline-none focus:ring-2 focus:ring-brand-gold/50 transition-colors cursor-pointer"
                     >
-                      <option value="UZS">UZS (so'm)</option>
                       <option value="USD">USD ($)</option>
+                      <option value="UZS">UZS (so'm)</option>
                       <option value="RUB">RUB (₽)</option>
                     </select>
                   </div>
@@ -459,7 +469,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                 {/* Preset Chips */}
                 <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
                   <span className="text-[11px] text-muted dark:text-night-muted mr-1 font-medium">
-                    Quick:
+                    <T k="finQuickPresets" />
                   </span>
                   {PRESET_AMOUNTS.map((val) => (
                     <button
@@ -477,7 +487,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
               {/* Expense Date */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted dark:text-night-muted mb-1.5">
-                  Expense Date
+                  <T k="finFieldExpenseDate" />
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted dark:text-night-muted">
@@ -496,7 +506,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
               {/* Description */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted dark:text-night-muted mb-1.5">
-                  Description / Note
+                  <T k="finFieldDescription" />
                 </label>
                 <div className="relative">
                   <div className="absolute top-3 left-3 pointer-events-none text-muted dark:text-night-muted">
@@ -505,7 +515,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                   <textarea
                     rows={3}
                     required
-                    placeholder="Enter details, receipt number, or purpose of cost..."
+                    placeholder={t('finFieldDescPlaceholder')}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-xl text-sm text-foreground dark:text-night-text focus:outline-none focus:ring-2 focus:ring-brand-gold/50 transition-colors resize-none"
@@ -520,7 +530,7 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                   onClick={onClose}
                   className="px-4 py-2 rounded-xl text-xs font-medium text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
                 >
-                  Cancel
+                  <T k="finBtnCancel" />
                 </button>
                 <button
                   type="submit"
@@ -530,10 +540,10 @@ export function ExpenseModal({ isOpen, onClose, onSuccess, expenseToEdit }: Expe
                   {submitting ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      <span>Saving...</span>
+                      <span>{t('finBtnSaving')}</span>
                     </>
                   ) : (
-                    <span>{expenseToEdit ? 'Save Changes' : 'Create Expense'}</span>
+                    <span>{expenseToEdit ? t('finBtnSaveChanges') : t('finBtnCreateExpense')}</span>
                   )}
                 </button>
               </div>

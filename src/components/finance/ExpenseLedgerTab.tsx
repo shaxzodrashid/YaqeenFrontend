@@ -159,7 +159,7 @@ export function ExpenseLedgerTab({
       setTotalSum(res.total_sum || 0);
       setPagination(res.pagination || { total: 0, page: 1, limit: 15, totalPages: 1 });
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to fetch expenses', 'error');
+      showNotification(err?.message || t('finNotifFetchFailed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -173,6 +173,7 @@ export function ExpenseLedgerTab({
     startDate,
     endDate,
     showNotification,
+    t,
   ]);
 
   const fetchCategories = useCallback(async () => {
@@ -198,12 +199,12 @@ export function ExpenseLedgerTab({
     setDeleting(true);
     try {
       await api.finance.deleteExpense(deleteTarget.id);
-      showNotification('Expense record deleted', 'success');
+      showNotification(t('finNotifDeleted'), 'success');
       setDeleteTarget(null);
       fetchExpenses();
       fetchCategories();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to delete expense', 'error');
+      showNotification(err?.message || t('finNotifDeleteFailed'), 'error');
     } finally {
       setDeleting(false);
     }
@@ -238,7 +239,7 @@ export function ExpenseLedgerTab({
                     <Icon className="size-3.5" />
                   </div>
                   <span className="text-[10px] font-semibold text-muted dark:text-night-muted">
-                    {item?.expense_count || 0} entries
+                    {t('finEntriesCount', { count: item?.expense_count || 0 })}
                   </span>
                 </div>
                 <div>
@@ -268,7 +269,7 @@ export function ExpenseLedgerTab({
             </div>
             <input
               type="text"
-              placeholder="Search expenses by description..."
+              placeholder={t('finSearchPlaceholder')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -288,7 +289,11 @@ export function ExpenseLedgerTab({
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border/80 dark:border-night-border bg-background dark:bg-night-field text-xs text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
             >
               <ArrowUpDown className="size-3.5" />
-              <span>Sort: {sortOrder.toUpperCase()}</span>
+              <span>
+                {t('finSortLabel', {
+                  order: sortOrder === 'asc' ? t('finSortAsc') : t('finSortDesc'),
+                })}
+              </span>
             </button>
 
             {/* Add Expense Button */}
@@ -307,7 +312,9 @@ export function ExpenseLedgerTab({
         {/* Date & Employee Filter Inputs */}
         <div className="flex items-center gap-3 flex-wrap pt-3 border-t border-border/40 dark:border-night-border text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-muted dark:text-night-muted">Start Date:</span>
+            <span className="text-muted dark:text-night-muted">
+              <T k="finStartDate" />
+            </span>
             <input
               type="date"
               value={startDate}
@@ -319,7 +326,9 @@ export function ExpenseLedgerTab({
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-muted dark:text-night-muted">End Date:</span>
+            <span className="text-muted dark:text-night-muted">
+              <T k="finEndDate" />
+            </span>
             <input
               type="date"
               value={endDate}
@@ -331,7 +340,9 @@ export function ExpenseLedgerTab({
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-muted dark:text-night-muted">Employee:</span>
+            <span className="text-muted dark:text-night-muted">
+              <T k="finEmployeeFilter" />
+            </span>
             <select
               value={employeeFilter}
               onChange={(e) => {
@@ -340,7 +351,7 @@ export function ExpenseLedgerTab({
               }}
               className="px-2.5 py-1 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-xs text-foreground dark:text-night-text focus:outline-none cursor-pointer"
             >
-              <option value="">All Employees</option>
+              <option value="">{t('finAllEmployees')}</option>
               {employeeOptions.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name}
@@ -360,7 +371,7 @@ export function ExpenseLedgerTab({
               }}
               className="text-[11px] font-semibold text-rose-500 hover:underline ml-auto cursor-pointer"
             >
-              Clear Filters
+              <T k="finClearFilters" />
             </button>
           )}
         </div>
@@ -371,16 +382,18 @@ export function ExpenseLedgerTab({
         {loading ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <Loader2 className="size-6 text-brand-gold animate-spin" />
-            <p className="text-xs text-muted dark:text-night-muted">Loading expense ledger...</p>
+            <p className="text-xs text-muted dark:text-night-muted">
+              <T k="finLoadingLedger" />
+            </p>
           </div>
         ) : expenses.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <Receipt className="size-8 text-muted/50" />
             <p className="text-sm font-semibold text-foreground dark:text-night-text">
-              No expenses found
+              <T k="finNoExpensesFound" />
             </p>
             <p className="text-xs text-muted dark:text-night-muted">
-              Try clearing filters or log a new operational expense.
+              <T k="finNoExpensesDesc" />
             </p>
           </div>
         ) : (
@@ -388,11 +401,21 @@ export function ExpenseLedgerTab({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/60 dark:border-night-border bg-background/50 dark:bg-night-field/50 text-[11px] font-bold uppercase tracking-wider text-muted dark:text-night-muted">
-                  <th className="px-6 py-3.5">Date</th>
-                  <th className="px-6 py-3.5">Category</th>
-                  <th className="px-6 py-3.5">Description</th>
-                  <th className="px-6 py-3.5 text-right">Amount</th>
-                  <th className="px-6 py-3.5 text-center">Actions</th>
+                  <th className="px-6 py-3.5">
+                    <T k="finThDate" />
+                  </th>
+                  <th className="px-6 py-3.5">
+                    <T k="finThCategory" />
+                  </th>
+                  <th className="px-6 py-3.5">
+                    <T k="finThDescription" />
+                  </th>
+                  <th className="px-6 py-3.5 text-right">
+                    <T k="finThAmount" />
+                  </th>
+                  <th className="px-6 py-3.5 text-center">
+                    <T k="finThActions" />
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 dark:divide-night-border text-xs">
@@ -415,7 +438,9 @@ export function ExpenseLedgerTab({
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${cfg.bgClass} ${cfg.borderClass} ${cfg.colorClass}`}
                         >
                           <Icon className="size-3.5" />
-                          <span>{t(cfg.labelKey) || cfg.defaultLabel}</span>
+                          <span>
+                            <T k={cfg.labelKey} />
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-foreground dark:text-night-text max-w-md">
@@ -441,7 +466,7 @@ export function ExpenseLedgerTab({
                             <button
                               onClick={() => onOpenEditModal(expense)}
                               className="p-1.5 rounded-lg text-muted hover:text-brand-gold hover:bg-brand-gold/10 transition-colors cursor-pointer"
-                              title="Edit Expense"
+                              title={t('finEditExpense')}
                             >
                               <Edit2 className="size-3.5" />
                             </button>
@@ -450,7 +475,7 @@ export function ExpenseLedgerTab({
                             <button
                               onClick={() => setDeleteTarget(expense)}
                               className="p-1.5 rounded-lg text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              title="Delete Expense"
+                              title={t('finDeleteExpense')}
                             >
                               <Trash2 className="size-3.5" />
                             </button>
@@ -468,7 +493,7 @@ export function ExpenseLedgerTab({
         {/* Footer & Pagination */}
         <div className="px-6 py-4 border-t border-border/60 dark:border-night-border bg-background/40 dark:bg-night-field/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div className="text-muted dark:text-night-muted">
-            Filtered Total:{' '}
+            <T k="finFilteredTotal" />{' '}
             <span className="font-bold text-foreground dark:text-night-text">
               {formatMoney(convertAmount(totalSum, selectedCurrency), selectedCurrency)}
             </span>
@@ -476,7 +501,11 @@ export function ExpenseLedgerTab({
 
           <div className="flex items-center gap-3">
             <span className="text-muted dark:text-night-muted">
-              Page {pagination.page} of {pagination.totalPages} ({pagination.total} records)
+              {t('finPageInfo', {
+                page: pagination.page,
+                totalPages: pagination.totalPages,
+                total: pagination.total,
+              })}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -531,7 +560,7 @@ export function ExpenseLedgerTab({
                   onClick={() => setDeleteTarget(null)}
                   className="px-4 py-2 rounded-xl text-xs font-medium text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
                 >
-                  Cancel
+                  <T k="finBtnCancel" />
                 </button>
                 <button
                   type="button"
@@ -539,7 +568,7 @@ export function ExpenseLedgerTab({
                   onClick={handleDeleteConfirm}
                   className="px-5 py-2 rounded-xl bg-rose-600 text-white font-semibold text-xs shadow-md hover:bg-rose-700 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {deleting ? 'Deleting...' : 'Delete Expense'}
+                  {deleting ? t('finBtnDeleting') : t('finBtnDeleteConfirm')}
                 </button>
               </div>
             </motion.div>

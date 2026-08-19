@@ -15,14 +15,17 @@ import type {
   SupportedCurrency,
   ConvertCurrencyResponse,
 } from '../../services/api';
+import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
+import { T } from '../T';
 
 interface CbuRatesWidgetProps {
   compact?: boolean;
 }
 
 export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
+  const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canRead, canUpdate } = usePermissions();
   const [ratesData, setRatesData] = useState<ExchangeRatesResponse | null>(null);
@@ -69,10 +72,10 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
               }
         );
       }
-      showNotification('CBU exchange rates synchronized successfully', 'success');
+      showNotification(t('cbuNotifSyncSuccess'), 'success');
       fetchRates();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to sync CBU rates', 'error');
+      showNotification(err?.message || t('cbuNotifSyncFailed'), 'error');
     } finally {
       setSyncing(false);
     }
@@ -82,7 +85,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
     if (e) e.preventDefault();
     const amountNum = parseFloat(calcAmount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      showNotification('Please enter a valid positive amount', 'warning');
+      showNotification(t('cbuWarnPositiveAmount'), 'warning');
       return;
     }
 
@@ -95,7 +98,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
       });
       setCalcResult(res);
     } catch (err: any) {
-      showNotification(err?.message || 'Currency conversion failed', 'error');
+      showNotification(err?.message || t('cbuNotifConvertFailed'), 'error');
     } finally {
       setConverting(false);
     }
@@ -113,7 +116,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
         <button
           onClick={() => setIsConverterOpen(true)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border hover:border-brand-gold/40 transition-colors cursor-pointer"
-          title="Click to open currency converter"
+          title={t('cbuOpenConverterTooltip')}
         >
           <Coins className="size-3.5 text-brand-gold" />
           <div className="flex items-center gap-2 font-medium">
@@ -145,7 +148,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
             onClick={handleSyncRates}
             disabled={syncing}
             className="p-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer disabled:opacity-50"
-            title="Force Sync with CBU API"
+            title={t('cbuForceSyncTooltip')}
           >
             <RefreshCw className={`size-3.5 ${syncing ? 'animate-spin' : ''}`} />
           </button>
@@ -168,16 +171,16 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-foreground dark:text-night-text">
-                CBU Live Rates
+                <T k="cbuLiveRates" />
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                Official
+                <T k="cbuOfficialBadge" />
               </span>
             </div>
             <p className="text-[11px] text-muted dark:text-night-muted">
               {ratesData?.rates?.USD?.date
-                ? `Updated ${ratesData.rates.USD.date}`
-                : 'Central Bank of Uzbekistan'}
+                ? t('cbuUpdatedDate', { date: ratesData.rates.USD.date })
+                : t('cbuBankName')}
             </p>
           </div>
         </div>
@@ -265,7 +268,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-gold/10 text-brand-gold border border-brand-gold/30 hover:bg-brand-gold/20 font-semibold text-xs transition-colors cursor-pointer"
         >
           <ArrowRightLeft className="size-3.5" />
-          <span>Convert</span>
+          <span>{t('cbuBtnConvert')}</span>
         </button>
 
         {canUpdate('currency') && (
@@ -273,10 +276,10 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
             onClick={handleSyncRates}
             disabled={syncing}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text font-medium text-xs transition-colors cursor-pointer disabled:opacity-50"
-            title="Force Synchronize with CBU API"
+            title={t('cbuForceSyncTooltip')}
           >
             <RefreshCw className={`size-3.5 ${syncing ? 'animate-spin' : ''}`} />
-            <span>{syncing ? 'Syncing...' : 'Sync CBU'}</span>
+            <span>{syncing ? t('cbuBtnSyncing') : t('cbuBtnSync')}</span>
           </button>
         )}
       </div>
@@ -312,10 +315,10 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-foreground dark:text-night-text">
-                      CBU Currency Converter
+                      <T k="cbuConverterTitle" />
                     </h3>
                     <p className="text-xs text-muted dark:text-night-muted">
-                      Live conversion using CBU rates
+                      <T k="cbuConverterSubtitle" />
                     </p>
                   </div>
                 </div>
@@ -331,7 +334,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
               <form onSubmit={handleConvert} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-muted dark:text-night-muted uppercase mb-1">
-                    Amount
+                    <T k="cbuAmountLabel" />
                   </label>
                   <input
                     type="number"
@@ -347,7 +350,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
                 <div className="grid grid-cols-2 gap-3 items-center">
                   <div>
                     <label className="block text-xs font-semibold text-muted dark:text-night-muted uppercase mb-1">
-                      From
+                      <T k="cbuFromLabel" />
                     </label>
                     <select
                       value={calcFrom}
@@ -364,7 +367,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
 
                   <div>
                     <label className="block text-xs font-semibold text-muted dark:text-night-muted uppercase mb-1">
-                      To
+                      <T k="cbuToLabel" />
                     </label>
                     <select
                       value={calcTo}
@@ -390,7 +393,7 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
                   ) : (
                     <ArrowRightLeft className="size-4" />
                   )}
-                  <span>Calculate Conversion</span>
+                  <span>{t('cbuBtnCalculate')}</span>
                 </button>
               </form>
 
@@ -398,18 +401,20 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
               {calcResult && (
                 <div className="p-4 rounded-xl bg-brand-gold/10 border border-brand-gold/30 flex flex-col gap-1">
                   <span className="text-[11px] font-semibold text-muted dark:text-night-muted">
-                    Converted Result:
+                    <T k="cbuConvertedResult" />
                   </span>
                   <div className="text-xl font-bold text-foreground dark:text-night-text">
                     {formatMoney(calcResult.converted_amount, calcResult.to_currency)}
                   </div>
                   <div className="text-[11px] text-muted dark:text-night-muted flex items-center justify-between mt-1">
                     <span>
-                      Rate used: 1 {calcResult.from_currency} ={' '}
-                      {calcResult.exchange_rate_used.toLocaleString()}{' '}
-                      {calcResult.to_currency === 'UZS' ? 'UZS' : calcResult.to_currency}
+                      {t('cbuRateUsed', {
+                        from: calcResult.from_currency,
+                        rate: calcResult.exchange_rate_used.toLocaleString(),
+                        to: calcResult.to_currency === 'UZS' ? 'UZS' : calcResult.to_currency,
+                      })}
                     </span>
-                    <span>Date: {calcResult.date}</span>
+                    <span>{t('cbuDateLabel', { date: calcResult.date })}</span>
                   </div>
                 </div>
               )}

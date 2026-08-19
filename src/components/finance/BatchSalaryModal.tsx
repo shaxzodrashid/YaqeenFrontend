@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Users, Save, Loader2, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
+import { T } from '../T';
 import { api } from '../../services/api';
 import type { FixedSalariesResponse, BatchUpdateSalaryItem } from '../../services/api';
 
@@ -66,7 +67,7 @@ export function BatchSalaryModal({
     for (const [empId, valStr] of Object.entries(salaryMap)) {
       const parsed = parseFloat(valStr);
       if (isNaN(parsed) || parsed < 0) {
-        showNotification('All salary values must be non-negative numbers.', 'warning');
+        showNotification(t('finWarnNonNegative'), 'warning');
         return;
       }
       salaries.push({ employee_id: empId, fixed_salary: parsed });
@@ -75,11 +76,11 @@ export function BatchSalaryModal({
     setSubmitting(true);
     try {
       await api.finance.batchUpdateSalaries({ salaries });
-      showNotification('Employee fixed salaries updated successfully in batch', 'success');
+      showNotification(t('finNotifBatchSuccess'), 'success');
       onSuccess();
       onClose();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to update salaries', 'error');
+      showNotification(err?.message || t('finNotifBatchFailed'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -112,11 +113,10 @@ export function BatchSalaryModal({
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-foreground dark:text-night-text">
-                    {t('finBatchUpdateSalaries')}
+                    <T k="finBatchUpdateSalaries" />
                   </h3>
                   <p className="text-xs text-muted dark:text-night-muted">
-                    Update fixed monthly salaries across all active employees in a single
-                    transaction
+                    <T k="finBatchModalSubtitle" />
                   </p>
                 </div>
               </div>
@@ -132,14 +132,18 @@ export function BatchSalaryModal({
             <div className="px-6 py-3 bg-brand-navy/5 dark:bg-night-field border-b border-border/40 dark:border-night-border flex items-center justify-between gap-4 shrink-0 flex-wrap">
               <div className="flex items-center gap-4 text-xs">
                 <div>
-                  <span className="text-muted dark:text-night-muted">Current Payroll: </span>
+                  <span className="text-muted dark:text-night-muted">
+                    <T k="finCurrentPayroll" />
+                  </span>
                   <span className="font-semibold text-foreground dark:text-night-text">
                     ${originalTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <ArrowRight className="size-4 text-muted" />
                 <div>
-                  <span className="text-muted dark:text-night-muted">New Payroll: </span>
+                  <span className="text-muted dark:text-night-muted">
+                    <T k="finNewPayroll" />
+                  </span>
                   <span className="font-semibold text-brand-gold">
                     ${newTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
@@ -160,9 +164,9 @@ export function BatchSalaryModal({
                     <TrendingDown className="size-3.5" />
                   )}
                   <span>
-                    {diff > 0
-                      ? `+${diff.toFixed(2)} Payroll Expense`
-                      : `${diff.toFixed(2)} Payroll Expense`}
+                    {t('finPayrollDiff', {
+                      diff: diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2),
+                    })}
                   </span>
                 </div>
               )}
@@ -177,10 +181,13 @@ export function BatchSalaryModal({
                 <div key={dept.department_id} className="flex flex-col gap-3">
                   <div className="flex items-center justify-between pb-1 border-b border-border/40 dark:border-night-border">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-brand-royal dark:text-[#5B8FD4]">
-                      {dept.department_name} ({dept.employee_count} employees)
+                      {t('finDeptHeaderCount', {
+                        name: dept.department_name,
+                        count: dept.employee_count,
+                      })}
                     </h4>
                     <span className="text-xs font-semibold text-muted dark:text-night-muted">
-                      Dept Total: $
+                      <T k="finDeptTotalPrefix" />$
                       {dept.total_fixed_salary.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
                       })}
@@ -198,7 +205,7 @@ export function BatchSalaryModal({
                             {emp.full_name}
                           </p>
                           <p className="text-[11px] text-muted dark:text-night-muted truncate">
-                            {emp.phone || 'No phone'}
+                            {emp.phone || t('finNoPhone')}
                           </p>
                         </div>
                         <div className="relative w-32 shrink-0">
@@ -230,7 +237,7 @@ export function BatchSalaryModal({
                 onClick={onClose}
                 className="px-4 py-2 rounded-xl text-xs font-medium text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer"
               >
-                Cancel
+                <T k="finBtnCancel" />
               </button>
               <button
                 type="button"
@@ -241,7 +248,7 @@ export function BatchSalaryModal({
                 {submitting ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    <span>Updating Salaries...</span>
+                    <span>{t('finBtnUpdatingSalaries')}</span>
                   </>
                 ) : (
                   <>
