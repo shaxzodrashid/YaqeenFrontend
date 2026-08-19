@@ -46,6 +46,7 @@ export function CargoTransactionsTab() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [duplicateFromId, setDuplicateFromId] = useState<string | null>(null);
 
   // Fetch Cargo Registrations
   const loadRegistrations = useCallback(async () => {
@@ -175,11 +176,19 @@ export function CargoTransactionsTab() {
 
   const handleOpenCreate = () => {
     setEditingId(null);
+    setDuplicateFromId(null);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (item: CargoRegistrationListItem) => {
     setEditingId(item.id);
+    setDuplicateFromId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenDuplicate = (item: CargoRegistrationListItem) => {
+    setEditingId(null);
+    setDuplicateFromId(item.id);
     setIsModalOpen(true);
   };
 
@@ -689,6 +698,7 @@ export function CargoTransactionsTab() {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSort={handleSort}
+        onDuplicate={handleOpenDuplicate}
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
       />
@@ -696,9 +706,13 @@ export function CargoTransactionsTab() {
       {/* SHARED UNIFIED CARGO REGISTRATION MODAL */}
       <CargoRegistrationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setDuplicateFromId(null);
+        }}
         onSuccess={loadRegistrations}
         editingId={editingId}
+        duplicateFromId={duplicateFromId}
       />
 
       {/* DEDICATED PROFESSIONAL FILTER MODAL */}

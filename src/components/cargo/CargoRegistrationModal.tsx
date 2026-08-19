@@ -22,6 +22,7 @@ import {
   Sparkles,
   Shield,
   Repeat,
+  Copy,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -121,6 +122,7 @@ export interface CargoRegistrationModalProps {
   onClose: () => void;
   onSuccess: () => void;
   editingId?: string | null;
+  duplicateFromId?: string | null;
   initialStatus?: CargoRegistrationStatus;
 }
 
@@ -129,6 +131,7 @@ export function CargoRegistrationModal({
   onClose,
   onSuccess,
   editingId,
+  duplicateFromId,
   initialStatus = 'Waiting',
 }: CargoRegistrationModalProps) {
   const { t } = useTranslation();
@@ -265,6 +268,59 @@ export function CargoRegistrationModal({
         .finally(() => {
           setLoadingDetails(false);
         });
+    } else if (duplicateFromId) {
+      setLoadingDetails(true);
+      cargoRegistrationsApi
+        .get(duplicateFromId)
+        .then((detail) => {
+          const todayStr = new Date().toISOString().split('T')[0];
+          setCargoType(detail.cargo_type || 'LTL');
+          setVolumeStr(detail.volume ? String(detail.volume) : '');
+          setWeightStr(detail.weight ? String(detail.weight) : '');
+          setContainerType((detail.container_type as ContainerType) || '40HQ');
+
+          let copyTruckId = detail.container_truck_id ? `${detail.container_truck_id}-COPY` : '';
+          if (detail.container_truck_id && detail.container_truck_id.endsWith('-COPY')) {
+            copyTruckId = `${detail.container_truck_id}-1`;
+          } else if (detail.container_truck_id) {
+            const match = detail.container_truck_id.match(/-COPY-(\d+)$/);
+            if (match) {
+              copyTruckId = detail.container_truck_id.replace(
+                /-COPY-\d+$/,
+                `-COPY-${parseInt(match[1], 10) + 1}`
+              );
+            }
+          }
+          setContainerTruckId(copyTruckId);
+          setAgentName(detail.agent_name || '');
+          setCargo(detail.cargo || '');
+          setConfirmedDate(todayStr);
+          setLoadedDate('');
+          setArrivedDate('');
+          setPurchasePriceStr(String(detail.purchase_price ?? 0));
+          setPurchaseCurrency(detail.purchase_currency || 'USD');
+          setPurchaseDate(todayStr);
+          setPurchaseCustomRateStr(
+            detail.purchase_custom_rate ? String(detail.purchase_custom_rate) : ''
+          );
+
+          setSellPriceStr(String(detail.sell_price ?? 0));
+          setSellCurrency(detail.sell_currency || 'USD');
+          setSellDate(todayStr);
+          setSellCustomRateStr(detail.sell_custom_rate ? String(detail.sell_custom_rate) : '');
+
+          setUsdRmbRateStr(detail.usd_rmb_rate ? String(detail.usd_rmb_rate) : '7.235');
+          setStatus('Waiting');
+          setDescription(detail.description || '');
+          setSelectedClientId(detail.client_id || '');
+          setSelectedEmpId(detail.employee_id || myEmployeeId || '');
+        })
+        .catch((err) => {
+          showNotification(err?.message || 'Failed to load cargo details for duplicate', 'error');
+        })
+        .finally(() => {
+          setLoadingDetails(false);
+        });
     } else {
       const todayStr = new Date().toISOString().split('T')[0];
       setCargoType('LTL');
@@ -291,7 +347,7 @@ export function CargoRegistrationModal({
       setSelectedClientId('');
       setSelectedEmpId(myEmployeeId || '');
     }
-  }, [isOpen, editingId, initialStatus, myEmployeeId, showNotification]);
+  }, [isOpen, editingId, duplicateFromId, initialStatus, myEmployeeId, showNotification]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -519,19 +575,27 @@ export function CargoRegistrationModal({
           <div className="flex items-center justify-between px-6 py-4 border-b border-border/70 shrink-0 bg-muted/20">
             <div className="flex items-center gap-3.5">
               <div className="p-3 rounded-2xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 shadow-xs">
-                <Receipt className="size-6" />
+                {duplicateFromId ? <Copy className="size-6" /> : <Receipt className="size-6" />}
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-serif font-bold text-lg text-foreground tracking-tight">
-                    {editingId ? 'Edit Cargo Registration' : 'Register Cargo / Shipment'}
+                    {editingId
+                      ? t('editCargoRegTitle') || 'Edit Cargo Registration'
+                      : duplicateFromId
+                        ? t('duplicateCargoModalTitle') || 'Duplicate Cargo Registration'
+                        : t('registerCargoTitle') || 'Register Cargo / Shipment'}
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-brand-gold/10 text-brand-gold border border-brand-gold/25">
-                    Logistics Spec
+                    {duplicateFromId ? t('actionDuplicate') || 'Duplicate' : 'Logistics Spec'}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Submit LTL or FTL cargo details according to unified specification.
+                  {duplicateFromId
+                    ? t('duplicateCargoModalDesc') ||
+                      'Create a new cargo registration pre-filled with details from the selected shipment.'
+                    : t('registerCargoSubtitle') ||
+                      'Submit LTL or FTL cargo details according to unified specification.'}
                 </p>
               </div>
             </div>
@@ -1100,8 +1164,18 @@ export function CargoRegistrationModal({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="size-4" />
-                      <span>{editingId ? 'Update Registration' : 'Submit Registration'}</span>
+                      {duplicateFromId ? (
+                        <Copy className="size-4" />
+                      ) : (
+                        <Sparkles className="size-4" />
+                      )}
+                      <span>
+                        {editingId
+                          ? t('btnUpdateRegistration') || 'Update Registration'
+                          : duplicateFromId
+                            ? t('btnCreateDuplicate') || 'Create Duplicate'
+                            : t('btnSubmitRegistration') || 'Submit Registration'}
+                      </span>
                     </>
                   )}
                 </button>

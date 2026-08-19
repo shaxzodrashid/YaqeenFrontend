@@ -1660,4 +1660,48 @@ export const cargoRegistrationsApi = {
     request<{ message: string; id: string }>(`/cargo-registrations/${id}`, {
       method: 'DELETE',
     }),
+
+  duplicate: async (id: string): Promise<CargoRegistrationDetail> => {
+    const source = await cargoRegistrationsApi.get(id);
+    const todayStr = new Date().toISOString().split('T')[0];
+    let copyTruckId = `${source.container_truck_id}-COPY`;
+    if (source.container_truck_id.endsWith('-COPY')) {
+      copyTruckId = `${source.container_truck_id}-1`;
+    } else {
+      const match = source.container_truck_id.match(/-COPY-(\d+)$/);
+      if (match) {
+        copyTruckId = source.container_truck_id.replace(
+          /-COPY-\d+$/,
+          `-COPY-${parseInt(match[1], 10) + 1}`
+        );
+      }
+    }
+    return await cargoRegistrationsApi.create({
+      cargo_type: source.cargo_type,
+      volume: source.volume ?? undefined,
+      weight: source.weight ?? undefined,
+      container_type: source.container_type ?? undefined,
+      container_truck_id: copyTruckId,
+      agent_name: source.agent_name,
+      cargo: source.cargo,
+      confirmed_date: todayStr,
+      loaded_date: undefined,
+      arrived_date: undefined,
+      purchase_price: source.purchase_price,
+      purchase_currency: source.purchase_currency,
+      purchase_date: todayStr,
+      purchase_exchange_rate: source.purchase_custom_rate ?? undefined,
+      purchase_custom_rate: source.purchase_custom_rate ?? undefined,
+      sell_price: source.sell_price,
+      sell_currency: source.sell_currency,
+      sell_date: todayStr,
+      sell_exchange_rate: source.sell_custom_rate ?? undefined,
+      sell_custom_rate: source.sell_custom_rate ?? undefined,
+      usd_rmb_rate: source.usd_rmb_rate ?? undefined,
+      status: 'Waiting',
+      description: source.description ?? undefined,
+      client_id: source.client_id,
+      employee_id: source.employee_id,
+    });
+  },
 };

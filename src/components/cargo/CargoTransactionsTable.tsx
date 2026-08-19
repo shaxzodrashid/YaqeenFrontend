@@ -14,6 +14,7 @@ import {
   ArrowUpDown,
   Calendar,
   Copy,
+  CopyPlus,
   Check,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
@@ -252,8 +253,9 @@ function CargoTableRowSkeleton({ index }: CargoTableRowSkeletonProps) {
       </td>
 
       {/* 13. Actions */}
-      <td className="py-3 px-4 text-right w-[110px] min-w-[110px] max-w-[110px] overflow-hidden">
+      <td className="py-3 px-4 text-right w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
         <div className="flex items-center justify-end gap-1.5">
+          <div className="size-7 rounded-lg skeleton-shimmer" />
           <div className="size-7 rounded-lg skeleton-shimmer" />
           <div className="size-7 rounded-lg skeleton-shimmer" />
           <div className="size-7 rounded-lg skeleton-shimmer" />
@@ -271,6 +273,7 @@ export interface CargoTransactionsTableProps {
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC' | 'asc' | 'desc';
   onSort?: (field: string) => void;
+  onDuplicate?: (item: CargoRegistrationListItem) => void;
   onEdit?: (item: CargoRegistrationListItem) => void;
   onDelete?: (id: string) => void;
   emptyTitle?: string;
@@ -286,6 +289,7 @@ export function CargoTransactionsTable({
   sortBy: controlledSortBy,
   sortOrder: controlledSortOrder,
   onSort: controlledOnSort,
+  onDuplicate,
   onEdit,
   onDelete,
   emptyTitle,
@@ -294,7 +298,7 @@ export function CargoTransactionsTable({
 }: CargoTransactionsTableProps) {
   const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
-  const { canUpdate, canDelete } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
 
   const [detailsItem, setDetailsItem] = useState<CargoRegistrationDetail | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -488,7 +492,7 @@ export function CargoTransactionsTable({
           onScroll={handleScroll}
           className="overflow-x-auto w-full min-w-0"
         >
-          <table className="w-full text-left border-collapse table-fixed min-w-[2020px]">
+          <table className="w-full text-left border-collapse table-fixed min-w-[2050px]">
             <colgroup>
               <col style={{ width: 220 }} /> {/* 1. Container / Truck ID */}
               <col style={{ width: 200 }} /> {/* 2. Cargo & Agent */}
@@ -502,7 +506,7 @@ export function CargoTransactionsTable({
               <col style={{ width: 160 }} /> {/* 10. Arrived Date */}
               <col style={{ width: 150 }} /> {/* 11. Created At */}
               <col style={{ width: 135 }} /> {/* 12. Status */}
-              <col style={{ width: 110 }} /> {/* 13. Actions */}
+              <col style={{ width: 140 }} /> {/* 13. Actions */}
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
@@ -602,7 +606,7 @@ export function CargoTransactionsTable({
                   onSort={handleSortClick}
                   className="w-[135px] min-w-[135px] max-w-[135px]"
                 />
-                <th className="py-3 px-4 text-right w-[110px] min-w-[110px] max-w-[110px] overflow-hidden">
+                <th className="py-3 px-4 text-right w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
                   <span className="truncate block font-bold" title={t('colActions')}>
                     {t('colActions')}
                   </span>
@@ -850,7 +854,7 @@ export function CargoTransactionsTable({
                       </td>
 
                       {/* 13. Actions */}
-                      <td className="py-3 px-4 text-right w-[110px] min-w-[110px] max-w-[110px] overflow-hidden">
+                      <td className="py-3 px-4 text-right w-[140px] min-w-[140px] max-w-[140px] overflow-hidden">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleViewDetails(item.id)}
@@ -859,6 +863,15 @@ export function CargoTransactionsTable({
                           >
                             <Eye className="size-4" />
                           </button>
+                          {canCreate('cargo_registrations') && onDuplicate && (
+                            <button
+                              onClick={() => onDuplicate(item)}
+                              className="p-1.5 rounded-lg hover:bg-amber-500/15 text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
+                              title={t('btnDuplicateRegistration') || 'Duplicate Registration'}
+                            >
+                              <CopyPlus className="size-4" />
+                            </button>
+                          )}
                           {canUpdate('cargo_registrations') && onEdit && (
                             <button
                               onClick={() => onEdit(item)}
@@ -1176,7 +1189,37 @@ export function CargoTransactionsTable({
                 )}
               </div>
 
-              <div className="pt-3 text-right">
+              <div className="pt-3 flex items-center justify-between border-t border-border/50">
+                <div className="flex items-center gap-2">
+                  {canCreate('cargo_registrations') && onDuplicate && (
+                    <button
+                      onClick={() => {
+                        const target = detailsItem;
+                        setDetailsItem(null);
+                        onDuplicate(target as any);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-colors font-bold text-xs cursor-pointer"
+                      title={t('btnDuplicateRegistration') || 'Duplicate Registration'}
+                    >
+                      <CopyPlus className="size-3.5" />
+                      <span>{t('actionDuplicate') || 'Duplicate'}</span>
+                    </button>
+                  )}
+                  {canUpdate('cargo_registrations') && onEdit && (
+                    <button
+                      onClick={() => {
+                        const target = detailsItem;
+                        setDetailsItem(null);
+                        onEdit(target as any);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground border border-border transition-colors font-bold text-xs cursor-pointer"
+                      title={t('btnEditRegistration') || 'Edit Registration'}
+                    >
+                      <Edit2 className="size-3.5" />
+                      <span>{t('btnEditRegistration') || 'Edit'}</span>
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={() => setDetailsItem(null)}
                   className="px-4 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-bold text-xs cursor-pointer"

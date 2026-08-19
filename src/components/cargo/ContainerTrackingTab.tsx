@@ -25,6 +25,7 @@ import {
   ArrowUpDown,
   Shield,
   Repeat,
+  CopyPlus,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
@@ -140,6 +141,7 @@ export function ContainerTrackingTab() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingShipmentId, setEditingShipmentId] = useState<string | null>(null);
+  const [duplicateFromId, setDuplicateFromId] = useState<string | null>(null);
   const [isRateModalOpen, setIsRateModalOpen] = useState<boolean>(false);
 
   // Global rate updater modal state
@@ -356,11 +358,19 @@ export function ContainerTrackingTab() {
 
   const handleOpenAdd = () => {
     setEditingShipmentId(null);
+    setDuplicateFromId(null);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (shipment: Shipment) => {
     setEditingShipmentId(shipment.id);
+    setDuplicateFromId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenDuplicate = (item: { id: string }) => {
+    setEditingShipmentId(null);
+    setDuplicateFromId(item.id);
     setIsModalOpen(true);
   };
 
@@ -1121,8 +1131,10 @@ export function ContainerTrackingTab() {
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSort={handleSort}
+          onDuplicate={handleOpenDuplicate}
           onEdit={(item) => {
             setEditingShipmentId(item.id);
+            setDuplicateFromId(null);
             setIsModalOpen(true);
           }}
           onDelete={handleDelete}
@@ -1234,7 +1246,7 @@ export function ContainerTrackingTab() {
                               </span>
                             </div>
 
-                            {/* Stage Transition Quick Buttons */}
+                            {/* Stage Transition Quick Buttons & Actions */}
                             <div className="flex items-center justify-between pt-1">
                               <button
                                 onClick={() => handleMoveStage(shp, 'prev')}
@@ -1245,12 +1257,22 @@ export function ContainerTrackingTab() {
                                 <ChevronLeft className="size-3.5" />
                               </button>
 
-                              <button
-                                onClick={() => handleOpenEdit(shp)}
-                                className="text-[11px] font-bold text-brand-gold hover:underline cursor-pointer"
-                              >
-                                <T k="btnViewDetails" />
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleOpenDuplicate(shp)}
+                                  className="p-1 rounded-lg border border-border hover:bg-amber-500/15 hover:border-amber-500/30 text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
+                                  title={t('btnDuplicateRegistration') || 'Duplicate Registration'}
+                                >
+                                  <CopyPlus className="size-3.5" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleOpenEdit(shp)}
+                                  className="text-[11px] font-bold text-brand-gold hover:underline cursor-pointer"
+                                >
+                                  <T k="btnViewDetails" />
+                                </button>
+                              </div>
 
                               <button
                                 onClick={() => handleMoveStage(shp, 'next')}
@@ -1419,9 +1441,13 @@ export function ContainerTrackingTab() {
       {/* SHARED UNIFIED CARGO REGISTRATION MODAL */}
       <CargoRegistrationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setDuplicateFromId(null);
+        }}
         onSuccess={loadShipments}
         editingId={editingShipmentId}
+        duplicateFromId={duplicateFromId}
       />
 
       {/* Global RMB Exchange Rate Modal */}
