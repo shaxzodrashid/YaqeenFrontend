@@ -17,7 +17,7 @@ import { CONTAINER_TYPES } from '../../services/api';
 import type { CargoRegistrationStatus, CargoType } from '../../services/api';
 import { ClientSelect } from './ClientSelect';
 import { EmployeeSelect } from './EmployeeSelect';
-import { DateRangePicker } from './DateRangePicker';
+import { DateRangePicker, formatYMD } from './DateRangePicker';
 import { useTranslation } from '../../context/LanguageContext';
 
 export interface CargoFilterState {
@@ -125,10 +125,8 @@ export function CargoFilterModal({
   // Quick Preset Helper for Creation Date
   const applyCreationDatePreset = (preset: 'today' | 'week' | 'month' | 'month30' | 'year') => {
     const today = new Date();
-    const formatDate = (d: Date) => d.toISOString().split('T')[0];
-
     let start = '';
-    const end = formatDate(today);
+    const end = formatYMD(today);
 
     if (preset === 'today') {
       start = end;
@@ -137,17 +135,17 @@ export function CargoFilterModal({
       const day = d.getDay();
       const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
       d.setDate(diff);
-      start = formatDate(d);
+      start = formatYMD(d);
     } else if (preset === 'month') {
       const d = new Date(today.getFullYear(), today.getMonth(), 1);
-      start = formatDate(d);
+      start = formatYMD(d);
     } else if (preset === 'month30') {
       const d = new Date(today);
       d.setDate(d.getDate() - 30);
-      start = formatDate(d);
+      start = formatYMD(d);
     } else if (preset === 'year') {
       const d = new Date(today.getFullYear(), 0, 1);
-      start = formatDate(d);
+      start = formatYMD(d);
     }
 
     setLocalFilters((prev) => ({

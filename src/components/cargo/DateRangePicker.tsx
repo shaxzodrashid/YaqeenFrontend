@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar as CalendarIcon,
@@ -128,8 +129,17 @@ export function DateRangePicker({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [effectiveAlign, setEffectiveAlign] = useState<'left' | 'right'>('left');
-  const [verticalAlign, setVerticalAlign] = useState<'bottom' | 'top'>('bottom');
+
+  // Portal fixed viewport coordinates
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    placement: 'bottom' | 'top';
+  }>({
+    top: 0,
+    left: 0,
+    placement: 'bottom',
+  });
 
   // Synchronize internal state when props change
   useEffect(() => {
@@ -143,44 +153,67 @@ export function DateRangePicker({
     }
   }, [startDate, endDate]);
 
-  // Adjust popover alignment based on container position
-  useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
-      if (align === 'left' || align === 'right') {
-        setEffectiveAlign(align);
-      } else {
-        // If container is closer to right edge than 340px, open to the left (align right)
-        if (screenWidth - rect.left < 340) {
-          setEffectiveAlign('right');
-        } else {
-          setEffectiveAlign('left');
-        }
-      }
+    const popoverWidth = Math.min(330, viewportWidth - 20);
+    const popoverHeight = 365;
 
-      // If there's not enough room below (needs ~320px) and more room above, open upward
-      const spaceBelow = screenHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      if (spaceBelow < 320 && spaceAbove > spaceBelow) {
-        setVerticalAlign('top');
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    let placement: 'bottom' | 'top' = 'bottom';
+    let top = 0;
+
+    if (spaceBelow >= popoverHeight || spaceBelow >= spaceAbove) {
+      placement = 'bottom';
+      top = rect.bottom + 6;
+    } else {
+      placement = 'top';
+      top = Math.max(10, rect.top - popoverHeight - 6);
+    }
+
+    let left = rect.left;
+    if (align === 'right') {
+      left = rect.right - popoverWidth;
+    } else if (align === 'left') {
+      left = rect.left;
+    } else {
+      if (viewportWidth - rect.left < popoverWidth) {
+        left = rect.right - popoverWidth;
       } else {
-        setVerticalAlign('bottom');
+        left = rect.left;
       }
     }
-  }, [isOpen, align]);
 
-  // Close on outside click or Escape key
+    left = Math.max(10, Math.min(left, viewportWidth - popoverWidth - 10));
+
+    setCoords({ top, left, placement });
+  }, [align]);
+
+  // Adjust popover position and manage outside listeners
   useEffect(() => {
     if (!isOpen) return;
 
+    updatePosition();
+
+    const handleScrollOrResize = () => {
+      updatePosition();
+    };
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHoverDate(null);
+      const target = event.target as Node;
+      if (containerRef.current && containerRef.current.contains(target)) {
+        return;
       }
+      if (popoverRef.current && popoverRef.current.contains(target)) {
+        return;
+      }
+      setIsOpen(false);
+      setHoverDate(null);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -190,13 +223,18 @@ export function DateRangePicker({
       }
     };
 
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, updatePosition]);
 
   // Month navigation helpers
   const handlePrevMonth = (e: React.MouseEvent) => {
@@ -373,10 +411,7 @@ export function DateRangePicker({
   const isPickingSecond = Boolean(activeStart && !activeEnd);
 
   return (
-    <div
-      className={`relative w-full ${isOpen ? 'z-[70]' : 'z-10'} ${className}`}
-      ref={containerRef}
-    >
+    <div className={`relative w-full ${className}`} ref={containerRef}>
       {/* Label & Clear Header */}
       {label && (
         <div className="flex items-center justify-between mb-1.5">
@@ -445,192 +480,209 @@ export function DateRangePicker({
         </div>
       </div>
 
-      {/* Calendar Dropdown Popover */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            ref={popoverRef}
-            initial={{ opacity: 0, y: verticalAlign === 'top' ? -6 : 6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: verticalAlign === 'top' ? -6 : 6, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className={`absolute z-[80] ${
-              verticalAlign === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
-            } w-[310px] sm:w-[330px] p-3.5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-2xl space-y-3 ${
-              effectiveAlign === 'right' ? 'right-0' : 'left-0'
-            }`}
-          >
-            {/* Quick Presets Strip */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 border-b border-border/60">
-              <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mr-0.5 shrink-0">
-                <Sparkles className="size-3 text-brand-gold" />
-              </span>
-              {[
-                { key: 'today', labelKey: 'presetToday' },
-                { key: 'week', labelKey: 'presetThisWeek' },
-                { key: 'month', labelKey: 'presetThisMonth' },
-                { key: 'last30', labelKey: 'presetLast30Days' },
-                { key: 'year', labelKey: 'presetThisYear' },
-              ].map((p) => (
-                <button
-                  key={p.key}
-                  type="button"
-                  onClick={() => handleApplyPreset(p.key as any)}
-                  className="px-2 py-0.5 rounded-lg border border-border/80 bg-muted/20 hover:bg-brand-gold/15 hover:border-brand-gold/50 text-[10px] font-bold text-foreground transition-all shrink-0 cursor-pointer"
-                >
-                  {t(p.labelKey)}
-                </button>
-              ))}
-            </div>
-
-            {/* Calendar Month & Year Header */}
-            <div className="flex items-center justify-between px-1">
-              <button
-                type="button"
-                onClick={handlePrevMonth}
-                className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                title="Previous Month"
+      {/* Calendar Dropdown Popover via React Portal directly into body */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                ref={popoverRef}
+                initial={{
+                  opacity: 0,
+                  y: coords.placement === 'top' ? -8 : 8,
+                  scale: 0.97,
+                }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{
+                  opacity: 0,
+                  y: coords.placement === 'top' ? -8 : 8,
+                  scale: 0.97,
+                }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  position: 'fixed',
+                  top: `${coords.top}px`,
+                  left: `${coords.left}px`,
+                  zIndex: 99999,
+                }}
+                className="w-[310px] sm:w-[330px] p-3.5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-2xl space-y-3 font-ui"
+                onClick={(e) => e.stopPropagation()}
               >
-                <ChevronLeft className="size-4" />
-              </button>
-
-              <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                <span>{MONTH_NAMES[currentLocale]?.[viewMonth] || MONTH_NAMES.en[viewMonth]}</span>
-                <span>{viewYear}</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleNextMonth}
-                className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                title="Next Month"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-
-            {/* Weekdays Row */}
-            <div className="grid grid-cols-7 gap-1 text-center">
-              {(WEEKDAY_NAMES[currentLocale] || WEEKDAY_NAMES.en).map((dayName, idx) => (
-                <div
-                  key={idx}
-                  className="text-[10px] font-extrabold text-muted-foreground uppercase py-0.5"
-                >
-                  {dayName}
-                </div>
-              ))}
-            </div>
-
-            {/* Days Grid */}
-            <div
-              className="grid grid-cols-7 gap-y-1 gap-x-0"
-              onMouseLeave={() => setHoverDate(null)}
-            >
-              {calendarCells.map((cell) => {
-                const { dateStr, dayNumber, isCurrentMonth, isToday } = cell;
-
-                // Evaluate selection states
-                const isStart = activeStart === dateStr;
-                const isEnd = activeEnd === dateStr;
-
-                // In fixed range (both start & end chosen)
-                const isInSelectedRange = Boolean(
-                  activeStart && activeEnd && dateStr > activeStart && dateStr < activeEnd
-                );
-
-                // In hover preview range (start chosen, hovering over future date)
-                const isHovered = Boolean(
-                  isPickingSecond &&
-                  hoverDate &&
-                  hoverDate >= activeStart &&
-                  dateStr > activeStart &&
-                  dateStr <= hoverDate
-                );
-
-                const isHoverTarget = Boolean(
-                  isPickingSecond && hoverDate === dateStr && dateStr >= activeStart
-                );
-
-                const isInAnyRange = isInSelectedRange || isHovered;
-
-                return (
-                  <div
-                    key={dateStr}
-                    className={`relative p-0 flex items-center justify-center ${
-                      isInAnyRange
-                        ? 'bg-brand-gold/15 dark:bg-brand-gold/20'
-                        : isStart && (activeEnd || isHovered)
-                          ? 'bg-gradient-to-r from-transparent to-brand-gold/15 dark:to-brand-gold/20'
-                          : (isEnd || isHoverTarget) && activeStart
-                            ? 'bg-gradient-to-l from-transparent to-brand-gold/15 dark:to-brand-gold/20'
-                            : ''
-                    }`}
-                  >
+                {/* Quick Presets Strip */}
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 border-b border-border/60">
+                  <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mr-0.5 shrink-0">
+                    <Sparkles className="size-3 text-brand-gold" />
+                  </span>
+                  {[
+                    { key: 'today', labelKey: 'presetToday' },
+                    { key: 'week', labelKey: 'presetThisWeek' },
+                    { key: 'month', labelKey: 'presetThisMonth' },
+                    { key: 'last30', labelKey: 'presetLast30Days' },
+                    { key: 'year', labelKey: 'presetThisYear' },
+                  ].map((p) => (
                     <button
+                      key={p.key}
                       type="button"
-                      onClick={() => handleDayClick(dateStr)}
-                      onMouseEnter={() => {
-                        if (isPickingSecond) {
-                          setHoverDate(dateStr);
-                        }
-                      }}
-                      className={`size-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center relative z-10 cursor-pointer ${
-                        isStart || isEnd || isHoverTarget
-                          ? 'bg-brand-gold text-brand-navy font-extrabold shadow-sm scale-105'
-                          : isToday
-                            ? 'border border-brand-gold text-foreground font-extrabold'
-                            : isCurrentMonth
-                              ? 'text-foreground hover:bg-muted/60'
-                              : 'text-muted-foreground/30 hover:bg-muted/30'
-                      }`}
+                      onClick={() => handleApplyPreset(p.key as any)}
+                      className="px-2 py-0.5 rounded-lg border border-border/80 bg-muted/20 hover:bg-brand-gold/15 hover:border-brand-gold/50 text-[10px] font-bold text-foreground transition-all shrink-0 cursor-pointer"
                     >
-                      {dayNumber}
+                      {t(p.labelKey)}
                     </button>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
 
-            {/* Popover Footer Info & Actions */}
-            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
-              <div className="text-muted-foreground truncate font-medium">
-                {tempRange.start && tempRange.end ? (
-                  <span className="text-foreground font-semibold">
-                    {tempRange.start} ~ {tempRange.end} (
-                    {getDaysCount(tempRange.start, tempRange.end)}d)
-                  </span>
-                ) : tempRange.start ? (
-                  <span className="text-brand-gold font-semibold animate-pulse">
-                    {t('selectEndDate') || 'Click to select end date'}
-                  </span>
-                ) : (
-                  <span>{t('selectStartDate') || 'Click to select start date'}</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                {hasValue && (
+                {/* Calendar Month & Year Header */}
+                <div className="flex items-center justify-between px-1">
                   <button
                     type="button"
-                    onClick={handleClear}
-                    className="px-2 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 font-bold transition-colors cursor-pointer"
+                    onClick={handlePrevMonth}
+                    className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                    title="Previous Month"
                   >
-                    {t('clear')}
+                    <ChevronLeft className="size-4" />
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="px-2.5 py-1 rounded-lg bg-brand-gold text-brand-navy font-extrabold hover:bg-brand-gold/90 transition-colors cursor-pointer flex items-center gap-1"
+
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
+                    <span>
+                      {MONTH_NAMES[currentLocale]?.[viewMonth] || MONTH_NAMES.en[viewMonth]}
+                    </span>
+                    <span>{viewYear}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                    title="Next Month"
+                  >
+                    <ChevronRight className="size-4" />
+                  </button>
+                </div>
+
+                {/* Weekdays Row */}
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {(WEEKDAY_NAMES[currentLocale] || WEEKDAY_NAMES.en).map((dayName, idx) => (
+                    <div
+                      key={idx}
+                      className="text-[10px] font-extrabold text-muted-foreground uppercase py-0.5"
+                    >
+                      {dayName}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Days Grid */}
+                <div
+                  className="grid grid-cols-7 gap-y-1 gap-x-0"
+                  onMouseLeave={() => setHoverDate(null)}
                 >
-                  <Check className="size-3 stroke-[3]" />
-                  <span>OK</span>
-                </button>
-              </div>
-            </div>
-          </motion.div>
+                  {calendarCells.map((cell) => {
+                    const { dateStr, dayNumber, isCurrentMonth, isToday } = cell;
+
+                    // Evaluate selection states
+                    const isStart = activeStart === dateStr;
+                    const isEnd = activeEnd === dateStr;
+
+                    // In fixed range (both start & end chosen)
+                    const isInSelectedRange = Boolean(
+                      activeStart && activeEnd && dateStr > activeStart && dateStr < activeEnd
+                    );
+
+                    // In hover preview range (start chosen, hovering over future date)
+                    const isHovered = Boolean(
+                      isPickingSecond &&
+                      hoverDate &&
+                      hoverDate >= activeStart &&
+                      dateStr > activeStart &&
+                      dateStr <= hoverDate
+                    );
+
+                    const isHoverTarget = Boolean(
+                      isPickingSecond && hoverDate === dateStr && dateStr >= activeStart
+                    );
+
+                    const isInAnyRange = isInSelectedRange || isHovered;
+
+                    return (
+                      <div
+                        key={dateStr}
+                        className={`relative p-0 flex items-center justify-center ${
+                          isInAnyRange
+                            ? 'bg-brand-gold/15 dark:bg-brand-gold/20'
+                            : isStart && (activeEnd || isHovered)
+                              ? 'bg-gradient-to-r from-transparent to-brand-gold/15 dark:to-brand-gold/20'
+                              : (isEnd || isHoverTarget) && activeStart
+                                ? 'bg-gradient-to-l from-transparent to-brand-gold/15 dark:to-brand-gold/20'
+                                : ''
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleDayClick(dateStr)}
+                          onMouseEnter={() => {
+                            if (isPickingSecond) {
+                              setHoverDate(dateStr);
+                            }
+                          }}
+                          className={`size-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center relative z-10 cursor-pointer ${
+                            isStart || isEnd || isHoverTarget
+                              ? 'bg-brand-gold text-brand-navy font-extrabold shadow-sm scale-105'
+                              : isToday
+                                ? 'border border-brand-gold text-foreground font-extrabold'
+                                : isCurrentMonth
+                                  ? 'text-foreground hover:bg-muted/60'
+                                  : 'text-muted-foreground/30 hover:bg-muted/30'
+                          }`}
+                        >
+                          {dayNumber}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Popover Footer Info & Actions */}
+                <div className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
+                  <div className="text-muted-foreground truncate font-medium">
+                    {tempRange.start && tempRange.end ? (
+                      <span className="text-foreground font-semibold">
+                        {tempRange.start} ~ {tempRange.end} (
+                        {getDaysCount(tempRange.start, tempRange.end)}d)
+                      </span>
+                    ) : tempRange.start ? (
+                      <span className="text-brand-gold font-semibold animate-pulse">
+                        {t('selectEndDate') || 'Click to select end date'}
+                      </span>
+                    ) : (
+                      <span>{t('selectStartDate') || 'Click to select start date'}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasValue && (
+                      <button
+                        type="button"
+                        onClick={handleClear}
+                        className="px-2 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 font-bold transition-colors cursor-pointer"
+                      >
+                        {t('clear')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="px-2.5 py-1 rounded-lg bg-brand-gold text-brand-navy font-extrabold hover:bg-brand-gold/90 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Check className="size-3 stroke-[3]" />
+                      <span>OK</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 }
