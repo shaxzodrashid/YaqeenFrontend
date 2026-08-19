@@ -9,6 +9,9 @@ import {
   Check,
   Truck,
   Sparkles,
+  DollarSign,
+  TrendingUp,
+  Package,
 } from 'lucide-react';
 import { CONTAINER_TYPES } from '../../services/api';
 import type { CargoRegistrationStatus, CargoType } from '../../services/api';
@@ -25,6 +28,10 @@ export interface CargoFilterState {
   client_name?: string;
   employee_id: string;
   employee_name?: string;
+  purchase_start_date: string;
+  purchase_end_date: string;
+  sell_start_date: string;
+  sell_end_date: string;
   confirmed_start_date: string;
   confirmed_end_date: string;
   loaded_start_date: string;
@@ -43,6 +50,10 @@ export const INITIAL_CARGO_FILTERS: CargoFilterState = {
   client_name: '',
   employee_id: '',
   employee_name: '',
+  purchase_start_date: '',
+  purchase_end_date: '',
+  sell_start_date: '',
+  sell_end_date: '',
   confirmed_start_date: '',
   confirmed_end_date: '',
   loaded_start_date: '',
@@ -100,6 +111,8 @@ export function CargoFilterModal({
     if (state.container_type) count++;
     if (state.client_id) count++;
     if (state.employee_id) count++;
+    if (state.purchase_start_date || state.purchase_end_date) count++;
+    if (state.sell_start_date || state.sell_end_date) count++;
     if (state.confirmed_start_date || state.confirmed_end_date) count++;
     if (state.loaded_start_date || state.loaded_end_date) count++;
     if (state.arrived_start_date || state.arrived_end_date) count++;
@@ -109,11 +122,8 @@ export function CargoFilterModal({
 
   const activeCount = getActiveCount(localFilters);
 
-  // Quick Preset Helper
-  const applyDatePreset = (
-    targetField: 'created' | 'confirmed',
-    preset: 'today' | 'week' | 'month' | 'month30' | 'year'
-  ) => {
+  // Quick Preset Helper for Creation Date
+  const applyCreationDatePreset = (preset: 'today' | 'week' | 'month' | 'month30' | 'year') => {
     const today = new Date();
     const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
@@ -140,19 +150,11 @@ export function CargoFilterModal({
       start = formatDate(d);
     }
 
-    if (targetField === 'created') {
-      setLocalFilters((prev) => ({
-        ...prev,
-        created_start_date: start,
-        created_end_date: end,
-      }));
-    } else {
-      setLocalFilters((prev) => ({
-        ...prev,
-        confirmed_start_date: start,
-        confirmed_end_date: end,
-      }));
-    }
+    setLocalFilters((prev) => ({
+      ...prev,
+      created_start_date: start,
+      created_end_date: end,
+    }));
   };
 
   const handleApply = () => {
@@ -169,7 +171,7 @@ export function CargoFilterModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -209,7 +211,7 @@ export function CargoFilterModal({
             </div>
 
             {/* Modal Scrollable Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs pb-12">
               {/* SECTION 1: Status & Classification */}
               <div className="space-y-4">
                 <h4 className="font-bold text-foreground uppercase tracking-wider text-[11px] flex items-center gap-2">
@@ -335,7 +337,7 @@ export function CargoFilterModal({
                     {t('dateSectionTitle')}
                   </h4>
 
-                  {/* Quick Presets Bar */}
+                  {/* Quick Presets Bar for Creation Date */}
                   <div className="flex items-center gap-1 overflow-x-auto">
                     <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 mr-1">
                       <Sparkles className="size-3 text-amber-500" /> {t('presetLabel')}:
@@ -350,7 +352,7 @@ export function CargoFilterModal({
                       <button
                         key={p.key}
                         type="button"
-                        onClick={() => applyDatePreset('created', p.key as any)}
+                        onClick={() => applyCreationDatePreset(p.key as any)}
                         className="px-2 py-1 rounded-lg border border-border hover:border-brand-gold/50 bg-background text-[10px] font-bold text-foreground hover:bg-muted transition-colors whitespace-nowrap cursor-pointer"
                       >
                         {t(p.labelKey)}
@@ -360,28 +362,53 @@ export function CargoFilterModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Purchase Date */}
                   <DateRangePicker
-                    label={t('creationDateRange')}
-                    icon={<Calendar className="size-3.5 text-brand-gold" />}
-                    startDate={localFilters.created_start_date}
-                    endDate={localFilters.created_end_date}
+                    label={t('purchaseDateRange')}
+                    icon={<DollarSign className="size-3.5 text-brand-gold" />}
+                    startDate={localFilters.purchase_start_date}
+                    endDate={localFilters.purchase_end_date}
                     onChange={(start, end) =>
                       setLocalFilters((p) => ({
                         ...p,
-                        created_start_date: start,
-                        created_end_date: end,
+                        purchase_start_date: start,
+                        purchase_end_date: end,
                       }))
                     }
                     onClear={() =>
                       setLocalFilters((p) => ({
                         ...p,
-                        created_start_date: '',
-                        created_end_date: '',
+                        purchase_start_date: '',
+                        purchase_end_date: '',
                       }))
                     }
                     align="left"
                   />
 
+                  {/* Sell Date */}
+                  <DateRangePicker
+                    label={t('sellDateRange')}
+                    icon={<TrendingUp className="size-3.5 text-emerald-500" />}
+                    startDate={localFilters.sell_start_date}
+                    endDate={localFilters.sell_end_date}
+                    onChange={(start, end) =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        sell_start_date: start,
+                        sell_end_date: end,
+                      }))
+                    }
+                    onClear={() =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        sell_start_date: '',
+                        sell_end_date: '',
+                      }))
+                    }
+                    align="right"
+                  />
+
+                  {/* Confirmed Date */}
                   <DateRangePicker
                     label={t('confirmedDateRange')}
                     icon={<Truck className="size-3.5 text-blue-500" />}
@@ -401,12 +428,13 @@ export function CargoFilterModal({
                         confirmed_end_date: '',
                       }))
                     }
-                    align="right"
+                    align="left"
                   />
 
+                  {/* Loaded Date */}
                   <DateRangePicker
                     label={t('loadedDateRange')}
-                    icon={<Calendar className="size-3.5 text-amber-500" />}
+                    icon={<Package className="size-3.5 text-amber-500" />}
                     startDate={localFilters.loaded_start_date}
                     endDate={localFilters.loaded_end_date}
                     onChange={(start, end) =>
@@ -419,9 +447,10 @@ export function CargoFilterModal({
                     onClear={() =>
                       setLocalFilters((p) => ({ ...p, loaded_start_date: '', loaded_end_date: '' }))
                     }
-                    align="left"
+                    align="right"
                   />
 
+                  {/* Arrived Date */}
                   <DateRangePicker
                     label={t('arrivedDateRange')}
                     icon={<Check className="size-3.5 text-emerald-500" />}
@@ -439,6 +468,29 @@ export function CargoFilterModal({
                         ...p,
                         arrived_start_date: '',
                         arrived_end_date: '',
+                      }))
+                    }
+                    align="left"
+                  />
+
+                  {/* Creation Date */}
+                  <DateRangePicker
+                    label={t('creationDateRange')}
+                    icon={<Calendar className="size-3.5 text-brand-gold" />}
+                    startDate={localFilters.created_start_date}
+                    endDate={localFilters.created_end_date}
+                    onChange={(start, end) =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        created_start_date: start,
+                        created_end_date: end,
+                      }))
+                    }
+                    onClear={() =>
+                      setLocalFilters((p) => ({
+                        ...p,
+                        created_start_date: '',
+                        created_end_date: '',
                       }))
                     }
                     align="right"

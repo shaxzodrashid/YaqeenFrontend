@@ -98,6 +98,12 @@ export interface CargoRegistrationListParams {
   loaded_end_date?: string;
   arrived_start_date?: string;
   arrived_end_date?: string;
+  purchase_start_date?: string;
+  purchase_end_date?: string;
+  purchase_date?: string;
+  sell_start_date?: string;
+  sell_end_date?: string;
+  sell_date?: string;
   created_start_date?: string;
   created_end_date?: string;
   created_at_start?: string;
@@ -592,6 +598,12 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const loadedEnd = urlObj.searchParams.get('loaded_end_date');
     const arrivedStart = urlObj.searchParams.get('arrived_start_date');
     const arrivedEnd = urlObj.searchParams.get('arrived_end_date');
+    const purchaseStart = urlObj.searchParams.get('purchase_start_date');
+    const purchaseEnd = urlObj.searchParams.get('purchase_end_date');
+    const purchaseExact = urlObj.searchParams.get('purchase_date');
+    const sellStart = urlObj.searchParams.get('sell_start_date');
+    const sellEnd = urlObj.searchParams.get('sell_end_date');
+    const sellExact = urlObj.searchParams.get('sell_date');
     const createdStart =
       urlObj.searchParams.get('created_start_date') || urlObj.searchParams.get('created_at_start');
     const createdEnd =
@@ -660,6 +672,42 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       filtered = filtered.filter((r) => {
         const ad = cleanDate(r.arrived_date);
         return ad !== '' && ad <= arrivedEnd;
+      });
+    }
+    if (purchaseStart) {
+      filtered = filtered.filter((r) => {
+        const pd = cleanDate(r.purchase_date || r.confirmed_date || r.created_at);
+        return pd >= purchaseStart;
+      });
+    }
+    if (purchaseEnd) {
+      filtered = filtered.filter((r) => {
+        const pd = cleanDate(r.purchase_date || r.confirmed_date || r.created_at);
+        return pd !== '' && pd <= purchaseEnd;
+      });
+    }
+    if (purchaseExact) {
+      filtered = filtered.filter((r) => {
+        const pd = cleanDate(r.purchase_date || r.confirmed_date || r.created_at);
+        return pd === purchaseExact;
+      });
+    }
+    if (sellStart) {
+      filtered = filtered.filter((r) => {
+        const sd = cleanDate(r.sell_date || r.created_at);
+        return sd >= sellStart;
+      });
+    }
+    if (sellEnd) {
+      filtered = filtered.filter((r) => {
+        const sd = cleanDate(r.sell_date || r.created_at);
+        return sd !== '' && sd <= sellEnd;
+      });
+    }
+    if (sellExact) {
+      filtered = filtered.filter((r) => {
+        const sd = cleanDate(r.sell_date || r.created_at);
+        return sd === sellExact;
       });
     }
     if (createdStart) {
@@ -1554,6 +1602,13 @@ export const cargoRegistrationsApi = {
     if (params?.arrived_start_date)
       searchParams.set('arrived_start_date', params.arrived_start_date);
     if (params?.arrived_end_date) searchParams.set('arrived_end_date', params.arrived_end_date);
+    if (params?.purchase_start_date)
+      searchParams.set('purchase_start_date', params.purchase_start_date);
+    if (params?.purchase_end_date) searchParams.set('purchase_end_date', params.purchase_end_date);
+    if (params?.purchase_date) searchParams.set('purchase_date', params.purchase_date);
+    if (params?.sell_start_date) searchParams.set('sell_start_date', params.sell_start_date);
+    if (params?.sell_end_date) searchParams.set('sell_end_date', params.sell_end_date);
+    if (params?.sell_date) searchParams.set('sell_date', params.sell_date);
     if (params?.created_start_date)
       searchParams.set('created_start_date', params.created_start_date);
     if (params?.created_end_date) searchParams.set('created_end_date', params.created_end_date);

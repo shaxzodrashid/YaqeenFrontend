@@ -129,6 +129,7 @@ export function DateRangePicker({
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [effectiveAlign, setEffectiveAlign] = useState<'left' | 'right'>('left');
+  const [verticalAlign, setVerticalAlign] = useState<'bottom' | 'top'>('bottom');
 
   // Synchronize internal state when props change
   useEffect(() => {
@@ -145,17 +146,28 @@ export function DateRangePicker({
   // Adjust popover alignment based on container position
   useEffect(() => {
     if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
       if (align === 'left' || align === 'right') {
         setEffectiveAlign(align);
       } else {
-        const rect = containerRef.current.getBoundingClientRect();
-        const screenWidth = window.innerWidth;
-        // If container is closer to right edge than 360px, open to the left (align right)
-        if (screenWidth - rect.left < 360) {
+        // If container is closer to right edge than 340px, open to the left (align right)
+        if (screenWidth - rect.left < 340) {
           setEffectiveAlign('right');
         } else {
           setEffectiveAlign('left');
         }
+      }
+
+      // If there's not enough room below (needs ~320px) and more room above, open upward
+      const spaceBelow = screenHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow < 320 && spaceAbove > spaceBelow) {
+        setVerticalAlign('top');
+      } else {
+        setVerticalAlign('bottom');
       }
     }
   }, [isOpen, align]);
@@ -361,7 +373,10 @@ export function DateRangePicker({
   const isPickingSecond = Boolean(activeStart && !activeEnd);
 
   return (
-    <div className={`relative w-full ${className}`} ref={containerRef}>
+    <div
+      className={`relative w-full ${isOpen ? 'z-[70]' : 'z-10'} ${className}`}
+      ref={containerRef}
+    >
       {/* Label & Clear Header */}
       {label && (
         <div className="flex items-center justify-between mb-1.5">
@@ -435,11 +450,13 @@ export function DateRangePicker({
         {isOpen && (
           <motion.div
             ref={popoverRef}
-            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            initial={{ opacity: 0, y: verticalAlign === 'top' ? -6 : 6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            exit={{ opacity: 0, y: verticalAlign === 'top' ? -6 : 6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className={`absolute z-50 mt-1.5 w-[310px] sm:w-[330px] p-3.5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-2xl space-y-3 ${
+            className={`absolute z-[80] ${
+              verticalAlign === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+            } w-[310px] sm:w-[330px] p-3.5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-2xl space-y-3 ${
               effectiveAlign === 'right' ? 'right-0' : 'left-0'
             }`}
           >

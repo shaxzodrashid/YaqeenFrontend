@@ -62,6 +62,10 @@ export function CargoTransactionsTab() {
         employee_id: filters.employee_id || undefined,
         sort_by: sortBy,
         sort_order: sortOrder,
+        purchase_start_date: filters.purchase_start_date || undefined,
+        purchase_end_date: filters.purchase_end_date || undefined,
+        sell_start_date: filters.sell_start_date || undefined,
+        sell_end_date: filters.sell_end_date || undefined,
         confirmed_start_date: filters.confirmed_start_date || undefined,
         confirmed_end_date: filters.confirmed_end_date || undefined,
         loaded_start_date: filters.loaded_start_date || undefined,
@@ -142,8 +146,12 @@ export function CargoTransactionsTab() {
         return t('colEmployee');
       case 'purchase_price':
         return t('colBuyPrice');
+      case 'purchase_date':
+        return t('colPurchaseDate') || t('purchaseDateRange') || 'Purchase Date';
       case 'sell_price':
         return t('colSellPrice');
+      case 'sell_date':
+        return t('colSellDate') || t('sellDateRange') || 'Sell Date';
       case 'net_yield':
         return t('colNetYield');
       case 'confirmed_date':
@@ -451,6 +459,38 @@ export function CargoTransactionsTab() {
               <button
                 onClick={() => handleRemoveFilterTag('employee_id')}
                 className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {(filters.purchase_start_date || filters.purchase_end_date) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-semibold text-[11px]">
+              {t('purchaseDateRange')}: {filters.purchase_start_date || '...'} ~{' '}
+              {filters.purchase_end_date || '...'}
+              <button
+                onClick={() => {
+                  handleRemoveFilterTag('purchase_start_date');
+                  handleRemoveFilterTag('purchase_end_date');
+                }}
+                className="hover:text-rose-500 cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {(filters.sell_start_date || filters.sell_end_date) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-semibold text-[11px]">
+              {t('sellDateRange')}: {filters.sell_start_date || '...'} ~{' '}
+              {filters.sell_end_date || '...'}
+              <button
+                onClick={() => {
+                  handleRemoveFilterTag('sell_start_date');
+                  handleRemoveFilterTag('sell_end_date');
+                }}
+                className="hover:text-rose-500 cursor-pointer"
               >
                 <X className="size-3" />
               </button>

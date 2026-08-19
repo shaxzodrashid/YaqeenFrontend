@@ -134,7 +134,10 @@ export function EmployeeSelect({
   };
 
   return (
-    <div className={`relative w-full ${className}`} ref={dropdownRef}>
+    <div
+      className={`relative w-full ${isOpen ? 'z-[60]' : 'z-auto'} ${className}`}
+      ref={dropdownRef}
+    >
       {label && (
         <label className="block text-xs font-medium text-muted-foreground mb-1">
           {label} {required && <span className="text-rose-500">*</span>}

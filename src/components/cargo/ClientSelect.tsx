@@ -137,7 +137,10 @@ export function ClientSelect({
   };
 
   return (
-    <div className={`relative w-full ${className}`} ref={dropdownRef}>
+    <div
+      ref={dropdownRef}
+      className={`relative w-full ${isOpen ? 'z-[60]' : 'z-auto'} ${className}`}
+    >
       {displayLabel && (
         <label className="block text-xs font-medium text-muted-foreground mb-1">
           {displayLabel} {required && <span className="text-rose-500">*</span>}

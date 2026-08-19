@@ -1,5 +1,5 @@
 import { request, requestNoContent } from './httpClient';
-import type { SupportedCurrency } from '../types/currency';
+import type { SupportedCurrency, CbuRateItem } from '../types/currency';
 
 export type ExpenseCategory = 'tax' | 'utility' | 'rent' | 'salary_payout' | 'cleaner' | 'other';
 
@@ -75,19 +75,54 @@ export interface FinanceSummaryMetrics {
   gross_revenue: number;
   cost_of_goods_sold: number;
   gross_profit: number;
+  gross_margin?: number;
   operational_expenses: number;
   fixed_salaries_expense: number;
   kpi_bonuses_expense: number;
   total_payroll_expense: number;
   total_expenses: number;
+  total_all_in_expenses?: number;
   net_profit: number;
   seo_cut_10pc: number;
+  seo_pure_profit_share?: number;
+}
+
+export interface FinanceFlowExpenseItem {
+  amount: number;
+  percentage: number;
+}
+
+export interface FinanceFlowDiagram {
+  formula: string;
+  gross_margin: number;
+  total_all_in_expenses: number;
+  net_profit: number;
+  all_in_expense_breakdown: {
+    total: number;
+    operational_expenses: FinanceFlowExpenseItem;
+    salaries: FinanceFlowExpenseItem;
+    kpi_bonuses: FinanceFlowExpenseItem;
+  };
+}
+
+export interface ExpenseDistributionItem {
+  category: ExpenseCategory;
+  label: string;
+  description: string;
+  amount: number;
+  percentage: number;
+  count: number;
 }
 
 export interface PreviousPeriodSummary {
   start_date: string;
   end_date: string;
+  gross_revenue?: number;
+  cost_of_goods_sold?: number;
   gross_profit: number;
+  operational_expenses?: number;
+  fixed_salaries_expense?: number;
+  kpi_bonuses_expense?: number;
   total_expenses: number;
   net_profit: number;
 }
@@ -98,15 +133,21 @@ export interface FinancePeriodComparison {
   net_profit_growth_percentage: number;
   expenses_change_amount: number;
   expenses_change_percentage: number;
+  gross_profit_change_amount?: number;
+  gross_profit_growth_percentage?: number;
 }
 
 export interface FinanceSummaryResponse {
   currency?: SupportedCurrency;
+  normalized_currency_label?: string;
   period: {
     start_date: string;
     end_date: string;
   };
+  cbu_rates?: Record<string, CbuRateItem>;
   summary: FinanceSummaryMetrics;
+  flow_diagram?: FinanceFlowDiagram;
+  expense_distribution?: ExpenseDistributionItem[];
   expense_breakdown: Partial<Record<ExpenseCategory, number>>;
   comparison: FinancePeriodComparison;
 }
@@ -136,13 +177,20 @@ export interface DepartmentSalaryGroup {
 export interface FixedSalariesResponse {
   total_employees: number;
   total_active_employees: number;
+  currency?: SupportedCurrency;
   total_monthly_salaries: number;
   departments: DepartmentSalaryGroup[];
+}
+
+export interface UpdateEmployeeSalaryDto {
+  fixed_salary: number;
+  currency?: SupportedCurrency;
 }
 
 export interface BatchUpdateSalaryItem {
   employee_id: string;
   fixed_salary: number;
+  currency?: SupportedCurrency;
 }
 
 export interface BatchUpdateSalariesDto {
@@ -239,11 +287,13 @@ export const financeApi = {
     );
   },
 
-  updateEmployeeSalary: (employee_id: string, fixed_salary: number) =>
-    request<EmployeeSalaryInfo>(`/finance/salaries/${employee_id}`, {
+  updateEmployeeSalary: (employee_id: string, data: number | UpdateEmployeeSalaryDto) => {
+    const payload = typeof data === 'number' ? { fixed_salary: data } : data;
+    return request<EmployeeSalaryInfo>(`/finance/salaries/${employee_id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ fixed_salary }),
-    }),
+      body: JSON.stringify(payload),
+    });
+  },
 
   batchUpdateSalaries: (dto: BatchUpdateSalariesDto) =>
     request<FixedSalariesResponse>('/finance/salaries', {
