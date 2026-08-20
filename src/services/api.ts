@@ -18,6 +18,9 @@ export type {
   PaginatedResponse,
 } from './httpClient';
 
+export type { CheckTelegramStatusResponse } from './auth.service';
+export { TELEGRAM_BOT_USERNAME, getTelegramBotUrl, demoAuthDb } from './auth.service';
+
 export type {
   Department,
   CreateDepartmentDto,

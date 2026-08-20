@@ -28,6 +28,8 @@ export interface ApiError {
   location: string;
   timestamp: string;
   path: string;
+  telegram_bot_username?: string;
+  telegram_bot_url?: string;
 }
 
 export interface Attachment {
@@ -187,7 +189,8 @@ export function makeApiError(
   path: string,
   status: number,
   location: string,
-  message: string
+  message: string,
+  extras?: Partial<ApiError>
 ): ApiError {
   return {
     statusCode: status,
@@ -201,6 +204,7 @@ export function makeApiError(
     timestamp: new Date().toISOString(),
     location,
     path,
+    ...extras,
   };
 }
 
@@ -244,7 +248,8 @@ export function isAuthBypassPath(path: string): boolean {
     path.startsWith('/auth/refresh') ||
     path.startsWith('/auth/logout') ||
     path.startsWith('/auth/register') ||
-    path.startsWith('/auth/password-reset')
+    path.startsWith('/auth/password-reset') ||
+    path.startsWith('/auth/check-telegram-status')
   );
 }
 

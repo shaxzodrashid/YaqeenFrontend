@@ -15,10 +15,11 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
-import { api } from '../services/api';
+import { api, TELEGRAM_BOT_USERNAME } from '../services/api';
 import type { ApiError } from '../services/api';
 import { PhoneInput } from './PhoneInput';
 import { TelegramInstructions } from './TelegramInstructions';
+import { TelegramConnectModal } from './TelegramConnectModal';
 import { YaqeenMark } from './icons/YaqeenIcons';
 import { T } from './T';
 
@@ -52,6 +53,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [telegramBotUrl, setTelegramBotUrl] = useState<string | undefined>(undefined);
+  const [telegramBotUsername, setTelegramBotUsername] = useState<string>(TELEGRAM_BOT_USERNAME);
 
   const resetForm = () => {
     setPassword('');
@@ -62,6 +66,7 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
     setFormError(null);
     setFieldErrors({});
     setShowTelegramGuide(false);
+    setIsTelegramModalOpen(false);
   };
 
   const handleTabChange = (tab: AuthTab) => {
@@ -109,13 +114,15 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
   };
 
   /* ── 2. Send OTP Handler (Register / Forgot) ─────────────── */
-  const handleSendOtp = async (e?: React.FormEvent) => {
+  const handleSendOtp = async (e?: React.FormEvent, customPhone?: string) => {
     if (e) e.preventDefault();
     setFormError(null);
     setFieldErrors({});
     setShowTelegramGuide(false);
 
-    if (!phone || phone.length < 9) {
+    const targetPhone = customPhone || phone;
+
+    if (!targetPhone || targetPhone.length < 9) {
       setFieldErrors({ phone: t('fieldRequired') || 'Phone number is required' });
       return;
     }
@@ -123,9 +130,9 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
     setLoading(true);
     try {
       if (activeTab === 'register') {
-        await api.registerSendOtp(phone);
+        await api.registerSendOtp(targetPhone);
       } else {
-        await api.resetSendOtp(phone);
+        await api.resetSendOtp(targetPhone);
       }
       showNotification(t('otpSentMessage') || 'OTP code sent via Telegram', 'info');
       setStep('otp');
@@ -133,6 +140,13 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
       const error = err as ApiError;
       if (error?.location === 'telegram_not_registered') {
         setShowTelegramGuide(true);
+        if (error.telegram_bot_url) {
+          setTelegramBotUrl(error.telegram_bot_url);
+        }
+        if (error.telegram_bot_username) {
+          setTelegramBotUsername(error.telegram_bot_username);
+        }
+        setIsTelegramModalOpen(true);
       } else {
         setFormError(
           t(error?.location || 'internal_error') || error?.message || 'Failed to send OTP code'
@@ -141,6 +155,14 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  /* ── Auto-Retrigger on Telegram Connection ───────────────── */
+  const handleTelegramConnected = () => {
+    setShowTelegramGuide(false);
+    setIsTelegramModalOpen(false);
+    // Automatically re-trigger OTP send upon Telegram verification detection
+    handleSendOtp(undefined, phone);
   };
 
   /* ── 3. Verify OTP Handler ────────────────────────────────── */
@@ -452,7 +474,13 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
               )}
 
               {/* Telegram Instructions if phone not linked */}
-              {showTelegramGuide && <TelegramInstructions botUsername="servicing_probox_bot" />}
+              {showTelegramGuide && (
+                <TelegramInstructions
+                  botUsername={telegramBotUsername}
+                  phoneNumber={phone}
+                  onOpenModal={() => setIsTelegramModalOpen(true)}
+                />
+              )}
 
               {/* STEP 1: Phone Input */}
               {step === 'phone' && (
@@ -626,6 +654,15 @@ export function AuthCard({ onSuccess }: AuthCardProps) {
           </div>
         </div>
       </div>
+      {/* ── REAL-TIME TELEGRAM CONNECTION & QR MODAL ──────────────── */}
+      <TelegramConnectModal
+        isOpen={isTelegramModalOpen}
+        onClose={() => setIsTelegramModalOpen(false)}
+        phoneNumber={phone}
+        telegramBotUrl={telegramBotUrl}
+        telegramBotUsername={telegramBotUsername}
+        onConnected={handleTelegramConnected}
+      />
     </div>
   );
 }

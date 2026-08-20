@@ -34,10 +34,9 @@ export interface PdfTranslations {
   defaultExclusions: string[];
   termsTitle: string;
   defaultTerms: string;
+  sigSignerName: string;
   sigRepresentative: string;
   sigCompanyRole: string;
-  sigClient: string;
-  sigClientRole: string;
   footerText: string;
 }
 
@@ -84,10 +83,9 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     termsTitle: 'Terms & Conditions / Payment Policy',
     defaultTerms:
       'Payment is due within 5 banking days upon issuance of invoice. Rates remain fixed and valid for 30 calendar days from offer date. Demurrage and detention fees will apply as per carrier standard rates after free period.',
+    sigSignerName: 'Ochilov. F',
     sigRepresentative: 'Wedef Logistics Representative',
     sigCompanyRole: 'Commercial Operations Department',
-    sigClient: 'Client Representative',
-    sigClientRole: 'Authorized Client Representative',
     footerText:
       'Wedef Logistics & Freight Operations • Tashkent, Uzbekistan • Official Commercial Proposal',
   },
@@ -133,10 +131,9 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     termsTitle: 'Условия оплаты и порядок выполнения',
     defaultTerms:
       'Оплата производится в течение 5 банковских дней после выставления счета. Ставки действительны в течение 30 календарных дней. Сверхнормативный простой оплачивается согласно стандартным тарифам перевозчика.',
+    sigSignerName: 'Ochilov. F',
     sigRepresentative: 'Уполномоченный представитель Wedef',
     sigCompanyRole: 'Департамент коммерческих операций',
-    sigClient: 'Представитель Заказчика',
-    sigClientRole: 'Уполномоченная подпись Заказчика',
     footerText: 'Wedef Logistics • Ташкент, Узбекистан • Официальное коммерческое предложение',
   },
   uz: {
@@ -181,10 +178,9 @@ export const PDF_TRANSLATIONS: Record<PdfLanguage, PdfTranslations> = {
     termsTitle: "To'lov shartlari va tartibi",
     defaultTerms:
       "To'lov hisob-faktura taqdim etilgandan so'ng 5 bank kuni ichida amalga oshiriladi. Narxlar 30 kalendar kun davomida amal qiladi. Bekorga turib qolish vaqti tashuvchi tariflariga muvofiq to'lanadi.",
+    sigSignerName: 'Ochilov. F',
     sigRepresentative: "Wedef Logistics mas'ul vakili",
     sigCompanyRole: 'Tijorat operatsiyalari departamenti',
-    sigClient: 'Mijoz vakili',
-    sigClientRole: "Mijozning mas'ul vakili",
     footerText: "Wedef Logistics • Toshkent, O'zbekiston • Rasmiy tijorat taklifi",
   },
 };
@@ -483,7 +479,7 @@ export function generateCommercialOfferPdfHtml(
 
     .signature-area {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       margin-top: 36px;
       padding-top: 16px;
     }
@@ -493,15 +489,15 @@ export function generateCommercialOfferPdfHtml(
     }
     .sig-wrapper {
       position: relative;
-      height: 110px;
+      height: 120px;
     }
     .sig-stamp-img {
-      height: 145px;
+      height: 185px;
       width: auto;
       object-fit: contain;
       position: absolute;
-      bottom: 2px;
-      left: -5px;
+      bottom: -12px;
+      left: -10px;
       z-index: 10;
       pointer-events: none;
       filter: drop-shadow(0px 2px 6px rgba(0,0,0,0.12));
@@ -512,8 +508,8 @@ export function generateCommercialOfferPdfHtml(
       position: relative;
       z-index: 5;
     }
-    .sig-name { font-size: 12px; font-weight: 800; color: #0E1B2E; }
-    .sig-title { font-size: 10px; color: #64748b; margin-top: 1px; }
+    .sig-name { font-size: 13px; font-weight: 800; color: #0E1B2E; }
+    .sig-title { font-size: 10.5px; color: #475569; margin-top: 2px; }
 
     .footer {
       position: absolute;
@@ -646,22 +642,15 @@ export function generateCommercialOfferPdfHtml(
 
     <!-- Signatures & Authentic Stamp -->
     <div class="signature-area">
-      <!-- Provider Representative Signature with Nokk Stamp -->
+      <!-- Provider Representative Signature with Stamp -->
       <div class="sig-block">
         <div class="sig-wrapper">
           <img src="${NOKK_SIGNATURE_STAMP_BASE64}" class="sig-stamp-img" alt="Signature & Stamp" />
         </div>
         <div class="sig-line"></div>
-        <div class="sig-name">${t.sigRepresentative}</div>
-        <div class="sig-title">${t.sigCompanyRole}</div>
-      </div>
-
-      <!-- Client Representative Signature -->
-      <div class="sig-block" style="text-align: right;">
-        <div class="sig-wrapper"></div>
-        <div class="sig-line"></div>
-        <div class="sig-name">${escapeHtml(offer.client_name)}</div>
-        <div class="sig-title">${escapeHtml(offer.client_company || t.sigClientRole)}</div>
+        <div class="sig-name">${t.sigSignerName}</div>
+        <div class="sig-title">${t.sigRepresentative}</div>
+        <div class="sig-title" style="font-size: 9.5px; color: #94a3b8; margin-top: 1px;">${t.sigCompanyRole}</div>
       </div>
     </div>
 

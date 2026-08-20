@@ -7,18 +7,59 @@ import {
 } from './httpClient';
 import type { AuthUser, LoginResponse, RefreshResponse } from './httpClient';
 
+export interface CheckTelegramStatusResponse {
+  registered: boolean;
+  phone_number: string;
+  telegram_bot_username: string;
+  telegram_bot_url: string;
+}
+
+export const TELEGRAM_BOT_USERNAME = 'yaqeen_test_bot';
+
+export function getTelegramBotUrl(phoneNumber?: string): string {
+  const clean = phoneNumber ? normalizePhone(phoneNumber) : '';
+  return clean
+    ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=reg_${clean}`
+    : `https://t.me/${TELEGRAM_BOT_USERNAME}`;
+}
+
 // Dedicated Auth Mock Database
 export const demoAuthDb = {
+  botUsername: TELEGRAM_BOT_USERNAME,
   registeredPhones: new Set<string>(['998901234567', '998901111111', '998907777777']),
   telegramLinkedPhones: new Set<string>(['998901234567', '998907777777']),
   tempTokens: new Map<string, string>(),
   otps: new Map<string, string>(),
   bannedPhones: new Set<string>(['998906666666']),
   pendingPhones: new Set<string>(['998905555555']),
+  linkPhone: (phone: string) => {
+    demoAuthDb.telegramLinkedPhones.add(normalizePhone(phone));
+  },
 };
 
 // Dedicated Auth Mock Database Handler
 registerDemoHandler((path: string, _options: RequestInit, body: any) => {
+  // Check Telegram Status
+  if (path.startsWith('/auth/check-telegram-status')) {
+    let phone = '';
+    try {
+      const parsed = new URL(`http://localhost${path}`);
+      phone = normalizePhone(parsed.searchParams.get('phone_number') || '');
+    } catch {
+      const match = path.match(/[?&]phone_number=([^&]+)/);
+      phone = normalizePhone(match ? decodeURIComponent(match[1]) : '');
+    }
+
+    const isRegistered = demoAuthDb.telegramLinkedPhones.has(phone);
+    const result: CheckTelegramStatusResponse = {
+      registered: isRegistered,
+      phone_number: phone,
+      telegram_bot_username: demoAuthDb.botUsername,
+      telegram_bot_url: getTelegramBotUrl(phone),
+    };
+    return { handled: true, result };
+  }
+
   // User Login
   if (path === '/auth/login' || path === '/auth/admin/login') {
     const phone = normalizePhone(body.phone_number || '');
@@ -82,7 +123,11 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
         path,
         400,
         'telegram_not_registered',
-        'Phone number not registered in Telegram OTP bot.'
+        'Phone number is not registered in the Telegram bot.',
+        {
+          telegram_bot_username: demoAuthDb.botUsername,
+          telegram_bot_url: getTelegramBotUrl(phone),
+        }
       );
     }
 
@@ -142,7 +187,11 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
         path,
         400,
         'telegram_not_registered',
-        'Phone number not linked in Telegram.'
+        'Phone number is not registered in the Telegram bot.',
+        {
+          telegram_bot_username: demoAuthDb.botUsername,
+          telegram_bot_url: getTelegramBotUrl(phone),
+        }
       );
     }
 
@@ -223,6 +272,14 @@ registerDemoHandler((path: string, _options: RequestInit, body: any) => {
 
 export const authApi = {
   me: () => request<any>('/auth/me', { method: 'GET' }),
+
+  checkTelegramStatus: (phone_number: string) => {
+    const clean = normalizePhone(phone_number);
+    return request<CheckTelegramStatusResponse>(
+      `/auth/check-telegram-status?phone_number=${encodeURIComponent(clean)}`,
+      { method: 'GET' }
+    );
+  },
 
   login: async (phone_number: string, password: string, isAdmin = false) => {
     const res = await request<LoginResponse>(isAdmin ? '/auth/admin/login' : '/auth/login', {

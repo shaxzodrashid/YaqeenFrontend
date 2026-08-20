@@ -69,13 +69,29 @@ const translations = {
     adminMode: 'Administrator Access',
     userMode: 'Employee Access',
 
-    // Telegram instructions
+    // Telegram instructions & modal
     telegramGuideTitle: 'Telegram Verification Required',
     telegramGuideStep1: '1. Open Telegram and search for the bot:',
     telegramGuideStep2:
       "2. Press Start and click 'Register Phone Number 📱' to share your contact.",
     telegramGuideStep3: '3. Come back here and click Send Verification Code again.',
     telegramOpenBot: 'Open Telegram Bot',
+    telegramModalTitle: 'Connect Telegram Bot',
+    telegramModalSubtitle:
+      'Link your phone number to receive secure OTP verification codes directly in Telegram.',
+    telegramQrPrompt: 'Scan with your phone to open the bot:',
+    telegramOrOpenDirectly: 'Or open Telegram directly on this device:',
+    telegramCheckNow: 'Check Now',
+    telegramChecking: 'Checking status...',
+    telegramWaitingRegistration: 'Waiting for contact registration in Telegram...',
+    telegramLinkedSuccess: 'Telegram connected successfully! Sending verification code...',
+    telegramCopyLink: 'Copy Bot Link',
+    telegramLinkCopied: 'Link Copied to Clipboard!',
+    telegramBotUsernameLabel: 'Bot Username',
+    telegramStep1Modal: 'Open the bot in Telegram or scan the QR code above.',
+    telegramStep2Modal: "Tap 'Start' and click 'Register Phone Number 📱' to share contact.",
+    telegramStep3Modal: 'This screen will automatically detect your registration.',
+    telegramSimulateLink: 'Simulate Linking (Demo)',
 
     // Dashboard Core Pillars
     coreFoundations: 'Core Foundations',
@@ -1429,12 +1445,28 @@ const translations = {
     adminMode: 'Доступ администратора',
     userMode: 'Доступ сотрудника',
 
-    // Telegram instructions
+    // Telegram instructions & modal
     telegramGuideTitle: 'Требуется авторизация в Telegram',
     telegramGuideStep1: '1. Откройте Telegram и найдите бота:',
     telegramGuideStep2: '2. Нажмите Старт и затем «Поделиться контактом 📱».',
     telegramGuideStep3: '3. Вернитесь сюда и снова нажмите «Получить код подтверждения».',
     telegramOpenBot: 'Открыть бота в Telegram',
+    telegramModalTitle: 'Подключение Telegram бота',
+    telegramModalSubtitle:
+      'Привяжите свой номер телефона для получения кодов подтверждения прямо в Telegram.',
+    telegramQrPrompt: 'Отсканируйте камерой телефона для открытия бота:',
+    telegramOrOpenDirectly: 'Или откройте Telegram прямо на этом устройстве:',
+    telegramCheckNow: 'Проверить сейчас',
+    telegramChecking: 'Проверка статуса...',
+    telegramWaitingRegistration: 'Ожидание регистрации контакта в Telegram...',
+    telegramLinkedSuccess: 'Telegram успешно подключен! Отправка кода подтверждения...',
+    telegramCopyLink: 'Скопировать ссылку',
+    telegramLinkCopied: 'Ссылка скопирована в буфер!',
+    telegramBotUsernameLabel: 'Имя бота',
+    telegramStep1Modal: 'Откройте бота в Telegram или отсканируйте QR-код выше.',
+    telegramStep2Modal: 'Нажмите «Старт» и затем «Поделиться контактом 📱».',
+    telegramStep3Modal: 'Это окно автоматически определит вашу регистрацию.',
+    telegramSimulateLink: 'Симулировать привязку (Демо)',
 
     // Dashboard Core Pillars
     coreFoundations: 'Основные принципы',
@@ -2785,7 +2817,7 @@ const translations = {
     adminMode: 'Administrator kirishi',
     userMode: 'Xodim kirishi',
 
-    // Telegram instructions
+    // Telegram instructions & modal
     telegramGuideTitle: 'Telegram orqali tasdiqlash talab etiladi',
     telegramGuideStep1: '1. Telegram-da botni topib oching:',
     telegramGuideStep2:
@@ -2793,6 +2825,22 @@ const translations = {
     telegramGuideStep3:
       "3. Bu yerga qaytib keling va yana 'Tasdiqlash kodini yuborish' tugmasini bosing.",
     telegramOpenBot: 'Telegram botni ochish',
+    telegramModalTitle: 'Telegram botini ulash',
+    telegramModalSubtitle:
+      'Xavfsiz tasdiqlash kodlarini Telegram orqali olish uchun telefon raqamingizni ulang.',
+    telegramQrPrompt: 'Botni ochish uchun telefon kamerasi orqali skanerlang:',
+    telegramOrOpenDirectly: 'Yoki ushbu qurilmada Telegramni to‘g‘ridan-to‘g‘ri oching:',
+    telegramCheckNow: 'Hozir tekshirish',
+    telegramChecking: 'Holat tekshirilmoqda...',
+    telegramWaitingRegistration: 'Telegramda kontakt ro‘yxatdan o‘tkazilishi kutilmoqda...',
+    telegramLinkedSuccess: 'Telegram muvaffaqiyatli ulandi! Tasdiqlash kodi yuborilmoqda...',
+    telegramCopyLink: 'Bot havolasini nusxalash',
+    telegramLinkCopied: 'Havola vaqtinchalik xotiraga nusxalandi!',
+    telegramBotUsernameLabel: 'Bot nomi',
+    telegramStep1Modal: 'Telegramda botni oching yoki yuqoridagi QR-kodni skanerlang.',
+    telegramStep2Modal: '«Boshlash» tugmasini bosing va «Kontaktni ulashish 📱»ni tanlang.',
+    telegramStep3Modal: 'Ushbu oyna ro‘yxatdan o‘tganingizni avtomatik aniqlaydi.',
+    telegramSimulateLink: 'Ulanishni simulyatsiya qilish (Demo)',
 
     // Dashboard Core Pillars
     coreFoundations: 'Asosiy tamoyillar',
