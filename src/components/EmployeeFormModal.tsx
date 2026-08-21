@@ -67,6 +67,8 @@ export function EmployeeFormModal({
   const { t } = useTranslation();
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailedEmployee, setDetailedEmployee] = useState<Employee | null>(null);
   const pictureInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
@@ -118,37 +120,159 @@ export function EmployeeFormModal({
   }, [isOpen, mode, role]);
 
   useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && employee) {
-        setFirstName(employee.first_name || '');
-        setLastName(employee.last_name || '');
-        setPhone(employee.phone || '+998');
-        setSecondaryPhone(employee.secondary_phone || '');
-        setAddress(employee.address || '');
-        setDepartmentId(employee.department_id || '');
-        setFixedSalary(employee.fixed_salary ? parseFloat(employee.fixed_salary).toString() : '');
-        setCurrency(employee.currency || 'UZS');
-        setColor(employee.color || '#CCCCCC');
-        setIsActive(employee.is_active ?? true);
-        setPictureUrl(employee.picture_url || null);
-        setRole(employee.user_role || employee.user?.role || '');
-      } else {
-        setFirstName('');
-        setLastName('');
-        setPhone('+998');
-        setSecondaryPhone('');
-        setAddress('');
-        setDepartmentId('');
-        setFixedSalary('');
-        setCurrency('UZS');
-        setColor('#CCCCCC');
-        setIsActive(true);
-        setPictureUrl(null);
-        setRole('');
-      }
-      setErrors({});
+    if (!isOpen) {
+      setDetailedEmployee(null);
+      setLoadingDetails(false);
+      return;
     }
-  }, [isOpen, mode, employee, departments]);
+
+    if (mode === 'edit' && employee?.id) {
+      const initialFirstName = employee.first_name || employee.full_name?.split(' ')[0] || '';
+      const initialLastName =
+        employee.last_name || employee.full_name?.split(' ').slice(1).join(' ') || '';
+      const initialPhone = employee.phone || '+998';
+      const formattedInitialPhone = initialPhone.startsWith('+')
+        ? initialPhone
+        : `+${initialPhone.replace(/^\+/, '')}`;
+
+      setFirstName(initialFirstName);
+      setLastName(initialLastName);
+      setPhone(formattedInitialPhone);
+      setSecondaryPhone(
+        employee.secondary_phone
+          ? employee.secondary_phone.startsWith('+')
+            ? employee.secondary_phone
+            : `+${employee.secondary_phone.replace(/^\+/, '')}`
+          : ''
+      );
+      setAddress(employee.address || '');
+      setDepartmentId(employee.department_id || '');
+      setFixedSalary(
+        employee.fixed_salary !== undefined &&
+          employee.fixed_salary !== null &&
+          employee.fixed_salary !== '' &&
+          !isNaN(Number(employee.fixed_salary))
+          ? parseFloat(String(employee.fixed_salary)).toString()
+          : ''
+      );
+      setCurrency((employee.currency || 'UZS') as SupportedCurrency);
+      setColor(employee.color || '#CCCCCC');
+      setIsActive(employee.is_active ?? true);
+      setPictureUrl(employee.picture_url || null);
+      setRole(employee.user_role || employee.user?.role || employee.role_name || '');
+      setErrors({});
+
+      let isMounted = true;
+      const fetchDetails = async () => {
+        setLoadingDetails(true);
+        try {
+          const res = await api.employees.get(employee.id);
+          if (!isMounted || !res) return;
+
+          setDetailedEmployee(res);
+
+          const anyRes = res as any;
+          const empData = anyRes.employee || anyRes;
+          const userData = anyRes.user || anyRes;
+
+          const fName =
+            empData.first_name ||
+            anyRes.first_name ||
+            anyRes.full_name?.split(' ')[0] ||
+            initialFirstName;
+          const lName =
+            empData.last_name ||
+            anyRes.last_name ||
+            anyRes.full_name?.split(' ').slice(1).join(' ') ||
+            initialLastName;
+
+          const rawPhone =
+            empData.phone || anyRes.phone || anyRes.phone_number || userData.phone_number || '';
+          const cleanPhone = rawPhone
+            ? rawPhone.startsWith('+')
+              ? rawPhone
+              : `+${rawPhone}`
+            : formattedInitialPhone;
+
+          const rawSecPhone = empData.secondary_phone ?? anyRes.secondary_phone ?? '';
+          const cleanSecPhone = rawSecPhone
+            ? rawSecPhone.startsWith('+')
+              ? rawSecPhone
+              : `+${rawSecPhone}`
+            : '';
+
+          const addr = empData.address ?? anyRes.address ?? '';
+          const deptId =
+            empData.department_id || empData.department?.id || anyRes.department_id || '';
+
+          const rawSal = empData.fixed_salary ?? anyRes.fixed_salary;
+          const salStr =
+            rawSal !== undefined && rawSal !== null && rawSal !== '' && !isNaN(Number(rawSal))
+              ? parseFloat(String(rawSal)).toString()
+              : '';
+
+          const cur = (empData.currency || anyRes.currency || 'UZS') as SupportedCurrency;
+          const col = empData.color || anyRes.color || '#CCCCCC';
+          const act = empData.is_active ?? anyRes.is_active ?? userData.is_active ?? true;
+          const pic = empData.picture_url ?? anyRes.picture_url ?? null;
+          const roleName =
+            userData.role_details?.name ||
+            userData.role ||
+            anyRes.user_role ||
+            anyRes.role_name ||
+            anyRes.role ||
+            '';
+
+          setFirstName(fName);
+          setLastName(lName);
+          setPhone(cleanPhone);
+          setSecondaryPhone(cleanSecPhone);
+          setAddress(addr);
+          setDepartmentId(deptId);
+          setFixedSalary(salStr);
+          setCurrency(cur);
+          setColor(col);
+          setIsActive(act);
+          setPictureUrl(pic);
+          if (roleName) {
+            setRole(roleName);
+          }
+        } catch (err) {
+          console.error('Failed to fetch full employee details:', err);
+          const error = err as ApiError;
+          showNotification(
+            t(error?.location || 'internal_error') || 'Failed to fetch employee details',
+            'error'
+          );
+        } finally {
+          if (isMounted) {
+            setLoadingDetails(false);
+          }
+        }
+      };
+
+      fetchDetails();
+      return () => {
+        isMounted = false;
+      };
+    } else if (mode === 'create') {
+      setFirstName('');
+      setLastName('');
+      setPhone('+998');
+      setSecondaryPhone('');
+      setAddress('');
+      setDepartmentId('');
+      setFixedSalary('');
+      setCurrency('UZS');
+      setColor('#CCCCCC');
+      setIsActive(true);
+      setPictureUrl(null);
+      setRole('');
+      setErrors({});
+      setLoadingDetails(false);
+      setDetailedEmployee(null);
+    }
+  }, [isOpen, mode, employee?.id]);
 
   const handlePictureUploadClick = () => {
     pictureInputRef.current?.click();
@@ -156,7 +280,8 @@ export function EmployeeFormModal({
 
   const handlePictureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !employee?.id) return;
+    const targetId = detailedEmployee?.id || employee?.id;
+    if (!file || !targetId) return;
 
     if (file.size > 5 * 1024 * 1024) {
       showNotification(t('file_too_large') || 'File is too large (max 5MB)', 'error');
@@ -176,7 +301,7 @@ export function EmployeeFormModal({
 
     setUploadingPicture(true);
     try {
-      const updated = await api.employees.uploadPicture(employee.id, file);
+      const updated = await api.employees.uploadPicture(targetId, file);
       setPictureUrl(updated.picture_url || null);
       showNotification(t('successPictureUploaded') || 'Picture uploaded successfully!', 'success');
       window.dispatchEvent(new Event('yaqeen_profile_updated'));
@@ -193,10 +318,11 @@ export function EmployeeFormModal({
   };
 
   const handleDeletePicture = async () => {
-    if (!employee?.id) return;
+    const targetId = detailedEmployee?.id || employee?.id;
+    if (!targetId) return;
     setDeletingPicture(true);
     try {
-      const updated = await api.employees.deletePicture(employee.id);
+      const updated = await api.employees.deletePicture(targetId);
       setPictureUrl(updated.picture_url || null);
       showNotification(t('successPictureDeleted') || 'Picture deleted successfully!', 'success');
       window.dispatchEvent(new Event('yaqeen_profile_updated'));
@@ -256,8 +382,16 @@ export function EmployeeFormModal({
     if (e) e.preventDefault();
     if (!validate()) return;
 
-    const selectedRole = availableRoles.find((r) => r.name === role);
-    const roleId = selectedRole?.id || employee?.role_id || employee?.user?.role_id || '';
+    const selectedRole = availableRoles.find((r) => r.name === role || r.id === role);
+    const roleId =
+      selectedRole?.id ||
+      detailedEmployee?.role_id ||
+      detailedEmployee?.user?.role_id ||
+      detailedEmployee?.user?.role_details?.id ||
+      employee?.role_id ||
+      employee?.user?.role_id ||
+      '';
+    const targetEmployeeId = detailedEmployee?.id || employee?.id;
 
     setLoading(true);
     try {
@@ -277,7 +411,7 @@ export function EmployeeFormModal({
         };
         await api.employees.create(dto);
         showNotification(t('successEmpCreated') || 'Employee successfully created!', 'success');
-      } else if (mode === 'edit' && employee) {
+      } else if (mode === 'edit' && targetEmployeeId) {
         const dto: UpdateEmployeeDto = {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
@@ -289,10 +423,10 @@ export function EmployeeFormModal({
           currency: fixedSalary.trim() ? currency : undefined,
           color,
           is_active: isActive,
-          role_id: roleId,
+          role_id: roleId || undefined,
           role,
         };
-        await api.employees.update(employee.id, dto);
+        await api.employees.update(targetEmployeeId, dto);
         showNotification(
           t('successEmpUpdated') || 'Employee details successfully updated!',
           'success'
@@ -346,9 +480,16 @@ export function EmployeeFormModal({
               >
                 <User className="size-4 sm:size-5" />
               </span>
-              {mode === 'create'
-                ? t('empNewEmployee') || 'Register New Employee'
-                : t('empEditEmployee') || 'Edit Employee Profile'}
+              <span>
+                {mode === 'create'
+                  ? t('empNewEmployee') || 'Register New Employee'
+                  : t('empEditEmployee') || 'Edit Employee Profile'}
+              </span>
+              {loadingDetails && (
+                <span className="inline-flex items-center gap-1.5 ml-2 text-xs font-normal text-muted">
+                  <Spinner size="sm" />
+                </span>
+              )}
             </Modal.Heading>
           </Modal.Header>
 

@@ -829,12 +829,12 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // GET /employees/:id
   if (
-    /^\/employees\/[^/]+$/.test(path) &&
+    (/^\/employees\/[^/]+$/.test(path) || /^\/api\/v1\/employees\/[^/]+$/.test(path)) &&
     method === 'GET' &&
     !path.includes('/me') &&
     !path.includes('/picture')
   ) {
-    const empId = path.split('/employees/')[1];
+    const empId = path.replace(/^\/api\/v1/, '').split('/employees/')[1];
     const emp = demoEmployeesDb.get(empId);
     if (emp) {
       return { handled: true, result: emp };
@@ -1097,7 +1097,70 @@ export const employeesApi = {
     };
   },
 
-  get: (id: string) => request<Employee>(`/employees/${id}`, { method: 'GET' }),
+  get: async (id: string): Promise<Employee> => {
+    let raw: any;
+    try {
+      raw = await request<any>(`/api/v1/employees/${id}`, { method: 'GET' });
+    } catch {
+      raw = await request<any>(`/employees/${id}`, { method: 'GET' });
+    }
+    const data = raw?.data || raw?.item || raw;
+    const empData = data?.employee || data;
+    const userData = data?.user || data;
+
+    const firstName =
+      empData?.first_name || data?.first_name || data?.full_name?.split(' ')[0] || '';
+    const lastName =
+      empData?.last_name || data?.last_name || data?.full_name?.split(' ').slice(1).join(' ') || '';
+    const fullName = data?.full_name || `${firstName} ${lastName}`.trim();
+    const phone =
+      empData?.phone || data?.phone || data?.phone_number || userData?.phone_number || '';
+    const secondaryPhone = empData?.secondary_phone ?? data?.secondary_phone ?? null;
+    const address = empData?.address ?? data?.address ?? null;
+    const departmentId =
+      empData?.department_id || empData?.department?.id || data?.department_id || '';
+    const departmentName =
+      empData?.department?.display_name ||
+      empData?.department?.name ||
+      data?.department_display_name ||
+      data?.department_name ||
+      '';
+    const rawSalary = empData?.fixed_salary ?? data?.fixed_salary;
+    const fixedSalary = rawSalary !== undefined && rawSalary !== null ? String(rawSalary) : '0';
+    const currency = empData?.currency || data?.currency || 'UZS';
+    const color = empData?.color || data?.color || '#CCCCCC';
+    const isActive = empData?.is_active ?? data?.is_active ?? userData?.is_active ?? true;
+    const pictureUrl = empData?.picture_url ?? data?.picture_url ?? null;
+    const roleName =
+      userData?.role_details?.name ||
+      userData?.role ||
+      data?.user_role ||
+      data?.role_name ||
+      data?.role ||
+      'EMPLOYEE';
+    const roleId = data?.role_id || userData?.role_id || userData?.role_details?.id || '';
+
+    return {
+      ...data,
+      id: data?.id || empData?.id || id,
+      first_name: firstName,
+      last_name: lastName,
+      full_name: fullName,
+      phone,
+      secondary_phone: secondaryPhone,
+      address,
+      department_id: departmentId,
+      department_name: departmentName,
+      fixed_salary: fixedSalary,
+      currency,
+      color,
+      is_active: isActive,
+      picture_url: pictureUrl,
+      role_name: roleName,
+      user_role: roleName,
+      role_id: roleId,
+    };
+  },
 
   create: (dto: CreateEmployeeDto) =>
     request<Employee>('/employees', {

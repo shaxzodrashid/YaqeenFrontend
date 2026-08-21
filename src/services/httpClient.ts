@@ -258,7 +258,13 @@ export async function fetchWithInterceptors(
   path: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = path.startsWith('http') ? path : `${BASE_URL}${path}`;
+  let normalizedPath = path;
+  if (BASE_URL.endsWith('/api/v1') && normalizedPath.startsWith('/api/v1')) {
+    normalizedPath = normalizedPath.slice(7) || '/';
+  }
+  const url = normalizedPath.startsWith('http')
+    ? normalizedPath
+    : `${BASE_URL}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`;
   const headers = new Headers(options.headers || {});
 
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {

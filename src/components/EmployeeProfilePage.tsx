@@ -199,27 +199,57 @@ export function EmployeeProfilePage({
   };
 
   useEffect(() => {
-    if (initialEmployee) {
+    if (initialEmployee?.id) {
+      setEmployee(initialEmployee);
+      let isMounted = true;
+      const fetchDetails = async () => {
+        try {
+          setLoading(true);
+          const data = await api.employees.get(initialEmployee.id);
+          if (isMounted && data) {
+            setEmployee(data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch employee details:', err);
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
+        }
+      };
+      fetchDetails();
+      return () => {
+        isMounted = false;
+      };
+    } else if (initialEmployee) {
       setEmployee(initialEmployee);
       setLoading(false);
       return;
     }
 
     // If no initial employee, load the current logged-in employee ("me")
+    let isMounted = true;
     const fetchMe = async () => {
       try {
         setLoading(true);
         const data = await api.employees.me();
-        setEmployee(data);
+        if (isMounted) {
+          setEmployee(data);
+        }
       } catch (err) {
         const error = err as ApiError;
         showNotification(t(error?.location || 'employee_profile_missing'), 'error');
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchMe();
+    return () => {
+      isMounted = false;
+    };
   }, [initialEmployee, showNotification, t]);
 
   const getDeptDisplayName = (deptId?: string) => {
