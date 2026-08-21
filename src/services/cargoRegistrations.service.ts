@@ -75,6 +75,8 @@ export interface CreateCargoRegistrationDto {
   description?: string;
   client_id: string;
   employee_id?: string;
+  consolidation_id?: string | null;
+  new_consolidation?: any;
 }
 
 export interface UpdateCargoRegistrationDto extends Partial<CreateCargoRegistrationDto> {}
@@ -89,6 +91,8 @@ export interface CargoRegistrationListParams {
   container_type?: ContainerType | string;
   client_id?: string;
   employee_id?: string;
+  consolidation_id?: string;
+  has_consolidation?: boolean;
   sort_by?: string;
   sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
   order?: 'ASC' | 'DESC' | 'asc' | 'desc';
@@ -144,6 +148,16 @@ export interface CargoRegistrationListItem {
   description?: string | null;
   client_id?: string;
   employee_id?: string;
+  consolidation_id?: string | null;
+  consolidation?: {
+    id: string;
+    consolidation_code: string;
+    container_truck_id: string;
+    status: string;
+    carrier_name?: string;
+    origin_place?: string;
+    destination_place?: string;
+  } | null;
   confirmed_date?: string | null;
   loaded_date?: string | null;
   arrived_date?: string | null;
@@ -269,6 +283,16 @@ export interface CargoRegistrationDetail {
   status: CargoRegistrationStatus;
   description?: string | null;
   client_id: string;
+  consolidation_id?: string | null;
+  consolidation?: {
+    id: string;
+    consolidation_code: string;
+    container_truck_id: string;
+    status: string;
+    carrier_name?: string;
+    origin_place?: string;
+    destination_place?: string;
+  } | null;
   client?: {
     id: string;
     first_name: string;

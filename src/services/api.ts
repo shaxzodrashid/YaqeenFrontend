@@ -180,6 +180,26 @@ export {
   convertPriceToUsdAndUzs,
 } from './cargoRegistrations.service';
 
+export type {
+  ConsolidationStatus,
+  ConsolidationContainerType,
+  ConsolidationCapacity,
+  ConsolidationFinancials,
+  ConsolidationCargoItem,
+  ConsolidationListItem,
+  ConsolidationActiveDropdownItem,
+  CreateConsolidationDto,
+  UpdateConsolidationDto,
+  ConsolidationListParams,
+  ConsolidationMeta,
+  ConsolidationPaginatedResponse,
+} from './cargoConsolidations.service';
+export {
+  CONSOLIDATION_STATUSES,
+  CONSOLIDATION_CONTAINER_TYPES,
+  cargoConsolidationsApi,
+} from './cargoConsolidations.service';
+
 // Re-export core HTTP & Token helpers
 export {
   BASE_URL,
@@ -204,6 +224,7 @@ export { attachmentsApi } from './attachments.service';
 export { clientsApi } from './clients.service';
 export { cargoKpiApi } from './cargoKpi.service';
 export { cargoRegistrationsApi } from './cargoRegistrations.service';
+export { cargoConsolidationsApi as consolidationsApi } from './cargoConsolidations.service';
 export { financeApi } from './finance.service';
 export { currencyApi, CurrencyApiClient } from './currency.service';
 export { rolesApi } from './roles.service';
@@ -236,6 +257,7 @@ import { attachmentsApi } from './attachments.service';
 import { clientsApi } from './clients.service';
 import { cargoKpiApi } from './cargoKpi.service';
 import { cargoRegistrationsApi } from './cargoRegistrations.service';
+import { cargoConsolidationsApi } from './cargoConsolidations.service';
 import { financeApi } from './finance.service';
 import { currencyApi } from './currency.service';
 import { rolesApi } from './roles.service';
@@ -253,6 +275,8 @@ export const api = {
   clients: clientsApi,
   cargoKpi: cargoKpiApi,
   cargoRegistrations: cargoRegistrationsApi,
+  cargoConsolidations: cargoConsolidationsApi,
+  consolidations: cargoConsolidationsApi,
   finance: financeApi,
   currency: currencyApi,
   roles: rolesApi,

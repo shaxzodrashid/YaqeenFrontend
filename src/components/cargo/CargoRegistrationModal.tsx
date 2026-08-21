@@ -43,6 +43,8 @@ import type {
 } from '../../services/api';
 import { EmployeeSelect } from './EmployeeSelect';
 import { ClientSelect } from './ClientSelect';
+import { ConsolidationSelect } from './ConsolidationSelect';
+import { ConsolidationModal } from './ConsolidationModal';
 
 const STATUS_STAGE_CONFIG: {
   key: CargoRegistrationStatus;
@@ -142,6 +144,8 @@ export function CargoRegistrationModal({
 
   // Form Fields
   const [cargoType, setCargoType] = useState<CargoType>('LTL');
+  const [consolidationId, setConsolidationId] = useState<string | null>(null);
+  const [isConsolidationModalOpen, setIsConsolidationModalOpen] = useState<boolean>(false);
   const [volumeStr, setVolumeStr] = useState<string>('10');
   const [weightStr, setWeightStr] = useState<string>('1200');
   const [containerType, setContainerType] = useState<ContainerType>('40HQ');
@@ -261,6 +265,7 @@ export function CargoRegistrationModal({
           setDescription(detail.description || '');
           setSelectedClientId(detail.client_id || '');
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
+          setConsolidationId(detail.consolidation_id || (detail.consolidation?.id ?? null));
         })
         .catch((err) => {
           showNotification(err?.message || 'Failed to load cargo details', 'error');
@@ -314,6 +319,7 @@ export function CargoRegistrationModal({
           setDescription(detail.description || '');
           setSelectedClientId(detail.client_id || '');
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
+          setConsolidationId(detail.consolidation_id || null);
         })
         .catch((err) => {
           showNotification(err?.message || 'Failed to load cargo details for duplicate', 'error');
@@ -324,6 +330,7 @@ export function CargoRegistrationModal({
     } else {
       const todayStr = new Date().toISOString().split('T')[0];
       setCargoType('LTL');
+      setConsolidationId(null);
       setVolumeStr('10');
       setWeightStr('1200');
       setContainerType('40HQ');
@@ -452,6 +459,7 @@ export function CargoRegistrationModal({
           description: description.trim() || undefined,
           client_id: selectedClientId,
           employee_id: finalEmployeeId,
+          consolidation_id: cargoType === 'LTL' ? consolidationId || null : null,
         });
         showNotification('Cargo registration updated successfully', 'success');
       } else {
@@ -481,6 +489,7 @@ export function CargoRegistrationModal({
           description: description.trim() || undefined,
           client_id: selectedClientId,
           employee_id: finalEmployeeId,
+          consolidation_id: cargoType === 'LTL' ? consolidationId || undefined : undefined,
         });
         showNotification('Cargo registration created successfully', 'success');
       }
@@ -741,10 +750,40 @@ export function CargoRegistrationModal({
                 )}
 
                 {/* SECTION 2: LOGISTICS IDENTIFIERS */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     2. Shipment Identification & Logistics
                   </label>
+
+                  {/* LTL Consolidation Truck Search-or-Create Selector */}
+                  {cargoType === 'LTL' && (
+                    <div className="p-3.5 rounded-2xl bg-brand-gold/10 border border-brand-gold/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-brand-navy dark:text-brand-gold flex items-center gap-1.5">
+                          <Truck className="size-3.5" />
+                          <span>Consolidation Truck Trip (LTL Groupage)</span>
+                        </label>
+                        <span className="text-[11px] text-muted-foreground">
+                          Optionally link to active truck or create new
+                        </span>
+                      </div>
+                      <ConsolidationSelect
+                        value={consolidationId}
+                        requiredVolume={parseFloat(volumeStr) || undefined}
+                        onChange={(id, selected) => {
+                          setConsolidationId(id);
+                          if (selected) {
+                            setContainerTruckId(selected.container_truck_id);
+                            if (selected.carrier_name && !agentName) {
+                              setAgentName(selected.carrier_name);
+                            }
+                          }
+                        }}
+                        onRequestCreateNew={() => setIsConsolidationModalOpen(true)}
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-foreground mb-1.5">
@@ -1184,6 +1223,21 @@ export function CargoRegistrationModal({
           )}
         </motion.div>
       </div>
+
+      {/* Inline New Consolidation Creation Modal */}
+      <ConsolidationModal
+        isOpen={isConsolidationModalOpen}
+        onClose={() => setIsConsolidationModalOpen(false)}
+        onSuccess={(newConsolidation) => {
+          if (newConsolidation) {
+            setConsolidationId(newConsolidation.id);
+            setContainerTruckId(newConsolidation.container_truck_id);
+            if (newConsolidation.carrier_name) {
+              setAgentName(newConsolidation.carrier_name);
+            }
+          }
+        }}
+      />
     </AnimatePresence>
   );
 }

@@ -661,12 +661,19 @@ export function CargoTransactionsTable({
                             {item.cargo_type || 'LTL'}
                           </span>
                           <div className="min-w-0 flex-1 flex items-center justify-between gap-1 group/track">
-                            <span
-                              className="font-mono text-xs font-bold text-foreground truncate select-all block flex-1"
-                              title={item.container_truck_id}
-                            >
-                              {item.container_truck_id}
-                            </span>
+                            <div className="min-w-0 flex-1">
+                              <span
+                                className="font-mono text-xs font-bold text-foreground truncate select-all block"
+                                title={item.container_truck_id}
+                              >
+                                {item.container_truck_id}
+                              </span>
+                              {item.consolidation?.consolidation_code && (
+                                <span className="text-[9px] font-mono font-bold text-brand-navy dark:text-brand-gold bg-brand-gold/15 px-1 py-0.2 rounded border border-brand-gold/30 truncate inline-block">
+                                  🚚 {item.consolidation.consolidation_code}
+                                </span>
+                              )}
+                            </div>
                             <button
                               type="button"
                               onClick={(e) => {

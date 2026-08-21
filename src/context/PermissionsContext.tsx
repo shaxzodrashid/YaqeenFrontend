@@ -15,6 +15,7 @@ export type ModuleKey =
   | 'departments'
   | 'cargo_kpi'
   | 'cargo_registrations'
+  | 'cargo_consolidations'
   | 'finance'
   | 'commercial_offers'
   | 'tasks'
@@ -47,6 +48,12 @@ export const FULL_PERMISSIONS: UserPermissions = {
     update: true,
     delete: true,
     register_for_everyone: true,
+  },
+  cargo_consolidations: {
+    create: true,
+    read: true,
+    update: true,
+    delete: true,
   },
   finance: { create: true, read: true, update: true, delete: true },
   commercial_offers: { create: true, read: true, update: true, delete: true },
@@ -139,7 +146,10 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     action: keyof ModulePermissionAction
   ): boolean => {
     if (isCeo) return true;
-    const mod = permissions[module];
+    let mod = permissions[module];
+    if (!mod && (module === 'cargo_consolidations' || module === 'consolidations')) {
+      mod = permissions['cargo_registrations'] || permissions['cargo_kpi'];
+    }
     if (!mod) return false;
     return !!mod[action];
   };
