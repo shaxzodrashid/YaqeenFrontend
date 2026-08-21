@@ -172,13 +172,13 @@ For charts:
 
 The board defines:
 
-- **Playfair Display** for headings;
+- **Source Serif 4** for headings;
 - **Inter** for user-interface text.
 
 ### Latin Heading Family
 
 ```css
-font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
 ```
 
 Use for:
@@ -231,23 +231,23 @@ Arabic fonts must be reviewed with native readers before release. Never stretch 
 
 ### Desktop Scale
 
-| Token         | Font             | Weight |  Size | Line Height | Letter Spacing | Use                 |
-| ------------- | ---------------- | -----: | ----: | ----------: | -------------: | ------------------- |
-| `display-lg`  | Playfair Display |    600 | 64 px |       72 px |      `-0.02em` | Brand hero          |
-| `display-md`  | Playfair Display |    600 | 56 px |       64 px |      `-0.02em` | Major landing title |
-| `heading-1`   | Playfair Display |    600 | 48 px |       56 px |     `-0.015em` | Page title          |
-| `heading-2`   | Playfair Display |    600 | 36 px |       44 px |      `-0.01em` | Major section       |
-| `heading-3`   | Playfair Display |    600 | 28 px |       36 px |     `-0.005em` | Card group title    |
-| `heading-4`   | Playfair Display |    600 | 22 px |       30 px |            `0` | Card or panel title |
-| `subtitle-lg` | Inter            |    600 | 18 px |       26 px |      `-0.01em` | Section subtitle    |
-| `subtitle-sm` | Inter            |    600 | 16 px |       24 px |     `-0.005em` | Component title     |
-| `body-lg`     | Inter            |    400 | 18 px |       28 px |            `0` | Introductory body   |
-| `body-md`     | Inter            |    400 | 16 px |       24 px |            `0` | Default body        |
-| `body-sm`     | Inter            |    400 | 14 px |       22 px |            `0` | Secondary body      |
-| `label-lg`    | Inter            |    600 | 14 px |       20 px |            `0` | Buttons, fields     |
-| `label-sm`    | Inter            |    600 | 12 px |       18 px |       `0.01em` | Metadata labels     |
-| `caption`     | Inter            |    500 | 12 px |       18 px |            `0` | Supporting context  |
-| `overline`    | Inter            |    600 | 11 px |       16 px |       `0.08em` | Small section label |
+| Token         | Font           | Weight |  Size | Line Height | Letter Spacing | Use                 |
+| ------------- | -------------- | -----: | ----: | ----------: | -------------: | ------------------- |
+| `display-lg`  | Source Serif 4 |    600 | 64 px |       72 px |      `-0.02em` | Brand hero          |
+| `display-md`  | Source Serif 4 |    600 | 56 px |       64 px |      `-0.02em` | Major landing title |
+| `heading-1`   | Source Serif 4 |    600 | 48 px |       56 px |     `-0.015em` | Page title          |
+| `heading-2`   | Source Serif 4 |    600 | 36 px |       44 px |      `-0.01em` | Major section       |
+| `heading-3`   | Source Serif 4 |    600 | 28 px |       36 px |     `-0.005em` | Card group title    |
+| `heading-4`   | Source Serif 4 |    600 | 22 px |       30 px |            `0` | Card or panel title |
+| `subtitle-lg` | Inter          |    600 | 18 px |       26 px |      `-0.01em` | Section subtitle    |
+| `subtitle-sm` | Inter          |    600 | 16 px |       24 px |     `-0.005em` | Component title     |
+| `body-lg`     | Inter          |    400 | 18 px |       28 px |            `0` | Introductory body   |
+| `body-md`     | Inter          |    400 | 16 px |       24 px |            `0` | Default body        |
+| `body-sm`     | Inter          |    400 | 14 px |       22 px |            `0` | Secondary body      |
+| `label-lg`    | Inter          |    600 | 14 px |       20 px |            `0` | Buttons, fields     |
+| `label-sm`    | Inter          |    600 | 12 px |       18 px |       `0.01em` | Metadata labels     |
+| `caption`     | Inter          |    500 | 12 px |       18 px |            `0` | Supporting context  |
+| `overline`    | Inter          |    600 | 11 px |       16 px |       `0.08em` | Small section label |
 
 ### Mobile Adjustments
 

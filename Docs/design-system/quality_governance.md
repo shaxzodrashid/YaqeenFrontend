@@ -10,7 +10,7 @@
 
 - [ ] Only approved colors are used.
 - [ ] Semantic tokens are used instead of hard-coded values.
-- [ ] Playfair Display is limited to headings or branded moments.
+- [ ] Source Serif 4 is limited to headings or branded moments.
 - [ ] Inter is used for UI and dense content.
 - [ ] Spacing follows the 8-point scale.
 - [ ] Radius values come from the approved scale.
@@ -174,7 +174,7 @@ The supplied board visibly establishes:
 
 ### Typography
 
-- Playfair Display headings
+- Source Serif 4 headings
 - Inter UI text
 
 ### Core Components
