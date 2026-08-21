@@ -126,13 +126,16 @@ export interface UpdateFtlItemDto extends Partial<CreateFtlItemDto> {}
 
 // 4. ROP KPI Module
 export interface RopWorkerShare {
+  employee_id?: string | null;
   employee_name: string;
+  sales_amount?: number;
   base_kpi: number;
   worker_1pct_kpi: number;
 }
 
 export interface RopSummaryResponse {
   month?: string;
+  total_team_sales?: number;
   total_ltl_profit: number;
   worker_1pct_total: number;
   workers_breakdown?: RopWorkerShare[];
@@ -141,8 +144,11 @@ export interface RopSummaryResponse {
   team_bonus_percentage: string;
   team_bonus_amount: number;
   truck_count: number;
+  total_truck_profit?: number;
   truck_rate: number;
   truck_rate_percentage: string;
+  truck_count_rate?: number;
+  truck_count_rate_percentage?: string;
   truck_kpi_amount: number;
   rop_total_kpi: number;
 }
@@ -597,23 +603,25 @@ export function getFtlTimeMultiplier(actualDays: number, plannedDays: number): n
   return 0.5;
 }
 
-export function getRopTeamBonusRate(totalLtlProfit: number): number {
-  if (totalLtlProfit < 25000) return 0;
-  if (totalLtlProfit < 30000) return 0.02;
-  if (totalLtlProfit < 35000) return 0.025;
-  if (totalLtlProfit < 40000) return 0.03;
-  if (totalLtlProfit < 45000) return 0.045;
-  if (totalLtlProfit < 55000) return 0.06;
+export function getRopTeamBonusRate(totalTeamSales: number): number {
+  if (totalTeamSales < 25000) return 0;
+  if (totalTeamSales < 30000) return 0.02;
+  if (totalTeamSales < 35000) return 0.025;
+  if (totalTeamSales < 40000) return 0.03;
+  if (totalTeamSales < 45000) return 0.045;
+  if (totalTeamSales < 55000) return 0.06;
   return 0.07;
 }
 
-export function getRopTruckRate(truckCount: number): number {
-  if (truckCount === 0) return 0;
+export function getRopTruckCountRate(truckCount: number): number {
+  if (truckCount <= 0) return 0;
   if (truckCount <= 2) return 0.01;
   if (truckCount <= 5) return 0.015;
   if (truckCount <= 9) return 0.02;
   return 0.025;
 }
+
+export const getRopTruckRate = getRopTruckCountRate;
 
 export function calculateSeoKpi(netProfit: number): SeoCalculateResult {
   const profit = Math.max(0, netProfit);
@@ -1172,39 +1180,50 @@ function buildRopSummaryResponse(reqMonth?: string): RopSummaryResponse {
   const ftlData = buildFtlSummaryResponse(currentMonth);
 
   const workersBreakdown: RopWorkerShare[] = ltlData.employees.map((emp) => ({
+    employee_id: emp.employee_id,
     employee_name: emp.employee_name,
+    sales_amount: emp.total_base_kpi,
     base_kpi: emp.total_base_kpi,
     worker_1pct_kpi: Math.round(emp.total_base_kpi * 0.01 * 100) / 100,
   }));
 
   const worker_1pct_total = workersBreakdown.reduce((sum, w) => sum + w.worker_1pct_kpi, 0);
 
-  const total_ltl_profit = ltlData.employees.reduce((sum, emp) => sum + emp.final_ltl_kpi, 0);
+  const total_team_sales = ltlData.employees.reduce(
+    (sum, emp) => sum + (emp.total_base_kpi || emp.final_ltl_kpi || 0),
+    0
+  );
+  const total_ltl_profit = total_team_sales;
 
-  const team_bonus_rate = getRopTeamBonusRate(total_ltl_profit);
+  const team_bonus_rate = getRopTeamBonusRate(total_team_sales);
   const team_bonus_percentage = `${(team_bonus_rate * 100).toFixed(1)}%`;
-  const team_bonus_amount = Math.round(total_ltl_profit * team_bonus_rate * 100) / 100;
+  const team_bonus_amount = Math.round(total_team_sales * team_bonus_rate * 100) / 100;
 
   const truck_count = ftlData.total_trucks;
-  const truck_rate = getRopTruckRate(truck_count);
+  const total_truck_profit = ftlData.total_profit;
+  const truck_rate = getRopTruckCountRate(truck_count);
   const truck_rate_percentage = `${(truck_rate * 100).toFixed(1)}%`;
-  const truck_kpi_amount = Math.round(ftlData.total_profit * truck_rate * 100) / 100;
+  const truck_kpi_amount = Math.round(total_truck_profit * truck_rate * 100) / 100;
 
   const rop_total_kpi =
     Math.round((worker_1pct_total + team_bonus_amount + truck_kpi_amount) * 100) / 100;
 
   return {
     month: currentMonth,
+    total_team_sales,
     total_ltl_profit,
     worker_1pct_total: Math.round(worker_1pct_total * 100) / 100,
     workers_breakdown: workersBreakdown,
-    team_bonus_profit: total_ltl_profit,
+    team_bonus_profit: total_team_sales,
     team_bonus_rate,
     team_bonus_percentage,
     team_bonus_amount,
     truck_count,
+    total_truck_profit,
     truck_rate,
     truck_rate_percentage,
+    truck_count_rate: truck_rate,
+    truck_count_rate_percentage: truck_rate_percentage,
     truck_kpi_amount,
     rop_total_kpi,
   };
@@ -2620,12 +2639,15 @@ export const cargoKpiApi = {
 
     const rawWorkers = raw?.workers_breakdown || raw?.workers || [];
     const normalizedWorkers: RopWorkerShare[] = rawWorkers.map((w: any) => {
+      const salesAmount = Number(w.sales_amount ?? w.base_kpi ?? 0);
       const baseKpi = Number(w.base_kpi ?? w.sales_amount ?? 0);
       const worker1pct = Number(
-        w.worker_1pct_kpi ?? w.worker_kpi_1pc ?? Math.round(baseKpi * 0.01 * 100) / 100
+        w.worker_1pct_kpi ?? w.worker_kpi_1pc ?? Math.round(salesAmount * 0.01 * 100) / 100
       );
       return {
+        employee_id: w.employee_id || w.id,
         employee_name: w.employee_name || w.worker_name || 'Employee',
+        sales_amount: salesAmount,
         base_kpi: baseKpi,
         worker_1pct_kpi: worker1pct,
       };
@@ -2636,28 +2658,45 @@ export const cargoKpiApi = {
         raw?.worker_1pc_kpi ??
         normalizedWorkers.reduce((s, w) => s + w.worker_1pct_kpi, 0)
     );
+    const total_team_sales = Number(
+      raw?.total_team_sales ?? raw?.team_bonus_profit ?? raw?.total_ltl_profit ?? 0
+    );
     const team_bonus_profit = Number(
       raw?.team_bonus_profit ?? raw?.total_team_sales ?? raw?.total_ltl_profit ?? 0
     );
-    const team_bonus_rate = Number(raw?.team_bonus_rate ?? 0);
+    const team_bonus_rate = Number(raw?.team_bonus_rate ?? getRopTeamBonusRate(total_team_sales));
     const team_bonus_percentage =
       raw?.team_bonus_percentage ||
       raw?.team_bonus_rate_percentage ||
       `${(team_bonus_rate * 100).toFixed(1)}%`;
-    const team_bonus_amount = Number(raw?.team_bonus_amount ?? raw?.team_bonus_kpi ?? 0);
+    const team_bonus_amount = Number(
+      raw?.team_bonus_amount ??
+        raw?.team_bonus_kpi ??
+        Math.round(total_team_sales * team_bonus_rate * 100) / 100
+    );
     const truck_count = Number(raw?.truck_count ?? 0);
-    const truck_rate = Number(raw?.truck_rate ?? raw?.truck_count_rate ?? 0);
+    const total_truck_profit = Number(
+      raw?.total_truck_profit ?? raw?.total_profit ?? raw?.truck_profit ?? 0
+    );
+    const truck_rate = Number(
+      raw?.truck_rate ?? raw?.truck_count_rate ?? getRopTruckCountRate(truck_count)
+    );
     const truck_rate_percentage =
       raw?.truck_rate_percentage ||
       raw?.truck_count_rate_percentage ||
       `${(truck_rate * 100).toFixed(1)}%`;
-    const truck_kpi_amount = Number(raw?.truck_kpi_amount ?? raw?.truck_kpi ?? 0);
+    const truck_kpi_amount = Number(
+      raw?.truck_kpi_amount ??
+        raw?.truck_kpi ??
+        Math.round(total_truck_profit * truck_rate * 100) / 100
+    );
     const rop_total_kpi = Number(
       raw?.rop_total_kpi ?? worker_1pct_total + team_bonus_amount + truck_kpi_amount
     );
 
     return {
       month: raw?.month || month || '2026-07',
+      total_team_sales,
       total_ltl_profit: Number(raw?.total_ltl_profit ?? team_bonus_profit),
       worker_1pct_total,
       workers_breakdown: normalizedWorkers,
@@ -2666,8 +2705,11 @@ export const cargoKpiApi = {
       team_bonus_percentage,
       team_bonus_amount,
       truck_count,
+      total_truck_profit,
       truck_rate,
       truck_rate_percentage,
+      truck_count_rate: truck_rate,
+      truck_count_rate_percentage: truck_rate_percentage,
       truck_kpi_amount,
       rop_total_kpi,
     };

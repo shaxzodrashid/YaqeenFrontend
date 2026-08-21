@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Calculator, Truck, Crown, Target, Receipt, Award } from 'lucide-react';
 import { T } from '../T';
 import { LtlCalcTab } from './LtlCalcTab';
-import { LtlModuleTab } from './LtlModuleTab';
-import { FtlModuleTab } from './FtlModuleTab';
 import { RopSeoModuleTab } from './RopSeoModuleTab';
 import { EmployeePlansTab } from './EmployeePlansTab';
 import { CargoTransactionsTab } from './CargoTransactionsTab';
@@ -12,14 +10,7 @@ import { ContainerTrackingTab } from './ContainerTrackingTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
 
 export type CargoTabId =
-  | 'container-tracking'
-  | 'ltl-calc'
-  | 'ltl-kpi'
-  | 'ftl-kpi'
-  | 'rop-seo'
-  | 'sales-manager'
-  | 'plans'
-  | 'transactions';
+  'container-tracking' | 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans' | 'transactions';
 
 export function CargoKpiPage() {
   const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
@@ -31,8 +22,6 @@ export function CargoKpiPage() {
       icon: <Truck className="size-4" />,
     },
     { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
-    { id: 'ltl-kpi', labelKey: 'tabLtlKpi', icon: <Package className="size-4" /> },
-    { id: 'ftl-kpi', labelKey: 'tabFtlKpi', icon: <Truck className="size-4" /> },
     { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
     { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
     { id: 'plans', labelKey: 'tabPlans', icon: <Target className="size-4" /> },
@@ -45,10 +34,6 @@ export function CargoKpiPage() {
         return <ContainerTrackingTab />;
       case 'ltl-calc':
         return <LtlCalcTab />;
-      case 'ltl-kpi':
-        return <LtlModuleTab />;
-      case 'ftl-kpi':
-        return <FtlModuleTab />;
       case 'rop-seo':
         return <RopSeoModuleTab />;
       case 'sales-manager':
