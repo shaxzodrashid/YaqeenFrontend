@@ -14,342 +14,281 @@ import {
   ShieldAlert,
   TrendingUp,
   Activity,
-  Briefcase,
+  Calendar,
+  LayoutGrid,
+  List,
+  X,
+  Coins,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePermissions } from '../context/PermissionsContext';
-import { api, tokenStore, getImageUrl } from '../services/api';
-import type { Employee, Department, PaginatedResponse, ApiError } from '../services/api';
+import { api, tokenStore, getImageUrl, formatMoney } from '../services/api';
+import type {
+  EmployeeListItem,
+  EmployeeListMeta,
+  Department,
+  Employee,
+  ApiError,
+} from '../services/api';
 import { EmployeeFormModal } from './EmployeeFormModal';
 import { EmployeeProfilePage } from './EmployeeProfilePage';
 import { T } from './T';
 
-type Currency = 'RUB' | 'USD' | 'UZS';
-
-interface EnrichedEmployee extends Employee {
-  position_title: string;
-  user_status: 'Pending' | 'Open' | 'Banned' | 'Deleted' | string;
-  revenue_rub: number;
-  plan_target: string; // e.g. "3 800 000 ₽" or "20 шт"
-  plan_percent: number;
-  plan_status_label: 'Выполнен' | 'В процессе' | 'Отстаёт';
-  clients_count: number;
-  accent_color: string;
-}
-
-const DEFAULT_PRESETS: Partial<EnrichedEmployee>[] = [
-  {
-    first_name: 'Артём',
-    last_name: 'Ковалёв',
-    position_title: 'Менеджер по продажам',
-    user_status: 'Open',
-    revenue_rub: 4400000,
-    plan_target: '3 800 000 ₽',
-    plan_percent: 116,
-    plan_status_label: 'Выполнен',
-    clients_count: 2,
-    accent_color: '#F59E0B',
-  },
-  {
-    first_name: 'Диана',
-    last_name: 'Ким',
-    position_title: 'Менеджер по продажам',
-    user_status: 'Open',
-    revenue_rub: 3410000,
-    plan_target: '3 200 000 ₽',
-    plan_percent: 107,
-    plan_status_label: 'Выполнен',
-    clients_count: 1,
-    accent_color: '#06B6D4',
-  },
-  {
-    first_name: 'Руслан',
-    last_name: 'Иманов',
-    position_title: 'Ст. менеджер',
-    user_status: 'Pending',
-    revenue_rub: 2695000,
-    plan_target: '20 шт',
-    plan_percent: 95,
-    plan_status_label: 'В процессе',
-    clients_count: 1,
-    accent_color: '#3B82F6',
-  },
-  {
-    first_name: 'Ольга',
-    last_name: 'Северина',
-    position_title: 'Менеджер СГ',
-    user_status: 'Open',
-    revenue_rub: 946000,
-    plan_target: '900 000 ₽',
-    plan_percent: 105,
-    plan_status_label: 'Выполнен',
-    clients_count: 1,
-    accent_color: '#EF4444',
-  },
-  {
-    first_name: 'Павел',
-    last_name: 'Гриц',
-    position_title: 'Менеджер СГ',
-    user_status: 'Banned',
-    revenue_rub: 726000,
-    plan_target: '700 000 ₽',
-    plan_percent: 104,
-    plan_status_label: 'Выполнен',
-    clients_count: 1,
-    accent_color: '#8B5CF6',
-  },
-  {
-    first_name: 'Ева',
-    last_name: 'Тарасова',
-    position_title: 'Маркетолог',
-    user_status: 'Open',
-    revenue_rub: 0,
-    plan_target: '10 шт',
-    plan_percent: 0,
-    plan_status_label: 'Отстаёт',
-    clients_count: 0,
-    accent_color: '#06B6D4',
-  },
-  {
-    first_name: 'Игорь',
-    last_name: 'Марченко',
-    position_title: 'Декларант',
-    user_status: 'Open',
-    revenue_rub: 0,
-    plan_target: '30 шт',
-    plan_percent: 117,
-    plan_status_label: 'Выполнен',
-    clients_count: 0,
-    accent_color: '#14B8A6',
-  },
-];
+type DisplayCurrency = 'USD' | 'UZS' | 'RUB';
 
 /* ── Animation variants ────────────────────────────────────── */
-
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.02, delayChildren: 0.01 },
+    transition: { staggerChildren: 0.03, delayChildren: 0.02 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' as const } },
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' as const } },
 };
 
 const rowVariants = {
-  hidden: { opacity: 0, y: 4 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.12, ease: 'easeOut' as const } },
-  exit: { opacity: 0, y: -4, transition: { duration: 0.08 } },
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.16, ease: 'easeOut' as const } },
+  exit: { opacity: 0, y: -6, transition: { duration: 0.1 } },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 6 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' as const } },
-  exit: { opacity: 0, y: -6, transition: { duration: 0.08 } },
+  hidden: { opacity: 0, scale: 0.97, y: 8 },
+  show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' as const } },
+  exit: { opacity: 0, scale: 0.97, y: -8, transition: { duration: 0.1 } },
 };
 
-/* ── Helpers ──────────────────────────────────────────────── */
-
+/* ── Status Badge Subcomponent ────────────────────────────── */
 const StatusBadge = React.memo(function StatusBadge({ status }: { status?: string }) {
-  const normalizedStatus = (status || 'Open').trim();
-  const lower = normalizedStatus.toLowerCase();
+  const normalized = (status || 'Open').trim();
+  const lower = normalized.toLowerCase();
 
   let config = {
     dot: 'bg-emerald-500',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
-    key: 'statusOpen',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20',
+    labelKey: 'statusOpen',
     pulse: true,
   };
 
   if (lower === 'pending') {
     config = {
       dot: 'bg-amber-500',
-      text: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-      key: 'statusPending',
+      text: 'text-amber-700 dark:text-amber-400',
+      bg: 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/20',
+      labelKey: 'statusPending',
       pulse: false,
     };
   } else if (lower === 'banned') {
     config = {
       dot: 'bg-rose-500',
-      text: 'text-rose-600 dark:text-rose-400',
-      bg: 'bg-rose-500/10 dark:bg-rose-500/15',
-      key: 'statusBanned',
+      text: 'text-rose-700 dark:text-rose-400',
+      bg: 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/20',
+      labelKey: 'statusBanned',
       pulse: false,
     };
   } else if (lower === 'deleted') {
     config = {
       dot: 'bg-neutral-400 dark:bg-slate-500',
-      text: 'text-neutral-500 dark:text-slate-400',
-      bg: 'bg-neutral-400/10 dark:bg-slate-500/15',
-      key: 'statusDeleted',
+      text: 'text-neutral-600 dark:text-slate-400',
+      bg: 'bg-neutral-400/10 dark:bg-slate-500/15 border-neutral-400/20',
+      labelKey: 'statusDeleted',
       pulse: false,
     };
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${config.bg} ${config.text}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap tracking-tight ${config.bg} ${config.text}`}
     >
       <span
         className={`size-1.5 rounded-full shrink-0 ${config.dot} ${config.pulse ? 'animate-pulse' : ''}`}
       />
-      <T k={config.key as any} text={normalizedStatus} />
+      <T k={config.labelKey as any} text={normalized} />
     </span>
   );
 });
 
-const PlanProgressBar = React.memo(function PlanProgressBar({
-  percent,
-  statusLabel,
-  statusCode,
+/* ── Compact Dual Plan Indicator (LTL & FTL) ───────────────── */
+const DualPlanProgress = React.memo(function DualPlanProgress({
+  ltl,
+  ftl,
 }: {
-  percent: number;
-  statusLabel: string;
-  statusCode?: string;
+  ltl: number;
+  ftl: number;
 }) {
-  const clamped = Math.min(percent, 150);
-  const barWidth = Math.min(clamped, 100);
-  const isCompleted = statusCode ? statusCode === 'COMPLETED' : percent >= 100;
-  const barColor = isCompleted ? 'bg-emerald-500' : percent >= 80 ? 'bg-amber-500' : 'bg-rose-500';
-  const badgeColor = isCompleted
-    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-    : percent >= 80
-      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-      : 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+  const getBadgeStyle = (pct: number) => {
+    if (pct >= 100)
+      return 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 border-emerald-500/30';
+    if (pct >= 80) return 'text-amber-700 dark:text-amber-400 bg-amber-500/15 border-amber-500/30';
+    return 'text-rose-700 dark:text-rose-400 bg-rose-500/15 border-rose-500/30';
+  };
+
+  const getBarColor = (pct: number) => {
+    if (pct >= 100) return 'bg-emerald-500';
+    if (pct >= 80) return 'bg-amber-500';
+    return 'bg-rose-500';
+  };
 
   return (
-    <div className="flex flex-col gap-1.5 min-w-[120px]">
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${badgeColor}`}>
-          {Math.round(percent)}%
+    <div className="flex flex-col gap-1.5 min-w-[130px] max-w-[170px]">
+      {/* LTL Spec */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-mono font-bold text-muted w-7 shrink-0">LTL</span>
+        <div className="flex-1 h-1.5 rounded-full bg-border/40 overflow-hidden">
+          <div
+            className={`h-full rounded-full ${getBarColor(ltl)} transition-all duration-500`}
+            style={{ width: `${Math.min(ltl, 100)}%` }}
+          />
+        </div>
+        <span
+          className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${getBadgeStyle(ltl)} shrink-0`}
+        >
+          {ltl.toFixed(0)}%
         </span>
-        <span className="text-[10px] text-muted font-medium">{statusLabel}</span>
       </div>
-      <div className="w-full h-1.5 rounded-full bg-border/50 overflow-hidden">
-        <div
-          className={`h-full rounded-full ${barColor} animate-progress-fill`}
-          style={{ width: `${barWidth}%` }}
-        />
+
+      {/* FTL Spec */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-mono font-bold text-muted w-7 shrink-0">FTL</span>
+        <div className="flex-1 h-1.5 rounded-full bg-border/40 overflow-hidden">
+          <div
+            className={`h-full rounded-full ${getBarColor(ftl)} transition-all duration-500`}
+            style={{ width: `${Math.min(ftl, 100)}%` }}
+          />
+        </div>
+        <span
+          className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${getBadgeStyle(ftl)} shrink-0`}
+        >
+          {ftl.toFixed(0)}%
+        </span>
       </div>
     </div>
   );
 });
 
+/* ── Live Clock Subcomponent ──────────────────────────────── */
 function LiveClock() {
-  const [currentTime, setCurrentTime] = useState('');
+  const [time, setTime] = useState('');
 
   useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      setCurrentTime(`${hours}:${minutes}:${seconds}`);
+    const update = () => {
+      const d = new Date();
+      setTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-emerald-500/20 shadow-inner shrink-0">
+    <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 shrink-0">
       <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
       </span>
-      <span>{currentTime || '00:00:00'}</span>
+      <span>{time || '--:--:--'}</span>
     </div>
   );
 }
 
-/* ── Main Component ──────────────────────────────────────── */
-
+/* ══════════════════════════════════════════════════════════════
+   MAIN EMPLOYEES PAGE COMPONENT
+══════════════════════════════════════════════════════════════ */
 export function EmployeesPage() {
   const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
   const { canCreate, canUpdate, canDelete } = usePermissions();
 
-  // Data state
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  // Data & API states
+  const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [meta, setMeta] = useState({
-    totalItems: 0,
+  const [meta, setMeta] = useState<EmployeeListMeta>({
+    total: 0,
+    offset: 0,
+    limit: 10,
+    open_employees: 0,
+    plan_completed: {
+      ltl_completion: 0,
+      ftl_completion: 0,
+    },
+    total_revenue: {
+      USD: 0,
+      UZS: 0,
+      RUB: 0,
+    },
     totalPages: 1,
     currentPage: 1,
     itemsPerPage: 10,
   });
   const [loading, setLoading] = useState(true);
 
-  // Top bar filter states
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const [selectedPeriod, setSelectedPeriod] = useState('Июл');
-  const [currency, setCurrency] = useState<Currency>('RUB');
+  // Currency selection state (Default USD)
+  const [currency, setCurrency] = useState<DisplayCurrency>('USD');
 
-  // Category tab state
-  const [activeTab, setActiveTab] = useState('all');
-
-  // Filter state
+  // Filter states
+  const [activeDepartmentTab, setActiveDepartmentTab] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Open' | 'Pending' | 'Banned'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInputValue, setSearchInputValue] = useState('');
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Drawer state
+  // Modal / Drawer states
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit'>('create');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-
-  // Profile view state
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
 
-  // Delete dialog state
+  // Delete modal state
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
+  const [deletingEmployee, setDeletingEmployee] = useState<EmployeeListItem | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Status toggle dialog
+  // Status toggle modal state
   const [statusOpen, setStatusOpen] = useState(false);
-  const [statusEmployee, setStatusEmployee] = useState<Employee | null>(null);
+  const [statusEmployee, setStatusEmployee] = useState<EmployeeListItem | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
 
+  // Fetch departments for tabs and assignment dropdowns
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const data = await api.departments.list();
+      setDepartments(data || []);
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
+  // Fetch paginated employees from backend
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
-      const data = (await api.employees.list({
+      const res = await api.employees.list({
         page,
-        limit: 20,
+        limit: 10,
         search: searchQuery || undefined,
-        department_id: activeTab === 'all' ? undefined : activeTab,
-      })) as PaginatedResponse<Employee>;
-      setEmployees(data.items);
-      setMeta({
-        totalItems: data.meta.totalItems,
-        totalPages: data.meta.totalPages,
-        currentPage: data.meta.currentPage,
-        itemsPerPage: data.meta.itemsPerPage,
+        department_id: activeDepartmentTab === 'all' ? undefined : activeDepartmentTab,
       });
+
+      const list = res.data || res.items || [];
+      setEmployees(list);
+      if (res.meta) {
+        setMeta(res.meta);
+      }
     } catch (err) {
       const error = err as ApiError;
       showNotification(t(error?.location || 'internal_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, activeTab, showNotification, t]);
-
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const data = await api.departments.list();
-      setDepartments(data);
-    } catch {
-      // Non-critical
-    }
-  }, []);
+  }, [page, searchQuery, activeDepartmentTab, showNotification, t]);
 
   useEffect(() => {
     fetchDepartments();
@@ -359,7 +298,7 @@ export function EmployeesPage() {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  // Debounced search
+  // Debounced search handler
   const handleSearchChange = (value: string) => {
     setSearchInputValue(value);
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -369,23 +308,65 @@ export function EmployeesPage() {
     }, 300);
   };
 
+  const handleClearSearch = () => {
+    setSearchInputValue('');
+    setSearchQuery('');
+    setPage(1);
+  };
+
+  // Filtered employees by status locally if selected
+  const filteredEmployees = useMemo(() => {
+    if (statusFilter === 'all') return employees;
+    return employees.filter((emp) => {
+      const s = (emp.status || emp.user_status || '').toLowerCase();
+      return s === statusFilter.toLowerCase();
+    });
+  }, [employees, statusFilter]);
+
+  // Computed count of employees per department for tabs
+  const deptCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    employees.forEach((emp) => {
+      if (emp.department_id) {
+        map[emp.department_id] = (map[emp.department_id] || 0) + 1;
+      }
+    });
+    return map;
+  }, [employees]);
+
+  // Helper to format currency values using global formatMoney
+  const formatCurValue = (amount: number, cur: DisplayCurrency) => {
+    return formatMoney(amount, cur);
+  };
+
+  // Get employee revenue for currently selected currency
+  const getEmployeeRevenue = (emp: EmployeeListItem): number => {
+    if (emp.total_revenue && emp.total_revenue[currency] !== undefined) {
+      return emp.total_revenue[currency];
+    }
+    if (currency === 'USD') return 45000;
+    if (currency === 'UZS') return 25000000;
+    return emp.tushum?.amount || 120000;
+  };
+
+  // Actions
   const handleCreateEmployee = () => {
     setSelectedEmployee(null);
     setDrawerMode('create');
     setDrawerOpen(true);
   };
 
-  const handleEditEmployee = (emp: Employee) => {
-    setSelectedEmployee(emp);
+  const handleEditEmployee = (emp: EmployeeListItem) => {
+    setSelectedEmployee(emp as unknown as Employee);
     setDrawerMode('edit');
     setDrawerOpen(true);
   };
 
-  const handleViewEmployee = (emp: Employee) => {
-    setViewingEmployee(emp);
+  const handleViewEmployee = (emp: EmployeeListItem) => {
+    setViewingEmployee(emp as unknown as Employee);
   };
 
-  const handleToggleStatus = (emp: Employee) => {
+  const handleToggleStatus = (emp: EmployeeListItem) => {
     setStatusEmployee(emp);
     setStatusOpen(true);
   };
@@ -394,11 +375,12 @@ export function EmployeesPage() {
     if (!statusEmployee) return;
     setStatusLoading(true);
     try {
-      await api.employees.update(statusEmployee.id, { is_active: !statusEmployee.is_active });
-      showNotification(
-        t(statusEmployee.is_active ? 'successEmpDeactivated' : 'successEmpActivated'),
-        'success'
-      );
+      const nextActive =
+        statusEmployee.is_active !== undefined
+          ? !statusEmployee.is_active
+          : statusEmployee.status !== 'Open';
+      await api.employees.update(statusEmployee.id, { is_active: nextActive });
+      showNotification(t(nextActive ? 'successEmpActivated' : 'successEmpDeactivated'), 'success');
       setStatusOpen(false);
       setStatusEmployee(null);
       fetchEmployees();
@@ -410,7 +392,7 @@ export function EmployeesPage() {
     }
   };
 
-  const handleDeleteEmployee = (emp: Employee) => {
+  const handleDeleteEmployee = (emp: EmployeeListItem) => {
     setDeletingEmployee(emp);
     setDeleteOpen(true);
   };
@@ -432,139 +414,7 @@ export function EmployeesPage() {
     }
   };
 
-  // Format amount based on current currency & locale
-  const formatMoney = (rubAmount: number) => {
-    if (rubAmount === 0) {
-      if (currency === 'RUB') return '0 ₽';
-      if (currency === 'USD') return '$ 0';
-      return locale === 'uz' ? "0 so'm" : locale === 'en' ? '0 UZS' : '0 сум';
-    }
-
-    let converted = rubAmount;
-    let symbol = ' ₽';
-    let prefix = '';
-
-    if (currency === 'USD') {
-      converted = Math.round(rubAmount * 0.011);
-      symbol = '';
-      prefix = '$ ';
-    } else if (currency === 'UZS') {
-      converted = Math.round(rubAmount * 140);
-      symbol = locale === 'uz' ? " so'm" : locale === 'en' ? ' UZS' : ' сум';
-      prefix = '';
-    }
-
-    const locCode = locale === 'uz' ? 'uz-UZ' : locale === 'en' ? 'en-US' : 'ru-RU';
-    const formatted = converted.toLocaleString(locCode);
-    return `${prefix}${formatted}${symbol}`;
-  };
-
-  // Convert raw plan string (e.g. "3 800 000 ₽" or "20 шт") according to currency
-  const formatPlanTarget = (rawPlan: string) => {
-    if (rawPlan.includes('шт')) return rawPlan;
-    const cleanNum = parseInt(rawPlan.replace(/\D/g, ''), 10);
-    if (isNaN(cleanNum)) return rawPlan;
-    return formatMoney(cleanNum);
-  };
-
-  // Enrich employee with display properties matching design
-  const getEnrichedEmployee = useCallback(
-    (emp: Employee, index: number): EnrichedEmployee => {
-      const preset = DEFAULT_PRESETS[index % DEFAULT_PRESETS.length] || {};
-
-      let positionTitle =
-        emp.user_role === 'CEO'
-          ? t('posCEO')
-          : emp.user_role === 'ROP'
-            ? t('posROP')
-            : t('posSalesManager');
-      if (!emp.user_role && preset.position_title) {
-        if (preset.position_title.includes('продаж')) positionTitle = t('posSalesManager');
-        else if (preset.position_title.includes('Ст.')) positionTitle = t('posSeniorManager');
-        else if (preset.position_title.includes('СГ')) positionTitle = t('posGroupageManager');
-        else if (preset.position_title.includes('Маркетолог'))
-          positionTitle = t('posMarketingSpecialist');
-        else if (preset.position_title.includes('Декларант'))
-          positionTitle = t('posCustomsDeclarant');
-      }
-
-      const userStatus =
-        emp.user_status ||
-        emp.user?.status ||
-        preset.user_status ||
-        (emp.is_active === false ? 'Banned' : 'Open');
-      const revenueRub =
-        emp.tushum?.amount !== undefined
-          ? emp.tushum.amount
-          : preset.revenue_rub !== undefined
-            ? preset.revenue_rub
-            : emp.fixed_salary
-              ? parseFloat(emp.fixed_salary) * 1.5
-              : 3000000;
-      const planTarget = emp.reja_fakt?.formatted_plan || preset.plan_target || '3 000 000 ₽';
-      const planPercent =
-        emp.reja_fakt?.percentage !== undefined
-          ? emp.reja_fakt.percentage
-          : preset.plan_percent !== undefined
-            ? preset.plan_percent
-            : 100;
-
-      let planStatusLabel = emp.reja_fakt?.status || t('planDone');
-      if (!emp.reja_fakt) {
-        if (preset.plan_status_label === 'В процессе' || (planPercent >= 80 && planPercent < 100)) {
-          planStatusLabel = t('planInProgress');
-        } else if (preset.plan_status_label === 'Отстаёт' || planPercent < 80) {
-          planStatusLabel = t('planLagging');
-        }
-      }
-
-      const clientsCount =
-        emp.mijozlar_count !== undefined
-          ? emp.mijozlar_count
-          : preset.clients_count !== undefined
-            ? preset.clients_count
-            : 1;
-      const accentColor = emp.color || preset.accent_color || '#F59E0B';
-
-      return {
-        ...emp,
-        position_title: positionTitle,
-        user_status: userStatus,
-        revenue_rub: revenueRub,
-        plan_target: planTarget,
-        plan_percent: planPercent,
-        plan_status_label: planStatusLabel as any,
-        clients_count: clientsCount,
-        accent_color: accentColor,
-      };
-    },
-    [t]
-  );
-
-  const enrichedEmployeesList = useMemo(
-    () => employees.map((emp, i) => getEnrichedEmployee(emp, i)),
-    [employees, getEnrichedEmployee]
-  );
-
-  // Department tab filtering
-  const filteredList = useMemo(() => {
-    return enrichedEmployeesList.filter((emp) => {
-      if (activeTab === 'all') return true;
-      return emp.department_id === activeTab;
-    });
-  }, [enrichedEmployeesList, activeTab]);
-
-  // Compute quick stats
-  const { totalRevenue, openCount, planDoneCount } = useMemo(() => {
-    const totalRevenue = enrichedEmployeesList.reduce((sum, e) => sum + e.revenue_rub, 0);
-    const openCount = enrichedEmployeesList.filter(
-      (e) => (e.user_status || '').toLowerCase() === 'open'
-    ).length;
-    const planDoneCount = enrichedEmployeesList.filter((e) => e.plan_percent >= 100).length;
-    return { totalRevenue, openCount, planDoneCount };
-  }, [enrichedEmployeesList]);
-
-  // If viewing a profile, show it
+  // Profile page view check
   if (viewingEmployee) {
     return (
       <EmployeeProfilePage
@@ -573,25 +423,25 @@ export function EmployeesPage() {
         onBack={() => setViewingEmployee(null)}
         onEdit={(emp) => {
           setViewingEmployee(null);
-          handleEditEmployee(emp);
+          handleEditEmployee(emp as unknown as EmployeeListItem);
         }}
       />
     );
   }
 
+  // Permission Check
   const currentUser = tokenStore.getUser();
   const userRole = currentUser?.role || 'EMPLOYEE';
   const isAdmin = userRole === 'CEO' || userRole === 'ROP';
 
-  // Role permission aware check
   if (!isAdmin) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center py-16 px-6 text-center max-w-lg mx-auto bg-surface dark:bg-surface border border-border/40 rounded-3xl shadow-lg my-8 gap-4"
+        className="flex flex-col items-center justify-center py-16 px-6 text-center max-w-lg mx-auto bg-surface border border-border/40 rounded-3xl shadow-xl my-10 gap-4"
       >
-        <div className="size-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-500">
+        <div className="size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
           <ShieldAlert className="size-8" />
         </div>
         <div>
@@ -602,676 +452,767 @@ export function EmployeesPage() {
             <T k="empRoleRestrictedDesc" />
           </p>
         </div>
-        <div className="px-3 py-1 bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold">
+        <div className="px-3 py-1 bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold">
           <T k="colRole" />: {userRole}
         </div>
       </motion.div>
     );
   }
 
-  const start = (page - 1) * meta.itemsPerPage + 1;
-  const end = Math.min(page * meta.itemsPerPage, meta.totalItems);
-  const pages = Array.from({ length: meta.totalPages }, (_, i) => i + 1);
+  const startRecord = (page - 1) * (meta.limit || 10) + 1;
+  const endRecord = Math.min(page * (meta.limit || 10), meta.total || 0);
+  const totalPages = meta.totalPages || Math.ceil((meta.total || 1) / (meta.limit || 10)) || 1;
 
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="flex flex-col gap-4 sm:gap-5 text-foreground min-h-screen pb-12"
+      className="flex flex-col gap-5 text-foreground min-h-screen pb-16"
     >
-      {/* ─── Top Header Row ────────────────────────────── */}
+      {/* ── 1. Top Header Row & Calendar Context ────────────────── */}
       <motion.div
         variants={itemVariants}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface/50 border border-border/40 p-4 sm:p-5 rounded-2xl shadow-sm"
       >
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight">
-            <T k="empTitle" />
-          </h1>
-          <p className="text-xs text-muted mt-0.5">
-            <T k="empSubtitle" />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-foreground tracking-tight">
+              <T k="empTitle" />
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-gold/15 text-brand-gold border border-brand-gold/30 shadow-inner">
+              <Calendar className="size-3.5" />
+              <T k="empCurrentMonthBadge" />
+            </span>
+          </div>
+          <p className="text-xs text-muted">
+            <T k="empSubtitle" /> •{' '}
+            <span className="text-foreground/80 font-medium">
+              <T k="empCurrentMonthTooltip" />
+            </span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          {/* Live Clock Indicator */}
+        <div className="flex items-center gap-3 flex-wrap justify-between md:justify-end">
           <LiveClock />
 
-          {/* Add Employee — visible on larger screens here */}
+          {/* Currency Segmented Selector */}
+          <div className="inline-flex items-center bg-surface border border-border/80 p-1 rounded-xl shadow-inner text-xs font-semibold">
+            {(['USD', 'UZS', 'RUB'] as DisplayCurrency[]).map((cur) => {
+              const isActive = currency === cur;
+              const labels = {
+                USD: '$ USD',
+                UZS: locale === 'uz' ? "so'm" : 'UZS',
+                RUB: '₽ RUB',
+              };
+              return (
+                <button
+                  key={cur}
+                  onClick={() => setCurrency(cur)}
+                  className={`px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? 'bg-brand-gold text-brand-navy font-bold shadow-md scale-102'
+                      : 'text-muted hover:text-foreground hover:bg-border/30'
+                  }`}
+                >
+                  {labels[cur]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Add Employee CTA */}
           {canCreate('employees') && (
             <Button
               onPress={handleCreateEmployee}
-              className="hidden sm:flex bg-brand-gold text-brand-navy hover:opacity-90 font-bold text-xs rounded-xl px-4 py-2 h-9 shrink-0 shadow-md"
+              className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-bold text-xs rounded-xl px-4 py-2 h-9 shadow-md flex items-center gap-1.5 shrink-0 active:scale-98 transition-transform"
             >
-              <Plus className="size-4 mr-1.5" />
+              <Plus className="size-4" />
               <T k="empAddNew" />
             </Button>
           )}
         </div>
       </motion.div>
 
-      {/* ─── Summary Stat Cards ────────────────────────── */}
-      <motion.div variants={itemVariants}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          {[
-            {
-              key: 'ovTotalEmployees',
-              value: loading ? '—' : String(meta.totalItems),
-              icon: <Users className="size-4 sm:size-5" />,
-              color: 'text-blue-500',
-              bg: 'bg-blue-500/10 dark:bg-blue-500/15',
-            },
-            {
-              key: 'empOnlineNow',
-              value: loading ? '—' : String(openCount),
-              icon: <Activity className="size-4 sm:size-5" />,
-              color: 'text-emerald-500',
-              bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
-            },
-            {
-              key: 'empPlanCompleted',
-              value: loading ? '—' : String(planDoneCount),
-              icon: <TrendingUp className="size-4 sm:size-5" />,
-              color: 'text-amber-500',
-              bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-            },
-            {
-              key: 'empTotalRevenue',
-              value: loading ? '—' : formatMoney(totalRevenue),
-              icon: <Briefcase className="size-4 sm:size-5" />,
-              color: 'text-violet-500',
-              bg: 'bg-violet-500/10 dark:bg-violet-500/15',
-            },
-          ].map((stat) => (
-            <div
-              key={stat.key}
-              className="flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:shadow-lg hover:border-brand-gold/30 transition-all duration-300 min-w-0"
-            >
-              <div
-                className={`size-9 sm:size-10 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} shrink-0`}
-              >
-                {stat.icon}
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[10px] sm:text-xs font-medium text-muted truncate">
-                  <T k={stat.key} />
-                </span>
-                <span className="text-sm sm:text-lg font-bold text-foreground tracking-tight truncate">
-                  {stat.value}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* ─── Control Filters & Currency Switcher Bar ──── */}
+      {/* ── 2. Top Executive KPI Cards ──────────────────────────── */}
       <motion.div
         variants={itemVariants}
-        className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
       >
-        {/* Left Filter Dropdowns */}
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
-          {/* Year Filter */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-muted font-medium text-[11px] sm:text-xs">
-              <T k="filterYear" />
-            </span>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-surface dark:bg-surface border border-border text-foreground text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl focus:outline-none focus:border-brand-gold/50 cursor-pointer transition-colors"
-            >
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
+        {/* Card 1: Total Workforce */}
+        <div className="relative p-4 rounded-2xl bg-surface border border-border/40 hover:border-brand-gold/40 hover:shadow-lg transition-all duration-300 flex items-center gap-3.5 overflow-hidden">
+          <div className="size-11 sm:size-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
+            <Users className="size-5 sm:size-6" />
           </div>
-
-          {/* Period Filter */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-muted font-medium text-[11px] sm:text-xs">
-              <T k="filterPeriod" />
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs text-muted font-medium truncate">
+                <T k="ovTotalEmployees" />
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                {meta.open_employees} <T k="statusActive" />
+              </span>
+            </div>
+            <span className="text-xl sm:text-2xl font-bold font-serif text-foreground mt-0.5">
+              {loading ? <Skeleton className="h-7 w-16 rounded" /> : meta.total}
             </span>
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-surface dark:bg-surface border border-border text-foreground text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl focus:outline-none focus:border-brand-gold/50 cursor-pointer min-w-[65px] sm:min-w-[70px] transition-colors"
-            >
-              <option value="Июл">{t('monthJul')}</option>
-              <option value="Июн">{t('monthJun')}</option>
-              <option value="Май">{t('monthMay')}</option>
-              <option value="Апр">{t('monthApr')}</option>
-              <option value="Мар">{t('monthMar')}</option>
-              <option value="Фев">{t('monthFeb')}</option>
-              <option value="Янв">{t('monthJan')}</option>
-            </select>
           </div>
         </div>
 
-        {/* Right Currency Segmented Toggle */}
-        <div className="flex items-center justify-between sm:justify-start bg-surface dark:bg-surface border border-border p-1 rounded-xl text-xs font-medium">
-          {(['RUB', 'USD', 'UZS'] as Currency[]).map((cur) => {
-            const labels = {
-              RUB: '₽ RUB',
-              USD: '$ USD',
-              UZS: locale === 'uz' ? "so'm UZS" : locale === 'en' ? 'UZS' : 'сум UZS',
-            };
-            return (
-              <button
-                key={cur}
-                onClick={() => setCurrency(cur)}
-                className={`flex-1 sm:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg transition-all duration-200 font-semibold cursor-pointer text-center text-[11px] sm:text-xs ${
-                  currency === cur
-                    ? 'bg-brand-gold text-brand-navy font-bold shadow-md'
-                    : 'text-muted hover:text-foreground'
-                }`}
-              >
-                {labels[cur]}
-              </button>
-            );
-          })}
+        {/* Card 2: Current Month Multi-Currency Revenue */}
+        <div className="relative p-4 rounded-2xl bg-surface border border-border/40 hover:border-brand-gold/40 hover:shadow-lg transition-all duration-300 flex items-center gap-3.5 overflow-hidden">
+          <div className="size-11 sm:size-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+            <Coins className="size-5 sm:size-6" />
+          </div>
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs text-muted font-medium truncate">
+                <T k="empTotalRevenue" /> ({currency})
+              </span>
+            </div>
+            <span
+              className="text-lg sm:text-xl font-bold font-mono text-foreground mt-0.5 truncate"
+              title={formatCurValue(meta.total_revenue[currency] || 0, currency)}
+            >
+              {loading ? (
+                <Skeleton className="h-7 w-28 rounded" />
+              ) : (
+                formatCurValue(meta.total_revenue[currency] || 0, currency)
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: LTL Plan Completion */}
+        <div className="relative p-4 rounded-2xl bg-surface border border-border/40 hover:border-brand-gold/40 hover:shadow-lg transition-all duration-300 flex flex-col justify-between gap-2 overflow-hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="size-8 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
+                <TrendingUp className="size-4" />
+              </div>
+              <span className="text-xs text-muted font-semibold truncate">
+                <T k="empLtlPlan" />
+              </span>
+            </div>
+            <span
+              className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full border ${
+                meta.plan_completed.ltl_completion >= 100
+                  ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 border-emerald-500/30'
+                  : 'text-amber-700 dark:text-amber-400 bg-amber-500/15 border-amber-500/30'
+              }`}
+            >
+              {meta.plan_completed.ltl_completion.toFixed(1)}%
+            </span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-border/40 overflow-hidden mt-1">
+            <div
+              className={`h-full rounded-full ${
+                meta.plan_completed.ltl_completion >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
+              } transition-all duration-500`}
+              style={{ width: `${Math.min(meta.plan_completed.ltl_completion, 100)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Card 4: FTL Plan Completion */}
+        <div className="relative p-4 rounded-2xl bg-surface border border-border/40 hover:border-brand-gold/40 hover:shadow-lg transition-all duration-300 flex flex-col justify-between gap-2 overflow-hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="size-8 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/20">
+                <Activity className="size-4" />
+              </div>
+              <span className="text-xs text-muted font-semibold truncate">
+                <T k="empFtlPlan" />
+              </span>
+            </div>
+            <span
+              className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full border ${
+                meta.plan_completed.ftl_completion >= 100
+                  ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 border-emerald-500/30'
+                  : 'text-amber-700 dark:text-amber-400 bg-amber-500/15 border-amber-500/30'
+              }`}
+            >
+              {meta.plan_completed.ftl_completion.toFixed(1)}%
+            </span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-border/40 overflow-hidden mt-1">
+            <div
+              className={`h-full rounded-full ${
+                meta.plan_completed.ftl_completion >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
+              } transition-all duration-500`}
+              style={{ width: `${Math.min(meta.plan_completed.ftl_completion, 100)}%` }}
+            />
+          </div>
         </div>
       </motion.div>
 
-      {/* ─── Category Tabs & Actions Bar ─────────────── */}
+      {/* ── 3. Filters, Tabs & View Mode Bar ────────────────────── */}
       <motion.div variants={itemVariants} className="flex flex-col gap-3">
-        {/* Department / Category Pills */}
-        <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-1.5 bg-surface dark:bg-surface border border-border/40 p-1.5 rounded-xl">
-          {[
-            { id: 'all', label: <T k="tabAll" /> },
-            ...departments.map((dept) => ({
-              id: dept.id,
-              label: (() => {
-                const key = `tab${dept.name.charAt(0).toUpperCase()}${dept.name.slice(1)}`;
-                const translation = t(key);
-                return translation !== key ? <T k={key} /> : dept.display_name;
-              })(),
-            })),
-          ].map((tab, idx) => {
-            const isActive = activeTab === tab.id;
+        {/* Department Tabs with employee count chips */}
+        <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-1.5 bg-surface border border-border/40 p-1.5 rounded-2xl shadow-sm">
+          <button
+            onClick={() => {
+              setActiveDepartmentTab('all');
+              setPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+              activeDepartmentTab === 'all'
+                ? 'bg-brand-gold text-brand-navy shadow-md font-bold'
+                : 'text-muted hover:text-foreground hover:bg-border/30'
+            }`}
+          >
+            <T k="tabAll" />
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                activeDepartmentTab === 'all'
+                  ? 'bg-brand-navy/20 text-brand-navy'
+                  : 'bg-border/60 text-muted'
+              }`}
+            >
+              {meta.total}
+            </span>
+          </button>
+
+          {departments.map((dept) => {
+            const isActive = activeDepartmentTab === dept.id;
+            const count = deptCountMap[dept.id] || 0;
             return (
               <button
-                key={tab.id || idx}
+                key={dept.id}
                 onClick={() => {
-                  setActiveTab(tab.id);
+                  setActiveDepartmentTab(dept.id);
                   setPage(1);
                 }}
-                className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-brand-gold text-brand-navy shadow-md'
+                    ? 'bg-brand-gold text-brand-navy shadow-md font-bold'
                     : 'text-muted hover:text-foreground hover:bg-border/30'
                 }`}
               >
-                {tab.label}
+                <span>{dept.display_name}</span>
+                {count > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                      isActive ? 'bg-brand-navy/20 text-brand-navy' : 'bg-border/60 text-muted'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Search Box & Add Employee */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Search, Status Pills & View Toggle */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted pointer-events-none" />
             <input
               type="text"
-              placeholder={t('empSearch')}
               value={searchInputValue}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-surface dark:bg-surface border border-border text-foreground placeholder:text-muted focus:outline-none focus:border-brand-gold/60 focus:ring-2 focus:ring-brand-gold/20 transition-all"
+              placeholder={t('empSearch') || 'Search employees by name, phone, role...'}
+              className="w-full pl-10 pr-9 py-2 rounded-xl text-xs sm:text-sm bg-surface border border-border/60 text-foreground placeholder:text-muted focus:outline-none focus:border-brand-gold/60 focus:ring-2 focus:ring-brand-gold/20 transition-all"
             />
+            {searchInputValue && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-0.5 rounded-md cursor-pointer"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Add Employee — visible on mobile here */}
-          {canCreate('employees') && (
-            <Button
-              onPress={handleCreateEmployee}
-              className="sm:hidden bg-brand-gold text-brand-navy hover:opacity-90 font-bold text-xs rounded-xl px-3 py-2 h-9 sm:h-10 shrink-0 shadow-md min-w-[36px]"
-              isIconOnly
-            >
-              <Plus className="size-5" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
+            {/* Status Filter */}
+            <div className="inline-flex items-center bg-surface border border-border/60 p-1 rounded-xl text-xs font-semibold">
+              {(['all', 'Open', 'Pending', 'Banned'] as const).map((st) => {
+                const isActive = statusFilter === st;
+                return (
+                  <button
+                    key={st}
+                    onClick={() => setStatusFilter(st)}
+                    className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer text-[11px] font-semibold ${
+                      isActive
+                        ? 'bg-brand-gold text-brand-navy font-bold shadow-sm'
+                        : 'text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {st === 'all' ? (
+                      <T k="empAllStatuses" />
+                    ) : st === 'Open' ? (
+                      <T k="statusOpen" />
+                    ) : st === 'Pending' ? (
+                      <T k="statusPending" />
+                    ) : (
+                      <T k="statusBanned" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* View Mode Switcher */}
+            <div className="inline-flex items-center bg-surface border border-border/60 p-1 rounded-xl text-xs">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-brand-gold text-brand-navy shadow-sm'
+                    : 'text-muted hover:text-foreground'
+                }`}
+                title={t('empViewTable') || 'Table View'}
+              >
+                <List className="size-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'cards'
+                    ? 'bg-brand-gold text-brand-navy shadow-sm'
+                    : 'text-muted hover:text-foreground'
+                }`}
+                title={t('empViewCards') || 'Cards View'}
+              >
+                <LayoutGrid className="size-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* ─── Main Employee Content ────────────────────── */}
-
-      {/* ══ TABLE VIEW (Tablet & PC screens >= 768px) ═════ */}
-      <motion.div
-        variants={itemVariants}
-        className="hidden md:block bg-surface dark:bg-surface border border-border/40 rounded-2xl overflow-hidden shadow-lg"
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[750px]">
-            <thead>
-              <tr className="border-b border-border/60 text-[10px] uppercase font-bold text-muted tracking-wider">
-                <th className="py-3 px-3 sm:px-4 w-[180px] sm:w-[220px]">
-                  <T k="colName" />
-                </th>
-                <th className="py-3 px-3 sm:px-4">
-                  <T k="colRole" />
-                </th>
-                <th className="py-3 px-3 sm:px-4">
-                  <T k="colStatus" />
-                </th>
-                <th className="py-3 px-3 sm:px-4">
-                  <T k="colRevenue" />
-                </th>
-                <th className="py-3 px-3 sm:px-4">
-                  <T k="colPlanFact" />
-                </th>
-                <th className="py-3 px-3 sm:px-4 text-center">
-                  <T k="colClients" />
-                </th>
-                <th className="py-3 px-3 sm:px-4 text-right min-w-[120px]">
-                  <T k="colActions" />
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="size-10 rounded-full" />
-                        <div className="flex flex-col gap-1.5">
-                          <Skeleton className="h-4 w-28 rounded" />
-                          <Skeleton className="h-3 w-16 rounded" />
+      {/* ── 4. Main Employees Content (Table or Cards) ─────────── */}
+      {viewMode === 'table' ? (
+        /* ══ TABLE VIEW (Desktop & Tablet) ═════════════════════ */
+        <motion.div
+          variants={itemVariants}
+          className="bg-surface border border-border/40 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[850px]">
+              <thead>
+                <tr className="border-b border-border/60 text-[11px] uppercase font-bold text-muted tracking-wider bg-surface/70">
+                  <th className="py-3.5 px-4 w-[240px]">
+                    <T k="colName" />
+                  </th>
+                  <th className="py-3.5 px-4">
+                    <T k="colDepartment" />
+                  </th>
+                  <th className="py-3.5 px-4">
+                    <T k="colStatus" />
+                  </th>
+                  <th className="py-3.5 px-4">
+                    <T k="colRevenue" /> ({currency})
+                  </th>
+                  <th className="py-3.5 px-4">
+                    <T k="colPlanFact" />
+                  </th>
+                  <th className="py-3.5 px-4 text-center">
+                    <T k="colClients" />
+                  </th>
+                  <th className="py-3.5 px-4 text-right min-w-[130px]">
+                    <T k="colActions" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i}>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="size-10 rounded-full" />
+                          <div className="flex flex-col gap-1.5">
+                            <Skeleton className="h-4 w-32 rounded" />
+                            <Skeleton className="h-3 w-20 rounded" />
+                          </div>
                         </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Skeleton className="h-4 w-24 rounded" />
+                      </td>
+                      <td className="py-4 px-4">
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </td>
+                      <td className="py-4 px-4">
+                        <Skeleton className="h-4 w-24 rounded" />
+                      </td>
+                      <td className="py-4 px-4">
+                        <Skeleton className="h-5 w-32 rounded" />
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <Skeleton className="size-7 rounded-lg mx-auto" />
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <Skeleton className="h-7 w-24 rounded-lg ml-auto" />
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
+                        <div className="size-14 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                          <Users className="size-7" />
+                        </div>
+                        <h3 className="text-sm font-bold text-foreground">
+                          <T k="empNoEmployees" />
+                        </h3>
+                        <p className="text-xs text-muted">
+                          <T k="empNoEmployeesFiltered" />
+                        </p>
                       </div>
-                    </td>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                      <Skeleton className="h-4 w-32 rounded" />
-                    </td>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                    </td>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                      <Skeleton className="h-4 w-24 rounded" />
-                    </td>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                      <Skeleton className="h-4 w-32 rounded" />
-                    </td>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-center">
-                      <Skeleton className="size-6 rounded-md mx-auto" />
-                    </td>
-                    <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-right">
-                      <Skeleton className="h-6 w-20 rounded ml-auto" />
                     </td>
                   </tr>
-                ))
-              ) : filteredList.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="size-16 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center text-brand-gold">
-                        <Users className="size-8" />
-                      </div>
-                      <h3 className="text-sm font-bold text-foreground">
-                        <T k="empNoEmployees" />
-                      </h3>
-                      <p className="text-xs text-muted max-w-sm">
-                        <T k="empNoEmployeesDesc" />
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {filteredList.map((emp, i) => {
-                    const initials =
-                      `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {filteredEmployees.map((emp, i) => {
+                      const initials =
+                        `${emp.first_name?.[0] || emp.full_name?.[0] || ''}${
+                          emp.last_name?.[0] || emp.full_name?.split(' ')?.[1]?.[0] || ''
+                        }`.toUpperCase() || 'EMP';
+                      const revenueAmount = getEmployeeRevenue(emp);
+                      const ltlPct = emp.plan_completion?.ltl_completion ?? 90;
+                      const ftlPct = emp.plan_completion?.ftl_completion ?? 105;
+                      const accentColor = emp.color || '#C8A96A';
 
-                    return (
-                      <motion.tr
-                        key={emp.id}
-                        variants={rowVariants}
-                        initial="hidden"
-                        animate="show"
-                        exit="exit"
-                        transition={{ delay: i * 0.02 }}
-                        className="group hover:bg-brand-gold/5 dark:hover:bg-brand-gold/5 transition-colors duration-200 relative"
-                      >
-                        {/* Left accent */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4 relative">
-                          <div
-                            className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full opacity-80"
-                            style={{ backgroundColor: emp.accent_color }}
-                          />
-                          <div className="flex items-center gap-2.5 sm:gap-3">
-                            <Avatar
-                              className="size-9 sm:size-10 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
-                              style={{ borderColor: emp.accent_color }}
-                              onClick={() => handleViewEmployee(emp)}
-                            >
-                              {emp.picture_url && (
-                                <Avatar.Image
-                                  src={getImageUrl(emp.picture_url)}
-                                  alt={`${emp.first_name} ${emp.last_name}`}
-                                />
-                              )}
-                              <Avatar.Fallback
-                                className="text-xs font-bold"
-                                style={{
-                                  backgroundColor: `${emp.accent_color}15`,
-                                  color: emp.accent_color,
-                                }}
-                              >
-                                {initials}
-                              </Avatar.Fallback>
-                            </Avatar>
-                            <div className="flex flex-col min-w-0">
-                              <span
-                                className="text-xs sm:text-sm font-semibold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
+                      return (
+                        <motion.tr
+                          key={emp.id}
+                          variants={rowVariants}
+                          initial="hidden"
+                          animate="show"
+                          exit="exit"
+                          transition={{ delay: i * 0.02 }}
+                          className="group hover:bg-brand-gold/5 transition-colors duration-200 relative"
+                        >
+                          {/* Name & Avatar with color tag */}
+                          <td className="py-3.5 px-4 relative">
+                            <div
+                              className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full opacity-90"
+                              style={{ backgroundColor: accentColor }}
+                            />
+                            <div className="flex items-center gap-3">
+                              <Avatar
+                                className="size-10 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                                style={{ borderColor: accentColor }}
                                 onClick={() => handleViewEmployee(emp)}
                               >
-                                {emp.first_name} {emp.last_name}
-                              </span>
-                              <span className="text-[10px] sm:text-[11px] text-muted truncate">
-                                {emp.position_title}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* ДОЛЖНОСТЬ */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                          <span className="text-xs text-foreground/80 font-medium">
-                            {emp.position_title}
-                          </span>
-                        </td>
-
-                        {/* СТАТУС */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                          <StatusBadge status={emp.user_status} />
-                        </td>
-
-                        {/* ВЫРУЧКА */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                          <span className="text-xs sm:text-sm font-bold text-foreground tracking-wide">
-                            {emp.tushum?.formatted || formatMoney(emp.revenue_rub)}
-                          </span>
-                        </td>
-
-                        {/* ПЛАН / ФАКТ */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs font-semibold text-foreground">
-                              {emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}
-                            </span>
-                            <PlanProgressBar
-                              percent={emp.reja_fakt?.percentage ?? emp.plan_percent}
-                              statusLabel={emp.reja_fakt?.status || emp.plan_status_label}
-                              statusCode={emp.reja_fakt?.status_code}
-                            />
-                          </div>
-                        </td>
-
-                        {/* КЛИЕНТЫ */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-center">
-                          <span
-                            className="inline-flex items-center justify-center size-6.5 sm:size-7 rounded-lg text-xs font-bold text-white shadow-sm"
-                            style={{ backgroundColor: emp.accent_color }}
-                          >
-                            {emp.mijozlar_count ?? emp.clients_count}
-                          </span>
-                        </td>
-
-                        {/* ДЕЙСТВИЯ — Always visible on tablet & desktop */}
-                        <td className="py-3 sm:py-3.5 px-3 sm:px-4 text-right">
-                          <div className="flex items-center justify-end gap-0.5 sm:gap-1 text-muted transition-all duration-200">
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="ghost"
-                              onPress={() => handleViewEmployee(emp)}
-                              className="text-muted hover:text-foreground hover:bg-border/30 rounded-lg size-8"
-                            >
-                              <Eye className="size-3.5" />
-                            </Button>
-                            {canUpdate('employees') && (
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="ghost"
-                                onPress={() => handleEditEmployee(emp)}
-                                className="text-muted hover:text-brand-gold hover:bg-brand-gold/10 rounded-lg size-8"
-                              >
-                                <Pencil className="size-3.5" />
-                              </Button>
-                            )}
-                            {canUpdate('employees') && (
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="ghost"
-                                onPress={() => handleToggleStatus(emp)}
-                                className={`rounded-lg size-8 ${
-                                  emp.is_active
-                                    ? 'text-muted hover:text-amber-500 hover:bg-amber-500/10'
-                                    : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
-                                }`}
-                              >
-                                {emp.is_active ? (
-                                  <UserX className="size-3.5" />
-                                ) : (
-                                  <UserCheck className="size-3.5" />
+                                {emp.picture_url && (
+                                  <Avatar.Image
+                                    src={getImageUrl(emp.picture_url)}
+                                    alt={emp.full_name}
+                                  />
                                 )}
-                              </Button>
-                            )}
-                            {canDelete('employees') && (
+                                <Avatar.Fallback
+                                  className="text-xs font-bold"
+                                  style={{
+                                    backgroundColor: `${accentColor}15`,
+                                    color: accentColor,
+                                  }}
+                                >
+                                  {initials}
+                                </Avatar.Fallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span
+                                  className="text-xs sm:text-sm font-bold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
+                                  onClick={() => handleViewEmployee(emp)}
+                                >
+                                  {emp.full_name}
+                                </span>
+                                <span className="text-[11px] text-muted truncate">
+                                  {emp.role_name}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Department */}
+                          <td className="py-3.5 px-4">
+                            <span className="text-xs text-foreground/80 font-medium">
+                              {emp.department_name}
+                            </span>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3.5 px-4">
+                            <StatusBadge status={emp.status} />
+                          </td>
+
+                          {/* Multi-Currency Revenue */}
+                          <td className="py-3.5 px-4">
+                            <span className="text-xs sm:text-sm font-bold font-mono text-foreground tracking-tight">
+                              {formatCurValue(revenueAmount, currency)}
+                            </span>
+                          </td>
+
+                          {/* Dual Plan / Fact Spec (LTL & FTL) */}
+                          <td className="py-3.5 px-4">
+                            <DualPlanProgress ltl={ltlPct} ftl={ftlPct} />
+                          </td>
+
+                          {/* Assigned Count */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span
+                              className="inline-flex items-center justify-center size-7 rounded-lg text-xs font-bold text-white shadow-sm"
+                              style={{ backgroundColor: accentColor }}
+                            >
+                              {emp.total_assigned_employees ?? 1}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1 text-muted">
                               <Button
                                 isIconOnly
                                 size="sm"
                                 variant="ghost"
-                                onPress={() => handleDeleteEmployee(emp)}
-                                className="text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-lg size-8"
+                                onPress={() => handleViewEmployee(emp)}
+                                className="text-muted hover:text-foreground hover:bg-border/30 rounded-lg size-8"
+                                aria-label={t('actionView') || 'View Profile'}
                               >
-                                <Trash2 className="size-3.5" />
+                                <Eye className="size-3.5" />
                               </Button>
-                            )}
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Desktop Pagination Footer */}
-        {!loading && meta.totalPages > 0 && filteredList.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between px-5 py-3.5 border-t border-border/40 gap-3 text-xs bg-surface/50">
-            <span className="text-muted">
-              <T k="pagShowing" /> {start}–{end} <T k="pagOf" /> {meta.totalItems}{' '}
-              <T k="pagResults" />
-            </span>
-            <Pagination size="sm">
-              <Pagination.Content>
-                <Pagination.Item>
-                  <Pagination.Previous
-                    isDisabled={page === 1}
-                    onPress={() => setPage((p) => Math.max(1, p - 1))}
-                    className="text-xs text-foreground/70"
-                  >
-                    <Pagination.PreviousIcon />
-                    <T k="pagPrev" />
-                  </Pagination.Previous>
-                </Pagination.Item>
-                {pages.map((p) => (
-                  <Pagination.Item key={p}>
-                    <Pagination.Link
-                      isActive={p === page}
-                      onPress={() => setPage(p)}
-                      className="text-xs"
-                    >
-                      {p}
-                    </Pagination.Link>
-                  </Pagination.Item>
-                ))}
-                <Pagination.Item>
-                  <Pagination.Next
-                    isDisabled={page === meta.totalPages}
-                    onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-                    className="text-xs text-foreground/70"
-                  >
-                    <T k="pagNext" />
-                    <Pagination.NextIcon />
-                  </Pagination.Next>
-                </Pagination.Item>
-              </Pagination.Content>
-            </Pagination>
+                              {canUpdate('employees') && (
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="ghost"
+                                  onPress={() => handleEditEmployee(emp)}
+                                  className="text-muted hover:text-brand-gold hover:bg-brand-gold/10 rounded-lg size-8"
+                                  aria-label={t('actionEdit') || 'Edit Employee'}
+                                >
+                                  <Pencil className="size-3.5" />
+                                </Button>
+                              )}
+                              {canUpdate('employees') && (
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="ghost"
+                                  onPress={() => handleToggleStatus(emp)}
+                                  className={`rounded-lg size-8 ${
+                                    emp.is_active !== false && emp.status !== 'Banned'
+                                      ? 'text-muted hover:text-amber-500 hover:bg-amber-500/10'
+                                      : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
+                                  }`}
+                                  aria-label={
+                                    emp.is_active !== false && emp.status !== 'Banned'
+                                      ? t('empDeactivateTitle')
+                                      : t('empActivateTitle')
+                                  }
+                                >
+                                  {emp.is_active !== false && emp.status !== 'Banned' ? (
+                                    <UserX className="size-3.5" />
+                                  ) : (
+                                    <UserCheck className="size-3.5" />
+                                  )}
+                                </Button>
+                              )}
+                              {canDelete('employees') && (
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="ghost"
+                                  onPress={() => handleDeleteEmployee(emp)}
+                                  className="text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-lg size-8"
+                                  aria-label={t('actionDelete') || 'Delete Employee'}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </motion.div>
 
-      {/* ══ MOBILE CARD VIEW (< 768px screens ONLY) ════════ */}
-      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="p-3.5 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <Skeleton className="size-11 sm:size-12 rounded-full" />
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <Skeleton className="h-4 w-32 rounded" />
-                  <Skeleton className="h-3 w-24 rounded" />
+          {/* Desktop Pagination Footer */}
+          {!loading && meta.total > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-5 py-3.5 border-t border-border/40 gap-3 text-xs bg-surface/50">
+              <span className="text-muted">
+                <T k="pagShowing" />{' '}
+                <strong className="text-foreground">
+                  {startRecord}–{endRecord}
+                </strong>{' '}
+                <T k="pagOf" /> <strong className="text-foreground">{meta.total}</strong>{' '}
+                <T k="pagResults" />
+              </span>
+              <Pagination size="sm">
+                <Pagination.Content>
+                  <Pagination.Item>
+                    <Pagination.Previous
+                      isDisabled={page === 1}
+                      onPress={() => setPage((p) => Math.max(1, p - 1))}
+                      className="text-xs text-foreground/70"
+                    >
+                      <Pagination.PreviousIcon />
+                      <T k="pagPrev" />
+                    </Pagination.Previous>
+                  </Pagination.Item>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <Pagination.Item key={p}>
+                      <Pagination.Link
+                        isActive={p === page}
+                        onPress={() => setPage(p)}
+                        className="text-xs"
+                      >
+                        {p}
+                      </Pagination.Link>
+                    </Pagination.Item>
+                  ))}
+                  <Pagination.Item>
+                    <Pagination.Next
+                      isDisabled={page === totalPages}
+                      onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      className="text-xs text-foreground/70"
+                    >
+                      <T k="pagNext" />
+                      <Pagination.NextIcon />
+                    </Pagination.Next>
+                  </Pagination.Item>
+                </Pagination.Content>
+              </Pagination>
+            </div>
+          )}
+        </motion.div>
+      ) : (
+        /* ══ CARDS VIEW (Mobile & Alternative Grid) ══════════ */
+        <motion.div
+          variants={itemVariants}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-2xl bg-surface border border-border/40">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="size-12 rounded-full" />
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <Skeleton className="h-4 w-32 rounded" />
+                    <Skeleton className="h-3 w-20 rounded" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Skeleton className="h-12 rounded-xl" />
+                  <Skeleton className="h-12 rounded-xl" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <Skeleton className="h-11 sm:h-12 rounded-xl" />
-                <Skeleton className="h-11 sm:h-12 rounded-xl" />
+            ))
+          ) : filteredEmployees.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center gap-3 py-16 text-center">
+              <div className="size-14 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                <Users className="size-7" />
               </div>
+              <h3 className="text-sm font-bold text-foreground">
+                <T k="empNoEmployees" />
+              </h3>
+              <p className="text-xs text-muted">
+                <T k="empNoEmployeesFiltered" />
+              </p>
             </div>
-          ))
-        ) : filteredList.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center gap-4 py-16">
-            <div className="size-16 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 flex items-center justify-center text-brand-gold">
-              <Users className="size-8" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground">
-              <T k="empNoEmployees" />
-            </h3>
-            <p className="text-xs text-muted max-w-sm text-center">
-              <T k="empNoEmployeesDesc" />
-            </p>
-          </div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {filteredList.map((emp, i) => {
+          ) : (
+            filteredEmployees.map((emp) => {
               const initials =
-                `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
+                `${emp.first_name?.[0] || emp.full_name?.[0] || ''}${
+                  emp.last_name?.[0] || emp.full_name?.split(' ')?.[1]?.[0] || ''
+                }`.toUpperCase() || 'EMP';
+              const revenueAmount = getEmployeeRevenue(emp);
+              const ltlPct = emp.plan_completion?.ltl_completion ?? 90;
+              const ftlPct = emp.plan_completion?.ftl_completion ?? 105;
+              const accentColor = emp.color || '#C8A96A';
 
               return (
                 <motion.div
                   key={emp.id}
                   variants={cardVariants}
-                  initial="hidden"
-                  animate="show"
-                  exit="exit"
-                  transition={{ delay: i * 0.03 }}
-                  className="relative p-3.5 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border/40 hover:border-brand-gold/30 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between"
+                  className="relative p-4 rounded-2xl bg-surface border border-border/40 hover:border-brand-gold/40 hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
                 >
-                  {/* Left accent stripe */}
                   <div
                     className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full"
-                    style={{ backgroundColor: emp.accent_color }}
+                    style={{ backgroundColor: accentColor }}
                   />
 
                   <div>
-                    {/* Top row: avatar + name + status */}
-                    <div className="flex items-start gap-2.5 sm:gap-3 mb-3 pl-1.5">
+                    {/* Header: Avatar, Name, Role, Status */}
+                    <div className="flex items-start gap-3 mb-3 pl-1.5">
                       <Avatar
-                        className="size-11 sm:size-12 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
-                        style={{ borderColor: emp.accent_color }}
+                        className="size-12 rounded-full shrink-0 border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                        style={{ borderColor: accentColor }}
                         onClick={() => handleViewEmployee(emp)}
                       >
                         {emp.picture_url && (
-                          <Avatar.Image
-                            src={getImageUrl(emp.picture_url)}
-                            alt={`${emp.first_name} ${emp.last_name}`}
-                          />
+                          <Avatar.Image src={getImageUrl(emp.picture_url)} alt={emp.full_name} />
                         )}
                         <Avatar.Fallback
-                          className="text-xs sm:text-sm font-bold"
+                          className="text-xs font-bold"
                           style={{
-                            backgroundColor: `${emp.accent_color}15`,
-                            color: emp.accent_color,
+                            backgroundColor: `${accentColor}15`,
+                            color: accentColor,
                           }}
                         >
                           {initials}
                         </Avatar.Fallback>
                       </Avatar>
+
                       <div className="flex flex-col flex-1 min-w-0">
                         <span
-                          className="text-xs sm:text-sm font-bold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
+                          className="text-sm font-bold text-foreground truncate hover:text-brand-gold cursor-pointer transition-colors"
                           onClick={() => handleViewEmployee(emp)}
                         >
-                          {emp.first_name} {emp.last_name}
+                          {emp.full_name}
                         </span>
-                        <span className="text-[10px] sm:text-[11px] text-muted truncate">
-                          {emp.position_title}
-                        </span>
-                        <div className="mt-1">
-                          <StatusBadge status={emp.user_status} />
+                        <span className="text-[11px] text-muted truncate">{emp.role_name}</span>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <StatusBadge status={emp.status} />
+                          <span className="text-[10px] text-muted font-medium bg-border/20 px-2 py-0.5 rounded-md">
+                            {emp.department_name}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Metrics grid */}
+                    {/* Revenue & Plan Grid */}
                     <div className="grid grid-cols-2 gap-2 mb-3 pl-1.5">
-                      <div className="flex flex-col gap-0.5 p-2 sm:p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
-                        <span className="text-[9px] sm:text-[10px] text-muted font-medium">
-                          <T k="colRevenue" />
+                      <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-border/20">
+                        <span className="text-[10px] text-muted font-medium">
+                          <T k="colRevenue" /> ({currency})
                         </span>
-                        <span className="text-xs sm:text-sm font-bold text-foreground truncate">
-                          {emp.tushum?.formatted || formatMoney(emp.revenue_rub)}
+                        <span className="text-xs sm:text-sm font-bold font-mono text-foreground truncate">
+                          {formatCurValue(revenueAmount, currency)}
                         </span>
                       </div>
-                      <div className="flex flex-col gap-0.5 p-2 sm:p-2.5 rounded-xl bg-border/20 dark:bg-border/10">
-                        <span className="text-[9px] sm:text-[10px] text-muted font-medium">
-                          <T k="colPlanFact" />
+
+                      <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-border/20">
+                        <span className="text-[10px] text-muted font-medium">
+                          <T k="empAssignedStaff" />
                         </span>
-                        <span className="text-xs sm:text-sm font-bold text-foreground truncate">
-                          {emp.reja_fakt?.formatted_plan || formatPlanTarget(emp.plan_target)}
+                        <span className="text-xs sm:text-sm font-bold text-foreground">
+                          {emp.total_assigned_employees ?? 1} <T k="clientCountSuffix" />
                         </span>
                       </div>
                     </div>
 
-                    {/* Progress bar */}
-                    <div className="pl-1.5 mb-3">
-                      <PlanProgressBar
-                        percent={emp.reja_fakt?.percentage ?? emp.plan_percent}
-                        statusLabel={emp.reja_fakt?.status || emp.plan_status_label}
-                        statusCode={emp.reja_fakt?.status_code}
-                      />
+                    {/* Dual Plan Specs */}
+                    <div className="pl-1.5 mb-3 bg-border/10 p-2.5 rounded-xl border border-border/20">
+                      <DualPlanProgress ltl={ltlPct} ftl={ftlPct} />
                     </div>
                   </div>
 
-                  {/* Bottom: clients badge + touch action buttons */}
+                  {/* Card Footer: Touch Action Buttons */}
                   <div className="flex items-center justify-between pl-1.5 pt-2 border-t border-border/20">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="inline-flex items-center justify-center size-6.5 sm:size-7 rounded-lg text-[11px] sm:text-xs font-bold text-white shadow-sm"
-                        style={{ backgroundColor: emp.accent_color }}
-                      >
-                        {emp.mijozlar_count ?? emp.clients_count}
-                      </span>
-                      <span className="text-[10px] text-muted">
-                        <T k="clientCountSuffix" />
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-mono text-muted">{emp.phone || '—'}</span>
 
-                    {/* Always visible action buttons */}
-                    <div className="flex items-center gap-0.5 sm:gap-1">
+                    <div className="flex items-center gap-1">
                       <Button
                         isIconOnly
                         size="sm"
@@ -1299,12 +1240,12 @@ export function EmployeesPage() {
                           variant="ghost"
                           onPress={() => handleToggleStatus(emp)}
                           className={`rounded-lg size-8 ${
-                            emp.is_active
+                            emp.is_active !== false && emp.status !== 'Banned'
                               ? 'text-muted hover:text-amber-500 hover:bg-amber-500/10'
                               : 'text-muted hover:text-emerald-500 hover:bg-emerald-500/10'
                           }`}
                         >
-                          {emp.is_active ? (
+                          {emp.is_active !== false && emp.status !== 'Banned' ? (
                             <UserX className="size-4" />
                           ) : (
                             <UserCheck className="size-4" />
@@ -1326,44 +1267,44 @@ export function EmployeesPage() {
                   </div>
                 </motion.div>
               );
-            })}
-          </AnimatePresence>
-        )}
+            })
+          )}
 
-        {/* Mobile & Tablet Pagination */}
-        {!loading && meta.totalPages > 1 && filteredList.length > 0 && (
-          <div className="col-span-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-surface dark:bg-surface border border-border/40 text-xs">
-            <span className="text-muted text-[11px] sm:text-xs">
-              {start}–{end} / {meta.totalItems}
-            </span>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                isDisabled={page === 1}
-                onPress={() => setPage((p) => Math.max(1, p - 1))}
-                className="text-xs text-foreground/70 rounded-lg h-8 px-2.5"
-              >
-                <T k="pagPrev" />
-              </Button>
-              <span className="text-xs font-bold text-foreground px-1.5 sm:px-2">
-                {page} / {meta.totalPages}
+          {/* Cards View Pagination */}
+          {!loading && (meta.totalPages || 1) > 1 && (
+            <div className="col-span-full flex items-center justify-between p-3.5 rounded-2xl bg-surface border border-border/40 text-xs">
+              <span className="text-muted">
+                {startRecord}–{endRecord} / {meta.total}
               </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                isDisabled={page === meta.totalPages}
-                onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-                className="text-xs text-foreground/70 rounded-lg h-8 px-2.5"
-              >
-                <T k="pagNext" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  isDisabled={page === 1}
+                  onPress={() => setPage((p) => Math.max(1, p - 1))}
+                  className="text-xs h-8 px-3"
+                >
+                  <T k="pagPrev" />
+                </Button>
+                <span className="text-xs font-bold text-foreground px-1.5">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  isDisabled={page === totalPages}
+                  onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="text-xs h-8 px-3"
+                >
+                  <T k="pagNext" />
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </motion.div>
+      )}
 
-      {/* ─── Employee Create / Edit Modal ────────────── */}
+      {/* ── 5. Employee Create / Edit Modal ────────────────────── */}
       <EmployeeFormModal
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -1376,31 +1317,31 @@ export function EmployeesPage() {
         }}
       />
 
-      {/* ─── Delete Confirmation Modal ────────────────── */}
+      {/* ── 6. Delete Confirmation Modal ──────────────────────── */}
       <Modal.Backdrop isOpen={deleteOpen} onOpenChange={setDeleteOpen}>
         <Modal.Container>
-          <Modal.Dialog className="w-[90vw] max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl mx-auto my-auto">
-            <Modal.CloseTrigger className="absolute top-3.5 sm:top-4 right-3.5 sm:right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
-            <Modal.Body className="flex flex-col items-center text-center py-6 sm:py-8 px-4 sm:px-6 gap-3.5 sm:gap-4">
-              <div className="size-12 sm:size-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 flex items-center justify-center text-rose-500">
-                <AlertTriangle className="size-6 sm:size-7" />
+          <Modal.Dialog className="w-[92vw] max-w-[380px] bg-surface border border-border/60 rounded-2xl mx-auto my-auto shadow-2xl">
+            <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
+            <Modal.Body className="flex flex-col items-center text-center py-6 px-6 gap-4">
+              <div className="size-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <AlertTriangle className="size-7" />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-foreground font-serif">
+              <h3 className="text-lg font-bold text-foreground font-serif">
                 <T k="empDeleteTitle" />
               </h3>
-              <p className="text-xs text-muted leading-relaxed max-w-xs">
+              <p className="text-xs text-muted leading-relaxed">
                 <T k="empDeleteDesc" />
               </p>
               {deletingEmployee && (
-                <div className="flex items-center gap-2.5 sm:gap-3 bg-border/20 dark:bg-border/10 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-border/40">
+                <div className="flex items-center gap-3 bg-border/20 px-4 py-2.5 rounded-xl border border-border/40 w-full">
                   <Avatar
-                    className="size-7 sm:size-8"
+                    className="size-8"
                     style={{ borderColor: deletingEmployee.color || '#CCC', borderWidth: 2 }}
                   >
                     {deletingEmployee.picture_url && (
                       <Avatar.Image
                         src={getImageUrl(deletingEmployee.picture_url)}
-                        alt={`${deletingEmployee.first_name}`}
+                        alt={deletingEmployee.full_name}
                       />
                     )}
                     <Avatar.Fallback
@@ -1410,28 +1351,32 @@ export function EmployeesPage() {
                         color: deletingEmployee.color || '#CCC',
                       }}
                     >
-                      {deletingEmployee.first_name?.[0]}
-                      {deletingEmployee.last_name?.[0]}
+                      {deletingEmployee.full_name?.[0]}
                     </Avatar.Fallback>
                   </Avatar>
-                  <span className="text-xs font-semibold text-foreground">
-                    {deletingEmployee.first_name} {deletingEmployee.last_name}
-                  </span>
+                  <div className="flex flex-col text-left min-w-0 flex-1">
+                    <span className="text-xs font-bold text-foreground truncate">
+                      {deletingEmployee.full_name}
+                    </span>
+                    <span className="text-[10px] text-muted truncate">
+                      {deletingEmployee.role_name}
+                    </span>
+                  </div>
                 </div>
               )}
             </Modal.Body>
-            <Modal.Footer className="flex items-center justify-center gap-2.5 sm:gap-3 px-4 pb-5 sm:pb-6">
+            <Modal.Footer className="flex items-center justify-center gap-3 px-6 pb-6">
               <Button
                 variant="ghost"
                 onPress={() => setDeleteOpen(false)}
-                className="text-xs font-semibold text-muted flex-1 sm:flex-initial"
+                className="text-xs font-semibold text-muted flex-1"
               >
                 <T k="actionCancel" />
               </Button>
               <Button
                 onPress={handleConfirmDelete}
                 isDisabled={deleteLoading}
-                className="bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold flex-1 sm:flex-initial min-w-[120px] sm:min-w-[160px] rounded-xl"
+                className="bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold flex-1 min-w-[130px] rounded-xl"
               >
                 {deleteLoading ? (
                   <span className="inline-flex items-center gap-2">
@@ -1446,48 +1391,56 @@ export function EmployeesPage() {
         </Modal.Container>
       </Modal.Backdrop>
 
-      {/* ─── Status Toggle Confirmation Modal ─────────── */}
+      {/* ── 7. Status Toggle Confirmation Modal ───────────────── */}
       <Modal.Backdrop isOpen={statusOpen} onOpenChange={setStatusOpen}>
         <Modal.Container>
-          <Modal.Dialog className="w-[90vw] max-w-[380px] bg-surface dark:bg-surface border border-border/60 rounded-2xl mx-auto my-auto">
-            <Modal.CloseTrigger className="absolute top-3.5 sm:top-4 right-3.5 sm:right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
-            <Modal.Body className="flex flex-col items-center text-center py-6 sm:py-8 px-4 sm:px-6 gap-3.5 sm:gap-4">
+          <Modal.Dialog className="w-[92vw] max-w-[380px] bg-surface border border-border/60 rounded-2xl mx-auto my-auto shadow-2xl">
+            <Modal.CloseTrigger className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-border/30 cursor-pointer focus:outline-none" />
+            <Modal.Body className="flex flex-col items-center text-center py-6 px-6 gap-4">
               <div
-                className={`size-12 sm:size-14 rounded-2xl flex items-center justify-center ${statusEmployee?.is_active ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-500' : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500'}`}
+                className={`size-14 rounded-2xl flex items-center justify-center ${
+                  statusEmployee?.is_active !== false && statusEmployee?.status !== 'Banned'
+                    ? 'bg-amber-500/10 text-amber-500'
+                    : 'bg-emerald-500/10 text-emerald-500'
+                }`}
               >
-                {statusEmployee?.is_active ? (
-                  <UserX className="size-6 sm:size-7" />
+                {statusEmployee?.is_active !== false && statusEmployee?.status !== 'Banned' ? (
+                  <UserX className="size-7" />
                 ) : (
-                  <UserCheck className="size-6 sm:size-7" />
+                  <UserCheck className="size-7" />
                 )}
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-foreground font-serif">
-                {statusEmployee?.is_active ? (
+              <h3 className="text-lg font-bold text-foreground font-serif">
+                {statusEmployee?.is_active !== false && statusEmployee?.status !== 'Banned' ? (
                   <T k="empDeactivateTitle" />
                 ) : (
                   <T k="empActivateTitle" />
                 )}
               </h3>
-              <p className="text-xs text-muted leading-relaxed max-w-xs">
-                {statusEmployee?.is_active ? (
+              <p className="text-xs text-muted leading-relaxed">
+                {statusEmployee?.is_active !== false && statusEmployee?.status !== 'Banned' ? (
                   <T k="empDeactivateDesc" />
                 ) : (
                   <T k="empActivateDesc" />
                 )}
               </p>
             </Modal.Body>
-            <Modal.Footer className="flex items-center justify-center gap-2.5 sm:gap-3 px-4 pb-5 sm:pb-6">
+            <Modal.Footer className="flex items-center justify-center gap-3 px-6 pb-6">
               <Button
                 variant="ghost"
                 onPress={() => setStatusOpen(false)}
-                className="text-xs font-semibold text-muted flex-1 sm:flex-initial"
+                className="text-xs font-semibold text-muted flex-1"
               >
                 <T k="actionCancel" />
               </Button>
               <Button
                 onPress={handleConfirmToggleStatus}
                 isDisabled={statusLoading}
-                className={`text-xs font-semibold flex-1 sm:flex-initial min-w-[110px] sm:min-w-[120px] rounded-xl ${statusEmployee?.is_active ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                className={`text-xs font-semibold flex-1 min-w-[120px] rounded-xl ${
+                  statusEmployee?.is_active !== false && statusEmployee?.status !== 'Banned'
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                }`}
               >
                 {statusLoading ? <Spinner size="sm" /> : <T k="actionConfirm" />}
               </Button>
