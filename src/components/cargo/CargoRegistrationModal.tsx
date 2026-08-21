@@ -27,7 +27,6 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
-import { T } from '../T';
 import {
   cargoRegistrationsApi,
   CONTAINER_TYPES,
@@ -35,14 +34,12 @@ import {
   formatMoney,
   currencyApi,
   convertPriceToUsdAndUzs,
-  cargoConsolidationsApi,
 } from '../../services/api';
 import type {
   CargoType,
   ContainerType,
   CargoRegistrationStatus,
   CurrencyType,
-  ActiveConsolidationOption,
 } from '../../services/api';
 import { EmployeeSelect } from './EmployeeSelect';
 import { ClientSelect } from './ClientSelect';
@@ -174,13 +171,6 @@ export function CargoRegistrationModal({
   const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Active consolidations for search-or-create dropdown
-  const [activeConsolidations, setActiveConsolidations] = useState<ActiveConsolidationOption[]>([]);
-  const [selectedConsolidationId, setSelectedConsolidationId] = useState<string>('');
-  const [showInlineNewTruck, setShowInlineNewTruck] = useState<boolean>(false);
-  const [inlineTruckPlate, setInlineTruckPlate] = useState<string>('');
-  const [inlineTruckCarrier, setInlineTruckCarrier] = useState<string>('');
-
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 12800,
     RUB: 140,
@@ -188,7 +178,7 @@ export function CargoRegistrationModal({
     UZS: 1,
   });
 
-  // Fetch exchange rates and active consolidations on modal open
+  // Fetch exchange rates on modal open
   useEffect(() => {
     if (!isOpen) return;
     currencyApi
@@ -204,13 +194,6 @@ export function CargoRegistrationModal({
           }
           setRates((prev) => ({ ...prev, ...newRates }));
         }
-      })
-      .catch(() => {});
-
-    cargoConsolidationsApi
-      .getActive()
-      .then((res) => {
-        setActiveConsolidations(res);
       })
       .catch(() => {});
   }, [isOpen]);
@@ -449,7 +432,6 @@ export function CargoRegistrationModal({
           weight: cargoType === 'LTL' ? wt : undefined,
           container_type: cargoType === 'FTL' ? containerType : undefined,
           container_truck_id: containerTruckId.trim(),
-          consolidation_id: selectedConsolidationId || undefined,
           agent_name: agentName.trim(),
           cargo: cargo.trim(),
           confirmed_date: confirmedDate || undefined,
@@ -479,7 +461,6 @@ export function CargoRegistrationModal({
           weight: cargoType === 'LTL' ? wt : undefined,
           container_type: cargoType === 'FTL' ? containerType : undefined,
           container_truck_id: containerTruckId.trim(),
-          consolidation_id: selectedConsolidationId || undefined,
           agent_name: agentName.trim(),
           cargo: cargo.trim(),
           confirmed_date: confirmedDate || undefined,
@@ -760,103 +741,10 @@ export function CargoRegistrationModal({
                 )}
 
                 {/* SECTION 2: LOGISTICS IDENTIFIERS */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      2. Shipment Identification & Logistics
-                    </label>
-                    {cargoType === 'LTL' && (
-                      <button
-                        type="button"
-                        onClick={() => setShowInlineNewTruck(!showInlineNewTruck)}
-                        className="text-xs text-brand-gold hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        {showInlineNewTruck
-                          ? t('cnsCloseInlineForm') || 'Cancel New Truck'
-                          : t('cnsCreateNewTruckInline') || '+ Register New Truck / Trip'}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* LTL Consolidation Selector */}
-                  {cargoType === 'LTL' && (
-                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <Layers className="size-3.5 text-brand-gold" />
-                          <span>
-                            <T k="cnsConsolidationTruck" />
-                          </span>
-                        </label>
-                        {selectedConsolidationId && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                            Linked to Trip
-                          </span>
-                        )}
-                      </div>
-
-                      {!showInlineNewTruck ? (
-                        <div className="space-y-1">
-                          <select
-                            value={selectedConsolidationId}
-                            onChange={(e) => {
-                              const selId = e.target.value;
-                              setSelectedConsolidationId(selId);
-                              if (selId) {
-                                const found = activeConsolidations.find((c) => c.id === selId);
-                                if (found) {
-                                  setContainerTruckId(found.container_truck_id);
-                                  if (found.carrier_name) setAgentName(found.carrier_name);
-                                }
-                              }
-                            }}
-                            className="w-full px-3 py-2 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                          >
-                            <option value="">-- Standalone / Manual Truck Number --</option>
-                            {activeConsolidations.map((opt) => (
-                              <option key={opt.id} value={opt.id}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="text-[11px] text-muted-foreground">
-                            Pick an active consolidation truck to automatically link capacities and
-                            carrier route.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="p-3 rounded-xl bg-background border border-border space-y-2 text-xs">
-                          <div className="font-bold text-foreground flex items-center gap-1.5">
-                            <Truck className="size-3.5 text-brand-gold" />
-                            <span>Quick Register New Consolidation Trip:</span>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input
-                              type="text"
-                              placeholder="Truck Plate (e.g. 01A888BB)"
-                              value={inlineTruckPlate}
-                              onChange={(e) => {
-                                setInlineTruckPlate(e.target.value.toUpperCase());
-                                setContainerTruckId(e.target.value.toUpperCase());
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg border border-border bg-field text-xs font-mono font-bold"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Carrier Name (e.g. SilkRoad)"
-                              value={inlineTruckCarrier}
-                              onChange={(e) => {
-                                setInlineTruckCarrier(e.target.value);
-                                setAgentName(e.target.value);
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg border border-border bg-field text-xs font-semibold"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    2. Shipment Identification & Logistics
+                  </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-foreground mb-1.5">

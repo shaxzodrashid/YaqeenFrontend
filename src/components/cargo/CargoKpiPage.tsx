@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calculator, Truck, Crown, Target, Receipt, Award, Layers } from 'lucide-react';
+import { Package, Calculator, Truck, Crown, Target, Receipt, Award } from 'lucide-react';
 import { T } from '../T';
 import { LtlCalcTab } from './LtlCalcTab';
 import { RopSeoModuleTab } from './RopSeoModuleTab';
@@ -8,16 +8,9 @@ import { EmployeePlansTab } from './EmployeePlansTab';
 import { CargoTransactionsTab } from './CargoTransactionsTab';
 import { ContainerTrackingTab } from './ContainerTrackingTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
-import { CargoConsolidationsTab } from './consolidations/CargoConsolidationsTab';
 
 export type CargoTabId =
-  | 'container-tracking'
-  | 'consolidations'
-  | 'ltl-calc'
-  | 'rop-seo'
-  | 'sales-manager'
-  | 'plans'
-  | 'transactions';
+  'container-tracking' | 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans' | 'transactions';
 
 export function CargoKpiPage() {
   const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
@@ -27,11 +20,6 @@ export function CargoKpiPage() {
       id: 'container-tracking',
       labelKey: 'tabContainerTracking',
       icon: <Truck className="size-4" />,
-    },
-    {
-      id: 'consolidations',
-      labelKey: 'tabConsolidations',
-      icon: <Layers className="size-4" />,
     },
     { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
     { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
@@ -44,8 +32,6 @@ export function CargoKpiPage() {
     switch (activeTab) {
       case 'container-tracking':
         return <ContainerTrackingTab />;
-      case 'consolidations':
-        return <CargoConsolidationsTab />;
       case 'ltl-calc':
         return <LtlCalcTab />;
       case 'rop-seo':

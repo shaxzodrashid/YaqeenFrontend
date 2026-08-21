@@ -55,17 +55,6 @@ export interface CreateCargoRegistrationDto {
   weight?: number;
   container_type?: ContainerType | string;
   container_truck_id: string;
-  consolidation_id?: string | null;
-  new_consolidation?: {
-    container_truck_id: string;
-    container_type?: string;
-    max_volume_capacity?: number;
-    max_weight_capacity?: number;
-    carrier_name?: string;
-    origin_place?: string;
-    destination_place?: string;
-    departure_date?: string;
-  };
   agent_name: string;
   cargo: string;
   confirmed_date?: string;
