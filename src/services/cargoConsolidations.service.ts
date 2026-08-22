@@ -15,14 +15,12 @@ import { locationsApi } from './locations.service';
 // ---------------------------------------------------------------------------
 
 export const CONSOLIDATION_STATUSES = [
-  'Planning',
-  'Loading',
-  'On the way',
+  'Waiting',
   'Station',
+  'On the way',
   'On the border',
   'Reload',
   'Arrived',
-  'Completed',
 ] as const;
 
 export type ConsolidationStatus = (typeof CONSOLIDATION_STATUSES)[number];
@@ -359,7 +357,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     total_carrier_cost: 5200,
     carrier_cost_currency: 'USD',
     carrier_cost_usd_rate: 1,
-    status: 'Loading',
+    status: 'Waiting',
     description: 'Consumer goods and electronic components',
     cargo_registration_ids: [],
     created_at: '2026-08-19T14:20:00.000Z',
@@ -427,7 +425,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     total_carrier_cost: 4600,
     carrier_cost_currency: 'USD',
     carrier_cost_usd_rate: 1,
-    status: 'Completed',
+    status: 'Arrived',
     description: 'Textiles and ready garment batch - delivered and closed',
     cargo_registration_ids: [],
     created_at: '2026-07-18T08:00:00.000Z',
@@ -727,7 +725,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   // 1. GET /consolidations/active (Active Search-or-Create Dropdown)
   if (pathname === '/consolidations/active' && method === 'GET') {
     const search = (urlObj.searchParams.get('search') || '').toLowerCase().trim();
-    const activeRecords = demoConsolidations.filter((c) => c.status !== 'Completed');
+    // Active trips are those not yet arrived
+    const activeRecords = demoConsolidations.filter((c) => c.status !== 'Arrived');
 
     let filtered = activeRecords;
     if (search) {
@@ -979,7 +978,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       total_carrier_cost: Number(body.total_carrier_cost) || 0,
       carrier_cost_currency: body.carrier_cost_currency || 'USD',
       carrier_cost_usd_rate: body.carrier_cost_usd_rate || 1,
-      status: body.status || 'Planning',
+      status: body.status || 'Waiting',
       description: body.description || null,
       cargo_registration_ids: body.cargo_registration_ids || [],
       created_at: new Date().toISOString(),
@@ -1127,7 +1126,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       totalCapVol += full.capacity.max_volume_m3;
       totalAssignedVol += full.capacity.assigned_volume_m3;
       totalMargin += full.financials.consolidated_net_margin_usd;
-      if (rec.status !== 'Completed') activeCount++;
+      if (rec.status !== 'Arrived') activeCount++;
     });
 
     const meta: ConsolidationMeta = {

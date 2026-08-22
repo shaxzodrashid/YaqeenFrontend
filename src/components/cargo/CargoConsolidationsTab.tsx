@@ -42,25 +42,20 @@ import { AssignCargosModal } from './AssignCargosModal';
 export type ConsolidationViewMode = 'grid' | 'table' | 'kanban' | 'analytics';
 
 const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; border: string }> = {
-  Planning: {
-    bg: 'bg-slate-500/15',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-500/30',
-  },
-  Loading: {
-    bg: 'bg-blue-500/15',
-    text: 'text-blue-600 dark:text-blue-400',
-    border: 'border-blue-500/30',
-  },
-  'On the way': {
-    bg: 'bg-indigo-500/15',
-    text: 'text-indigo-600 dark:text-indigo-400',
-    border: 'border-indigo-500/30',
+  Waiting: {
+    bg: 'bg-yellow-500/15',
+    text: 'text-yellow-600 dark:text-yellow-400',
+    border: 'border-yellow-500/30',
   },
   Station: {
     bg: 'bg-cyan-500/15',
     text: 'text-cyan-600 dark:text-cyan-400',
     border: 'border-cyan-500/30',
+  },
+  'On the way': {
+    bg: 'bg-blue-500/15',
+    text: 'text-blue-600 dark:text-blue-400',
+    border: 'border-blue-500/30',
   },
   'On the border': {
     bg: 'bg-amber-500/15',
@@ -76,11 +71,6 @@ const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; bor
     bg: 'bg-emerald-500/15',
     text: 'text-emerald-600 dark:text-emerald-400',
     border: 'border-emerald-500/30',
-  },
-  Completed: {
-    bg: 'bg-teal-500/15',
-    text: 'text-teal-600 dark:text-teal-400',
-    border: 'border-teal-500/30',
   },
 };
 
@@ -247,6 +237,25 @@ export function CargoConsolidationsTab() {
       totalAttachedCargos: totalCargosCount,
     };
   }, [data]);
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'Arrived':
+        return t('statusArrived') || status;
+      case 'On the way':
+        return t('statusOnTheWay') || status;
+      case 'On the border':
+        return t('statusOnTheBorder') || status;
+      case 'Station':
+        return t('statusStation') || status;
+      case 'Reload':
+        return t('statusReload') || status;
+      case 'Waiting':
+        return t('statusWaiting') || status;
+      default:
+        return status;
+    }
+  };
 
   return (
     <div className="space-y-6 min-w-0 max-w-full">
@@ -489,7 +498,7 @@ export function CargoConsolidationsTab() {
                     : 'bg-surface text-muted-foreground hover:text-foreground border-border/70 hover:border-border'
                 }`}
               >
-                {st}
+                {getStatusLabel(st)}
               </button>
             );
           })}
@@ -534,7 +543,7 @@ export function CargoConsolidationsTab() {
         /* 1. Cards Grid View */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {data.data.map((c) => {
-            const statusStyle = STATUS_BADGES[c.status] || STATUS_BADGES.Planning;
+            const statusStyle = STATUS_BADGES[c.status] || STATUS_BADGES.Waiting;
             const isPositive = c.financials.consolidated_net_margin_usd >= 0;
 
             return (
@@ -557,7 +566,7 @@ export function CargoConsolidationsTab() {
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border uppercase tracking-wider ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                     >
-                      {c.status}
+                      {getStatusLabel(c.status)}
                     </span>
                   </div>
 
@@ -705,7 +714,7 @@ export function CargoConsolidationsTab() {
               <tbody className="divide-y divide-border">
                 {data.data.map((c) => {
                   const isExpanded = expandedRows.has(c.id);
-                  const statusStyle = STATUS_BADGES[c.status] || STATUS_BADGES.Planning;
+                  const statusStyle = STATUS_BADGES[c.status] || STATUS_BADGES.Waiting;
                   const isPositive = c.financials.consolidated_net_margin_usd >= 0;
 
                   return (
@@ -796,7 +805,7 @@ export function CargoConsolidationsTab() {
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border uppercase tracking-wider ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                           >
-                            {c.status}
+                            {getStatusLabel(c.status)}
                           </span>
                         </td>
 
@@ -904,7 +913,7 @@ export function CargoConsolidationsTab() {
         /* 3. Kanban Status Pipeline View */
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
           {CONSOLIDATION_STATUSES.map((st) => {
-            const statusStyle = STATUS_BADGES[st] || STATUS_BADGES.Planning;
+            const statusStyle = STATUS_BADGES[st] || STATUS_BADGES.Waiting;
             const columnItems = data.data.filter((c) => c.status === st);
 
             return (
@@ -918,7 +927,7 @@ export function CargoConsolidationsTab() {
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-extrabold border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                     >
-                      {st}
+                      {getStatusLabel(st)}
                     </span>
                   </div>
                   <span className="font-mono text-xs font-extrabold text-muted-foreground">
@@ -930,7 +939,7 @@ export function CargoConsolidationsTab() {
                 <div className="overflow-y-auto flex-1 space-y-2.5 pr-1">
                   {columnItems.length === 0 ? (
                     <div className="py-8 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-2xl">
-                      No trips in {st}
+                      No trips in {getStatusLabel(st)}
                     </div>
                   ) : (
                     columnItems.map((c) => (

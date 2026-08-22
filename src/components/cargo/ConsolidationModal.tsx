@@ -5,7 +5,6 @@ import {
   Truck,
   MapPin,
   DollarSign,
-  Boxes,
   CheckCircle2,
   RefreshCw,
   Clock,
@@ -30,37 +29,24 @@ import { CitySelect } from './CitySelect';
 
 const STATUS_CONFIG: {
   key: ConsolidationStatus;
+  labelKey: string;
   label: string;
   badgeClass: string;
   activeClass: string;
   icon: React.ReactNode;
 }[] = [
   {
-    key: 'Planning',
-    label: 'Planning',
-    badgeClass: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30',
+    key: 'Waiting',
+    labelKey: 'statusWaiting',
+    label: 'Waiting',
+    badgeClass: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
     activeClass:
-      'bg-slate-500/25 border-slate-500 text-slate-700 dark:text-slate-300 ring-2 ring-slate-500/40',
+      'bg-yellow-500/25 border-yellow-500 text-yellow-700 dark:text-yellow-300 ring-2 ring-yellow-500/40',
     icon: <Clock className="size-3.5" />,
   },
   {
-    key: 'Loading',
-    label: 'Loading',
-    badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    activeClass:
-      'bg-blue-500/25 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40',
-    icon: <Boxes className="size-3.5" />,
-  },
-  {
-    key: 'On the way',
-    label: 'On the way',
-    badgeClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-    activeClass:
-      'bg-indigo-500/25 border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/40',
-    icon: <Truck className="size-3.5" />,
-  },
-  {
     key: 'Station',
+    labelKey: 'statusStation',
     label: 'Station',
     badgeClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
     activeClass:
@@ -68,7 +54,17 @@ const STATUS_CONFIG: {
     icon: <MapPin className="size-3.5" />,
   },
   {
+    key: 'On the way',
+    labelKey: 'statusOnTheWay',
+    label: 'On the way',
+    badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+    activeClass:
+      'bg-blue-500/25 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/40',
+    icon: <Truck className="size-3.5" />,
+  },
+  {
     key: 'On the border',
+    labelKey: 'statusOnTheBorder',
     label: 'On the border',
     badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
     activeClass:
@@ -77,6 +73,7 @@ const STATUS_CONFIG: {
   },
   {
     key: 'Reload',
+    labelKey: 'statusReload',
     label: 'Reload',
     badgeClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
     activeClass:
@@ -85,18 +82,11 @@ const STATUS_CONFIG: {
   },
   {
     key: 'Arrived',
+    labelKey: 'statusArrived',
     label: 'Arrived',
     badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
     activeClass:
       'bg-emerald-500/25 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/40',
-    icon: <CheckCircle2 className="size-3.5" />,
-  },
-  {
-    key: 'Completed',
-    label: 'Completed',
-    badgeClass: 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30',
-    activeClass:
-      'bg-teal-500/25 border-teal-500 text-teal-700 dark:text-teal-300 ring-2 ring-teal-500/40',
     icon: <CheckCircle2 className="size-3.5" />,
   },
 ];
@@ -156,7 +146,7 @@ export function ConsolidationModal({
   const [arrivedDate, setArrivedDate] = useState<string>('');
   const [carrierCostStr, setCarrierCostStr] = useState<string>('');
   const [carrierCostCurrency, setCarrierCostCurrency] = useState<CurrencyType>('USD');
-  const [status, setStatus] = useState<ConsolidationStatus>('Planning');
+  const [status, setStatus] = useState<ConsolidationStatus>('Waiting');
   const [description, setDescription] = useState<string>('');
 
   // Cascade sync checkboxes for editing
@@ -189,12 +179,11 @@ export function ConsolidationModal({
         editingItem.total_carrier_cost ? String(editingItem.total_carrier_cost) : ''
       );
       setCarrierCostCurrency(editingItem.carrier_cost_currency || 'USD');
-      setStatus(editingItem.status || 'Planning');
+      setStatus(editingItem.status || 'Waiting');
       setDescription(editingItem.description || '');
       setSyncStatusToCargos(true);
       setSyncDatesToCargos(true);
     } else {
-      const today = new Date().toISOString().slice(0, 10);
       setConsolidationCode('');
       setContainerTruckId('');
       setContainerType('86m3');
@@ -204,13 +193,13 @@ export function ConsolidationModal({
       setCarrierPhone('');
       setOriginPlace('Istanbul');
       setDestinationPlace('Tashkent');
-      setDepartureDate(today);
+      setDepartureDate('');
       setEstimatedArrivalDate('');
       setLoadedDate('');
       setArrivedDate('');
       setCarrierCostStr('');
       setCarrierCostCurrency('USD');
-      setStatus('Planning');
+      setStatus('Waiting');
       setDescription('');
       setSyncStatusToCargos(false);
       setSyncDatesToCargos(false);
@@ -377,7 +366,7 @@ export function ConsolidationModal({
               <label className="block text-xs font-bold text-foreground mb-2">
                 {t('colStatus')}
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {STATUS_CONFIG.map((cfg) => {
                   const isSelected = status === cfg.key;
                   return (
@@ -385,14 +374,14 @@ export function ConsolidationModal({
                       key={cfg.key}
                       type="button"
                       onClick={() => setStatus(cfg.key)}
-                      className={`flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                         isSelected
                           ? cfg.activeClass
                           : 'border-border/60 bg-surface/50 text-muted-foreground hover:border-border hover:text-foreground'
                       }`}
                     >
                       {cfg.icon}
-                      <span>{cfg.label}</span>
+                      <span className="truncate">{t(cfg.labelKey as any) || cfg.label}</span>
                     </button>
                   );
                 })}

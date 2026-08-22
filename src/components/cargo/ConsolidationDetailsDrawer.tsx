@@ -28,36 +28,29 @@ import type {
 import { formatMoney, getCountryFlag } from '../../services/api';
 
 const STATUS_ORDER: ConsolidationStatus[] = [
-  'Planning',
-  'Loading',
-  'On the way',
+  'Waiting',
   'Station',
+  'On the way',
   'On the border',
   'Reload',
   'Arrived',
-  'Completed',
 ];
 
 const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; border: string }> = {
-  Planning: {
-    bg: 'bg-slate-500/15',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-500/30',
-  },
-  Loading: {
-    bg: 'bg-blue-500/15',
-    text: 'text-blue-600 dark:text-blue-400',
-    border: 'border-blue-500/30',
-  },
-  'On the way': {
-    bg: 'bg-indigo-500/15',
-    text: 'text-indigo-600 dark:text-indigo-400',
-    border: 'border-indigo-500/30',
+  Waiting: {
+    bg: 'bg-yellow-500/15',
+    text: 'text-yellow-600 dark:text-yellow-400',
+    border: 'border-yellow-500/30',
   },
   Station: {
     bg: 'bg-cyan-500/15',
     text: 'text-cyan-600 dark:text-cyan-400',
     border: 'border-cyan-500/30',
+  },
+  'On the way': {
+    bg: 'bg-blue-500/15',
+    text: 'text-blue-600 dark:text-blue-400',
+    border: 'border-blue-500/30',
   },
   'On the border': {
     bg: 'bg-amber-500/15',
@@ -73,11 +66,6 @@ const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; bor
     bg: 'bg-emerald-500/15',
     text: 'text-emerald-600 dark:text-emerald-400',
     border: 'border-emerald-500/30',
-  },
-  Completed: {
-    bg: 'bg-teal-500/15',
-    text: 'text-teal-600 dark:text-teal-400',
-    border: 'border-teal-500/30',
   },
 };
 
@@ -107,9 +95,28 @@ export function ConsolidationDetailsDrawer({
   const [advancingStatus, setAdvancingStatus] = useState<boolean>(false);
   const [removingCargoId, setRemovingCargoId] = useState<string | null>(null);
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'Arrived':
+        return t('statusArrived') || status;
+      case 'On the way':
+        return t('statusOnTheWay') || status;
+      case 'On the border':
+        return t('statusOnTheBorder') || status;
+      case 'Station':
+        return t('statusStation') || status;
+      case 'Reload':
+        return t('statusReload') || status;
+      case 'Waiting':
+        return t('statusWaiting') || status;
+      default:
+        return status;
+    }
+  };
+
   if (!isOpen || !consolidation) return null;
 
-  const statusBadge = STATUS_BADGES[consolidation.status] || STATUS_BADGES.Planning;
+  const statusBadge = STATUS_BADGES[consolidation.status] || STATUS_BADGES.Waiting;
   const currentStatusIndex = STATUS_ORDER.indexOf(consolidation.status);
 
   // Fast Advance Status helper
@@ -241,7 +248,7 @@ export function ConsolidationDetailsDrawer({
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border uppercase tracking-wider ${statusBadge.bg} ${statusBadge.text} ${statusBadge.border}`}
                 >
-                  {consolidation.status}
+                  {getStatusLabel(consolidation.status)}
                 </span>
               </div>
 
@@ -266,7 +273,7 @@ export function ConsolidationDetailsDrawer({
                               : 'bg-surface text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer'
                       }`}
                     >
-                      {st}
+                      {getStatusLabel(st)}
                     </button>
                   );
                 })}
