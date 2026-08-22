@@ -374,8 +374,14 @@ export function AssignCargosModal({
                           <div className="font-mono text-xs font-extrabold text-foreground">
                             {cargo.volume || 0} m³ / {(cargo.weight || 0).toLocaleString()} kg
                           </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            Sell: ${formatMoney(cargo.sell_price?.amount_usd || 0)}
+                          <div className="text-[11px] text-muted-foreground font-medium">
+                            Sell:{' '}
+                            {formatMoney(
+                              cargo.sell_price?.amount ??
+                                cargo.sell_price?.amount_usd ??
+                                (typeof cargo.sell_price === 'number' ? cargo.sell_price : 0),
+                              cargo.sell_price?.currency || 'USD'
+                            )}
                           </div>
                         </div>
                       </div>

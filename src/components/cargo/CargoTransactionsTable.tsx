@@ -692,7 +692,27 @@ export function CargoTransactionsTable({
                                 {item.container_truck_id}
                               </span>
                               {item.consolidation?.consolidation_code && (
-                                <span className="text-[9px] font-mono font-bold text-brand-navy dark:text-brand-gold bg-brand-gold/15 px-1 py-0.2 rounded border border-brand-gold/30 truncate inline-block">
+                                <span
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(
+                                      item.consolidation!.consolidation_code
+                                    );
+                                    showNotification(
+                                      t('copiedConsolidationCode', {
+                                        code: item.consolidation!.consolidation_code,
+                                      }) ||
+                                        `Copied Consolidation Code: ${item.consolidation!.consolidation_code}`,
+                                      'info'
+                                    );
+                                  }}
+                                  className="text-[9px] font-mono font-bold text-brand-navy dark:text-brand-gold bg-brand-gold/15 hover:bg-brand-gold/25 px-1.5 py-0.5 rounded border border-brand-gold/30 truncate inline-block cursor-pointer transition-colors"
+                                  title={
+                                    item.consolidation.status
+                                      ? `Consolidation: ${item.consolidation.consolidation_code} (${item.consolidation.status}) - Click to copy code`
+                                      : `Consolidation: ${item.consolidation.consolidation_code} - Click to copy code`
+                                  }
+                                >
                                   🚚 {item.consolidation.consolidation_code}
                                 </span>
                               )}

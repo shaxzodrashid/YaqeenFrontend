@@ -56,20 +56,80 @@ export interface ConsolidationCapacity {
   total_cargos_count: number;
 }
 
+export interface ConsolidationNetMarginCurrencies {
+  USD: number;
+  UZS: number;
+  RUB: number;
+  RMB: number;
+}
+
 export interface ConsolidationFinancials {
-  total_purchase_cost_usd: number;
-  total_sell_revenue_usd: number;
-  gross_margin_usd: number;
-  total_carrier_cost_usd: number;
-  net_margin_usd: number;
-  margin_percent: number;
-  consolidated_net_margin_usd: number;
   total_sell_usd: number;
   total_purchase_usd: number;
   carrier_cost: {
+    amount?: number;
+    currency: CurrencyType;
     amount_usd: number;
+  };
+  consolidated_net_margin: {
+    amount: number;
     currency: CurrencyType;
   };
+  consolidated_net_margin_usd?: number;
+  total_purchase_cost_usd?: number;
+  total_sell_revenue_usd?: number;
+  gross_margin_usd?: number;
+  total_carrier_cost_usd?: number;
+  net_margin_usd?: number;
+  margin_percent?: number;
+}
+
+export function getConsolidatedNetMargin(financials?: ConsolidationFinancials | null): number {
+  if (!financials) return 0;
+  if (
+    typeof financials.consolidated_net_margin === 'object' &&
+    financials.consolidated_net_margin !== null
+  ) {
+    return Number(financials.consolidated_net_margin.amount) || 0;
+  }
+  if (typeof financials.consolidated_net_margin === 'number') {
+    return financials.consolidated_net_margin;
+  }
+  if (typeof financials.consolidated_net_margin_usd === 'number') {
+    return financials.consolidated_net_margin_usd;
+  }
+  if (typeof financials.net_margin_usd === 'number') {
+    return financials.net_margin_usd;
+  }
+  return 0;
+}
+
+export function getConsolidatedNetMarginCurrency(
+  financials?: ConsolidationFinancials | null
+): CurrencyType {
+  if (!financials) return 'USD';
+  if (
+    typeof financials.consolidated_net_margin === 'object' &&
+    financials.consolidated_net_margin !== null
+  ) {
+    return financials.consolidated_net_margin.currency || 'USD';
+  }
+  return 'USD';
+}
+
+export function getCarrierCostAmount(financials?: ConsolidationFinancials | null): number {
+  if (!financials?.carrier_cost) return 0;
+  return Number(financials.carrier_cost.amount ?? financials.carrier_cost.amount_usd) || 0;
+}
+
+export function getCarrierCostCurrency(financials?: ConsolidationFinancials | null): CurrencyType {
+  if (!financials?.carrier_cost) return 'USD';
+  return financials.carrier_cost.currency || 'USD';
+}
+
+export function getCarrierCostUsd(financials?: ConsolidationFinancials | null): number {
+  if (!financials?.carrier_cost) return 0;
+  return Number(financials.carrier_cost.amount_usd ?? financials.carrier_cost.amount) || 0;
 }
 
 export interface ConsolidationCargoItem {
@@ -237,10 +297,13 @@ export interface ConsolidationListParams {
 
 export interface ConsolidationMeta {
   total: number;
-  page: number;
+  total_active?: number;
   limit: number;
   offset: number;
-  total_pages: number;
+  page?: number;
+  total_pages?: number;
+  consolidated_net_margin?:
+    ConsolidationNetMarginCurrencies | { amount: number; currency: CurrencyType } | number;
   active_count?: number;
   total_capacity_volume_m3?: number;
   total_assigned_volume_m3?: number;
@@ -687,6 +750,18 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
       total_cargos_count: cargosList.length,
     },
     financials: {
+      total_sell_usd: Math.round(totalSellUsd * 100) / 100,
+      total_purchase_usd: Math.round(totalPurchaseUsd * 100) / 100,
+      carrier_cost: {
+        amount: Math.round(record.total_carrier_cost * 100) / 100,
+        currency: record.carrier_cost_currency || 'USD',
+        amount_usd: Math.round(carrierCostConv.amount_usd * 100) / 100,
+      },
+      consolidated_net_margin: {
+        amount: Math.round(netMarginUsd * 100) / 100,
+        currency: 'USD',
+      },
+      consolidated_net_margin_usd: Math.round(netMarginUsd * 100) / 100,
       total_purchase_cost_usd: Math.round(totalPurchaseUsd * 100) / 100,
       total_sell_revenue_usd: Math.round(totalSellUsd * 100) / 100,
       gross_margin_usd: Math.round((totalSellUsd - totalPurchaseUsd) * 100) / 100,
@@ -694,13 +769,6 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
       net_margin_usd: Math.round(netMarginUsd * 100) / 100,
       margin_percent:
         totalSellUsd > 0 ? Math.round((netMarginUsd / totalSellUsd) * 10000) / 100 : 0,
-      consolidated_net_margin_usd: Math.round(netMarginUsd * 100) / 100,
-      total_sell_usd: Math.round(totalSellUsd * 100) / 100,
-      total_purchase_usd: Math.round(totalPurchaseUsd * 100) / 100,
-      carrier_cost: {
-        amount_usd: Math.round(carrierCostConv.amount_usd * 100) / 100,
-        currency: record.carrier_cost_currency || 'USD',
-      },
     },
     description: record.description,
     cargos: cargosList,
@@ -1125,20 +1193,29 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       const full = buildConsolidationResponse(rec);
       totalCapVol += full.capacity.max_volume_m3;
       totalAssignedVol += full.capacity.assigned_volume_m3;
-      totalMargin += full.financials.consolidated_net_margin_usd;
+      totalMargin += getConsolidatedNetMargin(full.financials);
       if (rec.status !== 'Arrived') activeCount++;
     });
 
+    const totalMarginUsd = Math.round(totalMargin * 100) / 100;
+
     const meta: ConsolidationMeta = {
       total,
-      page,
+      total_active: activeCount,
       limit,
       offset,
+      page,
       total_pages: Math.ceil(total / limit) || 1,
+      consolidated_net_margin: {
+        USD: totalMarginUsd,
+        UZS: Math.round(totalMarginUsd * 12850),
+        RUB: Math.round(totalMarginUsd * 88.62 * 100) / 100,
+        RMB: Math.round(totalMarginUsd * 7.08 * 100) / 100,
+      },
       active_count: activeCount,
       total_capacity_volume_m3: Math.round(totalCapVol * 100) / 100,
       total_assigned_volume_m3: Math.round(totalAssignedVol * 100) / 100,
-      total_net_margin_usd: Math.round(totalMargin * 100) / 100,
+      total_net_margin_usd: totalMarginUsd,
     };
 
     return {

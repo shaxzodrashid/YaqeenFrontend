@@ -20,7 +20,14 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
-import { cargoConsolidationsApi } from '../../services/cargoConsolidations.service';
+import {
+  cargoConsolidationsApi,
+  getConsolidatedNetMargin,
+  getConsolidatedNetMarginCurrency,
+  getCarrierCostAmount,
+  getCarrierCostCurrency,
+  getCarrierCostUsd,
+} from '../../services/cargoConsolidations.service';
 import type {
   ConsolidationListItem,
   ConsolidationStatus,
@@ -165,7 +172,12 @@ export function ConsolidationDetailsDrawer({
     }
   };
 
-  const isNetMarginPositive = consolidation.financials.consolidated_net_margin_usd >= 0;
+  const netMargin = getConsolidatedNetMargin(consolidation.financials);
+  const netMarginCurrency = getConsolidatedNetMarginCurrency(consolidation.financials);
+  const isNetMarginPositive = netMargin >= 0;
+  const carrierCostUsd = getCarrierCostUsd(consolidation.financials);
+  const carrierCostAmount = getCarrierCostAmount(consolidation.financials);
+  const carrierCostCurrency = getCarrierCostCurrency(consolidation.financials);
 
   return (
     <AnimatePresence>
@@ -458,7 +470,7 @@ export function ConsolidationDetailsDrawer({
                     ) : (
                       <TrendingDown className="size-3.5" />
                     )}
-                    ${formatMoney(consolidation.financials.consolidated_net_margin_usd)}
+                    {formatMoney(netMargin, netMarginCurrency)}
                   </span>
                 </div>
               </div>
@@ -469,7 +481,7 @@ export function ConsolidationDetailsDrawer({
                     {t('totalClientSell')}
                   </span>
                   <span className="font-mono text-sm font-extrabold text-foreground">
-                    ${formatMoney(consolidation.financials.total_sell_usd)}
+                    {formatMoney(consolidation.financials.total_sell_usd, 'USD')}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-surface border border-border/60">
@@ -477,7 +489,7 @@ export function ConsolidationDetailsDrawer({
                     {t('totalClientPurchase')}
                   </span>
                   <span className="font-mono text-sm font-extrabold text-foreground">
-                    ${formatMoney(consolidation.financials.total_purchase_usd)}
+                    {formatMoney(consolidation.financials.total_purchase_usd, 'USD')}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-surface border border-border/60">
@@ -485,10 +497,7 @@ export function ConsolidationDetailsDrawer({
                     {t('carrierFreightCost')}
                   </span>
                   <span className="font-mono text-sm font-extrabold text-foreground">
-                    ${formatMoney(consolidation.financials.carrier_cost.amount_usd)}{' '}
-                    <span className="text-[10px] text-muted-foreground">
-                      ({consolidation.financials.carrier_cost.currency})
-                    </span>
+                    {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
                   </span>
                 </div>
               </div>
@@ -576,11 +585,14 @@ export function ConsolidationDetailsDrawer({
                             {cargo.volume || 0} m³ / {(cargo.weight || 0).toLocaleString()} kg
                           </span>
                           <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold block">
-                            +$
+                            +
                             {formatMoney(
                               typeof cargo.sell_price === 'object'
-                                ? (cargo.sell_price.amount_usd ?? cargo.sell_price.amount)
-                                : cargo.sell_price
+                                ? (cargo.sell_price.amount ?? cargo.sell_price.amount_usd ?? 0)
+                                : Number(cargo.sell_price) || 0,
+                              typeof cargo.sell_price === 'object'
+                                ? cargo.sell_price.currency || 'USD'
+                                : 'USD'
                             )}
                           </span>
                         </div>

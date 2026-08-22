@@ -670,10 +670,7 @@ export function CargoRegistrationModal({
 
     let marginUsdStr: string | null = null;
     if (sellCurrency !== 'USD') {
-      marginUsdStr = `$ ${marginUsd.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
+      marginUsdStr = formatMoney(marginUsd, 'USD');
     }
 
     return {

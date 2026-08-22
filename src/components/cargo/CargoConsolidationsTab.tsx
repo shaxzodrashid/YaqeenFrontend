@@ -27,6 +27,11 @@ import { usePermissions } from '../../context/PermissionsContext';
 import {
   cargoConsolidationsApi,
   CONSOLIDATION_STATUSES,
+  getConsolidatedNetMargin,
+  getConsolidatedNetMarginCurrency,
+  getCarrierCostAmount,
+  getCarrierCostCurrency,
+  getCarrierCostUsd,
 } from '../../services/cargoConsolidations.service';
 import type {
   ConsolidationListItem,
@@ -218,22 +223,48 @@ export function CargoConsolidationsTab() {
 
     let totalVolCap = meta?.total_capacity_volume_m3 ?? 0;
     let totalAssignedVol = meta?.total_assigned_volume_m3 ?? 0;
-    let totalNetMargin = meta?.total_net_margin_usd ?? 0;
-    let totalCargosCount = 0;
+    let totalNetMargin = 0;
+    let netMarginCurrency = 'USD';
 
+    if (meta?.consolidated_net_margin) {
+      if (typeof meta.consolidated_net_margin === 'object') {
+        if ('USD' in meta.consolidated_net_margin) {
+          totalNetMargin = (meta.consolidated_net_margin as any).USD ?? 0;
+          netMarginCurrency = 'USD';
+        } else if ('amount' in meta.consolidated_net_margin) {
+          totalNetMargin = (meta.consolidated_net_margin as any).amount ?? 0;
+          netMarginCurrency = (meta.consolidated_net_margin as any).currency || 'USD';
+        }
+      } else if (typeof meta.consolidated_net_margin === 'number') {
+        totalNetMargin = meta.consolidated_net_margin;
+      }
+    } else if (typeof meta?.total_net_margin_usd === 'number') {
+      totalNetMargin = meta.total_net_margin_usd;
+    }
+
+    let totalCargosCount = 0;
     items.forEach((c) => {
-      totalCargosCount += c.capacity.total_cargos_count;
+      totalCargosCount += c.capacity?.total_cargos_count ?? c.cargos?.length ?? 0;
     });
 
     const volPct = totalVolCap > 0 ? Math.round((totalAssignedVol / totalVolCap) * 100) : 0;
 
+    const multiCurrencies =
+      meta?.consolidated_net_margin &&
+      typeof meta.consolidated_net_margin === 'object' &&
+      'USD' in meta.consolidated_net_margin
+        ? (meta.consolidated_net_margin as { USD: number; UZS: number; RUB: number; RMB: number })
+        : null;
+
     return {
       totalConsolidations: meta?.total ?? 0,
-      activeCount: meta?.active_count ?? 0,
+      activeCount: meta?.total_active ?? meta?.active_count ?? 0,
       totalCapacityM3: totalVolCap,
       totalAssignedM3: totalAssignedVol,
       volumeUtilPercent: volPct,
       totalNetMarginUsd: totalNetMargin,
+      netMarginCurrency,
+      multiCurrencies,
       totalAttachedCargos: totalCargosCount,
     };
   }, [data]);
@@ -350,8 +381,10 @@ export function CargoConsolidationsTab() {
 
         {/* Card 3: Consolidated Net Margin */}
         <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-muted-foreground">Consolidated Net Margin</span>
+          <div className="space-y-1 min-w-0">
+            <span className="text-xs font-bold text-muted-foreground block">
+              Consolidated Net Margin
+            </span>
             <div className="flex items-center gap-1.5 font-mono text-2xl font-extrabold text-foreground">
               {stats.totalNetMarginUsd >= 0 ? (
                 <TrendingUp className="size-5 text-emerald-500 shrink-0" />
@@ -365,9 +398,14 @@ export function CargoConsolidationsTab() {
                     : 'text-red-600 dark:text-red-400'
                 }
               >
-                ${formatMoney(stats.totalNetMarginUsd)}
+                {formatMoney(stats.totalNetMarginUsd, stats.netMarginCurrency)}
               </span>
             </div>
+            {stats.multiCurrencies?.UZS !== undefined && stats.netMarginCurrency !== 'UZS' && (
+              <span className="text-[11px] font-mono text-muted-foreground block">
+                ≈ {formatMoney(stats.multiCurrencies.UZS, 'UZS')}
+              </span>
+            )}
           </div>
           <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <DollarSign className="size-5" />
@@ -543,8 +581,10 @@ export function CargoConsolidationsTab() {
         /* 1. Cards Grid View */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {data.data.map((c) => {
+            const netMargin = getConsolidatedNetMargin(c.financials);
+            const netMarginCurrency = getConsolidatedNetMarginCurrency(c.financials);
             const statusStyle = STATUS_BADGES[c.status] || STATUS_BADGES.Waiting;
-            const isPositive = c.financials.consolidated_net_margin_usd >= 0;
+            const isPositive = netMargin >= 0;
 
             return (
               <div
@@ -651,8 +691,7 @@ export function CargoConsolidationsTab() {
                           : 'text-red-600 dark:text-red-400'
                       }`}
                     >
-                      {isPositive ? '+' : ''}$
-                      {formatMoney(c.financials.consolidated_net_margin_usd)}
+                      {formatMoney(netMargin, netMarginCurrency)}
                     </span>
                   </div>
                 </div>
@@ -714,8 +753,13 @@ export function CargoConsolidationsTab() {
               <tbody className="divide-y divide-border">
                 {data.data.map((c) => {
                   const isExpanded = expandedRows.has(c.id);
+                  const netMargin = getConsolidatedNetMargin(c.financials);
+                  const netMarginCurrency = getConsolidatedNetMarginCurrency(c.financials);
+                  const carrierCostUsd = getCarrierCostUsd(c.financials);
+                  const carrierCostAmount = getCarrierCostAmount(c.financials);
+                  const carrierCostCurrency = getCarrierCostCurrency(c.financials);
                   const statusStyle = STATUS_BADGES[c.status] || STATUS_BADGES.Waiting;
-                  const isPositive = c.financials.consolidated_net_margin_usd >= 0;
+                  const isPositive = netMargin >= 0;
 
                   return (
                     <>
@@ -786,7 +830,7 @@ export function CargoConsolidationsTab() {
                         </td>
 
                         <td className="py-3 px-4 font-mono text-foreground font-bold">
-                          ${formatMoney(c.financials.carrier_cost.amount_usd)}
+                          {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
                         </td>
 
                         <td className="py-3 px-4 font-mono font-bold">
@@ -797,7 +841,7 @@ export function CargoConsolidationsTab() {
                                 : 'text-red-600 dark:text-red-400'
                             }
                           >
-                            ${formatMoney(c.financials.consolidated_net_margin_usd)}
+                            {formatMoney(netMargin, netMarginCurrency)}
                           </span>
                         </td>
 
@@ -891,7 +935,15 @@ export function CargoConsolidationsTab() {
                                           {cargo.volume || 0} m³
                                         </span>
                                         <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
-                                          +${formatMoney(cargo.sell_price.amount_usd)}
+                                          +
+                                          {formatMoney(
+                                            cargo.sell_price?.amount ??
+                                              cargo.sell_price?.amount_usd ??
+                                              (typeof cargo.sell_price === 'number'
+                                                ? cargo.sell_price
+                                                : 0),
+                                            cargo.sell_price?.currency || 'USD'
+                                          )}
                                         </span>
                                       </div>
                                     </div>
@@ -942,35 +994,45 @@ export function CargoConsolidationsTab() {
                       No trips in {getStatusLabel(st)}
                     </div>
                   ) : (
-                    columnItems.map((c) => (
-                      <div
-                        key={c.id}
-                        onClick={() => setSelectedDetails(c)}
-                        className="p-3.5 rounded-2xl bg-muted/20 border border-border/80 hover:border-brand-gold/60 shadow-sm hover:shadow transition-all cursor-pointer space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-extrabold text-xs text-foreground">
-                            {c.container_truck_id}
-                          </span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-gold/15 text-brand-navy dark:text-brand-gold font-bold">
-                            {c.consolidation_code}
-                          </span>
-                        </div>
+                    columnItems.map((c) => {
+                      const colMargin = getConsolidatedNetMargin(c.financials);
+                      const colCurrency = getConsolidatedNetMarginCurrency(c.financials);
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => setSelectedDetails(c)}
+                          className="p-3.5 rounded-2xl bg-muted/20 border border-border/80 hover:border-brand-gold/60 shadow-sm hover:shadow transition-all cursor-pointer space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-extrabold text-xs text-foreground">
+                              {c.container_truck_id}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-gold/15 text-brand-navy dark:text-brand-gold font-bold">
+                              {c.consolidation_code}
+                            </span>
+                          </div>
 
-                        <div className="text-[11px] text-muted-foreground font-bold truncate">
-                          {c.origin_place || 'Origin'} → {c.destination_place || 'Dest'}
-                        </div>
+                          <div className="text-[11px] text-muted-foreground font-bold truncate">
+                            {c.origin_place || 'Origin'} → {c.destination_place || 'Dest'}
+                          </div>
 
-                        <div className="flex items-center justify-between text-xs pt-1 border-t border-border/60 font-mono">
-                          <span className="text-muted-foreground">
-                            {c.capacity.assigned_volume_m3}/{c.capacity.max_volume_m3} m³
-                          </span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                            ${formatMoney(c.financials.consolidated_net_margin_usd)}
-                          </span>
+                          <div className="flex items-center justify-between text-xs pt-1 border-t border-border/60 font-mono">
+                            <span className="text-muted-foreground">
+                              {c.capacity.assigned_volume_m3}/{c.capacity.max_volume_m3} m³
+                            </span>
+                            <span
+                              className={`font-bold ${
+                                colMargin >= 0
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-red-600 dark:text-red-400'
+                              }`}
+                            >
+                              {formatMoney(colMargin, colCurrency)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -1036,8 +1098,14 @@ export function CargoConsolidationsTab() {
                   <span className="text-[11px] text-muted-foreground block font-bold">
                     Active Net Margin
                   </span>
-                  <span className="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                    ${formatMoney(stats.totalNetMarginUsd)}
+                  <span
+                    className={`text-xl font-extrabold font-mono ${
+                      stats.totalNetMarginUsd >= 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`}
+                  >
+                    {formatMoney(stats.totalNetMarginUsd, stats.netMarginCurrency)}
                   </span>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/60">
