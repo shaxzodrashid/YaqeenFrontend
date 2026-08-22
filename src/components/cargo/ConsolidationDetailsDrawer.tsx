@@ -15,6 +15,7 @@ import {
   ArrowRight,
   TrendingUp,
   TrendingDown,
+  ExternalLink,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -24,7 +25,7 @@ import type {
   ConsolidationListItem,
   ConsolidationStatus,
 } from '../../services/cargoConsolidations.service';
-import { formatMoney } from '../../services/api';
+import { formatMoney, getCountryFlag } from '../../services/api';
 
 const STATUS_ORDER: ConsolidationStatus[] = [
   'Planning',
@@ -101,7 +102,7 @@ export function ConsolidationDetailsDrawer({
 }: ConsolidationDetailsDrawerProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
-  const { canUpdate, canDelete } = usePermissions();
+  const { canUpdate, canDelete, canAssignCargo } = usePermissions();
 
   const [advancingStatus, setAdvancingStatus] = useState<boolean>(false);
   const [removingCargoId, setRemovingCargoId] = useState<string | null>(null);
@@ -113,6 +114,10 @@ export function ConsolidationDetailsDrawer({
 
   // Fast Advance Status helper
   const handleAdvanceStatus = async (nextStatus: ConsolidationStatus) => {
+    if (!canUpdate('cargo_consolidations')) {
+      showNotification('Permission denied: cannot update status', 'error');
+      return;
+    }
     setAdvancingStatus(true);
     try {
       const updated = await cargoConsolidationsApi.update(consolidation.id, {
@@ -133,13 +138,19 @@ export function ConsolidationDetailsDrawer({
 
   // Remove single cargo from consolidation
   const handleRemoveCargo = async (cargoId: string, cargoName: string) => {
+    if (!canAssignCargo()) {
+      showNotification('Permission denied: cannot detach cargos', 'error');
+      return;
+    }
     if (!window.confirm(t('confirmRemoveCargo') || `Remove ${cargoName} from this truck?`)) return;
 
     setRemovingCargoId(cargoId);
     try {
       const res = await cargoConsolidationsApi.removeCargos(consolidation.id, [cargoId]);
       showNotification(t('removedSuccessfully') || 'Cargo detached from truck', 'success');
-      onUpdate(res.consolidation);
+      const updated =
+        res?.consolidation || (res as any)?.data || (res as any)?.id ? res : consolidation;
+      onUpdate(updated as ConsolidationListItem);
     } catch (err: any) {
       showNotification(err?.message || 'Failed to detach cargo', 'error');
     } finally {
@@ -243,14 +254,16 @@ export function ConsolidationDetailsDrawer({
                     <button
                       key={st}
                       type="button"
-                      disabled={advancingStatus || isCurrent}
+                      disabled={!canUpdate('cargo_consolidations') || advancingStatus || isCurrent}
                       onClick={() => handleAdvanceStatus(st)}
-                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border cursor-pointer select-none ${
-                        isCurrent
-                          ? 'bg-brand-navy dark:bg-brand-gold text-white dark:text-brand-navy border-transparent shadow-sm'
-                          : isPassed
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                            : 'bg-surface text-muted-foreground hover:text-foreground border-border/60 hover:border-border'
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border select-none ${
+                        !canUpdate('cargo_consolidations')
+                          ? 'opacity-50 cursor-not-allowed bg-surface text-muted-foreground border-border/40'
+                          : isCurrent
+                            ? 'bg-brand-navy dark:bg-brand-gold text-white dark:text-brand-navy border-transparent shadow-sm cursor-default'
+                            : isPassed
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 cursor-pointer'
+                              : 'bg-surface text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer'
                       }`}
                     >
                       {st}
@@ -262,28 +275,52 @@ export function ConsolidationDetailsDrawer({
 
             {/* Route & Schedule Corridor */}
             <div className="p-4 rounded-2xl bg-muted/20 border border-border/80 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                <MapPin className="size-4 text-brand-royal" />
-                <span>Transport Route & Dates</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                  <MapPin className="size-4 text-brand-royal" />
+                  <span>Transport Route & Dates</span>
+                </div>
+                {consolidation.route?.google_maps_dir_url && (
+                  <a
+                    href={consolidation.route.google_maps_dir_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-navy dark:text-brand-gold hover:underline"
+                  >
+                    <span>Directions</span>
+                    <ExternalLink className="size-3" />
+                  </a>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-surface border border-border/70">
                 <div className="flex items-center gap-3">
-                  <div className="text-center">
+                  <div className="text-left">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground block">
                       Origin
                     </span>
-                    <span className="font-bold text-sm text-foreground">
-                      {consolidation.origin_place || 'Not specified'}
+                    <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                      <span>
+                        {getCountryFlag(
+                          consolidation.origin_country_code || consolidation.origin?.country_code
+                        )}
+                      </span>
+                      <span>{consolidation.origin_place || 'Not specified'}</span>
                     </span>
                   </div>
                   <ArrowRight className="size-4 text-brand-gold" />
-                  <div className="text-center">
+                  <div className="text-left">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground block">
                       Destination
                     </span>
-                    <span className="font-bold text-sm text-foreground">
-                      {consolidation.destination_place || 'Not specified'}
+                    <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                      <span>
+                        {getCountryFlag(
+                          consolidation.destination_country_code ||
+                            consolidation.destination?.country_code
+                        )}
+                      </span>
+                      <span>{consolidation.destination_place || 'Not specified'}</span>
                     </span>
                   </div>
                 </div>
@@ -484,7 +521,7 @@ export function ConsolidationDetailsDrawer({
                   <Package className="size-4 text-brand-gold" />
                   <span>Attached Client Cargos ({consolidation.cargos.length})</span>
                 </div>
-                {canUpdate('cargo_consolidations') && (
+                {canAssignCargo() && (
                   <button
                     type="button"
                     onClick={() => onAssignCargos(consolidation)}
@@ -532,11 +569,16 @@ export function ConsolidationDetailsDrawer({
                             {cargo.volume || 0} m³ / {(cargo.weight || 0).toLocaleString()} kg
                           </span>
                           <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold block">
-                            +${formatMoney(cargo.sell_price.amount_usd)}
+                            +$
+                            {formatMoney(
+                              typeof cargo.sell_price === 'object'
+                                ? (cargo.sell_price.amount_usd ?? cargo.sell_price.amount)
+                                : cargo.sell_price
+                            )}
                           </span>
                         </div>
 
-                        {canUpdate('cargo_consolidations') && (
+                        {canAssignCargo() && (
                           <button
                             type="button"
                             disabled={removingCargoId === cargo.id}

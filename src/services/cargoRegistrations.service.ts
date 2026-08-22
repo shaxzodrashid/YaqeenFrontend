@@ -47,6 +47,15 @@ export const CARGO_STATUSES = [
 export type CargoRegistrationStatus =
   (typeof CARGO_STATUSES)[number] | 'In Transit' | 'Border' | 'At Station' | 'Delivered';
 
+export type {
+  LocationDetail,
+  RouteInfo,
+  DuplicateCheckDto,
+  DuplicateCheckResult,
+} from '../types/locations';
+import type { LocationDetail, RouteInfo, DuplicateCheckDto } from '../types/locations';
+import { locationsApi } from './locations.service';
+
 export type CurrencyType = 'UZS' | 'RUB' | 'USD' | 'RMB';
 
 export interface CreateCargoRegistrationDto {
@@ -71,6 +80,20 @@ export interface CreateCargoRegistrationDto {
   sell_exchange_rate?: number;
   sell_custom_rate?: number;
   usd_rmb_rate?: number;
+  origin_city?: string;
+  origin_country?: string;
+  origin_country_code?: string;
+  origin_geoname_id?: number | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  destination_city?: string;
+  destination_country?: string;
+  destination_country_code?: string;
+  destination_geoname_id?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
+  prevent_duplicate?: boolean;
+  idempotency_key?: string;
   status?: CargoRegistrationStatus;
   description?: string;
   client_id: string;
@@ -93,6 +116,12 @@ export interface CargoRegistrationListParams {
   employee_id?: string;
   consolidation_id?: string;
   has_consolidation?: boolean;
+  origin_city?: string;
+  origin_country_code?: string;
+  origin_geoname_id?: string | number;
+  destination_city?: string;
+  destination_country_code?: string;
+  destination_geoname_id?: string | number;
   sort_by?: string;
   sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
   order?: 'ASC' | 'DESC' | 'asc' | 'desc';
@@ -135,15 +164,46 @@ export interface CargoRegistrationNetYield {
 export interface CargoRegistrationListItem {
   id: string;
   cargo_type?: CargoType;
+  volume?: number | null;
+  weight?: number | null;
+  container_type?: ContainerType | string | null;
   container_truck_id: string;
   agent_name: string;
   client_full_name: string;
+  client?: {
+    id: string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
+  } | null;
   cargo: string;
   usd_rmb_rate?: number | null;
   employee_full_name: string;
+  employee?: {
+    id: string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+  } | null;
   purchase_price: CargoRegistrationPriceAmount;
   sell_price: CargoRegistrationPriceAmount;
   net_yield: CargoRegistrationNetYield;
+  origin?: LocationDetail | null;
+  destination?: LocationDetail | null;
+  route?: RouteInfo | null;
+  origin_city?: string | null;
+  origin_country?: string | null;
+  origin_country_code?: string | null;
+  origin_geoname_id?: number | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  destination_city?: string | null;
+  destination_country?: string | null;
+  destination_country_code?: string | null;
+  destination_geoname_id?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
   status: CargoRegistrationStatus;
   description?: string | null;
   client_id?: string;
@@ -257,6 +317,21 @@ export interface CargoRegistrationDetail {
   container_truck_id: string;
   agent_name: string;
   cargo: string;
+  origin?: LocationDetail | null;
+  destination?: LocationDetail | null;
+  route?: RouteInfo | null;
+  origin_city?: string | null;
+  origin_country?: string | null;
+  origin_country_code?: string | null;
+  origin_geoname_id?: number | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  destination_city?: string | null;
+  destination_country?: string | null;
+  destination_country_code?: string | null;
+  destination_geoname_id?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
   confirmed_date?: string | null;
   loaded_date?: string | null;
   arrived_date?: string | null;
@@ -359,6 +434,18 @@ interface InternalCargoRegistrationRecord {
   container_truck_id: string;
   agent_name: string;
   cargo: string;
+  origin_city: string | null;
+  origin_country: string | null;
+  origin_country_code: string | null;
+  origin_geoname_id: number | null;
+  origin_lat: number | null;
+  origin_lng: number | null;
+  destination_city: string | null;
+  destination_country: string | null;
+  destination_country_code: string | null;
+  destination_geoname_id: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
   confirmed_date: string | null;
   loaded_date: string | null;
   arrived_date: string | null;
@@ -377,12 +464,13 @@ interface InternalCargoRegistrationRecord {
   description: string | null;
   client_id: string;
   employee_id: string;
+  consolidation_id?: string | null;
   created_at: string;
   updated_at: string;
 }
 
 // Initial demo seeds matching documentation examples
-const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
+export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
   {
     id: '7a06df8a-384c-4c8d-9932-57db348a3451',
     cargo_type: 'FTL',
@@ -392,6 +480,18 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     container_truck_id: 'TRK-6447',
     agent_name: 'SilkRoad Express',
     cargo: 'General Goods',
+    origin_city: 'Yiwu',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1787687,
+    origin_lat: 29.31506,
+    origin_lng: 120.07676,
+    destination_city: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     confirmed_date: '2026-07-20',
     loaded_date: null,
     arrived_date: null,
@@ -422,6 +522,18 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     container_truck_id: 'TRK-9872',
     agent_name: 'SilkRoad Logistics',
     cargo: 'Electric Scooters',
+    origin_city: 'Guangzhou',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1809858,
+    origin_lat: 23.12744,
+    origin_lng: 113.25052,
+    destination_city: 'Samarkand',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1216265,
+    destination_lat: 39.65417,
+    destination_lng: 66.95972,
     confirmed_date: '2026-08-10',
     loaded_date: '2026-08-12',
     arrived_date: null,
@@ -452,6 +564,18 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     container_truck_id: 'CONTAINER-4091',
     agent_name: 'Shanghai Trans',
     cargo: 'Solar Panels',
+    origin_city: 'Shanghai',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1796236,
+    origin_lat: 31.22222,
+    origin_lng: 121.45806,
+    destination_city: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     confirmed_date: '2026-08-01',
     loaded_date: '2026-08-04',
     arrived_date: '2026-08-18',
@@ -482,6 +606,18 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     container_truck_id: 'TRK-904-UZ',
     agent_name: 'Yiwu Express Ltd',
     cargo: 'Automotive Spare Parts',
+    origin_city: 'Istanbul',
+    origin_country: 'Turkey',
+    origin_country_code: 'TR',
+    origin_geoname_id: 745044,
+    origin_lat: 41.01384,
+    origin_lng: 28.94966,
+    destination_city: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     confirmed_date: '2026-07-10',
     loaded_date: '2026-07-12',
     arrived_date: '2026-07-22',
@@ -512,6 +648,18 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     container_truck_id: 'TRK-512-CN',
     agent_name: 'Shenzhen Trans Lines',
     cargo: 'Solar Panels & Inverters',
+    origin_city: 'Shenzhen',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1795565,
+    origin_lat: 22.54554,
+    origin_lng: 114.0683,
+    destination_city: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     confirmed_date: '2026-07-18',
     loaded_date: '2026-07-20',
     arrived_date: '2026-08-05',
@@ -542,6 +690,18 @@ const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     container_truck_id: 'MSKU-441209-1',
     agent_name: 'Ningbo Port Agents',
     cargo: 'Furniture & Home Textiles',
+    origin_city: 'Ningbo',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1800627,
+    origin_lat: 29.87819,
+    origin_lng: 121.54945,
+    destination_city: 'Bukhara',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1217662,
+    destination_lat: 39.77472,
+    destination_lng: 64.42861,
     confirmed_date: '2026-06-20',
     loaded_date: '2026-06-25',
     arrived_date: '2026-07-15',
@@ -615,6 +775,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const containerType = urlObj.searchParams.get('container_type');
     const clientId = urlObj.searchParams.get('client_id');
     const employeeId = urlObj.searchParams.get('employee_id');
+    const consolidationIdParam = urlObj.searchParams.get('consolidation_id');
+    const hasConsolidationParam = urlObj.searchParams.get('has_consolidation');
 
     const confirmedStart = urlObj.searchParams.get('confirmed_start_date');
     const confirmedEnd = urlObj.searchParams.get('confirmed_end_date');
@@ -633,6 +795,17 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const createdEnd =
       urlObj.searchParams.get('created_end_date') || urlObj.searchParams.get('created_at_end');
 
+    const originCityParam = (urlObj.searchParams.get('origin_city') || '').toLowerCase().trim();
+    const originCountryParam = (urlObj.searchParams.get('origin_country_code') || '')
+      .toUpperCase()
+      .trim();
+    const originGeonameParam = urlObj.searchParams.get('origin_geoname_id');
+    const destCityParam = (urlObj.searchParams.get('destination_city') || '').toLowerCase().trim();
+    const destCountryParam = (urlObj.searchParams.get('destination_country_code') || '')
+      .toUpperCase()
+      .trim();
+    const destGeonameParam = urlObj.searchParams.get('destination_geoname_id');
+
     let filtered = [...demoRecords];
 
     if (search) {
@@ -646,6 +819,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           r.container_truck_id.toLowerCase().includes(search) ||
           r.cargo.toLowerCase().includes(search) ||
           r.agent_name.toLowerCase().includes(search) ||
+          (r.origin_city && r.origin_city.toLowerCase().includes(search)) ||
+          (r.destination_city && r.destination_city.toLowerCase().includes(search)) ||
           clientName.includes(search) ||
           empName.includes(search)
         );
@@ -667,6 +842,42 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
     if (employeeId) {
       filtered = filtered.filter((r) => r.employee_id === employeeId);
+    }
+    if (consolidationIdParam) {
+      filtered = filtered.filter((r) => r.consolidation_id === consolidationIdParam);
+    }
+    if (hasConsolidationParam === 'true') {
+      filtered = filtered.filter((r) => !!r.consolidation_id);
+    } else if (hasConsolidationParam === 'false') {
+      filtered = filtered.filter((r) => !r.consolidation_id);
+    }
+    if (originCityParam) {
+      filtered = filtered.filter((r) =>
+        (r.origin_city || '').toLowerCase().includes(originCityParam)
+      );
+    }
+    if (originCountryParam) {
+      filtered = filtered.filter(
+        (r) => (r.origin_country_code || '').toUpperCase() === originCountryParam
+      );
+    }
+    if (originGeonameParam) {
+      filtered = filtered.filter((r) => String(r.origin_geoname_id) === String(originGeonameParam));
+    }
+    if (destCityParam) {
+      filtered = filtered.filter((r) =>
+        (r.destination_city || '').toLowerCase().includes(destCityParam)
+      );
+    }
+    if (destCountryParam) {
+      filtered = filtered.filter(
+        (r) => (r.destination_country_code || '').toUpperCase() === destCountryParam
+      );
+    }
+    if (destGeonameParam) {
+      filtered = filtered.filter(
+        (r) => String(r.destination_geoname_id) === String(destGeonameParam)
+      );
     }
 
     const cleanDate = (d?: string | null) => (d ? d.slice(0, 10) : '');
@@ -1012,15 +1223,92 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       const netYieldUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
       const netYieldUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
 
+      const origDetail: LocationDetail | null = r.origin_city
+        ? {
+            city: r.origin_city,
+            country: r.origin_country,
+            country_code: r.origin_country_code,
+            geoname_id: r.origin_geoname_id,
+            latitude: r.origin_lat,
+            longitude: r.origin_lng,
+            display_name: r.origin_country_code
+              ? `${r.origin_city} (${r.origin_country_code})`
+              : r.origin_city,
+            google_maps_url: locationsApi.buildPointUrl(r.origin_lat, r.origin_lng, r.origin_city),
+          }
+        : null;
+
+      const destDetail: LocationDetail | null = r.destination_city
+        ? {
+            city: r.destination_city,
+            country: r.destination_country,
+            country_code: r.destination_country_code,
+            geoname_id: r.destination_geoname_id,
+            latitude: r.destination_lat,
+            longitude: r.destination_lng,
+            display_name: r.destination_country_code
+              ? `${r.destination_city} (${r.destination_country_code})`
+              : r.destination_city,
+            google_maps_url: locationsApi.buildPointUrl(
+              r.destination_lat,
+              r.destination_lng,
+              r.destination_city
+            ),
+          }
+        : null;
+
+      const routeInfo: RouteInfo | null =
+        r.origin_city && r.destination_city
+          ? {
+              origin: r.origin_city,
+              destination: r.destination_city,
+              origin_display: r.origin_country
+                ? `${r.origin_city}, ${r.origin_country}`
+                : r.origin_city,
+              destination_display: r.destination_country
+                ? `${r.destination_city}, ${r.destination_country}`
+                : r.destination_city,
+              google_maps_dir_url: locationsApi.buildRouteUrl(
+                r.origin_lat,
+                r.origin_lng,
+                r.destination_lat,
+                r.destination_lng,
+                r.origin_city,
+                r.destination_city
+              ),
+            }
+          : null;
+
       return {
         id: r.id,
         cargo_type: r.cargo_type,
+        volume: r.volume,
+        weight: r.weight,
+        container_type: r.container_type,
         container_truck_id: r.container_truck_id,
         agent_name: r.agent_name,
         client_full_name: clientName,
+        client: client
+          ? {
+              id: client.id,
+              name: clientName,
+              first_name: client.first_name,
+              last_name: client.last_name,
+              company_name: client.company_name,
+            }
+          : null,
         cargo: r.cargo,
         usd_rmb_rate: r.usd_rmb_rate,
         employee_full_name: empName,
+        employee: emp
+          ? {
+              id: emp.id,
+              name: empName,
+              first_name: emp.first_name,
+              last_name: emp.last_name,
+            }
+          : null,
+        consolidation_id: r.consolidation_id,
         purchase_date: purDate,
         purchase_usd_rate: purConv.usd_rate,
         purchase_price: {
@@ -1055,6 +1343,21 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           purchase_currency: r.purchase_currency,
           sell_currency: r.sell_currency,
         },
+        origin: origDetail,
+        destination: destDetail,
+        route: routeInfo,
+        origin_city: r.origin_city,
+        origin_country: r.origin_country,
+        origin_country_code: r.origin_country_code,
+        origin_geoname_id: r.origin_geoname_id,
+        origin_lat: r.origin_lat,
+        origin_lng: r.origin_lng,
+        destination_city: r.destination_city,
+        destination_country: r.destination_country,
+        destination_country_code: r.destination_country_code,
+        destination_geoname_id: r.destination_geoname_id,
+        destination_lat: r.destination_lat,
+        destination_lng: r.destination_lng,
         status: r.status,
         description: r.description,
         client_id: r.client_id,
@@ -1102,6 +1405,18 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       container_truck_id: 'TRK-' + (id.length > 6 ? id.slice(0, 6).toUpperCase() : '1001'),
       agent_name: 'SilkRoad Express',
       cargo: 'General Cargo',
+      origin_city: 'Yiwu',
+      origin_country: 'China',
+      origin_country_code: 'CN',
+      origin_geoname_id: 1787687,
+      origin_lat: 29.31506,
+      origin_lng: 120.07676,
+      destination_city: 'Tashkent',
+      destination_country: 'Uzbekistan',
+      destination_country_code: 'UZ',
+      destination_geoname_id: 1512569,
+      destination_lat: 41.26465,
+      destination_lng: 69.21627,
       confirmed_date: new Date().toISOString().split('T')[0],
       loaded_date: null,
       arrived_date: null,
@@ -1149,6 +1464,66 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const netUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
     const netUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
 
+    const origDetail: LocationDetail | null = found.origin_city
+      ? {
+          city: found.origin_city,
+          country: found.origin_country,
+          country_code: found.origin_country_code,
+          geoname_id: found.origin_geoname_id,
+          latitude: found.origin_lat,
+          longitude: found.origin_lng,
+          display_name: found.origin_country_code
+            ? `${found.origin_city} (${found.origin_country_code})`
+            : found.origin_city,
+          google_maps_url: locationsApi.buildPointUrl(
+            found.origin_lat,
+            found.origin_lng,
+            found.origin_city
+          ),
+        }
+      : null;
+
+    const destDetail: LocationDetail | null = found.destination_city
+      ? {
+          city: found.destination_city,
+          country: found.destination_country,
+          country_code: found.destination_country_code,
+          geoname_id: found.destination_geoname_id,
+          latitude: found.destination_lat,
+          longitude: found.destination_lng,
+          display_name: found.destination_country_code
+            ? `${found.destination_city} (${found.destination_country_code})`
+            : found.destination_city,
+          google_maps_url: locationsApi.buildPointUrl(
+            found.destination_lat,
+            found.destination_lng,
+            found.destination_city
+          ),
+        }
+      : null;
+
+    const routeInfo: RouteInfo | null =
+      found.origin_city && found.destination_city
+        ? {
+            origin: found.origin_city,
+            destination: found.destination_city,
+            origin_display: found.origin_country
+              ? `${found.origin_city}, ${found.origin_country}`
+              : found.origin_city,
+            destination_display: found.destination_country
+              ? `${found.destination_city}, ${found.destination_country}`
+              : found.destination_city,
+            google_maps_dir_url: locationsApi.buildRouteUrl(
+              found.origin_lat,
+              found.origin_lng,
+              found.destination_lat,
+              found.destination_lng,
+              found.origin_city,
+              found.destination_city
+            ),
+          }
+        : null;
+
     const detail: CargoRegistrationDetail = {
       id: found.id,
       cargo_type: found.cargo_type,
@@ -1158,6 +1533,21 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       container_truck_id: found.container_truck_id,
       agent_name: found.agent_name,
       cargo: found.cargo,
+      origin: origDetail,
+      destination: destDetail,
+      route: routeInfo,
+      origin_city: found.origin_city,
+      origin_country: found.origin_country,
+      origin_country_code: found.origin_country_code,
+      origin_geoname_id: found.origin_geoname_id,
+      origin_lat: found.origin_lat,
+      origin_lng: found.origin_lng,
+      destination_city: found.destination_city,
+      destination_country: found.destination_country,
+      destination_country_code: found.destination_country_code,
+      destination_geoname_id: found.destination_geoname_id,
+      destination_lat: found.destination_lat,
+      destination_lng: found.destination_lng,
       confirmed_date: found.confirmed_date,
       loaded_date: found.loaded_date,
       arrived_date: found.arrived_date,
@@ -1220,6 +1610,19 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       container_truck_id,
       agent_name,
       cargo,
+      origin_city,
+      origin_country,
+      origin_country_code,
+      origin_geoname_id,
+      origin_lat,
+      origin_lng,
+      destination_city,
+      destination_country,
+      destination_country_code,
+      destination_geoname_id,
+      destination_lat,
+      destination_lng,
+      prevent_duplicate,
       confirmed_date,
       loaded_date,
       arrived_date,
@@ -1242,6 +1645,35 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     if (!cargo_type || (cargo_type !== 'LTL' && cargo_type !== 'FTL')) {
       throw makeApiError(path, 400, 'invalid_cargo_type', 'cargo_type must be LTL or FTL');
+    }
+
+    if (prevent_duplicate) {
+      const match = demoRecords.find((item) => {
+        const sameClient = client_id && item.client_id === client_id;
+        const sameTruck =
+          container_truck_id &&
+          String(item.container_truck_id).trim().toLowerCase() ===
+            String(container_truck_id).trim().toLowerCase();
+        const sameCargo =
+          cargo && String(item.cargo).trim().toLowerCase() === String(cargo).trim().toLowerCase();
+        const samePrice =
+          purchase_price !== undefined && Number(item.purchase_price) === Number(purchase_price);
+        const sameRoute =
+          (!origin_city || (item.origin_city || '').toLowerCase() === origin_city.toLowerCase()) &&
+          (!destination_city ||
+            (item.destination_city || '').toLowerCase() === destination_city.toLowerCase());
+
+        return sameClient && (sameTruck || (sameCargo && samePrice && sameRoute));
+      });
+
+      if (match) {
+        throw makeApiError(
+          path,
+          400,
+          'duplicate_cargo_detected',
+          `An identical cargo entry "${match.cargo}" with truck ${match.container_truck_id} was already registered.`
+        );
+      }
     }
 
     if (cargo_type === 'LTL') {
@@ -1317,6 +1749,20 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       container_truck_id: String(container_truck_id).trim(),
       agent_name: String(agent_name || '').trim(),
       cargo: String(cargo || '').trim(),
+      origin_city: origin_city ? String(origin_city).trim() : null,
+      origin_country: origin_country ? String(origin_country).trim() : null,
+      origin_country_code: origin_country_code ? String(origin_country_code).trim() : null,
+      origin_geoname_id: origin_geoname_id !== undefined ? origin_geoname_id : null,
+      origin_lat: origin_lat !== undefined ? origin_lat : null,
+      origin_lng: origin_lng !== undefined ? origin_lng : null,
+      destination_city: destination_city ? String(destination_city).trim() : null,
+      destination_country: destination_country ? String(destination_country).trim() : null,
+      destination_country_code: destination_country_code
+        ? String(destination_country_code).trim()
+        : null,
+      destination_geoname_id: destination_geoname_id !== undefined ? destination_geoname_id : null,
+      destination_lat: destination_lat !== undefined ? destination_lat : null,
+      destination_lng: destination_lng !== undefined ? destination_lng : null,
       confirmed_date: confirmed_date || null,
       loaded_date: loaded_date || null,
       arrived_date: arrived_date || null,
@@ -1613,9 +2059,23 @@ export const cargoRegistrationsApi = {
     if (params?.container_type) searchParams.set('container_type', params.container_type);
     if (params?.client_id) searchParams.set('client_id', params.client_id);
     if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
+    if (params?.consolidation_id) searchParams.set('consolidation_id', params.consolidation_id);
+    if (params?.has_consolidation !== undefined)
+      searchParams.set('has_consolidation', String(params.has_consolidation));
     if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
     if (params?.sort_order) searchParams.set('sort_order', params.sort_order);
     if (params?.order) searchParams.set('order', params.order);
+
+    if (params?.origin_city) searchParams.set('origin_city', params.origin_city);
+    if (params?.origin_country_code)
+      searchParams.set('origin_country_code', params.origin_country_code);
+    if (params?.origin_geoname_id)
+      searchParams.set('origin_geoname_id', String(params.origin_geoname_id));
+    if (params?.destination_city) searchParams.set('destination_city', params.destination_city);
+    if (params?.destination_country_code)
+      searchParams.set('destination_country_code', params.destination_country_code);
+    if (params?.destination_geoname_id)
+      searchParams.set('destination_geoname_id', String(params.destination_geoname_id));
 
     if (params?.confirmed_start_date)
       searchParams.set('confirmed_start_date', params.confirmed_start_date);
@@ -1685,6 +2145,8 @@ export const cargoRegistrationsApi = {
       method: 'DELETE',
     }),
 
+  checkDuplicate: (dto: DuplicateCheckDto) => locationsApi.checkDuplicateCargo(dto),
+
   duplicate: async (id: string): Promise<CargoRegistrationDetail> => {
     const source = await cargoRegistrationsApi.get(id);
     const todayStr = new Date().toISOString().split('T')[0];
@@ -1708,6 +2170,18 @@ export const cargoRegistrationsApi = {
       container_truck_id: copyTruckId,
       agent_name: source.agent_name,
       cargo: source.cargo,
+      origin_city: source.origin_city ?? undefined,
+      origin_country: source.origin_country ?? undefined,
+      origin_country_code: source.origin_country_code ?? undefined,
+      origin_geoname_id: source.origin_geoname_id ?? undefined,
+      origin_lat: source.origin_lat ?? undefined,
+      origin_lng: source.origin_lng ?? undefined,
+      destination_city: source.destination_city ?? undefined,
+      destination_country: source.destination_country ?? undefined,
+      destination_country_code: source.destination_country_code ?? undefined,
+      destination_geoname_id: source.destination_geoname_id ?? undefined,
+      destination_lat: source.destination_lat ?? undefined,
+      destination_lng: source.destination_lng ?? undefined,
       confirmed_date: todayStr,
       loaded_date: undefined,
       arrived_date: undefined,

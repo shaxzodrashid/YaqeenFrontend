@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermissions } from '../../context/PermissionsContext';
 import { cargoConsolidationsApi } from '../../services/cargoConsolidations.service';
 import type {
   ConsolidationListItem,
@@ -34,6 +35,7 @@ export function AssignCargosModal({
 }: AssignCargosModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
+  const { canAssignCargo } = usePermissions();
 
   const [search, setSearch] = useState<string>('');
   const [availableCargos, setAvailableCargos] = useState<ConsolidationCargoItem[]>([]);
@@ -53,7 +55,13 @@ export function AssignCargosModal({
     setLoading(true);
     try {
       const items = await cargoConsolidationsApi.getUnassignedLtlCargos();
-      setAvailableCargos(items);
+      const alreadyAssigned = new Set(
+        consolidation?.cargos?.map((c) => c.id) ||
+          (consolidation as any)?.cargo_registration_ids ||
+          []
+      );
+      const unassigned = (items || []).filter((c) => !alreadyAssigned.has(c.id));
+      setAvailableCargos(unassigned);
     } catch (err: any) {
       showNotification(err?.message || 'Failed to load unassigned cargos', 'error');
     } finally {
@@ -69,8 +77,12 @@ export function AssignCargosModal({
         (c.cargo || '').toLowerCase().includes(s) ||
         (c.agent_name || '').toLowerCase().includes(s) ||
         (c.container_truck_id || '').toLowerCase().includes(s) ||
-        (c.client?.name || '').toLowerCase().includes(s) ||
-        (c.employee?.name || '').toLowerCase().includes(s)
+        (c.client?.name || (c as any).client_name || (c as any).client_full_name || '')
+          .toLowerCase()
+          .includes(s) ||
+        (c.employee?.name || (c as any).employee_name || (c as any).employee_full_name || '')
+          .toLowerCase()
+          .includes(s)
     );
   }, [availableCargos, search]);
 
@@ -121,6 +133,10 @@ export function AssignCargosModal({
 
   const handleAssign = async () => {
     if (!consolidation || selectedCargoIds.length === 0) return;
+    if (!canAssignCargo()) {
+      showNotification('Permission denied: cannot assign cargos', 'error');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -130,7 +146,9 @@ export function AssignCargosModal({
           `Successfully assigned ${selectedCargoIds.length} cargo package(s) to ${consolidation.container_truck_id}`,
         'success'
       );
-      onSuccess(res.consolidation);
+      const updated =
+        res?.consolidation || (res as any)?.data || (res as any)?.id ? res : consolidation;
+      onSuccess(updated as ConsolidationListItem);
       onClose();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to assign cargos', 'error');
@@ -139,11 +157,11 @@ export function AssignCargosModal({
     }
   };
 
-  if (!isOpen || !consolidation) return null;
+  if (!isOpen || !consolidation || !canAssignCargo()) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -326,11 +344,25 @@ export function AssignCargosModal({
                             </span>
                           </div>
                           <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
-                            {cargo.client?.name && (
-                              <span className="truncate">Client: {cargo.client.name}</span>
+                            {(cargo.client?.name ||
+                              (cargo as any).client_full_name ||
+                              (cargo as any).client_name) && (
+                              <span className="truncate">
+                                Client:{' '}
+                                {cargo.client?.name ||
+                                  (cargo as any).client_full_name ||
+                                  (cargo as any).client_name}
+                              </span>
                             )}
-                            {cargo.employee?.name && (
-                              <span className="truncate">Sales: {cargo.employee.name}</span>
+                            {(cargo.employee?.name ||
+                              (cargo as any).employee_full_name ||
+                              (cargo as any).employee_name) && (
+                              <span className="truncate">
+                                Sales:{' '}
+                                {cargo.employee?.name ||
+                                  (cargo as any).employee_full_name ||
+                                  (cargo as any).employee_name}
+                              </span>
                             )}
                           </div>
                         </div>

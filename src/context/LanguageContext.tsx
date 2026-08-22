@@ -1065,6 +1065,11 @@ const translations = {
       'Allows the user to view, search, and manage clients assigned to all employees across the organization. When disabled, the user only sees their own assigned clients.',
     rolesPermCanWorkWithAllClientsTooltip:
       'Allows viewing and managing clients assigned to all employees across the organization',
+    rolesAssignCargo: 'Assign / Detach Cargos',
+    rolesAssignCargoDesc:
+      'Permission to batch assign or detach cargo packages to/from consolidation vehicles',
+    rolesPermAssignCargoTooltip:
+      'Allows batch linking and detaching cargo packages to/from consolidation vehicles',
 
     // System Modules Labels & Tooltips
     module_clients: 'Clients Management',
@@ -1078,6 +1083,9 @@ const translations = {
     module_cargo_registrations: 'Cargo Registrations',
     module_cargo_registrations_desc:
       'Access to cargo registration forms, logs, and transaction records',
+    module_cargo_consolidations: 'Cargo Consolidations',
+    module_cargo_consolidations_desc:
+      'Access to cargo groupage, consolidations, vehicle capacity, and batch cargo assignment',
     module_finance: 'Finance & Expenses',
     module_finance_desc: 'Access to expense ledgers, payroll, and financial reports',
     module_commercial_offers: 'Commercial Offers',
@@ -1135,6 +1143,23 @@ const translations = {
     statusDelivered: 'Delivered',
     resetDemo: 'Reset Demo',
     colContainerNo: 'Container / Truck ID',
+    originCityLabel: 'Origin Hub / City',
+    destinationCityLabel: 'Destination Hub / City',
+    originCityPlaceholder: 'Search origin hub...',
+    destinationCityPlaceholder: 'Search destination hub...',
+    routeCorridorTitle: 'Logistics Route Corridor',
+    routeCorridorDesc: 'Select origin and destination logistics hubs',
+    swapRoute: 'Swap Route',
+    viewOnMap: 'View on Google Maps',
+    openDirections: 'Open Directions',
+    originLabel: 'Origin',
+    destinationLabel: 'Destination',
+    duplicateCargoWarning: 'Duplicate cargo registration detected',
+    duplicateCargoWarningDesc:
+      'A registration with identical route, client, container, and price already exists. Submitting will register with a distinct ID.',
+    popularHubsLabel: 'Popular Logistics Hubs',
+    customCityOption: 'Use custom city',
+    searchCitiesPlaceholder: 'Search city or hub...',
     colClientName: 'Client Name',
     colCargo: 'Cargo',
     colConfirmed: 'Confirmed',
@@ -2560,6 +2585,9 @@ const translations = {
       'Позволяет пользователю просматривать, искать и управлять клиентами всех сотрудников компании. При отключении доступны только свои клиенты.',
     rolesPermCanWorkWithAllClientsTooltip:
       'Разрешает просмотр и управление клиентами всех сотрудников организации',
+    rolesAssignCargo: 'Комплектация грузов',
+    rolesAssignCargoDesc: 'Право прикреплять и откреплять грузы к консолидационным рейсам',
+    rolesPermAssignCargoTooltip: 'Разрешает пакетное прикрепление и открепление грузов к рейсам',
 
     // System Modules Labels & Tooltips
     module_clients: 'Управление клиентами',
@@ -2572,6 +2600,9 @@ const translations = {
     module_cargo_kpi_desc: 'Доступ к KPI грузов, перевозкам и логистике',
     module_cargo_registrations: 'Регистрация грузов',
     module_cargo_registrations_desc: 'Доступ к форме регистрации грузов и журналу транзакций',
+    module_cargo_consolidations: 'Консолидация грузов',
+    module_cargo_consolidations_desc:
+      'Доступ к сборным грузам, консолидациям, вместимости авто и комплектации партий',
     module_finance: 'Финансы и расходы',
     module_finance_desc: 'Доступ к финансовым расходам, зарплатам и отчетам',
     module_commercial_offers: 'Коммерческие предложения',
@@ -2630,6 +2661,23 @@ const translations = {
     statusDelivered: 'Доставлено',
     resetDemo: 'Сбросить демо',
     colContainerNo: 'Номер контейнера / фуры',
+    originCityLabel: 'Пункт отправления / Хаб',
+    destinationCityLabel: 'Пункт назначения / Хаб',
+    originCityPlaceholder: 'Поиск пункта отправления...',
+    destinationCityPlaceholder: 'Поиск пункта назначения...',
+    routeCorridorTitle: 'Логистический коридор маршрута',
+    routeCorridorDesc: 'Выберите пункты отправления и назначения',
+    swapRoute: 'Поменять местами маршрут',
+    viewOnMap: 'Посмотреть на Google Maps',
+    openDirections: 'Маршрут на карте',
+    originLabel: 'Отправление',
+    destinationLabel: 'Назначение',
+    duplicateCargoWarning: 'Обнаружен дубликат регистрации груза',
+    duplicateCargoWarningDesc:
+      'Регистрация с идентичным маршрутом, клиентом, контейнером и ценой уже существует. Сохранение создаст отдельную запись с уникальным ID.',
+    popularHubsLabel: 'Популярные логистические хабы',
+    customCityOption: 'Использовать указанный город',
+    searchCitiesPlaceholder: 'Поиск города или хаба...',
     colClientName: 'Имя клиента',
     colCargo: 'Груз',
     colConfirmed: 'Подтверждено',
@@ -4062,6 +4110,11 @@ const translations = {
       "Tashkilotdagi barcha xodimlarga biriktirilgan mijozlarni ko'rish, qidirish va boshqarish imkoniyati. O'chirilganda faqat o'ziga biriktirilgan mijozlar ko'rinadi.",
     rolesPermCanWorkWithAllClientsTooltip:
       "Tashkilotdagi barcha xodimlarga biriktirilgan mijozlarni ko'rish va boshqarish huquqi",
+    rolesAssignCargo: 'Yuklarni biriktirish',
+    rolesAssignCargoDesc:
+      'Yuk paketlarini konsolidatsiya reyslariga biriktirish va ajratish huquqi',
+    rolesPermAssignCargoTooltip:
+      'Yuk paketlarini konsolidatsiya reyslariga biriktirish va ajratishga ruxsat',
 
     // System Modules Labels & Tooltips
     module_clients: 'Mijozlarni boshqarish',
@@ -4075,6 +4128,9 @@ const translations = {
     module_cargo_registrations: "Yuklarni ro'yxatdan o'tkazish",
     module_cargo_registrations_desc:
       "Yuklarni ro'yxatdan o'tkazish shakli va tranzaksiyalar jurnaliga kirish",
+    module_cargo_consolidations: 'Yuklarni konsolidatsiya qilish',
+    module_cargo_consolidations_desc:
+      "Guruhlangan yuklar, konsolidatsiyalar, avtomobil sig'imi va yuklarni biriktirishga kirish",
     module_finance: 'Moliya va xarajatlar',
     module_finance_desc: 'Moliyaviy xarajatlar, maoshlar va hisobotlarga kirish',
     module_commercial_offers: 'Tijorat takliflari',
@@ -4133,6 +4189,23 @@ const translations = {
     statusDelivered: 'Yetib keldi',
     resetDemo: 'Demoni tiklash',
     colContainerNo: 'Konteyner / Yuk mashinasi ID',
+    originCityLabel: "Jo'nash markazi / Shahar",
+    destinationCityLabel: 'Yetib borish markazi / Shahar',
+    originCityPlaceholder: "Jo'nash markazini qidiring...",
+    destinationCityPlaceholder: 'Yetib borish markazini qidiring...',
+    routeCorridorTitle: "Logistika yo'nalishi koridori",
+    routeCorridorDesc: "Jo'nash va yetib borish logistika markazlarini tanlang",
+    swapRoute: "Yo'nalishni almashtirish",
+    viewOnMap: "Google Xaritalarda ko'rish",
+    openDirections: "Xaritada yo'nalish",
+    originLabel: "Jo'nash",
+    destinationLabel: 'Manzil',
+    duplicateCargoWarning: "Bir xil yuk ro'yxatdan o'tganligi aniqlandi",
+    duplicateCargoWarningDesc:
+      "Aynan bir xil yo'nalish, mijoz, konteyner va narxga ega yuk mavjud. Saqlash alohida yangi ID bilan amalga oshiriladi.",
+    popularHubsLabel: 'Ommabop logistika markazlari',
+    customCityOption: 'Kiritilgan shahardan foydalanish',
+    searchCitiesPlaceholder: 'Shahar yoki markazni qidiring...',
     colClientName: 'Mijoz nomi',
     colCargo: 'Yuk',
     colConfirmed: 'Tasdiqlandi',

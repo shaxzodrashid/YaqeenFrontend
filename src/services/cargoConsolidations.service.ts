@@ -1,8 +1,14 @@
 import { request, registerDemoHandler } from './httpClient';
 import type { CargoType, CurrencyType } from './cargoRegistrations.service';
-import { convertPriceToUsdAndUzs } from './cargoRegistrations.service';
+import {
+  cargoRegistrationsApi,
+  convertPriceToUsdAndUzs,
+  INITIAL_DEMO_RECORDS,
+} from './cargoRegistrations.service';
 import { demoClientsDb } from './clients.service';
 import { demoEmployeesDb } from './employees.service';
+import type { LocationDetail, RouteInfo } from '../types/locations';
+import { locationsApi } from './locations.service';
 
 // ---------------------------------------------------------------------------
 // Types & Interfaces
@@ -53,35 +59,44 @@ export interface ConsolidationCapacity {
 }
 
 export interface ConsolidationFinancials {
+  total_purchase_cost_usd: number;
+  total_sell_revenue_usd: number;
+  gross_margin_usd: number;
+  total_carrier_cost_usd: number;
+  net_margin_usd: number;
+  margin_percent: number;
+  consolidated_net_margin_usd: number;
   total_sell_usd: number;
   total_purchase_usd: number;
   carrier_cost: {
-    amount: number;
-    currency: CurrencyType;
     amount_usd: number;
+    currency: CurrencyType;
   };
-  consolidated_net_margin_usd: number;
 }
 
 export interface ConsolidationCargoItem {
   id: string;
-  cargo_type: CargoType;
+  container_truck_id: string;
   cargo: string;
+  cargo_type?: CargoType;
   volume?: number | null;
   weight?: number | null;
   container_type?: string | null;
-  container_truck_id?: string | null;
   agent_name?: string | null;
+  client_id?: string;
+  client_name?: string;
   client?: {
     id: string;
-    name: string;
+    name?: string;
     first_name?: string;
     last_name?: string;
     company_name?: string;
   } | null;
+  employee_id?: string;
+  employee_name?: string;
   employee?: {
     id: string;
-    name: string;
+    name?: string;
     first_name?: string;
     last_name?: string;
   } | null;
@@ -115,7 +130,20 @@ export interface ConsolidationListItem {
   carrier_name?: string | null;
   carrier_phone?: string | null;
   origin_place?: string | null;
+  origin_country?: string | null;
+  origin_country_code?: string | null;
+  origin_geoname_id?: number | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
   destination_place?: string | null;
+  destination_country?: string | null;
+  destination_country_code?: string | null;
+  destination_geoname_id?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
+  origin?: LocationDetail | null;
+  destination?: LocationDetail | null;
+  route?: RouteInfo | null;
   loaded_date?: string | null;
   departure_date?: string | null;
   estimated_arrival_date?: string | null;
@@ -139,7 +167,9 @@ export interface ConsolidationActiveDropdownItem {
   status: ConsolidationStatus;
   carrier_name?: string | null;
   origin_place?: string | null;
+  origin_country_code?: string | null;
   destination_place?: string | null;
+  destination_country_code?: string | null;
   departure_date?: string | null;
   total_cargos_count: number;
   max_volume_capacity: number;
@@ -161,7 +191,17 @@ export interface CreateConsolidationDto {
   carrier_name?: string;
   carrier_phone?: string;
   origin_place?: string;
+  origin_country?: string;
+  origin_country_code?: string;
+  origin_geoname_id?: number | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
   destination_place?: string;
+  destination_country?: string;
+  destination_country_code?: string;
+  destination_geoname_id?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
   loaded_date?: string;
   departure_date?: string;
   estimated_arrival_date?: string;
@@ -228,7 +268,17 @@ interface InternalConsolidationRecord {
   carrier_name: string | null;
   carrier_phone: string | null;
   origin_place: string | null;
+  origin_country: string | null;
+  origin_country_code: string | null;
+  origin_geoname_id: number | null;
+  origin_lat: number | null;
+  origin_lng: number | null;
   destination_place: string | null;
+  destination_country: string | null;
+  destination_country_code: string | null;
+  destination_geoname_id: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
   loaded_date: string | null;
   departure_date: string | null;
   estimated_arrival_date: string | null;
@@ -254,7 +304,17 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     carrier_name: 'Baytur Express Lojistik',
     carrier_phone: '+90 532 111 2233',
     origin_place: 'Istanbul',
+    origin_country: 'Turkey',
+    origin_country_code: 'TR',
+    origin_geoname_id: 745044,
+    origin_lat: 41.01384,
+    origin_lng: 28.94966,
     destination_place: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     loaded_date: '2026-08-18',
     departure_date: '2026-08-20',
     estimated_arrival_date: '2026-08-29',
@@ -281,7 +341,17 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     carrier_name: 'Silk Road Trans Cargo',
     carrier_phone: '+86 138 0013 8000',
     origin_place: 'Yiwu',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1787687,
+    origin_lat: 29.31506,
+    origin_lng: 120.07676,
     destination_place: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     loaded_date: null,
     departure_date: '2026-08-26',
     estimated_arrival_date: '2026-09-05',
@@ -305,7 +375,17 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     carrier_name: 'Eurasia Overland',
     carrier_phone: '+998 90 987 6543',
     origin_place: 'Beijing',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1816670,
+    origin_lat: 39.9075,
+    origin_lng: 116.39723,
     destination_place: 'Samarkand',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1216265,
+    destination_lat: 39.65417,
+    destination_lng: 66.95972,
     loaded_date: '2026-08-10',
     departure_date: '2026-08-12',
     estimated_arrival_date: '2026-08-22',
@@ -329,7 +409,17 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     carrier_name: 'Albatros Trans Asia',
     carrier_phone: '+998 91 123 4567',
     origin_place: 'Guangzhou',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1809858,
+    origin_lat: 23.12744,
+    origin_lng: 113.25052,
     destination_place: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
     loaded_date: '2026-07-20',
     departure_date: '2026-07-22',
     estimated_arrival_date: '2026-08-01',
@@ -379,7 +469,7 @@ function getLiveCargoRegistrations(): any[] {
   } catch {
     // Ignore
   }
-  return [];
+  return [...INITIAL_DEMO_RECORDS];
 }
 
 function saveLiveCargoRegistrations(records: any[]) {
@@ -497,6 +587,66 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
 
   const netMarginUsd = totalSellUsd - totalPurchaseUsd - carrierCostConv.amount_usd;
 
+  const origDetail: LocationDetail | null = record.origin_place
+    ? {
+        city: record.origin_place,
+        country: record.origin_country,
+        country_code: record.origin_country_code,
+        geoname_id: record.origin_geoname_id,
+        latitude: record.origin_lat,
+        longitude: record.origin_lng,
+        display_name: record.origin_country_code
+          ? `${record.origin_place} (${record.origin_country_code})`
+          : record.origin_place,
+        google_maps_url: locationsApi.buildPointUrl(
+          record.origin_lat,
+          record.origin_lng,
+          record.origin_place
+        ),
+      }
+    : null;
+
+  const destDetail: LocationDetail | null = record.destination_place
+    ? {
+        city: record.destination_place,
+        country: record.destination_country,
+        country_code: record.destination_country_code,
+        geoname_id: record.destination_geoname_id,
+        latitude: record.destination_lat,
+        longitude: record.destination_lng,
+        display_name: record.destination_country_code
+          ? `${record.destination_place} (${record.destination_country_code})`
+          : record.destination_place,
+        google_maps_url: locationsApi.buildPointUrl(
+          record.destination_lat,
+          record.destination_lng,
+          record.destination_place
+        ),
+      }
+    : null;
+
+  const routeInfo: RouteInfo | null =
+    record.origin_place && record.destination_place
+      ? {
+          origin: record.origin_place,
+          destination: record.destination_place,
+          origin_display: record.origin_country
+            ? `${record.origin_place}, ${record.origin_country}`
+            : record.origin_place,
+          destination_display: record.destination_country
+            ? `${record.destination_place}, ${record.destination_country}`
+            : record.destination_place,
+          google_maps_dir_url: locationsApi.buildRouteUrl(
+            record.origin_lat,
+            record.origin_lng,
+            record.destination_lat,
+            record.destination_lng,
+            record.origin_place,
+            record.destination_place
+          ),
+        }
+      : null;
+
   return {
     id: record.id,
     consolidation_code: record.consolidation_code,
@@ -506,7 +656,20 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
     carrier_name: record.carrier_name,
     carrier_phone: record.carrier_phone,
     origin_place: record.origin_place,
+    origin_country: record.origin_country,
+    origin_country_code: record.origin_country_code,
+    origin_geoname_id: record.origin_geoname_id,
+    origin_lat: record.origin_lat,
+    origin_lng: record.origin_lng,
     destination_place: record.destination_place,
+    destination_country: record.destination_country,
+    destination_country_code: record.destination_country_code,
+    destination_geoname_id: record.destination_geoname_id,
+    destination_lat: record.destination_lat,
+    destination_lng: record.destination_lng,
+    origin: origDetail,
+    destination: destDetail,
+    route: routeInfo,
     loaded_date: record.loaded_date,
     departure_date: record.departure_date,
     estimated_arrival_date: record.estimated_arrival_date,
@@ -526,14 +689,20 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
       total_cargos_count: cargosList.length,
     },
     financials: {
+      total_purchase_cost_usd: Math.round(totalPurchaseUsd * 100) / 100,
+      total_sell_revenue_usd: Math.round(totalSellUsd * 100) / 100,
+      gross_margin_usd: Math.round((totalSellUsd - totalPurchaseUsd) * 100) / 100,
+      total_carrier_cost_usd: Math.round(carrierCostConv.amount_usd * 100) / 100,
+      net_margin_usd: Math.round(netMarginUsd * 100) / 100,
+      margin_percent:
+        totalSellUsd > 0 ? Math.round((netMarginUsd / totalSellUsd) * 10000) / 100 : 0,
+      consolidated_net_margin_usd: Math.round(netMarginUsd * 100) / 100,
       total_sell_usd: Math.round(totalSellUsd * 100) / 100,
       total_purchase_usd: Math.round(totalPurchaseUsd * 100) / 100,
       carrier_cost: {
-        amount: record.total_carrier_cost,
-        currency: record.carrier_cost_currency,
         amount_usd: Math.round(carrierCostConv.amount_usd * 100) / 100,
+        currency: record.carrier_cost_currency || 'USD',
       },
-      consolidated_net_margin_usd: Math.round(netMarginUsd * 100) / 100,
     },
     description: record.description,
     cargos: cargosList,
@@ -791,7 +960,18 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       carrier_name: body.carrier_name || null,
       carrier_phone: body.carrier_phone || null,
       origin_place: body.origin_place || null,
+      origin_country: body.origin_country || null,
+      origin_country_code: body.origin_country_code || null,
+      origin_geoname_id: body.origin_geoname_id !== undefined ? body.origin_geoname_id : null,
+      origin_lat: body.origin_lat !== undefined ? body.origin_lat : null,
+      origin_lng: body.origin_lng !== undefined ? body.origin_lng : null,
       destination_place: body.destination_place || null,
+      destination_country: body.destination_country || null,
+      destination_country_code: body.destination_country_code || null,
+      destination_geoname_id:
+        body.destination_geoname_id !== undefined ? body.destination_geoname_id : null,
+      destination_lat: body.destination_lat !== undefined ? body.destination_lat : null,
+      destination_lng: body.destination_lng !== undefined ? body.destination_lng : null,
       loaded_date: body.loaded_date || null,
       departure_date: body.departure_date || null,
       estimated_arrival_date: body.estimated_arrival_date || null,
@@ -1062,6 +1242,63 @@ export const cargoConsolidationsApi = {
 
   // Helper to query unassigned LTL cargos for fast multi-select modal assignment
   getUnassignedLtlCargos: async (search?: string): Promise<ConsolidationCargoItem[]> => {
+    try {
+      const res = await cargoRegistrationsApi.list({
+        cargo_type: 'LTL',
+        has_consolidation: false,
+        limit: 200,
+        search,
+      });
+
+      if (res && Array.isArray(res.data) && res.data.length > 0) {
+        return res.data.map((c: any) => ({
+          id: c.id,
+          cargo_type: c.cargo_type || 'LTL',
+          cargo: c.cargo || 'General Cargo',
+          volume: c.volume ?? 0,
+          weight: c.weight ?? 0,
+          container_type: c.container_type,
+          container_truck_id: c.container_truck_id,
+          agent_name: c.agent_name,
+          client_id: c.client_id || c.client?.id,
+          client_name: c.client?.name || c.client_full_name,
+          client:
+            c.client || (c.client_full_name ? { id: c.client_id, name: c.client_full_name } : null),
+          employee_id: c.employee_id || c.employee?.id,
+          employee_name: c.employee?.name || c.employee_full_name,
+          employee:
+            c.employee ||
+            (c.employee_full_name ? { id: c.employee_id, name: c.employee_full_name } : null),
+          purchase_price: {
+            amount:
+              c.purchase_price?.amount ??
+              (typeof c.purchase_price === 'number' ? c.purchase_price : 0),
+            currency: c.purchase_price?.currency || c.purchase_currency || 'USD',
+            amount_usd:
+              c.purchase_price?.amount_usd ??
+              (typeof c.purchase_price === 'number' ? c.purchase_price : 0),
+          },
+          sell_price: {
+            amount: c.sell_price?.amount ?? (typeof c.sell_price === 'number' ? c.sell_price : 0),
+            currency: c.sell_price?.currency || c.sell_currency || 'USD',
+            amount_usd:
+              c.sell_price?.amount_usd ?? (typeof c.sell_price === 'number' ? c.sell_price : 0),
+          },
+          net_yield_usd: c.net_yield?.amount_usd ?? c.net_yield_usd ?? 0,
+          status: c.status,
+          loaded_date: c.loaded_date,
+          arrived_date: c.arrived_date,
+          confirmed_date: c.confirmed_date,
+          purchase_date: c.purchase_date,
+          sell_date: c.sell_date,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+        }));
+      }
+    } catch {
+      // Offline fallback
+    }
+
     const allCargos = getLiveCargoRegistrations();
     // Unassigned means LTL and either no consolidation_id or not in any active consolidation record
     const allAssignedIds = new Set(

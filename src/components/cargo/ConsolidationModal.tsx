@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermissions } from '../../context/PermissionsContext';
 import {
   cargoConsolidationsApi,
   CONSOLIDATION_CONTAINER_TYPES,
@@ -25,6 +26,7 @@ import type {
   CreateConsolidationDto,
 } from '../../services/cargoConsolidations.service';
 import type { CurrencyType } from '../../services/cargoRegistrations.service';
+import { CitySelect } from './CitySelect';
 
 const STATUS_CONFIG: {
   key: ConsolidationStatus;
@@ -134,6 +136,7 @@ export function ConsolidationModal({
 }: ConsolidationModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate } = usePermissions();
 
   const isEditing = !!editingItem;
 
@@ -226,6 +229,21 @@ export function ConsolidationModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!isEditing && !canCreate('cargo_consolidations')) {
+      showNotification(
+        t('actionNotAllowed') || 'Permission denied: cannot create consolidation',
+        'error'
+      );
+      return;
+    }
+    if (isEditing && !canUpdate('cargo_consolidations')) {
+      showNotification(
+        t('actionNotAllowed') || 'Permission denied: cannot update consolidation',
+        'error'
+      );
+      return;
+    }
+
     if (!containerTruckId.trim()) {
       showNotification(
         t('truckPlateRequired') || 'Truck Plate / Container ID is required',
@@ -309,6 +327,8 @@ export function ConsolidationModal({
   };
 
   if (!isOpen) return null;
+  if (!isEditing && !canCreate('cargo_consolidations')) return null;
+  if (isEditing && !canUpdate('cargo_consolidations')) return null;
 
   return (
     <AnimatePresence>
@@ -499,28 +519,24 @@ export function ConsolidationModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('originCity')}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Istanbul, Beijing, Yiwu, Guangzhou"
+                  <CitySelect
+                    label={t('originCity') || 'Origin City'}
+                    placeholder="Search origin logistics hub..."
                     value={originPlace}
-                    onChange={(e) => setOriginPlace(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    onChange={(city, customText) =>
+                      setOriginPlace(city ? city.name : customText || '')
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('destinationCity')}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Tashkent, Samarkand"
+                  <CitySelect
+                    label={t('destinationCity') || 'Destination City'}
+                    placeholder="Search destination logistics hub..."
                     value={destinationPlace}
-                    onChange={(e) => setDestinationPlace(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    onChange={(city, customText) =>
+                      setDestinationPlace(city ? city.name : customText || '')
+                    }
                   />
                 </div>
               </div>

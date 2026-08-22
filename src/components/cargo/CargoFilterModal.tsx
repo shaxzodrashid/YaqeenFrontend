@@ -12,11 +12,13 @@ import {
   DollarSign,
   TrendingUp,
   Package,
+  Navigation,
 } from 'lucide-react';
 import { CONTAINER_TYPES } from '../../services/api';
 import type { CargoRegistrationStatus, CargoType } from '../../services/api';
 import { ClientSelect } from './ClientSelect';
 import { EmployeeSelect } from './EmployeeSelect';
+import { CitySelect } from './CitySelect';
 import { DateRangePicker, formatYMD } from './DateRangePicker';
 import { useTranslation } from '../../context/LanguageContext';
 
@@ -28,6 +30,10 @@ export interface CargoFilterState {
   client_name?: string;
   employee_id: string;
   employee_name?: string;
+  origin_city: string;
+  origin_country_code: string;
+  destination_city: string;
+  destination_country_code: string;
   purchase_start_date: string;
   purchase_end_date: string;
   sell_start_date: string;
@@ -50,6 +56,10 @@ export const INITIAL_CARGO_FILTERS: CargoFilterState = {
   client_name: '',
   employee_id: '',
   employee_name: '',
+  origin_city: '',
+  origin_country_code: '',
+  destination_city: '',
+  destination_country_code: '',
   purchase_start_date: '',
   purchase_end_date: '',
   sell_start_date: '',
@@ -111,6 +121,8 @@ export function CargoFilterModal({
     if (state.container_type) count++;
     if (state.client_id) count++;
     if (state.employee_id) count++;
+    if (state.origin_city) count++;
+    if (state.destination_city) count++;
     if (state.purchase_start_date || state.purchase_end_date) count++;
     if (state.sell_start_date || state.sell_end_date) count++;
     if (state.confirmed_start_date || state.confirmed_end_date) count++;
@@ -327,7 +339,51 @@ export function CargoFilterModal({
 
               <div className="h-px bg-border/60" />
 
-              {/* SECTION 2: Date Range Filters */}
+              {/* SECTION 2: Logistics Route Corridor */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-foreground uppercase tracking-wider text-[11px] flex items-center gap-2">
+                  <Navigation className="size-3.5 text-brand-gold" />
+                  {t('routeCorridorTitle') || 'Logistics Route Corridor'}
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Origin City */}
+                  <div>
+                    <CitySelect
+                      label={t('originCityLabel') || 'Origin Hub / City'}
+                      placeholder={t('originCityPlaceholder') || 'Search origin hub...'}
+                      value={localFilters.origin_city}
+                      onChange={(city, customText) =>
+                        setLocalFilters((p) => ({
+                          ...p,
+                          origin_city: city ? city.name : customText || '',
+                          origin_country_code: city?.country_code || '',
+                        }))
+                      }
+                    />
+                  </div>
+
+                  {/* Destination City */}
+                  <div>
+                    <CitySelect
+                      label={t('destinationCityLabel') || 'Destination Hub / City'}
+                      placeholder={t('destinationCityPlaceholder') || 'Search destination hub...'}
+                      value={localFilters.destination_city}
+                      onChange={(city, customText) =>
+                        setLocalFilters((p) => ({
+                          ...p,
+                          destination_city: city ? city.name : customText || '',
+                          destination_country_code: city?.country_code || '',
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px bg-border/60" />
+
+              {/* SECTION 3: Date Range Filters */}
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <h4 className="font-bold text-foreground uppercase tracking-wider text-[11px] flex items-center gap-2">

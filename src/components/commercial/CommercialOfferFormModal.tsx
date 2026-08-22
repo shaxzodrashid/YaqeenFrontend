@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { ClientSelect } from '../cargo/ClientSelect';
+import { CitySelect } from '../cargo/CitySelect';
 import type { CommercialOffer, CreateCommercialOfferDto } from '../../types/commercialOffers';
 import type { Client } from '../../services/clients.service';
 
@@ -283,30 +284,34 @@ export function CommercialOfferFormModal({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    {t('offerOrigin')} <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
+                  <CitySelect
+                    label={`${t('offerOrigin') || 'Origin'} *`}
+                    placeholder="Search origin hub (e.g. Tashkent, Shanghai)..."
                     value={origin}
-                    onChange={(e) => setOrigin(e.target.value)}
-                    placeholder="e.g. Tashkent, UZ or Shanghai, CN"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+                    onChange={(city, customText) =>
+                      setOrigin(
+                        city
+                          ? `${city.name}${city.country_code ? `, ${city.country_code}` : ''}`
+                          : customText || ''
+                      )
+                    }
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    {t('offerDestination')} <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
+                  <CitySelect
+                    label={`${t('offerDestination') || 'Destination'} *`}
+                    placeholder="Search destination hub (e.g. Samarkand, Guangzhou)..."
                     value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="e.g. Samarkand, UZ or Guangzhou, CN"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+                    onChange={(city, customText) =>
+                      setDestination(
+                        city
+                          ? `${city.name}${city.country_code ? `, ${city.country_code}` : ''}`
+                          : customText || ''
+                      )
+                    }
+                    required
                   />
                 </div>
               </div>

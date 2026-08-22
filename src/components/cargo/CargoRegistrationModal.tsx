@@ -23,6 +23,7 @@ import {
   Shield,
   Repeat,
   Copy,
+  AlertTriangle,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -34,6 +35,7 @@ import {
   formatMoney,
   currencyApi,
   convertPriceToUsdAndUzs,
+  locationsApi,
 } from '../../services/api';
 import type {
   CargoType,
@@ -45,6 +47,7 @@ import { EmployeeSelect } from './EmployeeSelect';
 import { ClientSelect } from './ClientSelect';
 import { ConsolidationSelect } from './ConsolidationSelect';
 import { ConsolidationModal } from './ConsolidationModal';
+import { RouteSelector, type RouteState } from './RouteSelector';
 
 const STATUS_STAGE_CONFIG: {
   key: CargoRegistrationStatus;
@@ -138,7 +141,7 @@ export function CargoRegistrationModal({
 }: CargoRegistrationModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
-  const { canRegisterForEveryone } = usePermissions();
+  const { canRegisterForEveryone, canCreate } = usePermissions();
 
   const [myEmployeeId, setMyEmployeeId] = useState<string>('');
 
@@ -175,12 +178,66 @@ export function CargoRegistrationModal({
   const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  // Route Corridor State
+  const [route, setRoute] = useState<RouteState>({
+    origin_city: 'Yiwu',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1787687,
+    origin_lat: 29.31506,
+    origin_lng: 120.07676,
+    destination_city: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
+  });
+
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 12800,
     RUB: 140,
     RMB: 1780,
     UZS: 1,
   });
+
+  // Pre-flight duplicate checking
+  useEffect(() => {
+    if (!isOpen || editingId) {
+      setDuplicateWarning(null);
+      return;
+    }
+    if (!selectedClientId || !containerTruckId.trim()) {
+      setDuplicateWarning(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      locationsApi
+        .checkDuplicateCargo({
+          client_id: selectedClientId,
+          container_truck_id: containerTruckId.trim(),
+          cargo: cargo.trim() || undefined,
+          purchase_price: parseFloat(purchasePriceStr) || undefined,
+          origin_city: route.origin_city || undefined,
+          destination_city: route.destination_city || undefined,
+        })
+        .then((res) => {
+          if (res.is_duplicate) {
+            setDuplicateWarning(
+              res.message || 'An identical cargo entry was detected for this client and truck.'
+            );
+          } else {
+            setDuplicateWarning(null);
+          }
+        })
+        .catch(() => {});
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, editingId, selectedClientId, containerTruckId, cargo, purchasePriceStr, route]);
 
   // Fetch exchange rates on modal open
   useEffect(() => {
@@ -266,6 +323,21 @@ export function CargoRegistrationModal({
           setSelectedClientId(detail.client_id || '');
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
           setConsolidationId(detail.consolidation_id || (detail.consolidation?.id ?? null));
+
+          setRoute({
+            origin_city: detail.origin_city || '',
+            origin_country: detail.origin_country || '',
+            origin_country_code: detail.origin_country_code || '',
+            origin_geoname_id: detail.origin_geoname_id ?? null,
+            origin_lat: detail.origin_lat ?? null,
+            origin_lng: detail.origin_lng ?? null,
+            destination_city: detail.destination_city || '',
+            destination_country: detail.destination_country || '',
+            destination_country_code: detail.destination_country_code || '',
+            destination_geoname_id: detail.destination_geoname_id ?? null,
+            destination_lat: detail.destination_lat ?? null,
+            destination_lng: detail.destination_lng ?? null,
+          });
         })
         .catch((err) => {
           showNotification(err?.message || 'Failed to load cargo details', 'error');
@@ -320,6 +392,21 @@ export function CargoRegistrationModal({
           setSelectedClientId(detail.client_id || '');
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
           setConsolidationId(detail.consolidation_id || null);
+
+          setRoute({
+            origin_city: detail.origin_city || '',
+            origin_country: detail.origin_country || '',
+            origin_country_code: detail.origin_country_code || '',
+            origin_geoname_id: detail.origin_geoname_id ?? null,
+            origin_lat: detail.origin_lat ?? null,
+            origin_lng: detail.origin_lng ?? null,
+            destination_city: detail.destination_city || '',
+            destination_country: detail.destination_country || '',
+            destination_country_code: detail.destination_country_code || '',
+            destination_geoname_id: detail.destination_geoname_id ?? null,
+            destination_lat: detail.destination_lat ?? null,
+            destination_lng: detail.destination_lng ?? null,
+          });
         })
         .catch((err) => {
           showNotification(err?.message || 'Failed to load cargo details for duplicate', 'error');
@@ -353,6 +440,21 @@ export function CargoRegistrationModal({
       setDescription('');
       setSelectedClientId('');
       setSelectedEmpId(myEmployeeId || '');
+
+      setRoute({
+        origin_city: 'Yiwu',
+        origin_country: 'China',
+        origin_country_code: 'CN',
+        origin_geoname_id: 1787687,
+        origin_lat: 29.31506,
+        origin_lng: 120.07676,
+        destination_city: 'Tashkent',
+        destination_country: 'Uzbekistan',
+        destination_country_code: 'UZ',
+        destination_geoname_id: 1512569,
+        destination_lat: 41.26465,
+        destination_lng: 69.21627,
+      });
     }
   }, [isOpen, editingId, duplicateFromId, initialStatus, myEmployeeId, showNotification]);
 
@@ -441,6 +543,18 @@ export function CargoRegistrationModal({
           container_truck_id: containerTruckId.trim(),
           agent_name: agentName.trim(),
           cargo: cargo.trim(),
+          origin_city: route.origin_city || undefined,
+          origin_country: route.origin_country || undefined,
+          origin_country_code: route.origin_country_code || undefined,
+          origin_geoname_id: route.origin_geoname_id ?? undefined,
+          origin_lat: route.origin_lat ?? undefined,
+          origin_lng: route.origin_lng ?? undefined,
+          destination_city: route.destination_city || undefined,
+          destination_country: route.destination_country || undefined,
+          destination_country_code: route.destination_country_code || undefined,
+          destination_geoname_id: route.destination_geoname_id ?? undefined,
+          destination_lat: route.destination_lat ?? undefined,
+          destination_lng: route.destination_lng ?? undefined,
           confirmed_date: confirmedDate || undefined,
           loaded_date: loadedDate || undefined,
           arrived_date: arrivedDate || undefined,
@@ -471,6 +585,20 @@ export function CargoRegistrationModal({
           container_truck_id: containerTruckId.trim(),
           agent_name: agentName.trim(),
           cargo: cargo.trim(),
+          origin_city: route.origin_city || undefined,
+          origin_country: route.origin_country || undefined,
+          origin_country_code: route.origin_country_code || undefined,
+          origin_geoname_id: route.origin_geoname_id ?? undefined,
+          origin_lat: route.origin_lat ?? undefined,
+          origin_lng: route.origin_lng ?? undefined,
+          destination_city: route.destination_city || undefined,
+          destination_country: route.destination_country || undefined,
+          destination_country_code: route.destination_country_code || undefined,
+          destination_geoname_id: route.destination_geoname_id ?? undefined,
+          destination_lat: route.destination_lat ?? undefined,
+          destination_lng: route.destination_lng ?? undefined,
+          prevent_duplicate: true,
+          idempotency_key: `cr-idem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           confirmed_date: confirmedDate || undefined,
           loaded_date: loadedDate || undefined,
           arrived_date: arrivedDate || undefined,
@@ -520,23 +648,32 @@ export function CargoRegistrationModal({
       bp,
       purchaseCurrency,
       purchaseDate,
-      pCustom,
+      pCustom || undefined,
       rate,
       cbuRates
     );
 
-    const sellConv = convertPriceToUsdAndUzs(sp, sellCurrency, sellDate, sCustom, rate, cbuRates);
+    const sellConv = convertPriceToUsdAndUzs(
+      sp,
+      sellCurrency,
+      sellDate,
+      sCustom || undefined,
+      rate,
+      cbuRates
+    );
 
     const marginUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
     const marginUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
-
     const margin =
       sellCurrency === 'USD' ? marginUsd : sellCurrency === 'UZS' ? marginUzs : marginUsd;
     const roiPct = purConv.amount_usd > 0 ? (marginUsd / purConv.amount_usd) * 100 : 0;
 
     let marginUsdStr: string | null = null;
     if (sellCurrency !== 'USD') {
-      marginUsdStr = `$ ${marginUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      marginUsdStr = `$ ${marginUsd.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
     }
 
     return {
@@ -552,11 +689,11 @@ export function CargoRegistrationModal({
     };
   }, [
     purchasePriceStr,
-    sellPriceStr,
     purchaseCurrency,
-    sellCurrency,
     purchaseDate,
     purchaseCustomRateStr,
+    sellPriceStr,
+    sellCurrency,
     sellDate,
     sellCustomRateStr,
     usdRmbRateStr,
@@ -626,6 +763,26 @@ export function CargoRegistrationModal({
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
               {/* Form Content - Scrollable */}
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 custom-scrollbar">
+                {/* DUPLICATE DETECTION WARNING BANNER */}
+                {duplicateWarning && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex items-start gap-3 text-xs leading-relaxed animate-in fade-in duration-200">
+                    <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-bold">
+                        {t('duplicateCargoDetected') || 'Duplicate Cargo Warning'}
+                      </div>
+                      <div>{duplicateWarning}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDuplicateWarning(null)}
+                      className="text-muted-foreground hover:text-foreground text-[11px] underline ml-2 cursor-pointer"
+                    >
+                      {t('dismiss') || 'Dismiss'}
+                    </button>
+                  </div>
+                )}
+
                 {/* SECTION 1: CARGO TYPE HERO SWITCHER */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -752,7 +909,7 @@ export function CargoRegistrationModal({
                 {/* SECTION 2: LOGISTICS IDENTIFIERS */}
                 <div className="space-y-3">
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    2. Shipment Identification & Logistics
+                    2. Shipment Identification & Route Logistics
                   </label>
 
                   {/* LTL Consolidation Truck Search-or-Create Selector */}
@@ -779,7 +936,11 @@ export function CargoRegistrationModal({
                             }
                           }
                         }}
-                        onRequestCreateNew={() => setIsConsolidationModalOpen(true)}
+                        onRequestCreateNew={
+                          canCreate('cargo_consolidations')
+                            ? () => setIsConsolidationModalOpen(true)
+                            : undefined
+                        }
                       />
                     </div>
                   )}
@@ -836,6 +997,11 @@ export function CargoRegistrationModal({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Origin & Destination Route Intelligence Selector */}
+                  <div className="pt-2">
+                    <RouteSelector route={route} onChange={setRoute} />
                   </div>
                 </div>
 
@@ -1225,19 +1391,21 @@ export function CargoRegistrationModal({
       </div>
 
       {/* Inline New Consolidation Creation Modal */}
-      <ConsolidationModal
-        isOpen={isConsolidationModalOpen}
-        onClose={() => setIsConsolidationModalOpen(false)}
-        onSuccess={(newConsolidation) => {
-          if (newConsolidation) {
-            setConsolidationId(newConsolidation.id);
-            setContainerTruckId(newConsolidation.container_truck_id);
-            if (newConsolidation.carrier_name) {
-              setAgentName(newConsolidation.carrier_name);
+      {canCreate('cargo_consolidations') && (
+        <ConsolidationModal
+          isOpen={isConsolidationModalOpen}
+          onClose={() => setIsConsolidationModalOpen(false)}
+          onSuccess={(newConsolidation) => {
+            if (newConsolidation) {
+              setConsolidationId(newConsolidation.id);
+              setContainerTruckId(newConsolidation.container_truck_id);
+              if (newConsolidation.carrier_name) {
+                setAgentName(newConsolidation.carrier_name);
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      )}
     </AnimatePresence>
   );
 }

@@ -87,7 +87,7 @@ const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; bor
 export function CargoConsolidationsTab() {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
-  const { canCreate, canUpdate, canDelete } = usePermissions();
+  const { canCreate, canUpdate, canDelete, canAssignCargo } = usePermissions();
 
   // State
   const [viewMode, setViewMode] = useState<ConsolidationViewMode>('grid');
@@ -609,11 +609,27 @@ export function CargoConsolidationsTab() {
 
                 {/* Bottom Card Footer */}
                 <div className="pt-2 border-t border-border/70 flex items-center justify-between gap-3 text-xs">
-                  {/* Attached packages preview */}
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Boxes className="size-4 text-brand-gold shrink-0" />
-                    <span className="font-bold text-foreground font-mono">{c.cargos.length}</span>
-                    <span className="text-[11px]">cargos</span>
+                  {/* Attached packages preview & quick pack */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Boxes className="size-4 text-brand-gold shrink-0" />
+                      <span className="font-bold text-foreground font-mono">{c.cargos.length}</span>
+                      <span className="text-[11px]">cargos</span>
+                    </div>
+                    {canAssignCargo() && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAssigningConsolidation(c);
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-brand-gold/15 hover:bg-brand-gold/25 text-brand-navy dark:text-brand-gold text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Pack cargos into truck"
+                      >
+                        <Plus className="size-3" />
+                        <span>Pack</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Net margin */}
@@ -786,7 +802,7 @@ export function CargoConsolidationsTab() {
 
                         <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
-                            {canUpdate('cargo_consolidations') && (
+                            {canAssignCargo() && (
                               <button
                                 type="button"
                                 onClick={() => setAssigningConsolidation(c)}
@@ -830,7 +846,7 @@ export function CargoConsolidationsTab() {
                                   <Package className="size-4 text-brand-gold" />
                                   <span>Attached Client Packages ({c.cargos.length})</span>
                                 </span>
-                                {canUpdate('cargo_consolidations') && (
+                                {canAssignCargo() && (
                                   <button
                                     type="button"
                                     onClick={() => setAssigningConsolidation(c)}
@@ -1064,7 +1080,9 @@ export function CargoConsolidationsTab() {
         onClose={() => setAssigningConsolidation(null)}
         consolidation={assigningConsolidation}
         onSuccess={(updated) => {
-          if (selectedDetails?.id === updated.id) setSelectedDetails(updated);
+          if (updated?.id && selectedDetails?.id === updated.id) {
+            setSelectedDetails(updated);
+          }
           loadConsolidations();
         }}
       />

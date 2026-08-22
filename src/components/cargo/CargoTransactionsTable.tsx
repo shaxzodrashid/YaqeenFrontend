@@ -16,11 +16,20 @@ import {
   Copy,
   CopyPlus,
   Check,
+  MapPin,
+  ExternalLink,
+  Navigation,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useNotification } from '../../context/NotificationContext';
-import { cargoRegistrationsApi, formatMoney, currencyApi } from '../../services/api';
+import {
+  cargoRegistrationsApi,
+  formatMoney,
+  currencyApi,
+  getCountryFlag,
+} from '../../services/api';
+import { RouteBadge } from './RouteBadge';
 import type {
   CargoRegistrationListItem,
   CargoRegistrationPaginatedResponse,
@@ -195,14 +204,19 @@ function CargoTableRowSkeleton({ index }: CargoTableRowSkeletonProps) {
         />
       </td>
 
-      {/* 3. Client */}
+      {/* 3. Route */}
+      <td className="py-3 px-3.5 w-[170px] min-w-[170px] max-w-[170px] overflow-hidden">
+        <div className="h-6 w-28 rounded-md skeleton-shimmer border border-border/40" />
+      </td>
+
+      {/* 4. Client */}
       <td className="py-3 px-3.5 w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
         <div
           className={`h-4 ${clientWidths[index % 4]} rounded-md skeleton-shimmer max-w-[110px]`}
         />
       </td>
 
-      {/* 4. Employee */}
+      {/* 5. Employee */}
       <td className="py-3 px-3.5 w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
         <div
           className={`h-4 ${employeeWidths[index % 4]} rounded-md skeleton-shimmer opacity-80 max-w-[100px]`}
@@ -492,21 +506,22 @@ export function CargoTransactionsTable({
           onScroll={handleScroll}
           className="overflow-x-auto w-full min-w-0"
         >
-          <table className="w-full text-left border-collapse table-fixed min-w-[2050px]">
+          <table className="w-full text-left border-collapse table-fixed min-w-[2220px]">
             <colgroup>
               <col style={{ width: 220 }} /> {/* 1. Container / Truck ID */}
               <col style={{ width: 200 }} /> {/* 2. Cargo & Agent */}
-              <col style={{ width: 160 }} /> {/* 3. Client */}
-              <col style={{ width: 160 }} /> {/* 4. Employee */}
-              <col style={{ width: 150 }} /> {/* 5. Purchase Price */}
-              <col style={{ width: 150 }} /> {/* 6. Sell Price */}
-              <col style={{ width: 155 }} /> {/* 7. Net Yield */}
-              <col style={{ width: 165 }} /> {/* 8. Confirmed Date */}
-              <col style={{ width: 155 }} /> {/* 9. Loaded Date */}
-              <col style={{ width: 160 }} /> {/* 10. Arrived Date */}
-              <col style={{ width: 150 }} /> {/* 11. Created At */}
-              <col style={{ width: 135 }} /> {/* 12. Status */}
-              <col style={{ width: 140 }} /> {/* 13. Actions */}
+              <col style={{ width: 170 }} /> {/* 3. Route Corridor */}
+              <col style={{ width: 160 }} /> {/* 4. Client */}
+              <col style={{ width: 160 }} /> {/* 5. Employee */}
+              <col style={{ width: 150 }} /> {/* 6. Purchase Price */}
+              <col style={{ width: 150 }} /> {/* 7. Sell Price */}
+              <col style={{ width: 155 }} /> {/* 8. Net Yield */}
+              <col style={{ width: 165 }} /> {/* 9. Confirmed Date */}
+              <col style={{ width: 155 }} /> {/* 10. Loaded Date */}
+              <col style={{ width: 160 }} /> {/* 11. Arrived Date */}
+              <col style={{ width: 150 }} /> {/* 12. Created At */}
+              <col style={{ width: 135 }} /> {/* 13. Status */}
+              <col style={{ width: 140 }} /> {/* 14. Actions */}
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
@@ -525,6 +540,14 @@ export function CargoTransactionsTable({
                   sortOrder={currentSortOrder}
                   onSort={handleSortClick}
                   className="w-[200px] min-w-[200px] max-w-[200px]"
+                />
+                <SortableHeader
+                  label={t('colRoute') || 'Route'}
+                  field="origin_city"
+                  sortBy={currentSortBy}
+                  sortOrder={currentSortOrder}
+                  onSort={handleSortClick}
+                  className="w-[170px] min-w-[170px] max-w-[170px]"
                 />
                 <SortableHeader
                   label={t('colClient')}
@@ -624,7 +647,7 @@ export function CargoTransactionsTable({
                 ))
               ) : !data || data.data.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="py-16 text-center text-muted-foreground">
+                  <td colSpan={14} className="py-16 text-center text-muted-foreground">
                     <Box className="size-8 mx-auto mb-2 opacity-40" />
                     <p className="font-semibold text-sm">
                       {emptyTitle || t('noCargoRegistrationsFound')}
@@ -714,14 +737,31 @@ export function CargoTransactionsTable({
                         </div>
                       </td>
 
-                      {/* 3. Client */}
+                      {/* 3. Route Corridor */}
+                      <td className="py-3 px-3.5 w-[170px] min-w-[170px] max-w-[170px] overflow-hidden">
+                        <RouteBadge
+                          originCity={item.origin_city || item.origin?.city}
+                          originCountryCode={item.origin_country_code || item.origin?.country_code}
+                          destinationCity={item.destination_city || item.destination?.city}
+                          destinationCountryCode={
+                            item.destination_country_code || item.destination?.country_code
+                          }
+                          googleMapsUrl={item.route?.google_maps_dir_url}
+                          originLat={item.origin_lat || item.origin?.latitude}
+                          originLng={item.origin_lng || item.origin?.longitude}
+                          destLat={item.destination_lat || item.destination?.latitude}
+                          destLng={item.destination_lng || item.destination?.longitude}
+                        />
+                      </td>
+
+                      {/* 4. Client */}
                       <td className="py-3 px-3.5 text-foreground font-semibold w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
                         <div className="truncate" title={item.client_full_name || t('colClient')}>
                           {item.client_full_name || t('colClient')}
                         </div>
                       </td>
 
-                      {/* 4. Employee */}
+                      {/* 5. Employee */}
                       <td className="py-3 px-3.5 text-muted-foreground w-[160px] min-w-[160px] max-w-[160px] overflow-hidden">
                         <div
                           className="truncate"
@@ -731,7 +771,7 @@ export function CargoTransactionsTable({
                         </div>
                       </td>
 
-                      {/* 5. Purchase Price & Date */}
+                      {/* 6. Purchase Price & Date */}
                       <td className="py-3 px-3.5 w-[150px] min-w-[150px] max-w-[150px] overflow-hidden">
                         <div className="font-semibold text-foreground truncate">
                           {formatMoney(
@@ -1022,6 +1062,94 @@ export function CargoTransactionsTable({
                   <span className="text-muted-foreground font-semibold">{t('colCargo')}:</span>
                   <span className="font-semibold text-foreground">{detailsItem.cargo}</span>
                 </div>
+
+                {/* Route Corridor Geo-Resolution Breakdown */}
+                {(detailsItem.origin_city ||
+                  detailsItem.destination_city ||
+                  detailsItem.origin?.city ||
+                  detailsItem.destination?.city) && (
+                  <div className="p-3.5 rounded-xl bg-muted/25 border border-border/70 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Navigation className="size-3.5 text-brand-gold" />
+                        <span>{t('routeCorridorTitle') || 'Logistics Route Corridor'}</span>
+                      </span>
+                      {detailsItem.route?.google_maps_dir_url && (
+                        <a
+                          href={detailsItem.route.google_maps_dir_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-navy dark:text-brand-gold hover:underline"
+                        >
+                          <span>{t('openDirections') || 'Open Directions'}</span>
+                          <ExternalLink className="size-3" />
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      {/* Origin */}
+                      <div className="p-2.5 rounded-lg bg-surface border border-border/50 space-y-1">
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                          <MapPin className="size-3 text-emerald-500" />
+                          <span>{t('originLabel') || 'Origin'}</span>
+                        </div>
+                        <div className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                          <span>
+                            {getCountryFlag(
+                              detailsItem.origin_country_code || detailsItem.origin?.country_code
+                            )}
+                          </span>
+                          <span className="truncate">
+                            {detailsItem.origin_city || detailsItem.origin?.city || '—'}
+                          </span>
+                        </div>
+                        {(detailsItem.origin_country || detailsItem.origin?.country) && (
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {detailsItem.origin_country || detailsItem.origin?.country}
+                          </div>
+                        )}
+                        {(detailsItem.origin_lat || detailsItem.origin?.latitude) && (
+                          <div className="text-[9px] font-mono text-muted-foreground">
+                            {detailsItem.origin_lat || detailsItem.origin?.latitude},{' '}
+                            {detailsItem.origin_lng || detailsItem.origin?.longitude}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Destination */}
+                      <div className="p-2.5 rounded-lg bg-surface border border-border/50 space-y-1">
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                          <MapPin className="size-3 text-rose-500" />
+                          <span>{t('destinationLabel') || 'Destination'}</span>
+                        </div>
+                        <div className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                          <span>
+                            {getCountryFlag(
+                              detailsItem.destination_country_code ||
+                                detailsItem.destination?.country_code
+                            )}
+                          </span>
+                          <span className="truncate">
+                            {detailsItem.destination_city || detailsItem.destination?.city || '—'}
+                          </span>
+                        </div>
+                        {(detailsItem.destination_country || detailsItem.destination?.country) && (
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {detailsItem.destination_country || detailsItem.destination?.country}
+                          </div>
+                        )}
+                        {(detailsItem.destination_lat || detailsItem.destination?.latitude) && (
+                          <div className="text-[9px] font-mono text-muted-foreground">
+                            {detailsItem.destination_lat || detailsItem.destination?.latitude},{' '}
+                            {detailsItem.destination_lng || detailsItem.destination?.longitude}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-muted-foreground font-semibold">{t('colClient')}:</span>
                   <span className="font-bold text-foreground">

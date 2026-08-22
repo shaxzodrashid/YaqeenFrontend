@@ -233,7 +233,7 @@ export function RolesPage() {
     let grantedCount = 0;
     modules.forEach((m) => {
       const p = rolePermissions[m.module];
-      if (p && (p.create || p.read || p.update || p.delete)) {
+      if (p && (p.create || p.read || p.update || p.delete || p.assign_cargo)) {
         grantedCount++;
       }
     });

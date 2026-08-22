@@ -113,6 +113,7 @@ export type {
   SystemModule,
   ModulePermissions,
   ClientsModulePermissions,
+  CargoConsolidationsModulePermissions,
   RolePermissions,
   CreateRoleDto,
   UpdateRoleDto,
@@ -232,6 +233,23 @@ export { tasksService } from './tasks.service';
 export { commercialOffersApi } from './commercialOffers.service';
 
 export type {
+  CityOption,
+  RouteInfo,
+  LocationDetail,
+  CitySearchParams,
+  DuplicateCheckDto,
+  DuplicateCheckResult,
+} from '../types/locations';
+
+export {
+  locationsApi,
+  POPULAR_LOGISTICS_HUBS,
+  getCountryFlag,
+  buildGoogleMapsPointUrl,
+  buildGoogleMapsRouteUrl,
+} from './locations.service';
+
+export type {
   DashboardPeriod,
   DashboardGranularity,
   DashboardFilterParams,
@@ -264,6 +282,7 @@ import { rolesApi } from './roles.service';
 import { tasksService } from './tasks.service';
 import { commercialOffersApi } from './commercialOffers.service';
 import { dashboardApi } from './dashboard.service';
+import { locationsApi } from './locations.service';
 
 // Global API object for complete backward compatibility
 export const api = {
@@ -277,6 +296,7 @@ export const api = {
   cargoRegistrations: cargoRegistrationsApi,
   cargoConsolidations: cargoConsolidationsApi,
   consolidations: cargoConsolidationsApi,
+  locations: locationsApi,
   finance: financeApi,
   currency: currencyApi,
   roles: rolesApi,

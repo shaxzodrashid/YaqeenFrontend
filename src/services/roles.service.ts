@@ -7,6 +7,7 @@ export interface ModulePermissions {
   delete: boolean;
   register_for_everyone?: boolean;
   can_work_with_all_clients?: boolean;
+  assign_cargo?: boolean;
 }
 
 export interface ClientsModulePermissions {
@@ -17,12 +18,21 @@ export interface ClientsModulePermissions {
   can_work_with_all_clients: boolean;
 }
 
+export interface CargoConsolidationsModulePermissions {
+  create: boolean;
+  read: boolean;
+  update: boolean;
+  delete: boolean;
+  assign_cargo: boolean;
+}
+
 export interface RolePermissions {
   clients?: ModulePermissions;
   employees?: ModulePermissions;
   departments?: ModulePermissions;
   cargo_kpi?: ModulePermissions;
   cargo_registrations?: ModulePermissions;
+  cargo_consolidations?: CargoConsolidationsModulePermissions | ModulePermissions;
   finance?: ModulePermissions;
   commercial_offers?: ModulePermissions;
   tasks?: ModulePermissions;
@@ -64,7 +74,7 @@ export interface UpdateRoleDto {
   permissions?: Partial<RolePermissions>;
 }
 
-// Fallback Taxonomy (11 Core Modules)
+// Fallback Taxonomy (12 Core Modules)
 export const DEFAULT_SYSTEM_MODULES: SystemModule[] = [
   {
     module: 'clients',
@@ -85,6 +95,11 @@ export const DEFAULT_SYSTEM_MODULES: SystemModule[] = [
   {
     module: 'cargo_registrations',
     label: 'Cargo Registrations',
+    actions: ['create', 'read', 'update', 'delete'],
+  },
+  {
+    module: 'cargo_consolidations',
+    label: 'Cargo Consolidations',
     actions: ['create', 'read', 'update', 'delete'],
   },
   {
@@ -140,6 +155,13 @@ const DEFAULT_DEMO_ROLES: Role[] = [
         delete: true,
         register_for_everyone: true,
       },
+      cargo_consolidations: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        assign_cargo: true,
+      },
       finance: { create: true, read: true, update: true, delete: true },
       commercial_offers: { create: true, read: true, update: true, delete: true },
       tasks: { create: true, read: true, update: true, delete: true },
@@ -174,6 +196,13 @@ const DEFAULT_DEMO_ROLES: Role[] = [
         update: true,
         delete: true,
         register_for_everyone: true,
+      },
+      cargo_consolidations: {
+        create: true,
+        read: true,
+        update: true,
+        delete: true,
+        assign_cargo: true,
       },
       finance: { create: false, read: true, update: false, delete: false },
       commercial_offers: { create: true, read: true, update: true, delete: true },
@@ -210,6 +239,13 @@ const DEFAULT_DEMO_ROLES: Role[] = [
         delete: false,
         register_for_everyone: false,
       },
+      cargo_consolidations: {
+        create: false,
+        read: true,
+        update: false,
+        delete: false,
+        assign_cargo: false,
+      },
       finance: { create: false, read: false, update: false, delete: false },
       commercial_offers: { create: true, read: true, update: false, delete: false },
       tasks: { create: true, read: true, update: true, delete: false },
@@ -244,6 +280,13 @@ const DEFAULT_DEMO_ROLES: Role[] = [
         update: true,
         delete: true,
         register_for_everyone: true,
+      },
+      cargo_consolidations: {
+        create: true,
+        read: true,
+        update: true,
+        delete: false,
+        assign_cargo: true,
       },
       finance: { create: false, read: false, update: false, delete: false },
       commercial_offers: { create: true, read: true, update: true, delete: false },
@@ -313,6 +356,9 @@ export const rolesApi = {
             : {}),
           ...(mod.module === 'clients'
             ? { can_work_with_all_clients: p?.can_work_with_all_clients ?? false }
+            : {}),
+          ...(mod.module === 'cargo_consolidations'
+            ? { assign_cargo: p?.assign_cargo ?? false }
             : {}),
         };
       });
