@@ -306,6 +306,29 @@ export function RoleDetailDrawer({
                           </Tooltip>
                         </div>
                       )}
+
+                      {/* Special Permission for Cargo Consolidations */}
+                      {mod.module === 'cargo_consolidations' && (
+                        <div className="pt-2 border-t border-border/30 flex items-center justify-between text-[10px]">
+                          <span className="text-muted font-medium">{t('rolesAssignCargo')}</span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span
+                                className={`px-2 py-0.5 rounded font-bold border cursor-help ${
+                                  p.assign_cargo
+                                    ? 'bg-purple-500/15 border-purple-500/30 text-purple-600 dark:text-purple-300'
+                                    : 'bg-default/20 border-border/30 text-muted/40'
+                                }`}
+                              >
+                                {p.assign_cargo ? t('rolesGranted') : t('rolesOff')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermAssignCargoTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

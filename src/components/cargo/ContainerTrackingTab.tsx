@@ -40,8 +40,14 @@ import type {
 } from '../../services/cargoKpi.service';
 import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { CargoTransactionsTable } from './CargoTransactionsTable';
-import { CargoFilterModal, INITIAL_CARGO_FILTERS } from './CargoFilterModal';
+import {
+  CargoFilterModal,
+  INITIAL_CARGO_FILTERS,
+  getActiveCargoFilterCount,
+} from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
+import { TRANSPORT_TYPE_LABELS } from '../../services/api';
+import { NumberInput } from '../NumberInput';
 
 export type ViewMode = 'grid' | 'kanban' | 'analytics';
 
@@ -188,8 +194,16 @@ export function ContainerTrackingTab() {
         status: activeStatus,
         cargo_type: filters.cargo_type || undefined,
         container_type: filters.container_type || undefined,
+        transport_types:
+          filters.transport_types && filters.transport_types.length > 0
+            ? filters.transport_types
+            : undefined,
         client_id: filters.client_id || undefined,
         employee_id: filters.employee_id || undefined,
+        origin_city: filters.origin_city || undefined,
+        origin_country_code: filters.origin_country_code || undefined,
+        destination_city: filters.destination_city || undefined,
+        destination_country_code: filters.destination_country_code || undefined,
         sort_by: sortBy || undefined,
         sort_order: sortOrder || undefined,
         purchase_start_date: filters.purchase_start_date || undefined,
@@ -306,18 +320,7 @@ export function ContainerTrackingTab() {
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (filters.status) count++;
-    if (filters.cargo_type) count++;
-    if (filters.container_type) count++;
-    if (filters.client_id) count++;
-    if (filters.employee_id) count++;
-    if (filters.purchase_start_date || filters.purchase_end_date) count++;
-    if (filters.sell_start_date || filters.sell_end_date) count++;
-    if (filters.confirmed_start_date || filters.confirmed_end_date) count++;
-    if (filters.loaded_start_date || filters.loaded_end_date) count++;
-    if (filters.arrived_start_date || filters.arrived_end_date) count++;
-    if (filters.created_start_date || filters.created_end_date) count++;
+    let count = getActiveCargoFilterCount(filters);
     if (statusFilter !== 'all' && !filters.status) count++;
     return count;
   }, [filters, statusFilter]);
@@ -327,6 +330,9 @@ export function ContainerTrackingTab() {
       const next = { ...prev, [key]: '' };
       if (key === 'client_id') next.client_name = '';
       if (key === 'employee_id') next.employee_name = '';
+      if (key === 'origin_city') next.origin_country_code = '';
+      if (key === 'destination_city') next.destination_country_code = '';
+      if (key === 'transport_types') next.transport_types = [];
       return next;
     });
     if (key === 'status') {
@@ -1030,6 +1036,19 @@ export function ContainerTrackingTab() {
             </span>
           )}
 
+          {filters.transport_types && filters.transport_types.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 font-semibold text-[11px]">
+              {t('transportTypesLabel') || 'Transport'}:{' '}
+              {filters.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt] || tt).join(', ')}
+              <button
+                onClick={() => handleRemoveFilterTag('transport_types')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
           {filters.client_id && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 font-semibold text-[11px]">
               {t('clientLabel') || 'Client'}: {filters.client_name || 'Selected'}
@@ -1047,6 +1066,30 @@ export function ContainerTrackingTab() {
               {t('assignedEmployeeLabel') || 'Employee'}: {filters.employee_name || 'Selected'}
               <button
                 onClick={() => handleRemoveFilterTag('employee_id')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.origin_city && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-semibold text-[11px]">
+              {t('originCityLabel') || 'Origin'}: {filters.origin_city}
+              <button
+                onClick={() => handleRemoveFilterTag('origin_city')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.destination_city && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-semibold text-[11px]">
+              {t('destinationCityLabel') || 'Destination'}: {filters.destination_city}
+              <button
+                onClick={() => handleRemoveFilterTag('destination_city')}
                 className="hover:text-foreground cursor-pointer"
               >
                 <X className="size-3" />
@@ -1527,14 +1570,16 @@ export function ContainerTrackingTab() {
                   <label className="block text-xs font-bold text-foreground mb-1">
                     {t('currentRmbRate') || 'Global RMB Rate (1 USD = X RMB)'}
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
+                  <NumberInput
+                    size="lg"
+                    allowDecimals={true}
+                    decimalScale={3}
+                    min={0.01}
                     value={globalRmbRate}
-                    onChange={(e) => setGlobalRmbRate(e.target.value)}
+                    onValueChange={(_num, raw) => setGlobalRmbRate(raw)}
                     placeholder="7.25"
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground text-lg font-black font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    prefix="¥"
+                    inputClassName="text-lg font-black font-mono"
                   />
                 </div>
 

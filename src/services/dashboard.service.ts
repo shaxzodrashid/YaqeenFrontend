@@ -5,6 +5,9 @@ import type {
   DashboardSummaryResponse,
   DashboardCargoDistributionResponse,
   DashboardTopPerformersResponse,
+  DashboardRouteAnalyticsResponse,
+  DashboardDeliveryEfficiencyResponse,
+  DashboardDebtSummaryResponse,
 } from '../types/dashboard';
 
 function buildQueryString(params?: DashboardFilterParams): string {
@@ -19,6 +22,18 @@ function buildQueryString(params?: DashboardFilterParams): string {
   if (params.client_id) searchParams.append('client_id', params.client_id);
   if (params.status) searchParams.append('status', params.status);
   if (params.cargo_type) searchParams.append('cargo_type', params.cargo_type);
+  if (params.transport_type) searchParams.append('transport_type', params.transport_type);
+  if (
+    params.transport_types &&
+    (!Array.isArray(params.transport_types) || params.transport_types.length > 0)
+  ) {
+    searchParams.append(
+      'transport_types',
+      Array.isArray(params.transport_types)
+        ? params.transport_types.join(',')
+        : String(params.transport_types)
+    );
+  }
   if (params.currency) searchParams.append('currency', params.currency);
   if (params.limit !== undefined) searchParams.append('limit', String(params.limit));
 
@@ -101,6 +116,16 @@ function getDemoSummary(): DashboardSummaryResponse {
     totalOrders: 42,
     completedOrders: 32,
     waitingOrders: 10,
+    inTransitOrders: 9,
+    activeOrders: 14,
+    statusCounts: {
+      waiting: 2,
+      station: 2,
+      on_the_way: 9,
+      on_the_border: 1,
+      reload: 0,
+      arrived: 28,
+    },
     averageOrderValue: 2964.29,
     totalVolume: 412.8,
     totalWeight: 18450.0,
@@ -108,11 +133,90 @@ function getDemoSummary(): DashboardSummaryResponse {
     ftlOrderCount: 24,
     salesGrowthVsPriorPeriod: 16.4,
     marginGrowthVsPriorPeriod: 19.2,
+    monthly: {
+      revenue: 54200.0,
+      purchaseCost: 38900.0,
+      netProfit: 15300.0,
+      marginPercentage: 28.23,
+      revenueGrowthRate: 12.5,
+      netProfitGrowthRate: 18.2,
+      orderCount: 18,
+    },
+    yearly: {
+      revenue: 348000.0,
+      purchaseCost: 252000.0,
+      netProfit: 96000.0,
+      marginPercentage: 27.59,
+      revenueGrowthRate: 34.8,
+      netProfitGrowthRate: 41.2,
+      orderCount: 115,
+    },
+    debtSummary: {
+      currency: 'USD',
+      accountsReceivable: 24500.0,
+      accountsPayable: 17800.0,
+      netBalance: 6700.0,
+      debtorClientCount: 8,
+      creditorCarrierCount: 5,
+    },
+    deliveryEfficiency: {
+      averageTransitDays: 11.4,
+      minTransitDays: 4,
+      maxTransitDays: 22,
+      totalDeliveredCount: 28,
+      totalInTransitCount: 9,
+      totalActiveCount: 14,
+      onTimeDeliveriesCount: 26,
+      delayedDeliveriesCount: 2,
+      onTimeRatePercentage: 92.86,
+    },
   };
 }
 
 function getDemoCargoDistribution(): DashboardCargoDistributionResponse {
   return {
+    transportTypeDistribution: [
+      {
+        type: 'AUTO',
+        name: 'Avtotransport (Fura / Yuk mashinasi)',
+        count: 22,
+        percentage: 52.38,
+        totalSales: 68000.0,
+        totalMargin: 19500.0,
+        totalVolume: 280.0,
+        totalWeight: 11000.0,
+      },
+      {
+        type: 'RAILWAY',
+        name: "Temir yo'l (Konteyner / Vagon)",
+        count: 14,
+        percentage: 33.33,
+        totalSales: 42500.0,
+        totalMargin: 12000.0,
+        totalVolume: 140.0,
+        totalWeight: 6500.0,
+      },
+      {
+        type: 'AIR',
+        name: 'Havo transporti (Avia)',
+        count: 4,
+        percentage: 9.52,
+        totalSales: 14000.0,
+        totalMargin: 3800.0,
+        totalVolume: 20.5,
+        totalWeight: 450.0,
+      },
+      {
+        type: 'SEA',
+        name: 'Dengiz transporti (Kema / Port)',
+        count: 2,
+        percentage: 4.76,
+        totalSales: 4000.0,
+        totalMargin: 900.0,
+        totalVolume: 10.0,
+        totalWeight: 250.0,
+      },
+    ],
     cargoTypeDistribution: [
       { category: 'FTL', count: 24, totalSales: 78000.0, percentage: 62.65 },
       { category: 'LTL', count: 18, totalSales: 46500.0, percentage: 37.35 },
@@ -122,6 +226,149 @@ function getDemoCargoDistribution(): DashboardCargoDistributionResponse {
       { category: 'On the way', count: 10, totalSales: 31000.0, percentage: 24.9 },
       { category: 'Waiting', count: 6, totalSales: 16500.0, percentage: 13.25 },
       { category: 'On the border', count: 4, totalSales: 9000.0, percentage: 7.23 },
+    ],
+  };
+}
+
+function getDemoRouteAnalytics(): DashboardRouteAnalyticsResponse {
+  return {
+    currency: 'USD',
+    topRoutes: [
+      {
+        route: "China – O'zbekiston",
+        originCountry: 'China',
+        originCity: 'Guangzhou',
+        destinationCountry: "O'zbekiston",
+        destinationCity: 'Tashkent',
+        count: 24,
+        percentage: 57.14,
+        totalSales: 76000.0,
+        totalMargin: 21500.0,
+        totalVolume: 260.0,
+        totalWeight: 10500.0,
+      },
+      {
+        route: "Turkey – O'zbekiston",
+        originCountry: 'Turkey',
+        originCity: 'Istanbul',
+        destinationCountry: "O'zbekiston",
+        destinationCity: 'Tashkent',
+        count: 12,
+        percentage: 28.57,
+        totalSales: 38000.0,
+        totalMargin: 10800.0,
+        totalVolume: 130.0,
+        totalWeight: 5200.0,
+      },
+      {
+        route: "Russia – O'zbekiston",
+        originCountry: 'Russia',
+        originCity: 'Moscow',
+        destinationCountry: "O'zbekiston",
+        destinationCity: 'Samarkand',
+        count: 6,
+        percentage: 14.29,
+        totalSales: 14500.0,
+        totalMargin: 4200.0,
+        totalVolume: 60.5,
+        totalWeight: 2500.0,
+      },
+    ],
+    originCountries: [
+      {
+        countryName: 'China',
+        count: 24,
+        percentage: 57.14,
+        totalSales: 76000.0,
+        totalVolume: 260.0,
+        totalWeight: 10500.0,
+      },
+      {
+        countryName: 'Turkey',
+        count: 12,
+        percentage: 28.57,
+        totalSales: 38000.0,
+        totalVolume: 130.0,
+        totalWeight: 5200.0,
+      },
+      {
+        countryName: 'Russia',
+        count: 6,
+        percentage: 14.29,
+        totalSales: 14500.0,
+        totalVolume: 60.5,
+        totalWeight: 2500.0,
+      },
+    ],
+  };
+}
+
+function getDemoDeliveryEfficiency(): DashboardDeliveryEfficiencyResponse {
+  return {
+    currency: 'USD',
+    averageTransitDays: 11.4,
+    minTransitDays: 4,
+    maxTransitDays: 22,
+    totalDeliveredCount: 28,
+    totalInTransitCount: 9,
+    totalActiveCount: 14,
+    onTimeDeliveriesCount: 26,
+    delayedDeliveriesCount: 2,
+    onTimeRatePercentage: 92.86,
+    statusBreakdown: [
+      {
+        status: 'Arrived',
+        label: 'Arrived',
+        count: 28,
+        percentage: 66.67,
+        totalSales: 89000.0,
+        totalVolume: 290.0,
+        totalWeight: 12000.0,
+      },
+      {
+        status: 'On the way',
+        label: 'On the way',
+        count: 9,
+        percentage: 21.43,
+        totalSales: 27500.0,
+        totalVolume: 100.0,
+        totalWeight: 4200.0,
+      },
+    ],
+    routeTransitTimes: [
+      { route: "China – O'zbekiston", averageTransitDays: 12.8, count: 18 },
+      { route: "Turkey – O'zbekiston", averageTransitDays: 8.5, count: 10 },
+    ],
+  };
+}
+
+function getDemoDebtSummary(): DashboardDebtSummaryResponse {
+  return {
+    currency: 'USD',
+    accountsReceivable: 24500.0,
+    accountsPayable: 17800.0,
+    netBalance: 6700.0,
+    debtorClientCount: 8,
+    creditorCarrierCount: 5,
+    topDebtorClients: [
+      {
+        clientId: 'cli-1',
+        clientName: 'OOO Global Express',
+        companyName: 'Global Express LLC',
+        amount: 12000.0,
+        orderCount: 4,
+      },
+      {
+        clientId: 'cli-2',
+        clientName: 'Orient Trans Services',
+        companyName: 'Orient Trans LLC',
+        amount: 7500.0,
+        orderCount: 3,
+      },
+    ],
+    topCreditorCarriers: [
+      { agentName: 'Silk Road Logistics', amount: 9500.0, orderCount: 3 },
+      { agentName: 'Baytur Turkish', amount: 5200.0, orderCount: 2 },
     ],
   };
 }
@@ -246,6 +493,44 @@ export const dashboardApi = {
       });
     } catch {
       return getDemoTopPerformers();
+    }
+  },
+
+  getRouteAnalytics: async (
+    params?: DashboardFilterParams
+  ): Promise<DashboardRouteAnalyticsResponse> => {
+    try {
+      const q = buildQueryString({ ...params, limit: params?.limit ?? 10 });
+      return await request<DashboardRouteAnalyticsResponse>(`/dashboard/route-analytics${q}`, {
+        method: 'GET',
+      });
+    } catch {
+      return getDemoRouteAnalytics();
+    }
+  },
+
+  getDeliveryEfficiency: async (
+    params?: DashboardFilterParams
+  ): Promise<DashboardDeliveryEfficiencyResponse> => {
+    try {
+      const q = buildQueryString(params);
+      return await request<DashboardDeliveryEfficiencyResponse>(
+        `/dashboard/delivery-efficiency${q}`,
+        { method: 'GET' }
+      );
+    } catch {
+      return getDemoDeliveryEfficiency();
+    }
+  },
+
+  getDebtSummary: async (params?: DashboardFilterParams): Promise<DashboardDebtSummaryResponse> => {
+    try {
+      const q = buildQueryString(params);
+      return await request<DashboardDebtSummaryResponse>(`/dashboard/debt-summary${q}`, {
+        method: 'GET',
+      });
+    } catch {
+      return getDemoDebtSummary();
     }
   },
 };

@@ -32,6 +32,7 @@ import { formatMoney, type SupportedCurrency } from '../../types/currency';
 import { EmployeeSelect } from './EmployeeSelect';
 import { EmployeePlanDetailsModal } from './EmployeePlanDetailsModal';
 import { PlansDepartmentAnalytics } from './PlansDepartmentAnalytics';
+import { NumberInput } from '../NumberInput';
 
 export type PlanViewMode = 'leaderboard' | 'table' | 'analytics';
 
@@ -1233,14 +1234,16 @@ export function EmployeePlansTab() {
                       {t('evalByLtlVolume') || 'Evaluated by LTL volume'}
                     </span>
                   </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
+                  <NumberInput
+                    size="md"
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0}
                     value={ltlTargetStr}
-                    onChange={(e) => setLtlTargetStr(e.target.value)}
+                    onValueChange={(_num, raw) => setLtlTargetStr(raw)}
                     placeholder="100"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-foreground text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    suffix="m³"
+                    inputClassName="text-sm font-bold"
                   />
                 </div>
 
@@ -1256,14 +1259,25 @@ export function EmployeePlansTab() {
                       {t('evalByFtlRevenue') || 'Evaluated by FTL revenue'}
                     </span>
                   </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
+                  <NumberInput
+                    size="md"
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0}
                     value={ftlTargetStr}
-                    onChange={(e) => setFtlTargetStr(e.target.value)}
-                    placeholder="50000"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-foreground text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    onValueChange={(_num, raw) => setFtlTargetStr(raw)}
+                    placeholder="50 000"
+                    prefix={
+                      planCurrency === 'USD'
+                        ? '$'
+                        : planCurrency === 'RUB'
+                          ? '₽'
+                          : planCurrency === 'RMB'
+                            ? '¥'
+                            : undefined
+                    }
+                    suffix={planCurrency === 'UZS' ? "so'm" : undefined}
+                    inputClassName="text-sm font-bold"
                   />
                 </div>
 

@@ -15,6 +15,7 @@ import { cargoKpiApi, calculateSeoKpi } from '../../services/cargoKpi.service';
 import type { RopSummaryResponse, SeoCalculateResult } from '../../services/cargoKpi.service';
 import { SalesCareerSystemVisual } from './SalesCareerSystemVisual';
 import { RopKpiLogicVisual } from './RopKpiLogicVisual';
+import { NumberInput } from '../NumberInput';
 
 export function RopSeoModuleTab() {
   const { t } = useTranslation();
@@ -141,20 +142,18 @@ export function RopSeoModuleTab() {
               <label className="block text-xs font-medium text-muted-foreground mb-1">
                 {t('seoNetProfit')}
               </label>
-              <div className="relative rounded-xl shadow-sm">
-                <input
-                  type="number"
-                  step="100"
-                  min="0"
-                  value={seoProfitInput}
-                  onChange={(e) => setSeoProfitInput(e.target.value)}
-                  placeholder="e.g. 15000"
-                  className="w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
-                />
-                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-xs font-bold text-muted-foreground">
-                  USD
-                </div>
-              </div>
+              <NumberInput
+                size="md"
+                allowDecimals={true}
+                decimalScale={2}
+                min={0}
+                value={seoProfitInput}
+                onValueChange={(_num, raw) => setSeoProfitInput(raw)}
+                placeholder="e.g. 15 000"
+                prefix="$"
+                suffix="USD"
+                inputClassName="text-sm font-semibold"
+              />
             </div>
 
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border text-xs space-y-1">

@@ -10,7 +10,6 @@ import {
   Building,
   Phone,
   Palette,
-  User,
   Paperclip,
   LayoutGrid,
   Table as TableIcon,
@@ -213,16 +212,6 @@ export function ClientsPage() {
     setTimeout(() => setCopiedPhoneId(null), 2000);
   };
 
-  // Click handler for color tag filter in stats header
-  const handleToggleColorFilter = (colorHex: string) => {
-    if (selectedColor === colorHex) {
-      setSelectedColor('');
-    } else {
-      setSelectedColor(colorHex);
-    }
-    setPage(1);
-  };
-
   // Click handler for employee filter in stats header
   const handleToggleEmployeeFilter = (employeeId: string | null) => {
     const idStr = employeeId || '';
@@ -334,186 +323,151 @@ export function ClientsPage() {
         )}
       </motion.div>
 
-      {/* ── 2. Top Analytics Header: Color Distribution & Employee Breakdown ── */}
-      <motion.div
-        variants={headerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 lg:grid-cols-3 gap-4"
-      >
-        {/* Color Distribution Bar & Card Breakdown */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-surface border border-border/30 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Palette className="size-4 text-brand-gold" />
-              <h3 className="text-sm font-bold text-foreground">
-                <T k="clientColorPipelineDist" />
-              </h3>
-            </div>
-            {selectedColor && (
-              <button
-                type="button"
-                onClick={() => setSelectedColor('')}
-                className="text-[11px] font-semibold text-brand-gold hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <X className="size-3" /> <T k="clientClearColorFilter" />
-              </button>
-            )}
-          </div>
-
-          {/* Color Breakdown Pills / Swatches */}
-          {loadingStats ? (
-            <div className="flex items-center justify-center py-6">
-              <Spinner size="sm" />
-            </div>
-          ) : stats && stats.by_color && stats.by_color.length > 0 ? (
-            <div className="space-y-3">
-              {/* Visual Distribution Stacked Progress Bar */}
-              <div className="h-3.5 w-full rounded-full bg-default-100 dark:bg-default-50/20 overflow-hidden flex shadow-inner">
-                {stats.by_color.map((item) => {
-                  const percent =
-                    stats.total_clients > 0 ? (item.count / stats.total_clients) * 100 : 0;
-                  const isSelected = selectedColor === item.color;
-                  return (
-                    <button
-                      key={item.color}
-                      type="button"
-                      title={`${item.color}: ${item.count} clients (${percent.toFixed(1)}%)`}
-                      onClick={() => handleToggleColorFilter(item.color)}
-                      style={{ width: `${Math.max(percent, 2)}%`, backgroundColor: item.color }}
-                      className={`h-full transition-all duration-200 hover:opacity-90 cursor-pointer relative ${
-                        isSelected ? 'ring-2 ring-foreground ring-offset-1 z-10' : ''
-                      }`}
-                    />
-                  );
-                })}
+      {/* ── 2. Top Analytics Header: Team Distribution ── */}
+      <motion.div variants={headerVariants} initial="hidden" animate="show">
+        <div className="p-5 rounded-2xl bg-surface border border-border/30 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-5">
+            {/* Left: Manager Distribution Bar + Chips */}
+            <div className="flex-1 space-y-3 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palette className="size-4 text-brand-gold" />
+                  <h3 className="text-sm font-bold text-foreground">
+                    {canAllClients ? (
+                      <T k="clientTeamDistribution" />
+                    ) : (
+                      <T k="clientMyAssignedClients" />
+                    )}
+                  </h3>
+                </div>
+                {selectedEmployeeId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedEmployeeId('');
+                      setPage(1);
+                    }}
+                    className="text-[11px] font-semibold text-brand-gold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="size-3" /> <T k="clientClearFilter" />
+                  </button>
+                )}
               </div>
 
-              {/* Clickable Swatch Chips */}
-              <div className="flex flex-wrap items-center gap-2">
-                {stats.by_color.map((item) => {
-                  const isSelected = selectedColor === item.color;
-                  return (
-                    <button
-                      key={item.color}
-                      type="button"
-                      onClick={() => handleToggleColorFilter(item.color)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-foreground text-background border-foreground shadow-sm scale-105'
-                          : 'bg-default-100/50 dark:bg-default-50/10 border-border/30 hover:border-border text-foreground'
-                      }`}
+              {loadingStats ? (
+                <div className="flex items-center justify-center py-6">
+                  <Spinner size="sm" />
+                </div>
+              ) : canAllClients && stats && stats.by_employee && stats.by_employee.length > 0 ? (
+                <>
+                  {/* Stacked Progress Bar (constrained, not full-width stretched) */}
+                  <div className="h-3 w-full max-w-2xl rounded-full bg-default-100 dark:bg-default-50/20 overflow-hidden flex shadow-inner">
+                    {stats.by_employee.map((emp, index) => {
+                      const percent =
+                        stats.total_clients > 0 ? (emp.count / stats.total_clients) * 100 : 0;
+                      const isSelected = selectedEmployeeId === (emp.employee_id || '');
+                      return (
+                        <button
+                          key={emp.employee_id || `emp-bar-${index}`}
+                          type="button"
+                          title={`${emp.employee_name}: ${emp.count} clients (${percent.toFixed(1)}%)`}
+                          onClick={() => handleToggleEmployeeFilter(emp.employee_id)}
+                          style={{
+                            width: `${Math.max(percent, 2)}%`,
+                            backgroundColor: emp.default_color || '#808080',
+                          }}
+                          className={`h-full transition-all duration-200 hover:opacity-90 cursor-pointer relative ${
+                            isSelected ? 'ring-2 ring-foreground ring-offset-1 z-10' : ''
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  {/* Manager Chips */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {stats.by_employee.map((emp, index) => {
+                      const isSelected = selectedEmployeeId === (emp.employee_id || '');
+                      return (
+                        <button
+                          key={emp.employee_id || `emp-chip-${index}`}
+                          type="button"
+                          onClick={() => handleToggleEmployeeFilter(emp.employee_id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-foreground text-background border-foreground shadow-sm scale-105'
+                              : 'bg-default-100/50 dark:bg-default-50/10 border-border/30 hover:border-border text-foreground'
+                          }`}
+                        >
+                          <span
+                            className="size-3 rounded-full shadow-sm shrink-0"
+                            style={{ backgroundColor: emp.default_color || '#808080' }}
+                          />
+                          <span className="truncate max-w-[120px]">{emp.employee_name}</span>
+                          <span className="px-1.5 py-0.2 rounded-md bg-default-200/60 dark:bg-default-100/20 text-[10px]">
+                            {emp.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : !canAllClients ? (
+                <div className="p-3 rounded-xl bg-default-100/50 dark:bg-default-50/10 border border-border/30 flex items-center justify-between max-w-md">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="size-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-xs"
+                      style={{ backgroundColor: currentEmployee?.color || '#808080' }}
                     >
-                      <span
-                        className="size-3 rounded-full shadow-sm"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="font-mono">{item.color}</span>
-                      <span className="px-1.5 py-0.2 rounded-md bg-default-200/60 dark:bg-default-100/20 text-[10px]">
-                        {item.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-muted italic">No color distribution data available yet.</p>
-          )}
-        </div>
-
-        {/* Responsible Employee Breakdown & Active Summary */}
-        <div className="p-5 rounded-2xl bg-surface border border-border/30 shadow-sm flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <User className="size-4 text-brand-gold" />
-                <h3 className="text-sm font-bold text-foreground">
-                  {canAllClients ? (
-                    <T k="clientManagerBreakdown" />
-                  ) : (
-                    <T k="clientMyAssignedClients" />
-                  )}
-                </h3>
-              </div>
-              {canAllClients && selectedEmployeeId && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedEmployeeId('')}
-                  className="text-[11px] font-semibold text-brand-gold hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <X className="size-3" /> <T k="actionCancel" />
-                </button>
+                      {currentEmployee?.first_name?.[0] || 'U'}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">
+                        {currentEmployee
+                          ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
+                          : t('clientMyAssignedClients')}
+                      </p>
+                      <p className="text-[10px] text-muted">{t('clientAutoAssignedToYou')}</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-lg bg-brand-gold/15 text-brand-gold font-bold text-xs border border-brand-gold/30">
+                    {totalActiveCount}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-muted italic">
+                  No manager distribution data available yet.
+                </p>
               )}
             </div>
 
-            {/* Employee Filter Chips (All Managers if permitted, or Scoped Profile Card) */}
-            {canAllClients ? (
-              <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto pr-1">
-                {stats && stats.by_employee && stats.by_employee.length > 0 ? (
-                  stats.by_employee.map((emp, index) => {
-                    const isSelected = selectedEmployeeId === (emp.employee_id || '');
-                    return (
-                      <button
-                        key={emp.employee_id || `emp-${index}`}
-                        type="button"
-                        onClick={() => handleToggleEmployeeFilter(emp.employee_id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-brand-gold text-brand-navy border-brand-gold shadow-sm scale-105'
-                            : 'bg-default-100/50 dark:bg-default-50/10 border-border/30 hover:border-border text-foreground'
-                        }`}
-                      >
-                        <span
-                          className="size-2.5 rounded-full shadow-sm shrink-0"
-                          style={{ backgroundColor: emp.default_color || '#808080' }}
-                        />
-                        <span className="truncate max-w-[100px]">{emp.employee_name}</span>
-                        <span className="px-1.5 py-0.2 rounded-md bg-default-200/60 dark:bg-default-100/20 text-[10px]">
-                          {emp.count}
-                        </span>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <p className="text-xs text-muted italic">No employee data.</p>
+            {/* Right: Summary Stats */}
+            {canAllClients && stats && (
+              <div className="lg:w-48 shrink-0 flex flex-row lg:flex-col gap-3 lg:border-l lg:border-border/20 lg:pl-5">
+                <div className="flex-1 p-3 rounded-xl bg-default-100/50 dark:bg-default-50/10 border border-border/30 text-center">
+                  <p className="text-lg font-bold text-foreground">{stats.total_clients}</p>
+                  <p className="text-[10px] text-muted font-medium uppercase tracking-wide">
+                    <T k="clientTotal" />
+                  </p>
+                </div>
+                <div className="flex-1 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {totalActiveCount}
+                  </p>
+                  <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-medium uppercase tracking-wide">
+                    <T k="statusActive" />
+                  </p>
+                </div>
+                {stats.by_employee && (
+                  <div className="flex-1 p-3 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-center">
+                    <p className="text-lg font-bold text-brand-gold">{stats.by_employee.length}</p>
+                    <p className="text-[10px] text-brand-gold/70 font-medium uppercase tracking-wide">
+                      <T k="clientAllManagers" />
+                    </p>
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="p-3 rounded-xl bg-default-100/50 dark:bg-default-50/10 border border-border/30 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="size-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-xs"
-                    style={{ backgroundColor: currentEmployee?.color || '#808080' }}
-                  >
-                    {currentEmployee?.first_name?.[0] || 'U'}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">
-                      {currentEmployee
-                        ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
-                        : t('clientMyAssignedClients')}
-                    </p>
-                    <p className="text-[10px] text-muted">{t('clientAutoAssignedToYou')}</p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-lg bg-brand-gold/15 text-brand-gold font-bold text-xs border border-brand-gold/30">
-                  {totalActiveCount}
-                </span>
-              </div>
             )}
-          </div>
-
-          {/* Total Active Summary Pill */}
-          <div className="pt-3 border-t border-border/20 flex items-center justify-between text-xs">
-            <span className="text-muted font-medium">
-              <T k="clientDirectoryHealth" />
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
-                {totalActiveCount} <T k="statusActive" />
-              </span>
-            </div>
           </div>
         </div>
       </motion.div>

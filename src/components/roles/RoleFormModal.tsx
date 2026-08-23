@@ -84,6 +84,7 @@ export function RoleFormModal({
       | 'delete'
       | 'register_for_everyone'
       | 'can_work_with_all_clients'
+      | 'assign_cargo'
   ) => {
     setPermissions((prev) => {
       const currentMod = prev[moduleKey] || {
@@ -93,6 +94,7 @@ export function RoleFormModal({
         delete: false,
         register_for_everyone: false,
         can_work_with_all_clients: false,
+        assign_cargo: false,
       };
       return {
         ...prev,
@@ -115,6 +117,7 @@ export function RoleFormModal({
         delete: true,
         ...(moduleKey === 'cargo_registrations' ? { register_for_everyone: true } : {}),
         ...(moduleKey === 'clients' ? { can_work_with_all_clients: true } : {}),
+        ...(moduleKey === 'cargo_consolidations' ? { assign_cargo: true } : {}),
       },
     }));
   };
@@ -130,6 +133,7 @@ export function RoleFormModal({
         delete: false,
         ...(moduleKey === 'cargo_registrations' ? { register_for_everyone: false } : {}),
         ...(moduleKey === 'clients' ? { can_work_with_all_clients: false } : {}),
+        ...(moduleKey === 'cargo_consolidations' ? { assign_cargo: false } : {}),
       },
     }));
   };
@@ -146,6 +150,7 @@ export function RoleFormModal({
           delete: true,
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: true } : {}),
           ...(mod.module === 'clients' ? { can_work_with_all_clients: true } : {}),
+          ...(mod.module === 'cargo_consolidations' ? { assign_cargo: true } : {}),
         };
       } else if (preset === 'readonly') {
         updated[mod.module] = {
@@ -155,6 +160,7 @@ export function RoleFormModal({
           delete: false,
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: false } : {}),
           ...(mod.module === 'clients' ? { can_work_with_all_clients: false } : {}),
+          ...(mod.module === 'cargo_consolidations' ? { assign_cargo: false } : {}),
         };
       } else {
         updated[mod.module] = {
@@ -164,6 +170,7 @@ export function RoleFormModal({
           delete: false,
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: false } : {}),
           ...(mod.module === 'clients' ? { can_work_with_all_clients: false } : {}),
+          ...(mod.module === 'cargo_consolidations' ? { assign_cargo: false } : {}),
         };
       }
     });
@@ -520,6 +527,30 @@ export function RoleFormModal({
                                     </Tooltip.Trigger>
                                     <Tooltip.Content placement="right">
                                       {t('rolesPermCanWorkWithAllClientsTooltip')}
+                                    </Tooltip.Content>
+                                  </Tooltip>
+                                </div>
+                              )}
+
+                              {mod.module === 'cargo_consolidations' && (
+                                <div className="mt-2 pt-1.5 border-t border-border/30">
+                                  <Tooltip delay={150} closeDelay={0}>
+                                    <Tooltip.Trigger>
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleAction(mod.module, 'assign_cargo')}
+                                        className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                          modPerms.assign_cargo
+                                            ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/40 shadow-xs'
+                                            : 'bg-default/20 text-muted/60 border border-border/30 hover:border-purple-500/30'
+                                        }`}
+                                      >
+                                        <span>{modPerms.assign_cargo ? '✓' : '✕'}</span>
+                                        <span>{t('rolesAssignCargo')}</span>
+                                      </button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content placement="right">
+                                      {t('rolesPermAssignCargoTooltip')}
                                     </Tooltip.Content>
                                   </Tooltip>
                                 </div>

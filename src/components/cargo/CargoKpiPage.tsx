@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calculator, Truck, Crown, Target, Receipt, Award } from 'lucide-react';
+import { Package, Calculator, Truck, Crown, Target, Receipt, Award, Boxes } from 'lucide-react';
 import { T } from '../T';
+import { usePermissions } from '../../context/PermissionsContext';
 import { LtlCalcTab } from './LtlCalcTab';
 import { RopSeoModuleTab } from './RopSeoModuleTab';
 import { EmployeePlansTab } from './EmployeePlansTab';
 import { CargoTransactionsTab } from './CargoTransactionsTab';
 import { ContainerTrackingTab } from './ContainerTrackingTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
+import { CargoConsolidationsTab } from './CargoConsolidationsTab';
 
 export type CargoTabId =
-  'container-tracking' | 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans' | 'transactions';
+  | 'container-tracking'
+  | 'consolidations'
+  | 'ltl-calc'
+  | 'rop-seo'
+  | 'sales-manager'
+  | 'plans'
+  | 'transactions';
 
 export function CargoKpiPage() {
+  const { canRead } = usePermissions();
   const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
 
   const tabs: { id: CargoTabId; labelKey: string; icon: React.ReactNode }[] = [
@@ -21,6 +30,15 @@ export function CargoKpiPage() {
       labelKey: 'tabContainerTracking',
       icon: <Truck className="size-4" />,
     },
+    ...(canRead('cargo_consolidations')
+      ? [
+          {
+            id: 'consolidations' as CargoTabId,
+            labelKey: 'tabConsolidations',
+            icon: <Boxes className="size-4" />,
+          },
+        ]
+      : []),
     { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
     { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
     { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
@@ -32,6 +50,12 @@ export function CargoKpiPage() {
     switch (activeTab) {
       case 'container-tracking':
         return <ContainerTrackingTab />;
+      case 'consolidations':
+        return canRead('cargo_consolidations') ? (
+          <CargoConsolidationsTab />
+        ) : (
+          <ContainerTrackingTab />
+        );
       case 'ltl-calc':
         return <LtlCalcTab />;
       case 'rop-seo':

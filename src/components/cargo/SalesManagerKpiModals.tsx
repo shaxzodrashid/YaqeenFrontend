@@ -17,6 +17,7 @@ import type {
   DemotionReviewAction,
 } from '../../types/salesManagerKpi';
 import { EmployeeSelect } from './EmployeeSelect';
+import { NumberInput } from '../NumberInput';
 
 // ---------------------------------------------------------------------------
 // 1. Calculate Monthly Evaluations Modal
@@ -121,14 +122,15 @@ export function CalculateEvaluationsModal({
               <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">
                 Additional Manual Bonus ($)
               </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <NumberInput
+                size="md"
+                allowDecimals={true}
+                decimalScale={2}
+                min={0}
                 value={addBonusStr}
-                onChange={(e) => setAddBonusStr(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:border-brand-gold"
+                onValueChange={(_num, raw) => setAddBonusStr(raw)}
                 placeholder="0.00"
+                prefix="$"
               />
             </div>
 
@@ -559,12 +561,13 @@ export function UpdateEmployeeLevelModal({
               <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">
                 <T k="smkMenteesCountLabel" />
               </label>
-              <input
-                type="number"
-                min="0"
+              <NumberInput
+                size="md"
+                allowDecimals={false}
+                min={0}
                 value={mentees}
-                onChange={(e) => setMentees(parseInt(e.target.value, 10) || 0)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:border-brand-gold"
+                onValueChange={(num) => setMentees(num || 0)}
+                placeholder="0"
               />
             </div>
 

@@ -113,6 +113,7 @@ export type {
   SystemModule,
   ModulePermissions,
   ClientsModulePermissions,
+  CargoConsolidationsModulePermissions,
   RolePermissions,
   CreateRoleDto,
   UpdateRoleDto,
@@ -160,6 +161,7 @@ export type {
 export type {
   CargoType,
   ContainerType,
+  TransportType,
   CargoRegistrationStatus,
   CurrencyType,
   CreateCargoRegistrationDto,
@@ -176,9 +178,31 @@ export type {
 } from './cargoRegistrations.service';
 export {
   CONTAINER_TYPES,
+  TRANSPORT_TYPES,
+  TRANSPORT_TYPE_LABELS,
   CARGO_STATUSES,
   convertPriceToUsdAndUzs,
 } from './cargoRegistrations.service';
+
+export type {
+  ConsolidationStatus,
+  ConsolidationContainerType,
+  ConsolidationCapacity,
+  ConsolidationFinancials,
+  ConsolidationCargoItem,
+  ConsolidationListItem,
+  ConsolidationActiveDropdownItem,
+  CreateConsolidationDto,
+  UpdateConsolidationDto,
+  ConsolidationListParams,
+  ConsolidationMeta,
+  ConsolidationPaginatedResponse,
+} from './cargoConsolidations.service';
+export {
+  CONSOLIDATION_STATUSES,
+  CONSOLIDATION_CONTAINER_TYPES,
+  cargoConsolidationsApi,
+} from './cargoConsolidations.service';
 
 // Re-export core HTTP & Token helpers
 export {
@@ -204,6 +228,7 @@ export { attachmentsApi } from './attachments.service';
 export { clientsApi } from './clients.service';
 export { cargoKpiApi } from './cargoKpi.service';
 export { cargoRegistrationsApi } from './cargoRegistrations.service';
+export { cargoConsolidationsApi as consolidationsApi } from './cargoConsolidations.service';
 export { financeApi } from './finance.service';
 export { currencyApi, CurrencyApiClient } from './currency.service';
 export { rolesApi } from './roles.service';
@@ -211,20 +236,49 @@ export { tasksService } from './tasks.service';
 export { commercialOffersApi } from './commercialOffers.service';
 
 export type {
+  CityOption,
+  RouteInfo,
+  LocationDetail,
+  CitySearchParams,
+  DuplicateCheckDto,
+  DuplicateCheckResult,
+} from '../types/locations';
+
+export {
+  locationsApi,
+  POPULAR_LOGISTICS_HUBS,
+  getCountryFlag,
+  buildGoogleMapsPointUrl,
+  buildGoogleMapsRouteUrl,
+} from './locations.service';
+
+export type {
   DashboardPeriod,
   DashboardGranularity,
+  DashboardTransportType,
   DashboardFilterParams,
+  DashboardMonthlyYearlyBlock,
   DashboardSalesProgressMeta,
   DashboardSalesProgressSummary,
   DashboardSalesProgressDataPoint,
   DashboardSalesProgressResponse,
   DashboardSummaryResponse,
+  TransportTypeDistributionItem,
   CargoTypeDistributionItem,
   StatusDistributionItem,
   DashboardCargoDistributionResponse,
   TopManagerItem,
   TopClientItem,
   DashboardTopPerformersResponse,
+  RouteAnalyticsItem,
+  OriginCountryItem,
+  DashboardRouteAnalyticsResponse,
+  DeliveryStatusBreakdownItem,
+  RouteTransitTimeItem,
+  DashboardDeliveryEfficiencyResponse,
+  DebtorClientItem,
+  CreditorCarrierItem,
+  DashboardDebtSummaryResponse,
 } from '../types/dashboard';
 
 export { dashboardApi } from './dashboard.service';
@@ -236,12 +290,14 @@ import { attachmentsApi } from './attachments.service';
 import { clientsApi } from './clients.service';
 import { cargoKpiApi } from './cargoKpi.service';
 import { cargoRegistrationsApi } from './cargoRegistrations.service';
+import { cargoConsolidationsApi } from './cargoConsolidations.service';
 import { financeApi } from './finance.service';
 import { currencyApi } from './currency.service';
 import { rolesApi } from './roles.service';
 import { tasksService } from './tasks.service';
 import { commercialOffersApi } from './commercialOffers.service';
 import { dashboardApi } from './dashboard.service';
+import { locationsApi } from './locations.service';
 
 // Global API object for complete backward compatibility
 export const api = {
@@ -253,6 +309,9 @@ export const api = {
   clients: clientsApi,
   cargoKpi: cargoKpiApi,
   cargoRegistrations: cargoRegistrationsApi,
+  cargoConsolidations: cargoConsolidationsApi,
+  consolidations: cargoConsolidationsApi,
+  locations: locationsApi,
   finance: financeApi,
   currency: currencyApi,
   roles: rolesApi,

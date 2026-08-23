@@ -4,6 +4,7 @@ import { Calculator, Scale, Box, DollarSign, CheckCircle, Info, Sparkles } from 
 import { useTranslation } from '../../context/LanguageContext';
 import { calculateLtlPrice } from '../../services/cargoKpi.service';
 import type { LtlCalculateResult } from '../../services/cargoKpi.service';
+import { NumberInput } from '../NumberInput';
 
 const RATE_TABLE_TIERS = [
   { minD: 0, maxD: 100, basis: 'hajm', rate: 100, unit: 'USD/m³', desc: 'D ≤ 100 kg/m³' },
@@ -82,20 +83,17 @@ export function LtlCalcTab() {
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {t('cargoVolume')}
             </label>
-            <div className="relative rounded-xl shadow-sm">
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={volumeInput}
-                onChange={(e) => setVolumeInput(e.target.value)}
-                placeholder="e.g. 2.5"
-                className="w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold transition-all"
-              />
-              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-xs font-bold text-muted-foreground">
-                m³
-              </div>
-            </div>
+            <NumberInput
+              size="md"
+              allowDecimals={true}
+              decimalScale={3}
+              min={0}
+              value={volumeInput}
+              onValueChange={(_num, raw) => setVolumeInput(raw)}
+              placeholder="e.g. 2.5"
+              suffix="m³"
+              inputClassName="text-sm font-semibold"
+            />
           </div>
 
           {/* Weight Input */}
@@ -103,20 +101,17 @@ export function LtlCalcTab() {
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {t('cargoWeight')}
             </label>
-            <div className="relative rounded-xl shadow-sm">
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={weightInput}
-                onChange={(e) => setWeightInput(e.target.value)}
-                placeholder="e.g. 500"
-                className="w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold transition-all"
-              />
-              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-xs font-bold text-muted-foreground">
-                kg
-              </div>
-            </div>
+            <NumberInput
+              size="md"
+              allowDecimals={true}
+              decimalScale={2}
+              min={0}
+              value={weightInput}
+              onValueChange={(_num, raw) => setWeightInput(raw)}
+              placeholder="e.g. 500"
+              suffix="kg"
+              inputClassName="text-sm font-semibold"
+            />
           </div>
 
           {/* Quick preset buttons */}

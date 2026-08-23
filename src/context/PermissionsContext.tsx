@@ -15,6 +15,7 @@ export type ModuleKey =
   | 'departments'
   | 'cargo_kpi'
   | 'cargo_registrations'
+  | 'cargo_consolidations'
   | 'finance'
   | 'commercial_offers'
   | 'tasks'
@@ -27,6 +28,7 @@ export type UserPermissions = Record<
   ModulePermissionAction & {
     register_for_everyone?: boolean;
     can_work_with_all_clients?: boolean;
+    assign_cargo?: boolean;
   }
 >;
 
@@ -47,6 +49,13 @@ export const FULL_PERMISSIONS: UserPermissions = {
     update: true,
     delete: true,
     register_for_everyone: true,
+  },
+  cargo_consolidations: {
+    create: true,
+    read: true,
+    update: true,
+    delete: true,
+    assign_cargo: true,
   },
   finance: { create: true, read: true, update: true, delete: true },
   commercial_offers: { create: true, read: true, update: true, delete: true },
@@ -70,6 +79,7 @@ interface PermissionsContextType {
   canDelete: (module: ModuleKey | string) => boolean;
   canRegisterForEveryone: () => boolean;
   canWorkWithAllClients: () => boolean;
+  canAssignCargo: () => boolean;
   refreshPermissions: () => Promise<void>;
 }
 
@@ -139,7 +149,10 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     action: keyof ModulePermissionAction
   ): boolean => {
     if (isCeo) return true;
-    const mod = permissions[module];
+    let mod = permissions[module];
+    if (!mod && (module === 'cargo_consolidations' || module === 'consolidations')) {
+      mod = permissions['cargo_registrations'] || permissions['cargo_kpi'];
+    }
     if (!mod) return false;
     return !!mod[action];
   };
@@ -161,6 +174,15 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return !!clientPerm?.can_work_with_all_clients;
   };
 
+  const canAssignCargo = (): boolean => {
+    if (isCeo || isRop) return true;
+    const consolidationPerm = permissions['cargo_consolidations'] || permissions['consolidations'];
+    if (consolidationPerm && typeof consolidationPerm.assign_cargo === 'boolean') {
+      return consolidationPerm.assign_cargo;
+    }
+    return canUpdate('cargo_consolidations');
+  };
+
   return (
     <PermissionsContext.Provider
       value={{
@@ -177,6 +199,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         canDelete,
         canRegisterForEveryone,
         canWorkWithAllClients,
+        canAssignCargo,
         refreshPermissions: fetchPermissions,
       }}
     >

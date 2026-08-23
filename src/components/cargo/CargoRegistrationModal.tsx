@@ -23,6 +23,10 @@ import {
   Shield,
   Repeat,
   Copy,
+  AlertTriangle,
+  TrainFront,
+  Plane,
+  Ship,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -30,19 +34,27 @@ import { usePermissions } from '../../context/PermissionsContext';
 import {
   cargoRegistrationsApi,
   CONTAINER_TYPES,
+  TRANSPORT_TYPES,
+  TRANSPORT_TYPE_LABELS,
   employeesApi,
   formatMoney,
   currencyApi,
   convertPriceToUsdAndUzs,
+  locationsApi,
 } from '../../services/api';
 import type {
   CargoType,
   ContainerType,
+  TransportType,
   CargoRegistrationStatus,
   CurrencyType,
 } from '../../services/api';
 import { EmployeeSelect } from './EmployeeSelect';
 import { ClientSelect } from './ClientSelect';
+import { ConsolidationSelect } from './ConsolidationSelect';
+import { ConsolidationModal } from './ConsolidationModal';
+import { RouteSelector, type RouteState } from './RouteSelector';
+import { NumberInput } from '../NumberInput';
 
 const STATUS_STAGE_CONFIG: {
   key: CargoRegistrationStatus;
@@ -117,6 +129,14 @@ const STATUS_STAGE_CONFIG: {
 
 const CURRENCIES: CurrencyType[] = ['USD', 'UZS', 'RUB', 'RMB'];
 
+const TRANSPORT_TYPE_ICONS: Record<TransportType, React.ReactNode> = {
+  auto: <Truck className="size-3.5" />,
+  railway: <TrainFront className="size-3.5" />,
+  air: <Plane className="size-3.5" />,
+  sea: <Ship className="size-3.5" />,
+  other: <Package className="size-3.5" />,
+};
+
 export interface CargoRegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -136,15 +156,18 @@ export function CargoRegistrationModal({
 }: CargoRegistrationModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
-  const { canRegisterForEveryone } = usePermissions();
+  const { canRegisterForEveryone, canCreate } = usePermissions();
 
   const [myEmployeeId, setMyEmployeeId] = useState<string>('');
 
   // Form Fields
   const [cargoType, setCargoType] = useState<CargoType>('LTL');
+  const [consolidationId, setConsolidationId] = useState<string | null>(null);
+  const [isConsolidationModalOpen, setIsConsolidationModalOpen] = useState<boolean>(false);
   const [volumeStr, setVolumeStr] = useState<string>('10');
   const [weightStr, setWeightStr] = useState<string>('1200');
   const [containerType, setContainerType] = useState<ContainerType>('40HQ');
+  const [transportTypes, setTransportTypes] = useState<TransportType[]>(['auto']);
   const [containerTruckId, setContainerTruckId] = useState<string>('');
   const [agentName, setAgentName] = useState<string>('SilkRoad Express');
   const [cargo, setCargo] = useState<string>('General Cargo');
@@ -171,12 +194,66 @@ export function CargoRegistrationModal({
   const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  // Route Corridor State
+  const [route, setRoute] = useState<RouteState>({
+    origin_city: 'Yiwu',
+    origin_country: 'China',
+    origin_country_code: 'CN',
+    origin_geoname_id: 1787687,
+    origin_lat: 29.31506,
+    origin_lng: 120.07676,
+    destination_city: 'Tashkent',
+    destination_country: 'Uzbekistan',
+    destination_country_code: 'UZ',
+    destination_geoname_id: 1512569,
+    destination_lat: 41.26465,
+    destination_lng: 69.21627,
+  });
+
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 12800,
     RUB: 140,
     RMB: 1780,
     UZS: 1,
   });
+
+  // Pre-flight duplicate checking
+  useEffect(() => {
+    if (!isOpen || editingId) {
+      setDuplicateWarning(null);
+      return;
+    }
+    if (!selectedClientId || !containerTruckId.trim()) {
+      setDuplicateWarning(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      locationsApi
+        .checkDuplicateCargo({
+          client_id: selectedClientId,
+          container_truck_id: containerTruckId.trim(),
+          cargo: cargo.trim() || undefined,
+          purchase_price: parseFloat(purchasePriceStr) || undefined,
+          origin_city: route.origin_city || undefined,
+          destination_city: route.destination_city || undefined,
+        })
+        .then((res) => {
+          if (res.is_duplicate) {
+            setDuplicateWarning(
+              res.message || 'An identical cargo entry was detected for this client and truck.'
+            );
+          } else {
+            setDuplicateWarning(null);
+          }
+        })
+        .catch(() => {});
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, editingId, selectedClientId, containerTruckId, cargo, purchasePriceStr, route]);
 
   // Fetch exchange rates on modal open
   useEffect(() => {
@@ -228,6 +305,11 @@ export function CargoRegistrationModal({
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
           setContainerType((detail.container_type as ContainerType) || '40HQ');
+          setTransportTypes(
+            detail.transport_types && detail.transport_types.length > 0
+              ? detail.transport_types
+              : ['auto']
+          );
           setContainerTruckId(detail.container_truck_id || '');
           setAgentName(detail.agent_name || '');
           setCargo(detail.cargo || '');
@@ -261,6 +343,22 @@ export function CargoRegistrationModal({
           setDescription(detail.description || '');
           setSelectedClientId(detail.client_id || '');
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
+          setConsolidationId(detail.consolidation_id || (detail.consolidation?.id ?? null));
+
+          setRoute({
+            origin_city: detail.origin_city || '',
+            origin_country: detail.origin_country || '',
+            origin_country_code: detail.origin_country_code || '',
+            origin_geoname_id: detail.origin_geoname_id ?? null,
+            origin_lat: detail.origin_lat ?? null,
+            origin_lng: detail.origin_lng ?? null,
+            destination_city: detail.destination_city || '',
+            destination_country: detail.destination_country || '',
+            destination_country_code: detail.destination_country_code || '',
+            destination_geoname_id: detail.destination_geoname_id ?? null,
+            destination_lat: detail.destination_lat ?? null,
+            destination_lng: detail.destination_lng ?? null,
+          });
         })
         .catch((err) => {
           showNotification(err?.message || 'Failed to load cargo details', 'error');
@@ -278,6 +376,11 @@ export function CargoRegistrationModal({
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
           setContainerType((detail.container_type as ContainerType) || '40HQ');
+          setTransportTypes(
+            detail.transport_types && detail.transport_types.length > 0
+              ? detail.transport_types
+              : ['auto']
+          );
 
           let copyTruckId = detail.container_truck_id ? `${detail.container_truck_id}-COPY` : '';
           if (detail.container_truck_id && detail.container_truck_id.endsWith('-COPY')) {
@@ -314,6 +417,22 @@ export function CargoRegistrationModal({
           setDescription(detail.description || '');
           setSelectedClientId(detail.client_id || '');
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
+          setConsolidationId(detail.consolidation_id || null);
+
+          setRoute({
+            origin_city: detail.origin_city || '',
+            origin_country: detail.origin_country || '',
+            origin_country_code: detail.origin_country_code || '',
+            origin_geoname_id: detail.origin_geoname_id ?? null,
+            origin_lat: detail.origin_lat ?? null,
+            origin_lng: detail.origin_lng ?? null,
+            destination_city: detail.destination_city || '',
+            destination_country: detail.destination_country || '',
+            destination_country_code: detail.destination_country_code || '',
+            destination_geoname_id: detail.destination_geoname_id ?? null,
+            destination_lat: detail.destination_lat ?? null,
+            destination_lng: detail.destination_lng ?? null,
+          });
         })
         .catch((err) => {
           showNotification(err?.message || 'Failed to load cargo details for duplicate', 'error');
@@ -324,9 +443,11 @@ export function CargoRegistrationModal({
     } else {
       const todayStr = new Date().toISOString().split('T')[0];
       setCargoType('LTL');
+      setConsolidationId(null);
       setVolumeStr('10');
       setWeightStr('1200');
       setContainerType('40HQ');
+      setTransportTypes(['auto']);
       setContainerTruckId('TRK-' + Math.floor(1000 + Math.random() * 9000));
       setAgentName('SilkRoad Express');
       setCargo('General Cargo');
@@ -346,6 +467,21 @@ export function CargoRegistrationModal({
       setDescription('');
       setSelectedClientId('');
       setSelectedEmpId(myEmployeeId || '');
+
+      setRoute({
+        origin_city: 'Yiwu',
+        origin_country: 'China',
+        origin_country_code: 'CN',
+        origin_geoname_id: 1787687,
+        origin_lat: 29.31506,
+        origin_lng: 120.07676,
+        destination_city: 'Tashkent',
+        destination_country: 'Uzbekistan',
+        destination_country_code: 'UZ',
+        destination_geoname_id: 1512569,
+        destination_lat: 41.26465,
+        destination_lng: 69.21627,
+      });
     }
   }, [isOpen, editingId, duplicateFromId, initialStatus, myEmployeeId, showNotification]);
 
@@ -434,6 +570,18 @@ export function CargoRegistrationModal({
           container_truck_id: containerTruckId.trim(),
           agent_name: agentName.trim(),
           cargo: cargo.trim(),
+          origin_city: route.origin_city || undefined,
+          origin_country: route.origin_country || undefined,
+          origin_country_code: route.origin_country_code || undefined,
+          origin_geoname_id: route.origin_geoname_id ?? undefined,
+          origin_lat: route.origin_lat ?? undefined,
+          origin_lng: route.origin_lng ?? undefined,
+          destination_city: route.destination_city || undefined,
+          destination_country: route.destination_country || undefined,
+          destination_country_code: route.destination_country_code || undefined,
+          destination_geoname_id: route.destination_geoname_id ?? undefined,
+          destination_lat: route.destination_lat ?? undefined,
+          destination_lng: route.destination_lng ?? undefined,
           confirmed_date: confirmedDate || undefined,
           loaded_date: loadedDate || undefined,
           arrived_date: arrivedDate || undefined,
@@ -448,10 +596,12 @@ export function CargoRegistrationModal({
           sell_exchange_rate: sCustom,
           sell_custom_rate: sCustom,
           usd_rmb_rate: isRmbRateRequired ? rate : undefined,
+          transport_types: transportTypes.length > 0 ? transportTypes : undefined,
           status,
           description: description.trim() || undefined,
           client_id: selectedClientId,
           employee_id: finalEmployeeId,
+          consolidation_id: cargoType === 'LTL' ? consolidationId || null : null,
         });
         showNotification('Cargo registration updated successfully', 'success');
       } else {
@@ -463,6 +613,21 @@ export function CargoRegistrationModal({
           container_truck_id: containerTruckId.trim(),
           agent_name: agentName.trim(),
           cargo: cargo.trim(),
+          origin_city: route.origin_city || undefined,
+          origin_country: route.origin_country || undefined,
+          origin_country_code: route.origin_country_code || undefined,
+          origin_geoname_id: route.origin_geoname_id ?? undefined,
+          origin_lat: route.origin_lat ?? undefined,
+          origin_lng: route.origin_lng ?? undefined,
+          destination_city: route.destination_city || undefined,
+          destination_country: route.destination_country || undefined,
+          destination_country_code: route.destination_country_code || undefined,
+          destination_geoname_id: route.destination_geoname_id ?? undefined,
+          destination_lat: route.destination_lat ?? undefined,
+          destination_lng: route.destination_lng ?? undefined,
+          prevent_duplicate: true,
+          transport_types: transportTypes.length > 0 ? transportTypes : undefined,
+          idempotency_key: `cr-idem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           confirmed_date: confirmedDate || undefined,
           loaded_date: loadedDate || undefined,
           arrived_date: arrivedDate || undefined,
@@ -481,6 +646,7 @@ export function CargoRegistrationModal({
           description: description.trim() || undefined,
           client_id: selectedClientId,
           employee_id: finalEmployeeId,
+          consolidation_id: cargoType === 'LTL' ? consolidationId || undefined : undefined,
         });
         showNotification('Cargo registration created successfully', 'success');
       }
@@ -511,23 +677,29 @@ export function CargoRegistrationModal({
       bp,
       purchaseCurrency,
       purchaseDate,
-      pCustom,
+      pCustom || undefined,
       rate,
       cbuRates
     );
 
-    const sellConv = convertPriceToUsdAndUzs(sp, sellCurrency, sellDate, sCustom, rate, cbuRates);
+    const sellConv = convertPriceToUsdAndUzs(
+      sp,
+      sellCurrency,
+      sellDate,
+      sCustom || undefined,
+      rate,
+      cbuRates
+    );
 
     const marginUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
     const marginUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
-
     const margin =
       sellCurrency === 'USD' ? marginUsd : sellCurrency === 'UZS' ? marginUzs : marginUsd;
     const roiPct = purConv.amount_usd > 0 ? (marginUsd / purConv.amount_usd) * 100 : 0;
 
     let marginUsdStr: string | null = null;
     if (sellCurrency !== 'USD') {
-      marginUsdStr = `$ ${marginUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      marginUsdStr = formatMoney(marginUsd, 'USD');
     }
 
     return {
@@ -543,11 +715,11 @@ export function CargoRegistrationModal({
     };
   }, [
     purchasePriceStr,
-    sellPriceStr,
     purchaseCurrency,
-    sellCurrency,
     purchaseDate,
     purchaseCustomRateStr,
+    sellPriceStr,
+    sellCurrency,
     sellDate,
     sellCustomRateStr,
     usdRmbRateStr,
@@ -617,6 +789,26 @@ export function CargoRegistrationModal({
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
               {/* Form Content - Scrollable */}
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 custom-scrollbar">
+                {/* DUPLICATE DETECTION WARNING BANNER */}
+                {duplicateWarning && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex items-start gap-3 text-xs leading-relaxed animate-in fade-in duration-200">
+                    <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-bold">
+                        {t('duplicateCargoDetected') || 'Duplicate Cargo Warning'}
+                      </div>
+                      <div>{duplicateWarning}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDuplicateWarning(null)}
+                      className="text-muted-foreground hover:text-foreground text-[11px] underline ml-2 cursor-pointer"
+                    >
+                      {t('dismiss') || 'Dismiss'}
+                    </button>
+                  </div>
+                )}
+
                 {/* SECTION 1: CARGO TYPE HERO SWITCHER */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -672,49 +864,29 @@ export function CargoRegistrationModal({
                 {/* DYNAMIC CAPACITY FIELDS */}
                 {cargoType === 'LTL' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5 flex items-center justify-between">
-                        <span>Volume (m³)</span>
-                        <span className="text-rose-500 font-bold">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0.1"
-                          required
-                          value={volumeStr}
-                          onChange={(e) => setVolumeStr(e.target.value)}
-                          placeholder="e.g. 12.5"
-                          className="w-full pl-3.5 pr-12 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-                        />
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">
-                          m³
-                        </span>
-                      </div>
-                    </div>
+                    <NumberInput
+                      label="Volume (m³)"
+                      isRequired
+                      suffix="m³"
+                      placeholder="e.g. 12.5"
+                      value={volumeStr}
+                      onValueChange={(_num, raw) => setVolumeStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={3}
+                      min={0.1}
+                    />
 
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5 flex items-center justify-between">
-                        <span>Weight (kg)</span>
-                        <span className="text-rose-500 font-bold">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="1"
-                          min="1"
-                          required
-                          value={weightStr}
-                          onChange={(e) => setWeightStr(e.target.value)}
-                          placeholder="e.g. 1450"
-                          className="w-full pl-3.5 pr-12 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-                        />
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">
-                          kg
-                        </span>
-                      </div>
-                    </div>
+                    <NumberInput
+                      label="Weight (kg)"
+                      isRequired
+                      suffix="kg"
+                      placeholder="e.g. 1 450"
+                      value={weightStr}
+                      onValueChange={(_num, raw) => setWeightStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={1}
+                    />
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-1.5">
@@ -740,11 +912,79 @@ export function CargoRegistrationModal({
                   </div>
                 )}
 
-                {/* SECTION 2: LOGISTICS IDENTIFIERS */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    2. Shipment Identification & Logistics
+                {/* TRANSPORT TYPES */}
+                <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2">
+                  <label className="block text-xs font-bold text-foreground flex items-center justify-between">
+                    <span>Transport Types</span>
+                    <span className="text-[10px] font-medium text-muted-foreground normal-case tracking-normal">
+                      Multi-select · defaults to Auto
+                    </span>
                   </label>
+                  <div className="flex flex-wrap gap-2">
+                    {TRANSPORT_TYPES.map((tt) => {
+                      const selected = transportTypes.includes(tt);
+                      return (
+                        <button
+                          key={tt}
+                          type="button"
+                          onClick={() =>
+                            setTransportTypes((prev) =>
+                              prev.includes(tt) ? prev.filter((x) => x !== tt) : [...prev, tt]
+                            )
+                          }
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                            selected
+                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-500/30'
+                              : 'bg-field border-field-border text-muted-foreground hover:border-cyan-400/50 hover:text-foreground'
+                          }`}
+                        >
+                          {TRANSPORT_TYPE_ICONS[tt]}
+                          <span>{TRANSPORT_TYPE_LABELS[tt]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* SECTION 2: LOGISTICS IDENTIFIERS */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    2. Shipment Identification & Route Logistics
+                  </label>
+
+                  {/* LTL Consolidation Truck Search-or-Create Selector */}
+                  {cargoType === 'LTL' && (
+                    <div className="p-3.5 rounded-2xl bg-brand-gold/10 border border-brand-gold/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-brand-navy dark:text-brand-gold flex items-center gap-1.5">
+                          <Truck className="size-3.5" />
+                          <span>Consolidation Truck Trip (LTL Groupage)</span>
+                        </label>
+                        <span className="text-[11px] text-muted-foreground">
+                          Optionally link to active truck or create new
+                        </span>
+                      </div>
+                      <ConsolidationSelect
+                        value={consolidationId}
+                        requiredVolume={parseFloat(volumeStr) || undefined}
+                        onChange={(id, selected) => {
+                          setConsolidationId(id);
+                          if (selected) {
+                            setContainerTruckId(selected.container_truck_id);
+                            if (selected.carrier_name && !agentName) {
+                              setAgentName(selected.carrier_name);
+                            }
+                          }
+                        }}
+                        onRequestCreateNew={
+                          canCreate('cargo_consolidations')
+                            ? () => setIsConsolidationModalOpen(true)
+                            : undefined
+                        }
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-foreground mb-1.5">
@@ -797,6 +1037,11 @@ export function CargoRegistrationModal({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Origin & Destination Route Intelligence Selector */}
+                  <div className="pt-2">
+                    <RouteSelector route={route} onChange={setRoute} />
                   </div>
                 </div>
 
@@ -858,21 +1103,32 @@ export function CargoRegistrationModal({
                           <span>Purchase Price (Buy Cost)</span>{' '}
                           <span className="text-rose-500">*</span>
                         </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            required
-                            value={purchasePriceStr}
-                            onChange={(e) => setPurchasePriceStr(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-focus/30 transition-all"
-                          />
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <NumberInput
+                              size="sm"
+                              placeholder="0.00"
+                              value={purchasePriceStr}
+                              onValueChange={(_num, raw) => setPurchasePriceStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              prefix={
+                                purchaseCurrency === 'USD'
+                                  ? '$'
+                                  : purchaseCurrency === 'RUB'
+                                    ? '₽'
+                                    : purchaseCurrency === 'RMB'
+                                      ? '¥'
+                                      : undefined
+                              }
+                              suffix={purchaseCurrency === 'UZS' ? "so'm" : undefined}
+                            />
+                          </div>
                           <select
                             value={purchaseCurrency}
                             onChange={(e) => setPurchaseCurrency(e.target.value as CurrencyType)}
-                            className="px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
+                            className="h-9 px-3 rounded-lg border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
                           >
                             {CURRENCIES.map((c) => (
                               <option key={c} value={c}>
@@ -897,13 +1153,15 @@ export function CargoRegistrationModal({
                             <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
                               Custom Rate (UZS/USD)
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
+                            <NumberInput
+                              size="sm"
+                              placeholder={`Auto (${(rates.USD || 12800).toLocaleString()})`}
                               value={purchaseCustomRateStr}
-                              onChange={(e) => setPurchaseCustomRateStr(e.target.value)}
-                              placeholder={`Auto (${rates.USD || 12800})`}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-field text-foreground text-[11px] font-semibold"
+                              onValueChange={(_num, raw) => setPurchaseCustomRateStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              suffix="so'm"
                             />
                           </div>
                         </div>
@@ -915,21 +1173,32 @@ export function CargoRegistrationModal({
                           <Coins className="size-3.5 text-emerald-500" />
                           <span>Selling Price</span> <span className="text-rose-500">*</span>
                         </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            required
-                            value={sellPriceStr}
-                            onChange={(e) => setSellPriceStr(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-focus/30 transition-all"
-                          />
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <NumberInput
+                              size="sm"
+                              placeholder="0.00"
+                              value={sellPriceStr}
+                              onValueChange={(_num, raw) => setSellPriceStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              prefix={
+                                sellCurrency === 'USD'
+                                  ? '$'
+                                  : sellCurrency === 'RUB'
+                                    ? '₽'
+                                    : sellCurrency === 'RMB'
+                                      ? '¥'
+                                      : undefined
+                              }
+                              suffix={sellCurrency === 'UZS' ? "so'm" : undefined}
+                            />
+                          </div>
                           <select
                             value={sellCurrency}
                             onChange={(e) => setSellCurrency(e.target.value as CurrencyType)}
-                            className="px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
+                            className="h-9 px-3 rounded-lg border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
                           >
                             {CURRENCIES.map((c) => (
                               <option key={c} value={c}>
@@ -954,13 +1223,15 @@ export function CargoRegistrationModal({
                             <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
                               Custom Rate (UZS/USD)
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
+                            <NumberInput
+                              size="sm"
+                              placeholder={`Auto (${(rates.USD || 12800).toLocaleString()})`}
                               value={sellCustomRateStr}
-                              onChange={(e) => setSellCustomRateStr(e.target.value)}
-                              placeholder={`Auto (${rates.USD || 12800})`}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-field text-foreground text-[11px] font-semibold"
+                              onValueChange={(_num, raw) => setSellCustomRateStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              suffix="so'm"
                             />
                           </div>
                         </div>
@@ -978,16 +1249,18 @@ export function CargoRegistrationModal({
                             Required when purchase or sell currency is set to RMB.
                           </p>
                         </div>
-                        <input
-                          type="number"
-                          step="0.001"
-                          min="0.001"
-                          required
-                          value={usdRmbRateStr}
-                          onChange={(e) => setUsdRmbRateStr(e.target.value)}
-                          placeholder="7.235"
-                          className="w-full sm:w-36 px-3.5 py-2 rounded-xl border border-amber-500/40 bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        />
+                        <div className="w-full sm:w-36">
+                          <NumberInput
+                            size="sm"
+                            placeholder="7.235"
+                            value={usdRmbRateStr}
+                            onValueChange={(_num, raw) => setUsdRmbRateStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={4}
+                            min={0.0001}
+                            suffix="¥"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -1184,6 +1457,23 @@ export function CargoRegistrationModal({
           )}
         </motion.div>
       </div>
+
+      {/* Inline New Consolidation Creation Modal */}
+      {canCreate('cargo_consolidations') && (
+        <ConsolidationModal
+          isOpen={isConsolidationModalOpen}
+          onClose={() => setIsConsolidationModalOpen(false)}
+          onSuccess={(newConsolidation) => {
+            if (newConsolidation) {
+              setConsolidationId(newConsolidation.id);
+              setContainerTruckId(newConsolidation.container_truck_id);
+              if (newConsolidation.carrier_name) {
+                setAgentName(newConsolidation.carrier_name);
+              }
+            }
+          }}
+        />
+      )}
     </AnimatePresence>
   );
 }
