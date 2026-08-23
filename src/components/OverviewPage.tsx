@@ -23,14 +23,17 @@ import type {
   DashboardSummaryResponse,
   DashboardCargoDistributionResponse,
   DashboardTopPerformersResponse,
+  DashboardRouteAnalyticsResponse,
+  DashboardDeliveryEfficiencyResponse,
+  DashboardDebtSummaryResponse,
 } from '../services/api';
 import type { PageId } from './Sidebar';
 import { T } from './T';
 import { DashboardFilters } from './dashboard/DashboardFilters';
 import { DashboardKpiCards } from './dashboard/DashboardKpiCards';
 import { SalesProgressChart } from './dashboard/SalesProgressChart';
-import { CargoDistributionCharts } from './dashboard/CargoDistributionCharts';
-import { TopPerformersLeaderboard } from './dashboard/TopPerformersLeaderboard';
+import { LogisticsOperationsHub } from './dashboard/LogisticsOperationsHub';
+import { StakeholderFinancialHub } from './dashboard/StakeholderFinancialHub';
 
 interface OverviewPageProps {
   isAdmin: boolean;
@@ -62,6 +65,11 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
   const [topPerformersData, setTopPerformersData] = useState<DashboardTopPerformersResponse | null>(
     null
   );
+  const [routeData, setRouteData] = useState<DashboardRouteAnalyticsResponse | null>(null);
+  const [deliveryData, setDeliveryData] = useState<DashboardDeliveryEfficiencyResponse | null>(
+    null
+  );
+  const [debtData, setDebtData] = useState<DashboardDebtSummaryResponse | null>(null);
 
   // Lists for dropdown options
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -88,17 +96,24 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const [salesRes, summaryRes, distRes, topRes] = await Promise.all([
-        api.dashboard.getSalesProgress(filters),
-        api.dashboard.getSummary(filters),
-        api.dashboard.getCargoDistribution(filters),
-        api.dashboard.getTopPerformers({ ...filters, limit: 5 }),
-      ]);
+      const [salesRes, summaryRes, distRes, topRes, routeRes, deliveryRes, debtRes] =
+        await Promise.all([
+          api.dashboard.getSalesProgress(filters),
+          api.dashboard.getSummary(filters),
+          api.dashboard.getCargoDistribution(filters),
+          api.dashboard.getTopPerformers({ ...filters, limit: 5 }),
+          api.dashboard.getRouteAnalytics({ ...filters, limit: 5 }),
+          api.dashboard.getDeliveryEfficiency(filters),
+          api.dashboard.getDebtSummary(filters),
+        ]);
 
       setSalesProgressData(salesRes);
       setSummaryData(summaryRes);
       setCargoDistData(distRes);
       setTopPerformersData(topRes);
+      setRouteData(routeRes);
+      setDeliveryData(deliveryRes);
+      setDebtData(debtRes);
     } catch {
       // Handled by service fallbacks
     } finally {
@@ -223,29 +238,32 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
         />
       </div>
 
-      {/* 3. Executive KPI Cards Grid */}
+      {/* 3. Executive KPI Cards Grid with Multi-Spec Run-Rate Switcher */}
       <div>
         <DashboardKpiCards summary={summaryData} loading={loading} />
       </div>
 
-      {/* 4. Sales Progress Interactive Chart */}
+      {/* 4. Financial Trajectory & Run-Rate Analytics Hub */}
       <div>
-        <SalesProgressChart data={salesProgressData} loading={loading} />
+        <SalesProgressChart data={salesProgressData} summary={summaryData} loading={loading} />
       </div>
 
-      {/* 5. Donut Cargo & Status Distribution Charts */}
+      {/* 5. Consolidated Logistics & Fleet Operations Hub (Corridors + Modalities + Delivery Speed + Status Pipeline) */}
       <div>
-        <CargoDistributionCharts
-          data={cargoDistData}
+        <LogisticsOperationsHub
+          cargoDist={cargoDistData}
+          routeData={routeData}
+          deliveryData={deliveryData}
           loading={loading}
           currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
         />
       </div>
 
-      {/* 6. Top Performers Leaderboards */}
+      {/* 6. Consolidated Stakeholder & Financial Hub (Top Managers + Top Clients + Receivables/Payables Debt Ledger) */}
       <div>
-        <TopPerformersLeaderboard
-          data={topPerformersData}
+        <StakeholderFinancialHub
+          topPerformers={topPerformersData}
+          debtSummary={debtData}
           loading={loading}
           currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
         />

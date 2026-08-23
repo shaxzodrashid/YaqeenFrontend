@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Receipt,
   Plus,
@@ -16,14 +16,18 @@ import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useTranslation } from '../../context/LanguageContext';
-import { cargoRegistrationsApi, formatMoney } from '../../services/api';
+import { cargoRegistrationsApi, formatMoney, TRANSPORT_TYPE_LABELS } from '../../services/api';
 import type {
   CargoRegistrationListItem,
   CargoRegistrationPaginatedResponse,
 } from '../../services/api';
 import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { CargoTransactionsTable } from './CargoTransactionsTable';
-import { CargoFilterModal, INITIAL_CARGO_FILTERS } from './CargoFilterModal';
+import {
+  CargoFilterModal,
+  INITIAL_CARGO_FILTERS,
+  getActiveCargoFilterCount,
+} from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
 
 export function CargoTransactionsTab() {
@@ -59,8 +63,16 @@ export function CargoTransactionsTab() {
         status: filters.status || undefined,
         cargo_type: filters.cargo_type || undefined,
         container_type: filters.container_type || undefined,
+        transport_types:
+          filters.transport_types && filters.transport_types.length > 0
+            ? filters.transport_types
+            : undefined,
         client_id: filters.client_id || undefined,
         employee_id: filters.employee_id || undefined,
+        origin_city: filters.origin_city || undefined,
+        origin_country_code: filters.origin_country_code || undefined,
+        destination_city: filters.destination_city || undefined,
+        destination_country_code: filters.destination_country_code || undefined,
         sort_by: sortBy,
         sort_order: sortOrder,
         purchase_start_date: filters.purchase_start_date || undefined,
@@ -84,7 +96,6 @@ export function CargoTransactionsTab() {
     }
   }, [page, limit, search, filters, sortBy, sortOrder, showNotification]);
 
-  // Tri-state column sorting: Primary Order -> Inverted Order -> Cancel sort (undefined)
   const handleSort = (field: string) => {
     const isDescDefault = [
       'created_at',
@@ -95,35 +106,18 @@ export function CargoTransactionsTab() {
       'sell_date',
       'purchase_price',
       'sell_price',
-      'net_yield',
+      'net_profit',
+      'margin_percent',
     ].includes(field);
 
-    const currentOrder = sortOrder?.toUpperCase();
-
-    if (sortBy === field) {
-      if (isDescDefault) {
-        if (currentOrder === 'DESC') {
-          // 2nd click: Invert to ASC
-          setSortOrder('ASC');
-        } else {
-          // 3rd click: Cancel sorting completely!
-          setSortBy(undefined);
-          setSortOrder(undefined);
-        }
-      } else {
-        if (currentOrder === 'ASC') {
-          // 2nd click: Invert to DESC
-          setSortOrder('DESC');
-        } else {
-          // 3rd click: Cancel sorting completely!
-          setSortBy(undefined);
-          setSortOrder(undefined);
-        }
-      }
-    } else {
-      // 1st click on new column: Start with default direction
+    if (sortBy !== field) {
       setSortBy(field);
       setSortOrder(isDescDefault ? 'DESC' : 'ASC');
+    } else if (sortOrder === (isDescDefault ? 'DESC' : 'ASC')) {
+      setSortOrder(isDescDefault ? 'ASC' : 'DESC');
+    } else {
+      setSortBy(undefined);
+      setSortOrder(undefined);
     }
     setPage(1);
   };
@@ -134,37 +128,33 @@ export function CargoTransactionsTab() {
     setPage(1);
   };
 
-  const getSortFieldLabel = (field?: string) => {
+  const getSortFieldLabel = (field?: string): string => {
     if (!field) return '';
     switch (field) {
-      case 'container_truck_id':
-        return t('colContainerNo');
-      case 'cargo':
-        return t('colCargoAndAgent');
-      case 'client_name':
-        return t('colClient');
-      case 'employee_name':
-        return t('colEmployee');
-      case 'purchase_price':
-        return t('colBuyPrice');
-      case 'purchase_date':
-        return t('colPurchaseDate') || t('purchaseDateRange') || 'Purchase Date';
-      case 'sell_price':
-        return t('colSellPrice');
-      case 'sell_date':
-        return t('colSellDate') || t('sellDateRange') || 'Sell Date';
-      case 'net_yield':
-        return t('colNetYield');
-      case 'confirmed_date':
-        return t('colConfirmedDate');
-      case 'loaded_date':
-        return t('colLoadedDate');
-      case 'arrived_date':
-        return t('colArrivedDate');
       case 'created_at':
-        return t('colCreatedAt');
+        return t('colCreatedAt') || 'Created Date';
+      case 'confirmed_date':
+        return t('colConfirmedDate') || 'Confirmed Date';
+      case 'loaded_date':
+        return t('colLoadedDate') || 'Loaded Date';
+      case 'arrived_date':
+        return t('colArrivedDate') || 'Arrived Date';
+      case 'purchase_date':
+        return t('colPurchaseDate') || 'Purchase Date';
+      case 'sell_date':
+        return t('colSellDate') || 'Sell Date';
+      case 'purchase_price':
+        return t('colPurchasePrice') || 'Purchase Cost';
+      case 'sell_price':
+        return t('colSellPrice') || 'Sale Revenue';
+      case 'net_profit':
+        return t('colNetProfit') || 'Net Profit';
+      case 'margin_percent':
+        return t('colMarginPercent') || 'Margin %';
+      case 'container_number':
+        return t('colContainerTruckId') || 'Container #';
       case 'status':
-        return t('colStatus');
+        return t('colStatus') || 'Status';
       default:
         return field;
     }
@@ -212,15 +202,16 @@ export function CargoTransactionsTab() {
   };
 
   // Calculate active filter count
-  const activeFilterCount = Object.entries(filters).filter(
-    ([key, val]) => val !== '' && key !== 'client_name' && key !== 'employee_name'
-  ).length;
+  const activeFilterCount = useMemo(() => getActiveCargoFilterCount(filters), [filters]);
 
   const handleRemoveFilterTag = (key: keyof CargoFilterState) => {
     setFilters((prev) => {
       const next = { ...prev, [key]: '' };
       if (key === 'client_id') next.client_name = '';
       if (key === 'employee_id') next.employee_name = '';
+      if (key === 'origin_city') next.origin_country_code = '';
+      if (key === 'destination_city') next.destination_country_code = '';
+      if (key === 'transport_types') next.transport_types = [];
       return next;
     });
     setPage(1);
@@ -450,6 +441,19 @@ export function CargoTransactionsTab() {
             </span>
           )}
 
+          {filters.transport_types && filters.transport_types.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 font-semibold text-[11px]">
+              {t('transportTypesLabel') || 'Transport'}:{' '}
+              {filters.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt] || tt).join(', ')}
+              <button
+                onClick={() => handleRemoveFilterTag('transport_types')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
           {filters.client_id && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 font-semibold text-[11px]">
               {t('clientLabel')}: {filters.client_name || 'Selected'}
@@ -467,6 +471,30 @@ export function CargoTransactionsTab() {
               {t('assignedEmployeeLabel')}: {filters.employee_name || 'Selected'}
               <button
                 onClick={() => handleRemoveFilterTag('employee_id')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.origin_city && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-semibold text-[11px]">
+              {t('originCityLabel') || 'Origin'}: {filters.origin_city}
+              <button
+                onClick={() => handleRemoveFilterTag('origin_city')}
+                className="hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.destination_city && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-semibold text-[11px]">
+              {t('destinationCityLabel') || 'Destination'}: {filters.destination_city}
+              <button
+                onClick={() => handleRemoveFilterTag('destination_city')}
                 className="hover:text-foreground cursor-pointer"
               >
                 <X className="size-3" />

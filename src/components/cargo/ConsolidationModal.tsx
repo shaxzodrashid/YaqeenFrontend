@@ -11,6 +11,10 @@ import {
   Shield,
   Repeat,
   Sparkles,
+  TrainFront,
+  Plane,
+  Ship,
+  Package,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -19,14 +23,23 @@ import {
   cargoConsolidationsApi,
   CONSOLIDATION_CONTAINER_TYPES,
 } from '../../services/cargoConsolidations.service';
+import { TRANSPORT_TYPES, TRANSPORT_TYPE_LABELS } from '../../services/cargoRegistrations.service';
 import type {
   ConsolidationStatus,
   ConsolidationListItem,
   CreateConsolidationDto,
 } from '../../services/cargoConsolidations.service';
-import type { CurrencyType } from '../../services/cargoRegistrations.service';
+import type { CurrencyType, TransportType } from '../../services/cargoRegistrations.service';
 import { CitySelect } from './CitySelect';
 import { NumberInput } from '../NumberInput';
+
+const TRANSPORT_TYPE_ICONS: Record<TransportType, React.ReactNode> = {
+  auto: <Truck className="size-3.5" />,
+  railway: <TrainFront className="size-3.5" />,
+  air: <Plane className="size-3.5" />,
+  sea: <Ship className="size-3.5" />,
+  other: <Package className="size-3.5" />,
+};
 
 const STATUS_CONFIG: {
   key: ConsolidationStatus;
@@ -149,10 +162,12 @@ export function ConsolidationModal({
   const [carrierCostCurrency, setCarrierCostCurrency] = useState<CurrencyType>('USD');
   const [status, setStatus] = useState<ConsolidationStatus>('Waiting');
   const [description, setDescription] = useState<string>('');
+  const [transportTypes, setTransportTypes] = useState<TransportType[]>(['auto']);
 
   // Cascade sync checkboxes for editing
   const [syncStatusToCargos, setSyncStatusToCargos] = useState<boolean>(true);
   const [syncDatesToCargos, setSyncDatesToCargos] = useState<boolean>(true);
+  const [syncTransportTypesToCargos, setSyncTransportTypesToCargos] = useState<boolean>(true);
 
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -182,8 +197,14 @@ export function ConsolidationModal({
       setCarrierCostCurrency(editingItem.carrier_cost_currency || 'USD');
       setStatus(editingItem.status || 'Waiting');
       setDescription(editingItem.description || '');
+      setTransportTypes(
+        editingItem.transport_types && editingItem.transport_types.length > 0
+          ? editingItem.transport_types
+          : ['auto']
+      );
       setSyncStatusToCargos(true);
       setSyncDatesToCargos(true);
+      setSyncTransportTypesToCargos(true);
     } else {
       setConsolidationCode('');
       setContainerTruckId('');
@@ -202,8 +223,10 @@ export function ConsolidationModal({
       setCarrierCostCurrency('USD');
       setStatus('Waiting');
       setDescription('');
+      setTransportTypes(['auto']);
       setSyncStatusToCargos(false);
       setSyncDatesToCargos(false);
+      setSyncTransportTypesToCargos(false);
     }
   }, [isOpen, editingItem]);
 
@@ -274,6 +297,8 @@ export function ConsolidationModal({
           description: description.trim() || undefined,
           sync_status_to_cargos: syncStatusToCargos,
           sync_dates_to_cargos: syncDatesToCargos,
+          sync_transport_types_to_cargos: syncTransportTypesToCargos,
+          transport_types: transportTypes.length > 0 ? transportTypes : undefined,
         });
         showNotification(
           t('consolidationUpdatedSuccess') || 'Consolidation updated successfully',
@@ -299,6 +324,7 @@ export function ConsolidationModal({
           carrier_cost_currency: carrierCostCurrency,
           status,
           description: description.trim() || undefined,
+          transport_types: transportTypes.length > 0 ? transportTypes : undefined,
         };
 
         const created = await cargoConsolidationsApi.create(payload);
@@ -452,6 +478,40 @@ export function ConsolidationModal({
                     onChange={(e) => setConsolidationCode(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60"
                   />
+                </div>
+              </div>
+
+              {/* Transport Types */}
+              <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2">
+                <label className="block text-[11px] font-bold text-foreground">
+                  Transport Types
+                  <span className="ml-1.5 text-[10px] font-medium text-muted-foreground normal-case">
+                    (multi-select)
+                  </span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {TRANSPORT_TYPES.map((tt) => {
+                    const selected = transportTypes.includes(tt);
+                    return (
+                      <button
+                        key={tt}
+                        type="button"
+                        onClick={() =>
+                          setTransportTypes((prev) =>
+                            prev.includes(tt) ? prev.filter((x) => x !== tt) : [...prev, tt]
+                          )
+                        }
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'bg-surface border-border text-muted-foreground hover:border-cyan-400/50 hover:text-foreground'
+                        }`}
+                      >
+                        {TRANSPORT_TYPE_ICONS[tt]}
+                        <span>{TRANSPORT_TYPE_LABELS[tt]}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -692,6 +752,15 @@ export function ConsolidationModal({
                       className="rounded border-border text-brand-navy focus:ring-brand-gold"
                     />
                     <span>{t('syncDatesToCargos')}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={syncTransportTypesToCargos}
+                      onChange={(e) => setSyncTransportTypesToCargos(e.target.checked)}
+                      className="rounded border-border text-brand-navy focus:ring-brand-gold"
+                    />
+                    <span>Sync transport types to cargos</span>
                   </label>
                 </div>
               </div>

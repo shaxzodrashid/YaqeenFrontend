@@ -1,5 +1,5 @@
 import { request, registerDemoHandler } from './httpClient';
-import type { CargoType, CurrencyType } from './cargoRegistrations.service';
+import type { CargoType, CurrencyType, TransportType } from './cargoRegistrations.service';
 import {
   cargoRegistrationsApi,
   convertPriceToUsdAndUzs,
@@ -140,6 +140,7 @@ export interface ConsolidationCargoItem {
   volume?: number | null;
   weight?: number | null;
   container_type?: string | null;
+  transport_types?: TransportType[] | null;
   agent_name?: string | null;
   client_id?: string;
   client_name?: string;
@@ -184,6 +185,7 @@ export interface ConsolidationListItem {
   consolidation_code: string;
   container_truck_id: string;
   container_type?: string | null;
+  transport_types?: TransportType[] | null;
   status: ConsolidationStatus;
   carrier_name?: string | null;
   carrier_phone?: string | null;
@@ -222,6 +224,7 @@ export interface ConsolidationActiveDropdownItem {
   consolidation_code: string;
   container_truck_id: string;
   container_type?: string | null;
+  transport_types?: TransportType[] | null;
   status: ConsolidationStatus;
   carrier_name?: string | null;
   origin_place?: string | null;
@@ -244,6 +247,7 @@ export interface CreateConsolidationDto {
   consolidation_code?: string;
   container_truck_id: string;
   container_type?: string;
+  transport_types?: TransportType[];
   max_volume_capacity?: number;
   max_weight_capacity?: number;
   carrier_name?: string;
@@ -275,6 +279,7 @@ export interface CreateConsolidationDto {
 export interface UpdateConsolidationDto extends Partial<CreateConsolidationDto> {
   sync_status_to_cargos?: boolean;
   sync_dates_to_cargos?: boolean;
+  sync_transport_types_to_cargos?: boolean;
 }
 
 export interface ConsolidationListParams {
@@ -283,6 +288,7 @@ export interface ConsolidationListParams {
   offset?: number;
   status?: ConsolidationStatus | string;
   search?: string;
+  transport_types?: string | string[];
   origin_place?: string;
   destination_place?: string;
   carrier_name?: string;
@@ -1246,6 +1252,16 @@ export const cargoConsolidationsApi = {
     if (params?.offset !== undefined) searchParams.set('offset', String(params.offset));
     if (params?.search) searchParams.set('search', params.search);
     if (params?.status) searchParams.set('status', params.status);
+    if (
+      params?.transport_types &&
+      (!Array.isArray(params.transport_types) || params.transport_types.length > 0)
+    )
+      searchParams.set(
+        'transport_types',
+        Array.isArray(params.transport_types)
+          ? params.transport_types.join(',')
+          : String(params.transport_types)
+      );
     if (params?.origin_place) searchParams.set('origin_place', params.origin_place);
     if (params?.destination_place) searchParams.set('destination_place', params.destination_place);
     if (params?.carrier_name) searchParams.set('carrier_name', params.carrier_name);

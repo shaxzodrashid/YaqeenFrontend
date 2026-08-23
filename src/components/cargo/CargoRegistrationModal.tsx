@@ -24,6 +24,9 @@ import {
   Repeat,
   Copy,
   AlertTriangle,
+  TrainFront,
+  Plane,
+  Ship,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -31,6 +34,8 @@ import { usePermissions } from '../../context/PermissionsContext';
 import {
   cargoRegistrationsApi,
   CONTAINER_TYPES,
+  TRANSPORT_TYPES,
+  TRANSPORT_TYPE_LABELS,
   employeesApi,
   formatMoney,
   currencyApi,
@@ -40,6 +45,7 @@ import {
 import type {
   CargoType,
   ContainerType,
+  TransportType,
   CargoRegistrationStatus,
   CurrencyType,
 } from '../../services/api';
@@ -123,6 +129,14 @@ const STATUS_STAGE_CONFIG: {
 
 const CURRENCIES: CurrencyType[] = ['USD', 'UZS', 'RUB', 'RMB'];
 
+const TRANSPORT_TYPE_ICONS: Record<TransportType, React.ReactNode> = {
+  auto: <Truck className="size-3.5" />,
+  railway: <TrainFront className="size-3.5" />,
+  air: <Plane className="size-3.5" />,
+  sea: <Ship className="size-3.5" />,
+  other: <Package className="size-3.5" />,
+};
+
 export interface CargoRegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -153,6 +167,7 @@ export function CargoRegistrationModal({
   const [volumeStr, setVolumeStr] = useState<string>('10');
   const [weightStr, setWeightStr] = useState<string>('1200');
   const [containerType, setContainerType] = useState<ContainerType>('40HQ');
+  const [transportTypes, setTransportTypes] = useState<TransportType[]>(['auto']);
   const [containerTruckId, setContainerTruckId] = useState<string>('');
   const [agentName, setAgentName] = useState<string>('SilkRoad Express');
   const [cargo, setCargo] = useState<string>('General Cargo');
@@ -290,6 +305,11 @@ export function CargoRegistrationModal({
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
           setContainerType((detail.container_type as ContainerType) || '40HQ');
+          setTransportTypes(
+            detail.transport_types && detail.transport_types.length > 0
+              ? detail.transport_types
+              : ['auto']
+          );
           setContainerTruckId(detail.container_truck_id || '');
           setAgentName(detail.agent_name || '');
           setCargo(detail.cargo || '');
@@ -356,6 +376,11 @@ export function CargoRegistrationModal({
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
           setContainerType((detail.container_type as ContainerType) || '40HQ');
+          setTransportTypes(
+            detail.transport_types && detail.transport_types.length > 0
+              ? detail.transport_types
+              : ['auto']
+          );
 
           let copyTruckId = detail.container_truck_id ? `${detail.container_truck_id}-COPY` : '';
           if (detail.container_truck_id && detail.container_truck_id.endsWith('-COPY')) {
@@ -422,6 +447,7 @@ export function CargoRegistrationModal({
       setVolumeStr('10');
       setWeightStr('1200');
       setContainerType('40HQ');
+      setTransportTypes(['auto']);
       setContainerTruckId('TRK-' + Math.floor(1000 + Math.random() * 9000));
       setAgentName('SilkRoad Express');
       setCargo('General Cargo');
@@ -570,6 +596,7 @@ export function CargoRegistrationModal({
           sell_exchange_rate: sCustom,
           sell_custom_rate: sCustom,
           usd_rmb_rate: isRmbRateRequired ? rate : undefined,
+          transport_types: transportTypes.length > 0 ? transportTypes : undefined,
           status,
           description: description.trim() || undefined,
           client_id: selectedClientId,
@@ -599,6 +626,7 @@ export function CargoRegistrationModal({
           destination_lat: route.destination_lat ?? undefined,
           destination_lng: route.destination_lng ?? undefined,
           prevent_duplicate: true,
+          transport_types: transportTypes.length > 0 ? transportTypes : undefined,
           idempotency_key: `cr-idem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           confirmed_date: confirmedDate || undefined,
           loaded_date: loadedDate || undefined,
@@ -883,6 +911,40 @@ export function CargoRegistrationModal({
                     </p>
                   </div>
                 )}
+
+                {/* TRANSPORT TYPES */}
+                <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2">
+                  <label className="block text-xs font-bold text-foreground flex items-center justify-between">
+                    <span>Transport Types</span>
+                    <span className="text-[10px] font-medium text-muted-foreground normal-case tracking-normal">
+                      Multi-select · defaults to Auto
+                    </span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {TRANSPORT_TYPES.map((tt) => {
+                      const selected = transportTypes.includes(tt);
+                      return (
+                        <button
+                          key={tt}
+                          type="button"
+                          onClick={() =>
+                            setTransportTypes((prev) =>
+                              prev.includes(tt) ? prev.filter((x) => x !== tt) : [...prev, tt]
+                            )
+                          }
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                            selected
+                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-500/30'
+                              : 'bg-field border-field-border text-muted-foreground hover:border-cyan-400/50 hover:text-foreground'
+                          }`}
+                        >
+                          {TRANSPORT_TYPE_ICONS[tt]}
+                          <span>{TRANSPORT_TYPE_LABELS[tt]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 {/* SECTION 2: LOGISTICS IDENTIFIERS */}
                 <div className="space-y-3">

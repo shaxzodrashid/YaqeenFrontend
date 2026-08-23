@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import {
   MapPin,
   Search,
@@ -56,8 +56,47 @@ export const CitySelect: React.FC<CitySelectProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    placement: 'bottom' | 'top';
+  }>({
+    top: 0,
+    left: 0,
+    width: 280,
+    placement: 'bottom',
+  });
+
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const showAbove = spaceBelow < 250 && rect.top > 250;
+
+    setCoords({
+      top: showAbove ? rect.top - 6 : rect.bottom + 6,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8)),
+      width: Math.max(rect.width, 240),
+      placement: showAbove ? 'top' : 'bottom',
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+    const handleScrollOrResize = () => updatePosition();
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [isOpen, updatePosition]);
 
   // Sync internal display query from props
   useEffect(() => {
@@ -130,14 +169,21 @@ export const CitySelect: React.FC<CitySelectProps> = ({
 
   // Close dropdown on outside click
   useEffect(() => {
+    if (!isOpen) return;
     const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
+  }, [isOpen]);
 
   const handleSelectCity = useCallback(
     (city: CityOption) => {
@@ -368,15 +414,20 @@ export const CitySelect: React.FC<CitySelectProps> = ({
 
       {error && <span className="text-[11px] text-rose-500 font-medium">{error}</span>}
 
-      {/* Autocomplete Dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-surface dark:bg-surface border border-border/80 rounded-2xl shadow-xl overflow-hidden backdrop-blur-md"
+      {/* Autocomplete Dropdown Portal */}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={{
+              position: 'fixed',
+              top: coords.placement === 'top' ? undefined : coords.top,
+              bottom: coords.placement === 'top' ? window.innerHeight - coords.top : undefined,
+              left: coords.left,
+              width: coords.width,
+              zIndex: 9999,
+            }}
+            className="bg-surface dark:bg-surface border border-border/80 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md"
           >
             {/* Header pill */}
             <div className="px-3 py-2 bg-muted/40 border-b border-border/60 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -504,9 +555,9 @@ export const CitySelect: React.FC<CitySelectProps> = ({
                   </li>
                 )}
             </ul>
-          </motion.div>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 };

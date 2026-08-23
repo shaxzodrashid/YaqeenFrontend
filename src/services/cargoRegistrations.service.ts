@@ -35,6 +35,19 @@ export const CONTAINER_TYPES = [
 
 export type ContainerType = (typeof CONTAINER_TYPES)[number];
 
+/** Multimodal transport modalities supported by cargo registrations & consolidations */
+export const TRANSPORT_TYPES = ['auto', 'railway', 'air', 'sea', 'other'] as const;
+
+export type TransportType = (typeof TRANSPORT_TYPES)[number];
+
+export const TRANSPORT_TYPE_LABELS: Record<TransportType, string> = {
+  auto: 'Auto',
+  railway: 'Railway',
+  air: 'Air',
+  sea: 'Sea',
+  other: 'Other',
+};
+
 export const CARGO_STATUSES = [
   'Waiting',
   'Station',
@@ -63,6 +76,7 @@ export interface CreateCargoRegistrationDto {
   volume?: number;
   weight?: number;
   container_type?: ContainerType | string;
+  transport_types?: TransportType[];
   container_truck_id: string;
   agent_name: string;
   cargo: string;
@@ -112,6 +126,7 @@ export interface CargoRegistrationListParams {
   status?: CargoRegistrationStatus | string;
   cargo_type?: CargoType | string;
   container_type?: ContainerType | string;
+  transport_types?: string | string[];
   client_id?: string;
   employee_id?: string;
   consolidation_id?: string;
@@ -167,6 +182,7 @@ export interface CargoRegistrationListItem {
   volume?: number | null;
   weight?: number | null;
   container_type?: ContainerType | string | null;
+  transport_types?: TransportType[] | null;
   container_truck_id: string;
   agent_name: string;
   client_full_name: string;
@@ -314,6 +330,7 @@ export interface CargoRegistrationDetail {
   volume?: number | null;
   weight?: number | null;
   container_type?: ContainerType | null;
+  transport_types?: TransportType[] | null;
   container_truck_id: string;
   agent_name: string;
   cargo: string;
@@ -431,6 +448,7 @@ interface InternalCargoRegistrationRecord {
   volume: number | null;
   weight: number | null;
   container_type: string | null;
+  transport_types?: TransportType[] | null;
   container_truck_id: string;
   agent_name: string;
   cargo: string;
@@ -477,6 +495,7 @@ export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     volume: null,
     weight: null,
     container_type: '40HQ',
+    transport_types: ['railway', 'auto'],
     container_truck_id: 'TRK-6447',
     agent_name: 'SilkRoad Express',
     cargo: 'General Goods',
@@ -773,6 +792,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const status = urlObj.searchParams.get('status');
     const cargoType = urlObj.searchParams.get('cargo_type');
     const containerType = urlObj.searchParams.get('container_type');
+    const transportTypesParam = urlObj.searchParams.get('transport_types');
     const clientId = urlObj.searchParams.get('client_id');
     const employeeId = urlObj.searchParams.get('employee_id');
     const consolidationIdParam = urlObj.searchParams.get('consolidation_id');
@@ -836,6 +856,18 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       filtered = filtered.filter(
         (r) => (r.container_type || '').toLowerCase() === containerType.toLowerCase()
       );
+    }
+    if (transportTypesParam) {
+      const requestedTypes = transportTypesParam
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (requestedTypes.length > 0) {
+        filtered = filtered.filter((r) => {
+          const itemTypes = (r.transport_types || []).map((t) => t.toLowerCase());
+          return requestedTypes.some((rt) => itemTypes.includes(rt));
+        });
+      }
     }
     if (clientId) {
       filtered = filtered.filter((r) => r.client_id === clientId);
@@ -1358,6 +1390,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         destination_geoname_id: r.destination_geoname_id,
         destination_lat: r.destination_lat,
         destination_lng: r.destination_lng,
+        transport_types: r.transport_types || [],
         status: r.status,
         description: r.description,
         client_id: r.client_id,
@@ -1607,6 +1640,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       volume,
       weight,
       container_type,
+      transport_types,
       container_truck_id,
       agent_name,
       cargo,
@@ -1746,6 +1780,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       volume: cargo_type === 'LTL' ? Number(volume) : null,
       weight: cargo_type === 'LTL' ? Number(weight) : null,
       container_type: cargo_type === 'FTL' ? container_type : null,
+      transport_types: transport_types || [],
       container_truck_id: String(container_truck_id).trim(),
       agent_name: String(agent_name || '').trim(),
       cargo: String(cargo || '').trim(),
@@ -2057,6 +2092,16 @@ export const cargoRegistrationsApi = {
     if (params?.status) searchParams.set('status', params.status);
     if (params?.cargo_type) searchParams.set('cargo_type', params.cargo_type);
     if (params?.container_type) searchParams.set('container_type', params.container_type);
+    if (
+      params?.transport_types &&
+      (!Array.isArray(params.transport_types) || params.transport_types.length > 0)
+    )
+      searchParams.set(
+        'transport_types',
+        Array.isArray(params.transport_types)
+          ? params.transport_types.join(',')
+          : String(params.transport_types)
+      );
     if (params?.client_id) searchParams.set('client_id', params.client_id);
     if (params?.employee_id) searchParams.set('employee_id', params.employee_id);
     if (params?.consolidation_id) searchParams.set('consolidation_id', params.consolidation_id);

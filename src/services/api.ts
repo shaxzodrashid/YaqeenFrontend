@@ -161,6 +161,7 @@ export type {
 export type {
   CargoType,
   ContainerType,
+  TransportType,
   CargoRegistrationStatus,
   CurrencyType,
   CreateCargoRegistrationDto,
@@ -177,6 +178,8 @@ export type {
 } from './cargoRegistrations.service';
 export {
   CONTAINER_TYPES,
+  TRANSPORT_TYPES,
+  TRANSPORT_TYPE_LABELS,
   CARGO_STATUSES,
   convertPriceToUsdAndUzs,
 } from './cargoRegistrations.service';
@@ -252,18 +255,30 @@ export {
 export type {
   DashboardPeriod,
   DashboardGranularity,
+  DashboardTransportType,
   DashboardFilterParams,
+  DashboardMonthlyYearlyBlock,
   DashboardSalesProgressMeta,
   DashboardSalesProgressSummary,
   DashboardSalesProgressDataPoint,
   DashboardSalesProgressResponse,
   DashboardSummaryResponse,
+  TransportTypeDistributionItem,
   CargoTypeDistributionItem,
   StatusDistributionItem,
   DashboardCargoDistributionResponse,
   TopManagerItem,
   TopClientItem,
   DashboardTopPerformersResponse,
+  RouteAnalyticsItem,
+  OriginCountryItem,
+  DashboardRouteAnalyticsResponse,
+  DeliveryStatusBreakdownItem,
+  RouteTransitTimeItem,
+  DashboardDeliveryEfficiencyResponse,
+  DebtorClientItem,
+  CreditorCarrierItem,
+  DashboardDebtSummaryResponse,
 } from '../types/dashboard';
 
 export { dashboardApi } from './dashboard.service';
