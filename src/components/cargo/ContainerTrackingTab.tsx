@@ -42,6 +42,7 @@ import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { CargoTransactionsTable } from './CargoTransactionsTable';
 import { CargoFilterModal, INITIAL_CARGO_FILTERS } from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
+import { NumberInput } from '../NumberInput';
 
 export type ViewMode = 'grid' | 'kanban' | 'analytics';
 
@@ -1527,14 +1528,16 @@ export function ContainerTrackingTab() {
                   <label className="block text-xs font-bold text-foreground mb-1">
                     {t('currentRmbRate') || 'Global RMB Rate (1 USD = X RMB)'}
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
+                  <NumberInput
+                    size="lg"
+                    allowDecimals={true}
+                    decimalScale={3}
+                    min={0.01}
                     value={globalRmbRate}
-                    onChange={(e) => setGlobalRmbRate(e.target.value)}
+                    onValueChange={(_num, raw) => setGlobalRmbRate(raw)}
                     placeholder="7.25"
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground text-lg font-black font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    prefix="¥"
+                    inputClassName="text-lg font-black font-mono"
                   />
                 </div>
 

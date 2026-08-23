@@ -16,10 +16,13 @@ import {
   TrendingDown,
   Package,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Edit2,
   Trash2,
   ArrowUpDown,
   ArrowRight,
+  Layers,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -221,8 +224,21 @@ export function CargoConsolidationsTab() {
     const meta = data?.meta;
     const items = data?.data || [];
 
-    let totalVolCap = meta?.total_capacity_volume_m3 ?? 0;
-    let totalAssignedVol = meta?.total_assigned_volume_m3 ?? 0;
+    let totalVolCap = meta?.volume_capacity_total ?? meta?.total_capacity_volume_m3 ?? 0;
+    let totalAssignedVol = meta?.volume_capacity_used ?? meta?.total_assigned_volume_m3 ?? 0;
+
+    // Fallback: If metadata volume numbers are zero or undefined, calculate from items
+    if (totalVolCap === 0 && items.length > 0) {
+      items.forEach((c) => {
+        totalVolCap += c.capacity?.max_volume_m3 ?? 0;
+        totalAssignedVol += c.capacity?.assigned_volume_m3 ?? 0;
+      });
+    }
+
+    totalVolCap = Math.round(totalVolCap * 100) / 100;
+    totalAssignedVol = Math.round(totalAssignedVol * 100) / 100;
+    const remainingVol = Math.max(0, Math.round((totalVolCap - totalAssignedVol) * 100) / 100);
+
     let totalNetMargin = 0;
     let netMarginCurrency = 'USD';
 
@@ -247,7 +263,8 @@ export function CargoConsolidationsTab() {
       totalCargosCount += c.capacity?.total_cargos_count ?? c.cargos?.length ?? 0;
     });
 
-    const volPct = totalVolCap > 0 ? Math.round((totalAssignedVol / totalVolCap) * 100) : 0;
+    const volPct =
+      totalVolCap > 0 ? Math.min(100, Math.round((totalAssignedVol / totalVolCap) * 100)) : 0;
 
     const multiCurrencies =
       meta?.consolidated_net_margin &&
@@ -261,6 +278,7 @@ export function CargoConsolidationsTab() {
       activeCount: meta?.total_active ?? meta?.active_count ?? 0,
       totalCapacityM3: totalVolCap,
       totalAssignedM3: totalAssignedVol,
+      remainingM3: remainingVol,
       volumeUtilPercent: volPct,
       totalNetMarginUsd: totalNetMargin,
       netMarginCurrency,
@@ -331,100 +349,133 @@ export function CargoConsolidationsTab() {
         </div>
       </div>
 
-      {/* KPI Stats Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Trips & Active */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-between">
+      {/* KPI Stats Overview Cards (3 Cards Layout) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5">
+        {/* Card 1: Consolidations & Fleet Trips */}
+        <div className="p-5 rounded-3xl bg-surface border border-border/80 hover:border-border shadow-sm transition-all flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {t('consolidationTitle') || 'Consolidations & Trips'}
+            </span>
+            <div className="p-2.5 rounded-2xl bg-brand-navy/10 dark:bg-brand-gold/10 text-brand-navy dark:text-brand-gold border border-brand-navy/20 dark:border-brand-gold/20">
+              <Truck className="size-4 sm:size-5" />
+            </div>
+          </div>
           <div className="space-y-1">
-            <span className="text-xs font-bold text-muted-foreground">Consolidations & Trips</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-foreground font-mono">
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-2xl sm:text-3xl font-extrabold text-foreground font-mono">
                 {stats.totalConsolidations}
               </span>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                ({stats.activeCount} active)
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                {stats.activeCount} active
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+              <span>Fleet In-Transit Operations</span>
+              <span className="font-medium text-foreground">
+                {Math.max(0, stats.totalConsolidations - stats.activeCount)} completed
               </span>
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-brand-navy/10 dark:bg-brand-gold/10 text-brand-navy dark:text-brand-gold border border-brand-navy/20 dark:border-brand-gold/20">
-            <Truck className="size-5" />
-          </div>
         </div>
 
-        {/* Card 2: Fleet Volume Utilization */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm space-y-2">
+        {/* Card 2: Fleet Volume Capacity (Redesigned) */}
+        <div className="p-5 rounded-3xl bg-surface border border-border/80 hover:border-border shadow-sm transition-all flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground">Volume Capacity (m³)</span>
-            <span className="text-xs font-mono font-extrabold text-foreground">
-              {stats.totalAssignedM3} / {stats.totalCapacityM3} m³
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {t('volumeCapacity') || 'Volume Capacity (m³)'}
             </span>
+            <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+              <Layers className="size-4 sm:size-5" />
+            </div>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                stats.volumeUtilPercent > 90
-                  ? 'bg-red-500'
-                  : stats.volumeUtilPercent > 70
-                    ? 'bg-amber-500'
-                    : 'bg-brand-royal'
-              }`}
-              style={{ width: `${Math.min(100, stats.volumeUtilPercent)}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-bold">
-            <span>Overall Fleet Fill</span>
-            <span className="font-mono text-foreground font-extrabold">
-              {stats.volumeUtilPercent}%
-            </span>
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl sm:text-3xl font-extrabold text-foreground font-mono">
+                  {stats.totalAssignedM3}
+                </span>
+                <span className="text-sm font-bold text-muted-foreground font-mono">
+                  / {stats.totalCapacityM3} m³
+                </span>
+              </div>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-extrabold border ${
+                  stats.volumeUtilPercent > 90
+                    ? 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30'
+                    : stats.volumeUtilPercent > 70
+                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                      : 'bg-brand-royal/15 text-brand-royal dark:text-blue-400 border-brand-royal/30'
+                }`}
+              >
+                {stats.volumeUtilPercent}% fill
+              </span>
+            </div>
+
+            {/* Smooth Progress Bar */}
+            <div className="h-2 rounded-full bg-muted/60 overflow-hidden border border-border/40 p-0.5">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  stats.volumeUtilPercent > 90
+                    ? 'bg-gradient-to-r from-amber-500 to-red-500'
+                    : stats.volumeUtilPercent > 70
+                      ? 'bg-gradient-to-r from-blue-500 to-amber-500'
+                      : 'bg-gradient-to-r from-brand-navy to-brand-royal dark:from-brand-gold dark:to-amber-400'
+                }`}
+                style={{ width: `${Math.min(100, stats.volumeUtilPercent)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
+              <span>Available Space:</span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                {stats.remainingM3} m³ free
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Card 3: Consolidated Net Margin */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-between">
-          <div className="space-y-1 min-w-0">
-            <span className="text-xs font-bold text-muted-foreground block">
-              Consolidated Net Margin
+        <div className="p-5 rounded-3xl bg-surface border border-border/80 hover:border-border shadow-sm transition-all flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {t('netMargin') || 'Consolidated Net Margin'}
             </span>
-            <div className="flex items-center gap-1.5 font-mono text-2xl font-extrabold text-foreground">
+            <div
+              className={`p-2.5 rounded-2xl border ${
+                stats.totalNetMarginUsd >= 0
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+              }`}
+            >
+              <DollarSign className="size-4 sm:size-5" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
               {stats.totalNetMarginUsd >= 0 ? (
-                <TrendingUp className="size-5 text-emerald-500 shrink-0" />
+                <TrendingUp className="size-5 sm:size-6 text-emerald-500 shrink-0" />
               ) : (
-                <TrendingDown className="size-5 text-red-500 shrink-0" />
+                <TrendingDown className="size-5 sm:size-6 text-red-500 shrink-0" />
               )}
               <span
-                className={
+                className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight ${
                   stats.totalNetMarginUsd >= 0
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-red-600 dark:text-red-400'
-                }
+                }`}
               >
                 {formatMoney(stats.totalNetMarginUsd, stats.netMarginCurrency)}
               </span>
             </div>
-            {stats.multiCurrencies?.UZS !== undefined && stats.netMarginCurrency !== 'UZS' && (
-              <span className="text-[11px] font-mono text-muted-foreground block">
-                ≈ {formatMoney(stats.multiCurrencies.UZS, 'UZS')}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+              <span>Estimated UZS:</span>
+              <span className="font-mono font-medium text-foreground">
+                {stats.multiCurrencies?.UZS !== undefined
+                  ? formatMoney(stats.multiCurrencies.UZS, 'UZS')
+                  : '—'}
               </span>
-            )}
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <DollarSign className="size-5" />
-          </div>
-        </div>
-
-        {/* Card 4: Attached LTL Packages */}
-        <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-muted-foreground">Attached Client Cargos</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-foreground font-mono">
-                {stats.totalAttachedCargos}
-              </span>
-              <span className="text-xs text-muted-foreground">packages loaded</span>
             </div>
-          </div>
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <Boxes className="size-5" />
           </div>
         </div>
       </div>
@@ -443,8 +494,21 @@ export function CargoConsolidationsTab() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-muted/30 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-muted/30 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
           {/* View Mode Switcher */}
@@ -1118,6 +1182,49 @@ export function CargoConsolidationsTab() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination Footer */}
+      {!loading && data && data.meta.total > 0 && (viewMode === 'grid' || viewMode === 'table') && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-border shadow-sm text-xs">
+          <span className="text-muted-foreground font-semibold">
+            Showing{' '}
+            <span className="font-bold text-foreground font-mono">
+              {(data.meta.offset ?? (page - 1) * limit) + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-bold text-foreground font-mono">
+              {Math.min((data.meta.offset ?? (page - 1) * limit) + limit, data.meta.total)}
+            </span>{' '}
+            of <span className="font-bold text-foreground font-mono">{data.meta.total}</span>{' '}
+            consolidations
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-muted/60 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <ChevronLeft className="size-3.5" />
+              <span>{t('pagPrev') || 'Previous'}</span>
+            </button>
+            <span className="font-bold text-foreground px-2 font-mono">
+              Page {page} of {Math.ceil(data.meta.total / limit) || 1}
+            </span>
+            <button
+              type="button"
+              disabled={
+                (data.meta.offset ?? (page - 1) * limit) + limit >= data.meta.total || loading
+              }
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-muted/60 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <span>{t('pagNext') || 'Next'}</span>
+              <ChevronRight className="size-3.5" />
+            </button>
           </div>
         </div>
       )}

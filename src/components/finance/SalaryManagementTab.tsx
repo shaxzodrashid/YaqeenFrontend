@@ -17,6 +17,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { T } from '../T';
 import { usePermissions } from '../../context/PermissionsContext';
 import { api, formatMoney } from '../../services/api';
+import { NumberInput } from '../NumberInput';
 import type {
   FixedSalariesResponse,
   EmployeeSalaryInfo,
@@ -361,20 +362,32 @@ export function SalaryManagementTab({
 
                         {isEditing ? (
                           <div className="flex items-center gap-1.5">
-                            <input
-                              type="number"
-                              step="any"
-                              min="0"
+                            <NumberInput
+                              size="sm"
+                              className="w-28"
+                              min={0}
+                              allowDecimals={true}
+                              decimalScale={2}
                               value={editSalaryValue}
-                              onChange={(e) => setEditSalaryValue(e.target.value)}
-                              className="w-20 px-2 py-1 bg-surface dark:bg-night-surface border border-brand-gold rounded-lg text-xs font-bold text-foreground dark:text-night-text focus:outline-none"
+                              onValueChange={(_num, raw) => setEditSalaryValue(raw)}
+                              placeholder="0"
+                              prefix={
+                                editCurrencyValue === 'USD'
+                                  ? '$'
+                                  : editCurrencyValue === 'RUB'
+                                    ? '₽'
+                                    : editCurrencyValue === 'CNY'
+                                      ? '¥'
+                                      : undefined
+                              }
+                              suffix={editCurrencyValue === 'UZS' ? "so'm" : undefined}
                             />
                             <select
                               value={editCurrencyValue}
                               onChange={(e) =>
                                 setEditCurrencyValue(e.target.value as SupportedCurrency)
                               }
-                              className="py-1 px-1 bg-surface dark:bg-night-surface border border-brand-gold rounded-lg text-[10px] font-bold text-foreground dark:text-night-text focus:outline-none cursor-pointer"
+                              className="h-9 py-1 px-1 bg-surface dark:bg-night-surface border border-field-border dark:border-night-border rounded-lg text-[10px] font-bold text-foreground dark:text-night-text focus:outline-none cursor-pointer"
                             >
                               <option value="USD">USD</option>
                               <option value="UZS">UZS</option>

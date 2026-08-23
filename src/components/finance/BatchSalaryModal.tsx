@@ -16,6 +16,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { T } from '../T';
 import { api, formatMoney } from '../../services/api';
+import { NumberInput } from '../NumberInput';
 import type {
   FixedSalariesResponse,
   BatchUpdateSalaryItem,
@@ -357,13 +358,27 @@ export function BatchSalaryModal({
 
                           {/* Salary and Currency Input */}
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <input
-                              type="number"
-                              step="any"
-                              min="0"
+                            <NumberInput
+                              size="sm"
+                              className="w-28"
+                              min={0}
+                              allowDecimals={true}
+                              decimalScale={2}
                               value={emp.fixed_salary}
-                              onChange={(e) => handleSalaryChange(emp.employee_id, e.target.value)}
-                              className="w-24 px-2 py-1.5 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-xs font-bold text-foreground dark:text-night-text focus:outline-none focus:ring-1 focus:ring-brand-gold"
+                              onValueChange={(_num, raw) =>
+                                handleSalaryChange(emp.employee_id, raw)
+                              }
+                              placeholder="0"
+                              prefix={
+                                emp.currency === 'USD'
+                                  ? '$'
+                                  : emp.currency === 'RUB'
+                                    ? '₽'
+                                    : emp.currency === 'CNY'
+                                      ? '¥'
+                                      : undefined
+                              }
+                              suffix={emp.currency === 'UZS' ? "so'm" : undefined}
                             />
                             <select
                               value={emp.currency}
@@ -373,7 +388,7 @@ export function BatchSalaryModal({
                                   e.target.value as SupportedCurrency
                                 )
                               }
-                              className="py-1.5 px-1 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-[10px] font-bold text-foreground dark:text-night-text focus:outline-none cursor-pointer"
+                              className="h-9 py-1 px-1 bg-field-background dark:bg-night-field border border-border/80 dark:border-night-border rounded-lg text-[10px] font-bold text-foreground dark:text-night-text focus:outline-none cursor-pointer"
                             >
                               <option value="USD">USD</option>
                               <option value="UZS">UZS</option>

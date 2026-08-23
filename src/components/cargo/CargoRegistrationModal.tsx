@@ -48,6 +48,7 @@ import { ClientSelect } from './ClientSelect';
 import { ConsolidationSelect } from './ConsolidationSelect';
 import { ConsolidationModal } from './ConsolidationModal';
 import { RouteSelector, type RouteState } from './RouteSelector';
+import { NumberInput } from '../NumberInput';
 
 const STATUS_STAGE_CONFIG: {
   key: CargoRegistrationStatus;
@@ -835,49 +836,29 @@ export function CargoRegistrationModal({
                 {/* DYNAMIC CAPACITY FIELDS */}
                 {cargoType === 'LTL' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5 flex items-center justify-between">
-                        <span>Volume (m³)</span>
-                        <span className="text-rose-500 font-bold">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0.1"
-                          required
-                          value={volumeStr}
-                          onChange={(e) => setVolumeStr(e.target.value)}
-                          placeholder="e.g. 12.5"
-                          className="w-full pl-3.5 pr-12 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-                        />
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">
-                          m³
-                        </span>
-                      </div>
-                    </div>
+                    <NumberInput
+                      label="Volume (m³)"
+                      isRequired
+                      suffix="m³"
+                      placeholder="e.g. 12.5"
+                      value={volumeStr}
+                      onValueChange={(_num, raw) => setVolumeStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={3}
+                      min={0.1}
+                    />
 
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5 flex items-center justify-between">
-                        <span>Weight (kg)</span>
-                        <span className="text-rose-500 font-bold">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="1"
-                          min="1"
-                          required
-                          value={weightStr}
-                          onChange={(e) => setWeightStr(e.target.value)}
-                          placeholder="e.g. 1450"
-                          className="w-full pl-3.5 pr-12 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-                        />
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">
-                          kg
-                        </span>
-                      </div>
-                    </div>
+                    <NumberInput
+                      label="Weight (kg)"
+                      isRequired
+                      suffix="kg"
+                      placeholder="e.g. 1 450"
+                      value={weightStr}
+                      onValueChange={(_num, raw) => setWeightStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={1}
+                    />
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-1.5">
@@ -1060,21 +1041,32 @@ export function CargoRegistrationModal({
                           <span>Purchase Price (Buy Cost)</span>{' '}
                           <span className="text-rose-500">*</span>
                         </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            required
-                            value={purchasePriceStr}
-                            onChange={(e) => setPurchasePriceStr(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-focus/30 transition-all"
-                          />
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <NumberInput
+                              size="sm"
+                              placeholder="0.00"
+                              value={purchasePriceStr}
+                              onValueChange={(_num, raw) => setPurchasePriceStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              prefix={
+                                purchaseCurrency === 'USD'
+                                  ? '$'
+                                  : purchaseCurrency === 'RUB'
+                                    ? '₽'
+                                    : purchaseCurrency === 'RMB'
+                                      ? '¥'
+                                      : undefined
+                              }
+                              suffix={purchaseCurrency === 'UZS' ? "so'm" : undefined}
+                            />
+                          </div>
                           <select
                             value={purchaseCurrency}
                             onChange={(e) => setPurchaseCurrency(e.target.value as CurrencyType)}
-                            className="px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
+                            className="h-9 px-3 rounded-lg border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
                           >
                             {CURRENCIES.map((c) => (
                               <option key={c} value={c}>
@@ -1099,13 +1091,15 @@ export function CargoRegistrationModal({
                             <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
                               Custom Rate (UZS/USD)
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
+                            <NumberInput
+                              size="sm"
+                              placeholder={`Auto (${(rates.USD || 12800).toLocaleString()})`}
                               value={purchaseCustomRateStr}
-                              onChange={(e) => setPurchaseCustomRateStr(e.target.value)}
-                              placeholder={`Auto (${rates.USD || 12800})`}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-field text-foreground text-[11px] font-semibold"
+                              onValueChange={(_num, raw) => setPurchaseCustomRateStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              suffix="so'm"
                             />
                           </div>
                         </div>
@@ -1117,21 +1111,32 @@ export function CargoRegistrationModal({
                           <Coins className="size-3.5 text-emerald-500" />
                           <span>Selling Price</span> <span className="text-rose-500">*</span>
                         </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            required
-                            value={sellPriceStr}
-                            onChange={(e) => setSellPriceStr(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-focus/30 transition-all"
-                          />
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <NumberInput
+                              size="sm"
+                              placeholder="0.00"
+                              value={sellPriceStr}
+                              onValueChange={(_num, raw) => setSellPriceStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              prefix={
+                                sellCurrency === 'USD'
+                                  ? '$'
+                                  : sellCurrency === 'RUB'
+                                    ? '₽'
+                                    : sellCurrency === 'RMB'
+                                      ? '¥'
+                                      : undefined
+                              }
+                              suffix={sellCurrency === 'UZS' ? "so'm" : undefined}
+                            />
+                          </div>
                           <select
                             value={sellCurrency}
                             onChange={(e) => setSellCurrency(e.target.value as CurrencyType)}
-                            className="px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
+                            className="h-9 px-3 rounded-lg border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
                           >
                             {CURRENCIES.map((c) => (
                               <option key={c} value={c}>
@@ -1156,13 +1161,15 @@ export function CargoRegistrationModal({
                             <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
                               Custom Rate (UZS/USD)
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
+                            <NumberInput
+                              size="sm"
+                              placeholder={`Auto (${(rates.USD || 12800).toLocaleString()})`}
                               value={sellCustomRateStr}
-                              onChange={(e) => setSellCustomRateStr(e.target.value)}
-                              placeholder={`Auto (${rates.USD || 12800})`}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-field text-foreground text-[11px] font-semibold"
+                              onValueChange={(_num, raw) => setSellCustomRateStr(raw)}
+                              allowDecimals={true}
+                              decimalScale={2}
+                              min={0}
+                              suffix="so'm"
                             />
                           </div>
                         </div>
@@ -1180,16 +1187,18 @@ export function CargoRegistrationModal({
                             Required when purchase or sell currency is set to RMB.
                           </p>
                         </div>
-                        <input
-                          type="number"
-                          step="0.001"
-                          min="0.001"
-                          required
-                          value={usdRmbRateStr}
-                          onChange={(e) => setUsdRmbRateStr(e.target.value)}
-                          placeholder="7.235"
-                          className="w-full sm:w-36 px-3.5 py-2 rounded-xl border border-amber-500/40 bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        />
+                        <div className="w-full sm:w-36">
+                          <NumberInput
+                            size="sm"
+                            placeholder="7.235"
+                            value={usdRmbRateStr}
+                            onValueChange={(_num, raw) => setUsdRmbRateStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={4}
+                            min={0.0001}
+                            suffix="¥"
+                          />
+                        </div>
                       </div>
                     )}
 

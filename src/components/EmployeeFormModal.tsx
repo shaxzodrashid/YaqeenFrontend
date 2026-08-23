@@ -24,6 +24,7 @@ import type {
   Role,
 } from '../services/api';
 import { PhoneInput } from './PhoneInput';
+import { NumberInput } from './NumberInput';
 
 interface EmployeeFormModalProps {
   isOpen: boolean;
@@ -353,15 +354,15 @@ export function EmployeeFormModal({
     }
 
     const rawPhone = phone.replace(/\D/g, '');
-    if (!phone.trim()) {
+    if (!phone.trim() || rawPhone.length < 7) {
       tempErrors.phone = t('fieldRequired') || 'Phone number is required';
-    } else if (rawPhone.length < 9 || rawPhone.length > 15) {
+    } else if (rawPhone.length > 15) {
       tempErrors.phone = t('fieldPhoneFormat') || 'Valid phone number is required';
     }
 
-    if (secondaryPhone.trim()) {
-      const rawSecPhone = secondaryPhone.replace(/\D/g, '');
-      if (rawSecPhone.length < 9 || rawSecPhone.length > 15) {
+    const rawSecPhone = secondaryPhone.replace(/\D/g, '');
+    if (secondaryPhone.trim() && rawSecPhone.length >= 4) {
+      if (rawSecPhone.length < 7 || rawSecPhone.length > 15) {
         tempErrors.secondaryPhone = t('fieldPhoneFormat') || 'Valid phone number is required';
       }
     }
@@ -395,12 +396,17 @@ export function EmployeeFormModal({
 
     setLoading(true);
     try {
+      const cleanSecPhone =
+        secondaryPhone.trim() && secondaryPhone.replace(/\D/g, '').length >= 7
+          ? secondaryPhone.trim()
+          : undefined;
+
       if (mode === 'create') {
         const dto: CreateEmployeeDto = {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
-          secondary_phone: secondaryPhone.trim() || undefined,
+          secondary_phone: cleanSecPhone,
           address: address.trim() || undefined,
           department_id: departmentId,
           fixed_salary: fixedSalary.trim() ? parseFloat(fixedSalary).toFixed(2) : undefined,
@@ -416,7 +422,7 @@ export function EmployeeFormModal({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
-          secondary_phone: secondaryPhone.trim() || undefined,
+          secondary_phone: cleanSecPhone,
           address: address.trim() || undefined,
           department_id: departmentId,
           fixed_salary: fixedSalary.trim() ? parseFloat(fixedSalary).toFixed(2) : undefined,
@@ -778,22 +784,23 @@ export function EmployeeFormModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
                 <div className="sm:col-span-2 flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <Coins className="size-3.5 text-muted" />
-                    {t('fieldSalary') || 'Fixed Base Salary'}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted font-mono select-none">
-                      {currency === 'UZS' ? "so'm" : currency === 'USD' ? '$' : '₽'}
-                    </span>
-                    <input
-                      type="number"
-                      value={fixedSalary}
-                      onChange={(e) => setFixedSalary(e.target.value)}
-                      placeholder="3500000"
-                      className="w-full pl-14 pr-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 font-mono"
-                    />
-                  </div>
+                  <NumberInput
+                    label={
+                      <span className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                        <Coins className="size-3.5 text-muted" />
+                        {t('fieldSalary') || 'Fixed Base Salary'}
+                      </span>
+                    }
+                    value={fixedSalary}
+                    onValueChange={(_num, raw) => setFixedSalary(raw)}
+                    placeholder="3 500 000"
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0}
+                    size="md"
+                    prefix={currency === 'USD' ? '$' : currency === 'RUB' ? '₽' : undefined}
+                    suffix={currency === 'UZS' ? "so'm" : undefined}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -803,7 +810,7 @@ export function EmployeeFormModal({
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
-                    className="w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer font-mono"
+                    className="w-full h-11 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer font-mono"
                   >
                     <option value="UZS">UZS</option>
                     <option value="USD">USD</option>

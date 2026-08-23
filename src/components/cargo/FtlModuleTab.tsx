@@ -26,6 +26,7 @@ import type {
 } from '../../services/cargoKpi.service';
 
 import { EmployeeSelect } from './EmployeeSelect';
+import { NumberInput } from '../NumberInput';
 
 const MONTHLY_RATE_TIERS = [
   { range: '< $1,500', rate: '0%' },
@@ -476,28 +477,30 @@ export function FtlModuleTab() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       {t('ftlAgentPrice')}
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0}
                       value={agentPriceStr}
-                      onChange={(e) => setAgentPriceStr(e.target.value)}
-                      placeholder="1000"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      onValueChange={(_num, raw) => setAgentPriceStr(raw)}
+                      placeholder="1 000"
+                      prefix="$"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       {t('ftlSellPrice')}
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0}
                       value={sellPriceStr}
-                      onChange={(e) => setSellPriceStr(e.target.value)}
-                      placeholder="2000"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      onValueChange={(_num, raw) => setSellPriceStr(raw)}
+                      placeholder="2 000"
+                      prefix="$"
                     />
                   </div>
                 </div>
@@ -507,42 +510,41 @@ export function FtlModuleTab() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Planned Days
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={false}
+                      min={1}
                       value={plannedDaysStr}
-                      onChange={(e) => setPlannedDaysStr(e.target.value)}
+                      onValueChange={(_num, raw) => setPlannedDaysStr(raw)}
                       placeholder="20"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      suffix="days"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Actual Days
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={false}
+                      min={1}
                       value={actualDaysStr}
-                      onChange={(e) => setActualDaysStr(e.target.value)}
+                      onValueChange={(_num, raw) => setActualDaysStr(raw)}
                       placeholder="25"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      suffix="days"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Batch Qty
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={false}
+                      min={1}
                       value={qtyStr}
-                      onChange={(e) => setQtyStr(e.target.value)}
+                      onValueChange={(_num, raw) => setQtyStr(raw)}
                       placeholder="1"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
                     />
                   </div>
                 </div>

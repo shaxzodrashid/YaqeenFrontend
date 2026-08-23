@@ -12,6 +12,7 @@ import type {
 } from '../../services/cargoKpi.service';
 
 import { EmployeeSelect } from './EmployeeSelect';
+import { NumberInput } from '../NumberInput';
 
 const CARGO_TYPES: { key: LtlCargoType; labelKey: string; hint: string }[] = [
   { key: 'oddiy', labelKey: 'cargoTypeOddiy', hint: 'Density rate ($3 - $10 / m³)' },
@@ -359,30 +360,30 @@ export function LtlModuleTab() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       {t('cargoVolume')}
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0.01}
                       value={volumeStr}
-                      onChange={(e) => setVolumeStr(e.target.value)}
+                      onValueChange={(_num, raw) => setVolumeStr(raw)}
                       placeholder="e.g. 10"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      suffix="m³"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       {t('cargoWeight')}
                     </label>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      required
+                    <NumberInput
+                      size="sm"
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0}
                       value={weightStr}
-                      onChange={(e) => setWeightStr(e.target.value)}
-                      placeholder="e.g. 1000"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                      onValueChange={(_num, raw) => setWeightStr(raw)}
+                      placeholder="e.g. 1 000"
+                      suffix="kg"
                     />
                   </div>
                 </div>

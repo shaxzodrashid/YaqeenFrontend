@@ -18,6 +18,7 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import type { RopSummaryResponse, RopWorkerShare } from '../../services/cargoKpi.service';
 import { getRopTeamBonusRate, getRopTruckCountRate } from '../../services/cargoKpi.service';
+import { NumberInput } from '../NumberInput';
 
 interface RopKpiLogicVisualProps {
   liveData?: RopSummaryResponse | null;
@@ -358,50 +359,54 @@ export function RopKpiLogicVisual({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
               {simWorkers.map((w, idx) => (
                 <div key={idx} className="space-y-1 bg-surface p-3 rounded-xl border border-border">
-                  <label className="font-semibold text-foreground">
+                  <label className="font-semibold text-foreground block text-xs">
                     {t('ropSimSalesLabel').replace('{name}', `${workerPrefix} ${w.nameKey}`)}
                   </label>
-                  <input
-                    type="number"
-                    step="500"
-                    min="0"
+                  <NumberInput
+                    size="sm"
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0}
                     value={w.sales}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
+                    onValueChange={(num) => {
                       const next = [...simWorkers];
-                      next[idx].sales = val;
+                      next[idx].sales = num || 0;
                       setSimWorkers(next);
                     }}
-                    className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-mono"
+                    prefix="$"
+                    placeholder="0"
                   />
                 </div>
               ))}
 
               <div className="space-y-1 bg-surface p-3 rounded-xl border border-border">
-                <label className="font-semibold text-foreground">
+                <label className="font-semibold text-foreground block text-xs">
                   {t('ropSimTruckCountLabel')}
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="50"
+                <NumberInput
+                  size="sm"
+                  allowDecimals={false}
+                  min={0}
+                  max={50}
                   value={simTruckCount}
-                  onChange={(e) => setSimTruckCount(parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-mono"
+                  onValueChange={(num) => setSimTruckCount(num || 0)}
+                  placeholder="0"
                 />
               </div>
 
               <div className="space-y-1 bg-surface p-3 rounded-xl border border-border">
-                <label className="font-semibold text-foreground">
+                <label className="font-semibold text-foreground block text-xs">
                   {t('ropSimTruckProfitLabel')}
                 </label>
-                <input
-                  type="number"
-                  step="500"
-                  min="0"
+                <NumberInput
+                  size="sm"
+                  allowDecimals={true}
+                  decimalScale={2}
+                  min={0}
                   value={simTruckProfit}
-                  onChange={(e) => setSimTruckProfit(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-mono"
+                  onValueChange={(num) => setSimTruckProfit(num || 0)}
+                  prefix="$"
+                  placeholder="0"
                 />
               </div>
             </div>

@@ -26,6 +26,7 @@ import type {
 } from '../../services/cargoConsolidations.service';
 import type { CurrencyType } from '../../services/cargoRegistrations.service';
 import { CitySelect } from './CitySelect';
+import { NumberInput } from '../NumberInput';
 
 const STATUS_CONFIG: {
   key: ConsolidationStatus;
@@ -460,41 +461,32 @@ export function ConsolidationModal({
                   <label className="block text-[11px] font-bold text-foreground mb-1">
                     {t('volumeCapacity')} <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0.1"
-                      required
-                      placeholder="86.0"
-                      value={maxVolumeStr}
-                      onChange={(e) => setMaxVolumeStr(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pr-12 rounded-xl bg-surface border border-border text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
-                    />
-                    <span className="absolute right-3 top-2.5 text-xs text-muted-foreground font-bold">
-                      m³
-                    </span>
-                  </div>
+                  <NumberInput
+                    size="sm"
+                    placeholder="86.0"
+                    value={maxVolumeStr}
+                    onValueChange={(_num, raw) => setMaxVolumeStr(raw)}
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0.1}
+                    suffix="m³"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
                     {t('weightCapacity')}
                   </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="22000"
-                      value={maxWeightStr}
-                      onChange={(e) => setMaxWeightStr(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pr-12 rounded-xl bg-surface border border-border text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
-                    />
-                    <span className="absolute right-3 top-2.5 text-xs text-muted-foreground font-bold">
-                      kg
-                    </span>
-                  </div>
+                  <NumberInput
+                    size="sm"
+                    placeholder="22 000"
+                    value={maxWeightStr}
+                    onValueChange={(_num, raw) => setMaxWeightStr(raw)}
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0}
+                    suffix="kg"
+                  />
                 </div>
               </div>
             </div>
@@ -621,14 +613,24 @@ export function ConsolidationModal({
                   <label className="block text-[11px] font-bold text-foreground mb-1">
                     {t('carrierCost')} (Total Truck Freight)
                   </label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    placeholder="e.g. 3800"
+                  <NumberInput
+                    size="sm"
+                    placeholder="e.g. 3 800"
                     value={carrierCostStr}
-                    onChange={(e) => setCarrierCostStr(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground font-mono text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    onValueChange={(_num, raw) => setCarrierCostStr(raw)}
+                    allowDecimals={true}
+                    decimalScale={2}
+                    min={0}
+                    prefix={
+                      carrierCostCurrency === 'USD'
+                        ? '$'
+                        : carrierCostCurrency === 'RUB'
+                          ? '₽'
+                          : carrierCostCurrency === 'RMB'
+                            ? '¥'
+                            : undefined
+                    }
+                    suffix={carrierCostCurrency === 'UZS' ? "so'm" : undefined}
                   />
                 </div>
 

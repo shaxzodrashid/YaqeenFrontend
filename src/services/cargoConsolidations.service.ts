@@ -302,6 +302,8 @@ export interface ConsolidationMeta {
   offset: number;
   page?: number;
   total_pages?: number;
+  volume_capacity_total?: number;
+  volume_capacity_used?: number;
   consolidated_net_margin?:
     ConsolidationNetMarginCurrencies | { amount: number; currency: CurrencyType } | number;
   active_count?: number;
@@ -1202,6 +1204,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const meta: ConsolidationMeta = {
       total,
       total_active: activeCount,
+      volume_capacity_total: Math.round(totalCapVol * 100) / 100,
+      volume_capacity_used: Math.round(totalAssignedVol * 100) / 100,
       limit,
       offset,
       page,
