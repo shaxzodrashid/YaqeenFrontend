@@ -599,6 +599,8 @@ const translations = {
     deptViewGrid: 'Grid View',
     deptViewList: 'List View',
     deptClearSearch: 'Clear search',
+    deptAvgPerDept: 'Avg. per Dept',
+    deptActiveCount: 'With Staff',
 
     // Common actions
     actionSave: 'Save Changes',
@@ -2276,6 +2278,8 @@ const translations = {
     deptViewGrid: 'Сетка',
     deptViewList: 'Список',
     deptClearSearch: 'Сбросить поиск',
+    deptAvgPerDept: 'Сред. на отдел',
+    deptActiveCount: 'С сотрудниками',
 
     // Common actions
     actionSave: 'Сохранить изменения',
@@ -3955,6 +3959,8 @@ const translations = {
     deptViewGrid: 'Kataksimon',
     deptViewList: "Ro'yxat",
     deptClearSearch: 'Tozalash',
+    deptAvgPerDept: "O'rtacha",
+    deptActiveCount: 'Xodimli',
 
     // Common actions
     actionSave: "O'zgarishlarni saqlash",
