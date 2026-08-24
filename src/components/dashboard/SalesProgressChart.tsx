@@ -3,10 +3,10 @@ import {
   TrendingUp,
   TrendingDown,
   Layers,
-  BarChart3,
   Info,
   CalendarDays,
   CalendarCheck,
+  TrendingUpDown,
 } from 'lucide-react';
 import type {
   DashboardSalesProgressResponse,
@@ -14,6 +14,7 @@ import type {
 } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface SalesProgressChartProps {
   data: DashboardSalesProgressResponse | null;
@@ -21,20 +22,19 @@ interface SalesProgressChartProps {
   loading: boolean;
 }
 
-type MainTab = 'timeline' | 'runRate';
 type ChartMode = 'period' | 'cumulative';
 
 export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
   ({ data, summary: summaryProp, loading }) => {
-    const [mainTab, setMainTab] = useState<MainTab>('timeline');
     const [mode, setMode] = useState<ChartMode>('period');
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+    const { locale, t } = useTranslation();
 
     if (loading) {
       return (
         <div className="p-6 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border h-[420px] flex items-center justify-center animate-pulse">
           <div className="text-xs text-muted">
-            <T k="loading" text="Loading Analytics..." />
+            <T k="ovLoadingAnalytics" />
           </div>
         </div>
       );
@@ -61,6 +61,43 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
     const monthlyBlock = summaryProp?.monthly;
     const yearlyBlock = summaryProp?.yearly;
     const hasRunRateData = Boolean(monthlyBlock || yearlyBlock);
+
+    const dateLocaleCode = locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US';
+
+    const formatPointDate = (dateKey?: string, label?: string) => {
+      if (dateKey && /^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+        const [y, m, d] = dateKey.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        return date.toLocaleDateString(dateLocaleCode, { month: 'short', day: 'numeric' });
+      }
+      return label || '';
+    };
+
+    const formatFullPointDate = (dateKey?: string) => {
+      if (dateKey && /^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+        const [y, m, d] = dateKey.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        return date.toLocaleDateString(dateLocaleCode, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+      }
+      return dateKey || '';
+    };
+
+    const granularityKeyMap: Record<string, string> = {
+      hour: 'ovGranularityDaily',
+      day: 'ovGranularityDaily',
+      week: 'ovGranularityWeekly',
+      month: 'ovGranularityMonthly',
+      quarter: 'ovGranularityQuarterly',
+      year: 'ovGranularityYearly',
+    };
+    const granularityKey = granularityKeyMap[String(meta.granularity).toLowerCase()] || '';
+    const granularityLabel = granularityKey
+      ? t(granularityKey)
+      : meta.granularity || t('ovGranularityDaily');
 
     // Format compact Y-axis numbers (e.g. 250M, 500k)
     const formatCompactVal = (val: number) => {
@@ -127,11 +164,11 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-foreground dark:text-night-text">
+              <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-night-text">
                 <T k="ovFinancialHubTitle" />
               </h3>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-                {meta.period} • {meta.granularity} buckets
+                {meta.period} • {granularityLabel}
               </span>
             </div>
             <p className="text-xs text-muted dark:text-night-muted mt-0.5">
@@ -139,66 +176,31 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
             </p>
           </div>
 
-          {/* View Mode Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Main Tab (Timeline vs Run-Rate) */}
-            {hasRunRateData && (
-              <div className="flex items-center p-1 bg-border/20 dark:bg-night-border/40 rounded-xl border border-border/30 dark:border-night-border/30">
-                <button
-                  type="button"
-                  onClick={() => setMainTab('timeline')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    mainTab === 'timeline'
-                      ? 'bg-brand-gold text-neutral-950 shadow-xs'
-                      : 'text-muted dark:text-night-muted hover:text-foreground'
-                  }`}
-                >
-                  <BarChart3 className="size-3.5" />
-                  <T k="ovViewTimeline" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMainTab('runRate')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    mainTab === 'runRate'
-                      ? 'bg-brand-gold text-neutral-950 shadow-xs'
-                      : 'text-muted dark:text-night-muted hover:text-foreground'
-                  }`}
-                >
-                  <CalendarDays className="size-3.5" />
-                  <T k="ovViewRunRate" />
-                </button>
-              </div>
-            )}
-
-            {/* Timeline Sub-Mode (Period vs Cumulative) */}
-            {mainTab === 'timeline' && (
-              <div className="flex items-center p-1 bg-border/20 dark:bg-night-border/40 rounded-xl border border-border/30 dark:border-night-border/30">
-                <button
-                  type="button"
-                  onClick={() => setMode('period')}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    mode === 'period'
-                      ? 'bg-surface dark:bg-night-surface text-foreground dark:text-night-text shadow-xs'
-                      : 'text-muted dark:text-night-muted hover:text-foreground'
-                  }`}
-                >
-                  <T k="ovChartPeriodSales" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('cumulative')}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    mode === 'cumulative'
-                      ? 'bg-surface dark:bg-night-surface text-foreground dark:text-night-text shadow-xs'
-                      : 'text-muted dark:text-night-muted hover:text-foreground'
-                  }`}
-                >
-                  <Layers className="size-3.5" />
-                  <T k="ovChartCumulative" />
-                </button>
-              </div>
-            )}
+          {/* Timeline Mode Switcher (Period vs Cumulative) */}
+          <div className="flex items-center p-1 bg-border/20 dark:bg-night-border/40 rounded-xl border border-border/30 dark:border-night-border/30">
+            <button
+              type="button"
+              onClick={() => setMode('period')}
+              className={`flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                mode === 'period'
+                  ? 'bg-brand-gold text-neutral-950 shadow-xs'
+                  : 'text-muted dark:text-night-muted hover:text-foreground'
+              }`}
+            >
+              <T k="ovChartPeriodSales" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('cumulative')}
+              className={`flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                mode === 'cumulative'
+                  ? 'bg-brand-gold text-neutral-950 shadow-xs'
+                  : 'text-muted dark:text-night-muted hover:text-foreground'
+              }`}
+            >
+              <Layers className="size-3.5" />
+              <T k="ovChartCumulative" />
+            </button>
           </div>
         </div>
 
@@ -206,7 +208,7 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 p-3.5 rounded-xl bg-background/60 dark:bg-night-bg/60 border border-border/40 dark:border-night-border/40">
           <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              Total Revenue
+              <T k="ovSummaryTotalRevenue" />
             </span>
             <p
               className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text truncate"
@@ -217,7 +219,7 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
           </div>
           <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              Net Profit Margin
+              <T k="ovSummaryNetMargin" />
             </span>
             <p
               className="text-xs sm:text-sm font-extrabold text-emerald-500 truncate"
@@ -229,16 +231,18 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
           </div>
           <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              Shipment Volume
+              <T k="ovSummaryShipmentVolume" />
             </span>
             <p className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text truncate">
-              {summary.totalOrders} Orders{' '}
-              <span className="text-[10px] text-muted">({summary.completedOrders} done)</span>
+              {t('ovSummaryOrdersCount', { count: summary.totalOrders })}{' '}
+              <span className="text-[10px] text-muted">
+                ({t('ovSummaryDoneCount', { completed: summary.completedOrders })})
+              </span>
             </p>
           </div>
           <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              Sales Growth
+              <T k="ovSummarySalesGrowth" />
             </span>
             <p
               className={`text-xs sm:text-sm font-extrabold flex items-center gap-1 ${
@@ -246,343 +250,196 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
               }`}
             >
               <TrendingUp className="size-3.5" />
-              {summary.growthRateSales !== null ? `${summary.growthRateSales}%` : 'N/A'}
+              {summary.growthRateSales !== null
+                ? `${summary.growthRateSales}%`
+                : t('ovNotAvailable')}
             </p>
           </div>
         </div>
 
-        {/* TAB 1: Timeline Trajectory Chart */}
-        {mainTab === 'timeline' && (
-          <div className="relative w-full overflow-hidden">
-            <svg
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              className="w-full h-auto overflow-visible select-none"
-              onMouseLeave={() => setHoverIndex(null)}
-            >
-              <defs>
-                <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
-                </linearGradient>
-                <linearGradient id="marginGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
+        {/* Financial Trajectory Chart */}
+        <div className="relative w-full overflow-hidden">
+          <svg
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            className="w-full h-auto overflow-visible select-none"
+            onMouseLeave={() => setHoverIndex(null)}
+          >
+            <defs>
+              <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2563eb" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
+              </linearGradient>
+              <linearGradient id="marginGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
 
-              {/* Horizontal Grid lines */}
-              {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-                const y = svgHeight - paddingY - ratio * usableHeight;
-                const val = Math.round(maxVal * ratio);
-                return (
-                  <g key={ratio}>
-                    <line
-                      x1={paddingX}
-                      y1={y}
-                      x2={svgWidth - paddingX}
-                      y2={y}
-                      stroke="currentColor"
-                      className="text-border/30 dark:text-night-border/30"
-                      strokeDasharray="4 4"
-                    />
+            {/* Horizontal Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+              const y = svgHeight - paddingY - ratio * usableHeight;
+              const val = Math.round(maxVal * ratio);
+              return (
+                <g key={ratio}>
+                  <line
+                    x1={paddingX}
+                    y1={y}
+                    x2={svgWidth - paddingX}
+                    y2={y}
+                    stroke="currentColor"
+                    className="text-border/30 dark:text-night-border/30"
+                    strokeDasharray="4 4"
+                  />
+                  <text
+                    x={paddingX - 8}
+                    y={y + 4}
+                    textAnchor="end"
+                    className="text-[10px] fill-muted dark:fill-night-muted font-mono"
+                  >
+                    {formatCompactVal(val)}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Gradient Area under Sales Line */}
+            <path d={salesAreaPath} fill="url(#salesGrad)" />
+
+            {/* Margin Curve */}
+            <path
+              d={marginPath}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={mode === 'cumulative' ? 3 : 2}
+              strokeDasharray={mode === 'period' ? '4 3' : 'none'}
+            />
+
+            {/* Sales Curve */}
+            <path
+              d={salesPath}
+              fill="none"
+              stroke="#2563eb"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+
+            {/* Interactive Hover Hitboxes & Axis labels */}
+            {points.map((p, idx) => {
+              const isHovered = hoverIndex === idx;
+              return (
+                <g key={idx}>
+                  {/* Hitbox */}
+                  <rect
+                    x={p.x - usableWidth / pointsCount / 2}
+                    y={0}
+                    width={usableWidth / pointsCount}
+                    height={svgHeight}
+                    fill="transparent"
+                    className="cursor-pointer"
+                    onMouseEnter={() => setHoverIndex(idx)}
+                  />
+
+                  {/* X Axis Labels */}
+                  {(idx % Math.ceil(pointsCount / 7) === 0 || idx === pointsCount - 1) && (
                     <text
-                      x={paddingX - 8}
-                      y={y + 4}
-                      textAnchor="end"
-                      className="text-[10px] fill-muted dark:fill-night-muted font-mono"
+                      x={p.x}
+                      y={svgHeight - 6}
+                      textAnchor="middle"
+                      className="text-[10px] fill-muted dark:fill-night-muted font-medium"
                     >
-                      {formatCompactVal(val)}
+                      {formatPointDate(p.dataPoint.dateKey, p.dataPoint.label)}
                     </text>
-                  </g>
-                );
-              })}
+                  )}
 
-              {/* Gradient Area under Sales Line */}
-              <path d={salesAreaPath} fill="url(#salesGrad)" />
+                  {/* Hover indicator */}
+                  {isHovered && (
+                    <>
+                      <line
+                        x1={p.x}
+                        y1={paddingY}
+                        x2={p.x}
+                        y2={svgHeight - paddingY}
+                        stroke="#d97706"
+                        strokeWidth={1.5}
+                        strokeDasharray="2 2"
+                      />
+                      <circle
+                        cx={p.x}
+                        cy={p.ySales}
+                        r={5}
+                        fill="#2563eb"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                      />
+                      <circle
+                        cx={p.x}
+                        cy={p.yMargin}
+                        r={4}
+                        fill="#10b981"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                      />
+                    </>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
 
-              {/* Margin Curve */}
-              <path
-                d={marginPath}
-                fill="none"
-                stroke="#10b981"
-                strokeWidth={mode === 'cumulative' ? 3 : 2}
-                strokeDasharray={mode === 'period' ? '4 3' : 'none'}
-              />
-
-              {/* Sales Curve */}
-              <path
-                d={salesPath}
-                fill="none"
-                stroke="#2563eb"
-                strokeWidth={3}
-                strokeLinecap="round"
-              />
-
-              {/* Interactive Hover Hitboxes & Axis labels */}
-              {points.map((p, idx) => {
-                const isHovered = hoverIndex === idx;
-                return (
-                  <g key={idx}>
-                    {/* Hitbox */}
-                    <rect
-                      x={p.x - usableWidth / pointsCount / 2}
-                      y={0}
-                      width={usableWidth / pointsCount}
-                      height={svgHeight}
-                      fill="transparent"
-                      className="cursor-pointer"
-                      onMouseEnter={() => setHoverIndex(idx)}
-                    />
-
-                    {/* X Axis Labels */}
-                    {(idx % Math.ceil(pointsCount / 7) === 0 || idx === pointsCount - 1) && (
-                      <text
-                        x={p.x}
-                        y={svgHeight - 6}
-                        textAnchor="middle"
-                        className="text-[10px] fill-muted dark:fill-night-muted font-medium"
-                      >
-                        {p.dataPoint.label}
-                      </text>
-                    )}
-
-                    {/* Hover indicator */}
-                    {isHovered && (
-                      <>
-                        <line
-                          x1={p.x}
-                          y1={paddingY}
-                          x2={p.x}
-                          y2={svgHeight - paddingY}
-                          stroke="#d97706"
-                          strokeWidth={1.5}
-                          strokeDasharray="2 2"
-                        />
-                        <circle
-                          cx={p.x}
-                          cy={p.ySales}
-                          r={5}
-                          fill="#2563eb"
-                          stroke="#ffffff"
-                          strokeWidth={2}
-                        />
-                        <circle
-                          cx={p.x}
-                          cy={p.yMargin}
-                          r={4}
-                          fill="#10b981"
-                          stroke="#ffffff"
-                          strokeWidth={2}
-                        />
-                      </>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* Tooltip Card */}
-            {hoverPoint && (
-              <div className="absolute top-2 right-3 p-3 rounded-xl bg-surface/95 dark:bg-night-surface/95 border border-border/80 dark:border-night-border shadow-lg backdrop-blur-md text-xs pointer-events-none min-w-[200px] max-w-[260px] animate-fadeIn z-10">
-                <div className="flex items-center justify-between font-bold border-b border-border/40 pb-1.5 mb-2 gap-2">
-                  <span className="text-foreground dark:text-night-text truncate">
-                    {hoverPoint.dataPoint.label}
+          {/* Tooltip Card */}
+          {hoverPoint && (
+            <div className="absolute top-2 right-3 p-3 rounded-xl bg-surface/95 dark:bg-night-surface/95 border border-border/80 dark:border-night-border shadow-lg backdrop-blur-md text-xs pointer-events-none min-w-[200px] max-w-[260px] animate-fadeIn z-10">
+              <div className="flex items-center justify-between font-bold border-b border-border/40 pb-1.5 mb-2 gap-2">
+                <span className="text-foreground dark:text-night-text truncate">
+                  {formatPointDate(hoverPoint.dataPoint.dateKey, hoverPoint.dataPoint.label)}
+                </span>
+                <span className="text-[10px] text-muted shrink-0">
+                  {formatFullPointDate(hoverPoint.dataPoint.dateKey)}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2 text-blue-600 dark:text-blue-400">
+                  <span className="shrink-0">
+                    {mode === 'period' ? t('ovChartRevenue') : t('ovChartCumulativeRevenue')}
                   </span>
-                  <span className="text-[10px] text-muted shrink-0">
-                    {hoverPoint.dataPoint.dateKey}
+                  <span className="font-bold truncate text-right">
+                    {formatMoney(
+                      mode === 'period'
+                        ? hoverPoint.dataPoint.sales
+                        : hoverPoint.dataPoint.cumulativeSales,
+                      currency
+                    )}
                   </span>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between gap-2 text-blue-600 dark:text-blue-400">
-                    <span className="shrink-0">
-                      {mode === 'period' ? 'Revenue:' : 'Cumulative Rev:'}
-                    </span>
-                    <span className="font-bold truncate text-right">
-                      {formatMoney(
-                        mode === 'period'
-                          ? hoverPoint.dataPoint.sales
-                          : hoverPoint.dataPoint.cumulativeSales,
-                        currency
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-purple-500">
-                    <span className="shrink-0">Freight Cost:</span>
-                    <span className="font-medium truncate text-right">
-                      {formatMoney(hoverPoint.dataPoint.purchaseCost, currency)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-emerald-500">
-                    <span className="shrink-0">
-                      {mode === 'period' ? 'Net Margin:' : 'Cumulative Margin:'}
-                    </span>
-                    <span className="font-bold truncate text-right">
-                      {formatMoney(
-                        mode === 'period'
-                          ? hoverPoint.dataPoint.margin
-                          : hoverPoint.dataPoint.cumulativeMargin,
-                        currency
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-muted text-[11px] pt-1 border-t border-border/30">
-                    <span>Orders:</span>
-                    <span className="font-semibold text-foreground dark:text-night-text">
-                      {hoverPoint.dataPoint.orderCount} shipments
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between gap-2 text-purple-500">
+                  <span className="shrink-0">{t('ovChartFreightCost')}</span>
+                  <span className="font-medium truncate text-right">
+                    {formatMoney(hoverPoint.dataPoint.purchaseCost, currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-emerald-500">
+                  <span className="shrink-0">
+                    {mode === 'period' ? t('ovChartNetMargin') : t('ovChartCumulativeMargin')}
+                  </span>
+                  <span className="font-bold truncate text-right">
+                    {formatMoney(
+                      mode === 'period'
+                        ? hoverPoint.dataPoint.margin
+                        : hoverPoint.dataPoint.cumulativeMargin,
+                      currency
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-muted text-[11px] pt-1 border-t border-border/30">
+                  <span>{t('ovChartOrders')}</span>
+                  <span className="font-semibold text-foreground dark:text-night-text">
+                    {t('ovShipmentsCount', { count: hoverPoint.dataPoint.orderCount })}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: Run-Rate Growth Matrix */}
-        {mainTab === 'runRate' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-            {/* Monthly Run-Rate Card */}
-            {monthlyBlock && (
-              <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-border/30">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-brand-gold/15 text-brand-gold">
-                      <CalendarDays className="size-4" />
-                    </div>
-                    <span className="text-xs font-bold text-foreground dark:text-night-text">
-                      Monthly Performance Matrix
-                    </span>
-                  </div>
-                  {monthlyBlock.revenueGrowthRate !== undefined && (
-                    <span
-                      className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        (monthlyBlock.revenueGrowthRate ?? 0) >= 0
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                      }`}
-                    >
-                      {(monthlyBlock.revenueGrowthRate ?? 0) >= 0 ? (
-                        <TrendingUp className="size-3" />
-                      ) : (
-                        <TrendingDown className="size-3" />
-                      )}
-                      {monthlyBlock.revenueGrowthRate}% MoM
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Monthly Revenue
-                    </span>
-                    <p className="text-sm font-extrabold text-foreground dark:text-night-text">
-                      {formatMoney(monthlyBlock.revenue, currency)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Monthly Net Profit
-                    </span>
-                    <p className="text-sm font-extrabold text-emerald-500">
-                      {formatMoney(monthlyBlock.netProfit, currency)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Margin Yield
-                    </span>
-                    <p className="text-xs font-bold text-brand-gold">
-                      {monthlyBlock.marginPercentage ??
-                        (monthlyBlock.revenue > 0
-                          ? ((monthlyBlock.netProfit / monthlyBlock.revenue) * 100).toFixed(1)
-                          : 0)}
-                      %
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Shipments
-                    </span>
-                    <p className="text-xs font-bold text-foreground dark:text-night-text">
-                      {monthlyBlock.orderCount} orders
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Yearly Projections Card */}
-            {yearlyBlock && (
-              <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-border/30">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-500">
-                      <CalendarCheck className="size-4" />
-                    </div>
-                    <span className="text-xs font-bold text-foreground dark:text-night-text">
-                      Year-To-Date (YTD) Trajectory
-                    </span>
-                  </div>
-                  {yearlyBlock.revenueGrowthRate !== undefined && (
-                    <span
-                      className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        (yearlyBlock.revenueGrowthRate ?? 0) >= 0
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                      }`}
-                    >
-                      {(yearlyBlock.revenueGrowthRate ?? 0) >= 0 ? (
-                        <TrendingUp className="size-3" />
-                      ) : (
-                        <TrendingDown className="size-3" />
-                      )}
-                      {yearlyBlock.revenueGrowthRate}% YoY
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Annualized Revenue
-                    </span>
-                    <p className="text-sm font-extrabold text-foreground dark:text-night-text">
-                      {formatMoney(yearlyBlock.revenue, currency)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Annual Net Profit
-                    </span>
-                    <p className="text-sm font-extrabold text-emerald-500">
-                      {formatMoney(yearlyBlock.netProfit, currency)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Margin Yield
-                    </span>
-                    <p className="text-xs font-bold text-brand-gold">
-                      {yearlyBlock.marginPercentage ??
-                        (yearlyBlock.revenue > 0
-                          ? ((yearlyBlock.netProfit / yearlyBlock.revenue) * 100).toFixed(1)
-                          : 0)}
-                      %
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted font-semibold uppercase">
-                      Total Annual Orders
-                    </span>
-                    <p className="text-xs font-bold text-foreground dark:text-night-text">
-                      {yearlyBlock.orderCount} orders
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {/* Legend */}
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-1 text-xs font-semibold">
@@ -590,19 +447,175 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
             <span className="size-2.5 rounded-full bg-blue-600 shrink-0" />
             <span className="text-foreground dark:text-night-text">
               {mode === 'period'
-                ? `Sales Revenue (${currency})`
-                : `Cumulative Revenue (${currency})`}
+                ? t('ovLegendSalesRevenue', { currency })
+                : t('ovLegendCumulativeRevenue', { currency })}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="size-2.5 rounded-full bg-emerald-500 shrink-0" />
             <span className="text-foreground dark:text-night-text">
               {mode === 'period'
-                ? `Net Profit Margin (${currency})`
-                : `Cumulative Net Margin (${currency})`}
+                ? t('ovLegendNetMargin', { currency })
+                : t('ovLegendCumulativeMargin', { currency })}
             </span>
           </div>
         </div>
+
+        {/* Run-Rate Projections Matrix (Integrated when data exists) */}
+        {hasRunRateData && (
+          <div className="space-y-3 pt-3 border-t border-border/30 dark:border-night-border/30">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <TrendingUpDown className="size-3.5 text-brand-gold" />
+                <T k="ovViewRunRate" />
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Monthly Run-Rate Card */}
+              {monthlyBlock && (
+                <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 space-y-3 shadow-2xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/30">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-brand-gold/15 text-brand-gold">
+                        <CalendarDays className="size-4" />
+                      </div>
+                      <span className="text-xs font-bold text-foreground dark:text-night-text">
+                        <T k="ovMonthlyPerformanceMatrix" />
+                      </span>
+                    </div>
+                    {monthlyBlock.revenueGrowthRate !== undefined && (
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          (monthlyBlock.revenueGrowthRate ?? 0) >= 0
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        }`}
+                      >
+                        {(monthlyBlock.revenueGrowthRate ?? 0) >= 0 ? (
+                          <TrendingUp className="size-3" />
+                        ) : (
+                          <TrendingDown className="size-3" />
+                        )}
+                        {monthlyBlock.revenueGrowthRate}% {t('ovMoMSuffix')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovMonthlyRevenue" />
+                      </span>
+                      <p className="text-sm font-extrabold text-foreground dark:text-night-text">
+                        {formatMoney(monthlyBlock.revenue, currency)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovMonthlyNetProfit" />
+                      </span>
+                      <p className="text-sm font-extrabold text-emerald-500">
+                        {formatMoney(monthlyBlock.netProfit, currency)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovMarginYield" />
+                      </span>
+                      <p className="text-xs font-bold text-brand-gold">
+                        {monthlyBlock.marginPercentage ??
+                          (monthlyBlock.revenue > 0
+                            ? ((monthlyBlock.netProfit / monthlyBlock.revenue) * 100).toFixed(1)
+                            : 0)}
+                        %
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovShipmentsTitle" />
+                      </span>
+                      <p className="text-xs font-bold text-foreground dark:text-night-text">
+                        {t('ovOrdersCount', { count: monthlyBlock.orderCount })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Yearly Projections Card */}
+              {yearlyBlock && (
+                <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 space-y-3 shadow-2xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/30">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-500">
+                        <CalendarCheck className="size-4" />
+                      </div>
+                      <span className="text-xs font-bold text-foreground dark:text-night-text">
+                        <T k="ovYtdTrajectory" />
+                      </span>
+                    </div>
+                    {yearlyBlock.revenueGrowthRate !== undefined && (
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          (yearlyBlock.revenueGrowthRate ?? 0) >= 0
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        }`}
+                      >
+                        {(yearlyBlock.revenueGrowthRate ?? 0) >= 0 ? (
+                          <TrendingUp className="size-3" />
+                        ) : (
+                          <TrendingDown className="size-3" />
+                        )}
+                        {yearlyBlock.revenueGrowthRate}% {t('ovYoYSuffix')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovAnnualizedRevenue" />
+                      </span>
+                      <p className="text-sm font-extrabold text-foreground dark:text-night-text">
+                        {formatMoney(yearlyBlock.revenue, currency)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovAnnualNetProfit" />
+                      </span>
+                      <p className="text-sm font-extrabold text-emerald-500">
+                        {formatMoney(yearlyBlock.netProfit, currency)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovMarginYield" />
+                      </span>
+                      <p className="text-xs font-bold text-brand-gold">
+                        {yearlyBlock.marginPercentage ??
+                          (yearlyBlock.revenue > 0
+                            ? ((yearlyBlock.netProfit / yearlyBlock.revenue) * 100).toFixed(1)
+                            : 0)}
+                        %
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted font-semibold uppercase">
+                        <T k="ovTotalAnnualOrders" />
+                      </span>
+                      <p className="text-xs font-bold text-foreground dark:text-night-text">
+                        {t('ovOrdersCount', { count: yearlyBlock.orderCount })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

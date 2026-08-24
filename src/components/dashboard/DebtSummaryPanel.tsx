@@ -2,6 +2,8 @@ import React from 'react';
 import { Wallet, ArrowDownToLine, ArrowUpFromLine, Scale, Users, Truck } from 'lucide-react';
 import type { DashboardDebtSummaryResponse } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
+import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface DebtSummaryPanelProps {
   data: DashboardDebtSummaryResponse | null;
@@ -11,6 +13,8 @@ interface DebtSummaryPanelProps {
 
 export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
   ({ data, loading, currency: propCurrency }) => {
+    const { t } = useTranslation();
+
     if (loading) {
       return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -39,9 +43,11 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
             </div>
             <div>
               <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-                Debt Balance
+                <T k="ovBalanceOverview" />
               </h4>
-              <p className="text-[11px] text-muted">Receivables vs payables</p>
+              <p className="text-[11px] text-muted">
+                <T k="ovReceivablesVsPayables" />
+              </p>
             </div>
           </div>
 
@@ -50,11 +56,11 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] font-bold text-muted flex items-center gap-1.5">
                 <ArrowDownToLine className="size-3.5 text-emerald-500" />
-                Receivable (clients owe)
+                <T k="ovReceivablesClientsOwe" />
               </span>
               {data.debtorClientCount !== undefined && (
                 <span className="text-[10px] font-bold text-muted">
-                  {data.debtorClientCount} clients
+                  {t('ovClientsCount', { count: data.debtorClientCount })}
                 </span>
               )}
             </div>
@@ -75,11 +81,11 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] font-bold text-muted flex items-center gap-1.5">
                 <ArrowUpFromLine className="size-3.5 text-rose-500" />
-                Payable (owed to carriers)
+                <T k="ovPayablesCarrierDebt" />
               </span>
               {data.creditorCarrierCount !== undefined && (
                 <span className="text-[10px] font-bold text-muted">
-                  {data.creditorCarrierCount} carriers
+                  {t('ovCarriersCount', { count: data.creditorCarrierCount })}
                 </span>
               )}
             </div>
@@ -110,7 +116,7 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
             />
             <div className="min-w-0">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
-                Net balance
+                <T k="ovNetCashFlowBalance" />
               </span>
               <span
                 className={`text-lg font-black tracking-tight ${
@@ -133,15 +139,19 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
             </div>
             <div>
               <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-                Top Debtor Clients
+                <T k="ovTopDebtors" />
               </h4>
-              <p className="text-[11px] text-muted">Largest unpaid balances</p>
+              <p className="text-[11px] text-muted">
+                <T k="ovLargestUnpaidBalances" />
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 mt-4 flex-1">
             {debtors.length === 0 ? (
-              <p className="text-xs text-muted py-6 text-center m-auto">No debtor clients</p>
+              <p className="text-xs text-muted py-6 text-center m-auto">
+                <T k="ovNoDebtorClients" />
+              </p>
             ) : (
               debtors.map((d, idx) => {
                 const pct = Math.max(6, Math.round((d.amount / maxFlow) * 100));
@@ -173,7 +183,9 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-muted">{d.orderCount} open orders</span>
+                    <span className="text-[10px] text-muted">
+                      {t('ovOpenOrdersCount', { count: d.orderCount })}
+                    </span>
                   </div>
                 );
               })
@@ -189,15 +201,19 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
             </div>
             <div>
               <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-                Top Creditor Carriers
+                <T k="ovTopCreditors" />
               </h4>
-              <p className="text-[11px] text-muted">What we owe carriers & agents</p>
+              <p className="text-[11px] text-muted">
+                <T k="ovOwedToCarriers" />
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 mt-4 flex-1">
             {creditors.length === 0 ? (
-              <p className="text-xs text-muted py-6 text-center m-auto">No creditor carriers</p>
+              <p className="text-xs text-muted py-6 text-center m-auto">
+                <T k="ovNoCreditorCarriers" />
+              </p>
             ) : (
               creditors.map((c, idx) => {
                 const pct = Math.max(6, Math.round((c.amount / maxFlow) * 100));
@@ -226,7 +242,9 @@ export const DebtSummaryPanel: React.FC<DebtSummaryPanelProps> = React.memo(
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-muted">{c.orderCount} open orders</span>
+                    <span className="text-[10px] text-muted">
+                      {t('ovOpenOrdersCount', { count: c.orderCount })}
+                    </span>
                   </div>
                 );
               })

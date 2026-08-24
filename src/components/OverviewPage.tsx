@@ -1,18 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Card, Button } from '@heroui/react';
 import { motion } from 'framer-motion';
-import {
-  Users,
-  Building2,
-  ArrowRight,
-  DollarSign,
-  ShieldCheck,
-  Package,
-  FileText,
-  Calendar,
-  Sparkles,
-} from 'lucide-react';
-import { usePermissions } from '../context/PermissionsContext';
+import { Calendar } from 'lucide-react';
+import { useTranslation, type Locale } from '../context/LanguageContext';
 import { api } from '../services/api';
 import type {
   Employee,
@@ -36,12 +25,18 @@ import { LogisticsOperationsHub } from './dashboard/LogisticsOperationsHub';
 import { StakeholderFinancialHub } from './dashboard/StakeholderFinancialHub';
 
 interface OverviewPageProps {
-  isAdmin: boolean;
-  onNavigate: (page: PageId) => void;
+  isAdmin?: boolean;
+  onNavigate?: (page: PageId) => void;
 }
 
-export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProps) {
-  const { canRead } = usePermissions();
+export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: OverviewPageProps) {
+  const { locale } = useTranslation();
+
+  const dateLocaleMap: Record<Locale, string> = {
+    uz: 'uz-UZ',
+    ru: 'ru-RU',
+    en: 'en-US',
+  };
 
   // Filter State
   const [filters, setFilters] = useState<DashboardFilterParams>({
@@ -142,51 +137,6 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
     });
   };
 
-  const quickActionCards = [
-    {
-      moduleKey: 'cargo_kpi',
-      pageId: 'cargo' as PageId,
-      icon: <Package className="size-5" />,
-      titleKey: 'navCargoKpi',
-      descKey: 'ovCargoKpiDesc',
-    },
-    {
-      moduleKey: 'commercial_offers',
-      pageId: 'commercial' as PageId,
-      icon: <FileText className="size-5" />,
-      titleKey: 'commercialOffersTitle',
-      descKey: 'commercialOffersSubtitle',
-    },
-    {
-      moduleKey: 'finance',
-      pageId: 'finance' as PageId,
-      icon: <DollarSign className="size-5" />,
-      titleKey: 'finTitle',
-      descKey: 'finSubtitle',
-    },
-    {
-      moduleKey: 'employees',
-      pageId: 'employees' as PageId,
-      icon: <Users className="size-5" />,
-      titleKey: 'ovManageEmployees',
-      descKey: 'ovManageEmployeesDesc',
-    },
-    {
-      moduleKey: 'departments',
-      pageId: 'departments' as PageId,
-      icon: <Building2 className="size-5" />,
-      titleKey: 'ovManageDepartments',
-      descKey: 'ovManageDepartmentsDesc',
-    },
-    {
-      moduleKey: 'roles',
-      pageId: 'roles' as PageId,
-      icon: <ShieldCheck className="size-5" />,
-      titleKey: 'rolesTitle',
-      descKey: 'rolesSubtitle',
-    },
-  ].filter((card) => canRead(card.moduleKey));
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -215,7 +165,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
           <div className="hidden sm:flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border text-muted transition-colors duration-200">
             <Calendar className="size-3.5 text-brand-gold" />
             <span>
-              {new Date().toLocaleDateString('en-US', {
+              {new Date().toLocaleDateString(dateLocaleMap[locale] || 'uz-UZ', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -268,56 +218,6 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate }: OverviewPageProp
           currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
         />
       </div>
-
-      {/* 7. Quick Operational Actions */}
-      {quickActionCards.length > 0 && (
-        <div className="flex flex-col gap-4 pt-4 border-t border-border/40 dark:border-night-border/40">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold font-serif text-foreground dark:text-night-text flex items-center gap-2">
-              <Sparkles className="size-4.5 text-brand-gold" />
-              <span>
-                <T k="ovShortcutsTitle" />
-              </span>
-            </h2>
-            <span className="text-xs text-muted">
-              <T k="ovShortcutsSubtitle" />
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {quickActionCards.map((card) => (
-              <Card
-                key={card.pageId}
-                className="group p-5 border border-border/50 dark:border-night-border bg-surface dark:bg-night-surface rounded-2xl hover:border-brand-gold/50 hover:shadow-lg transition-colors duration-200 cursor-pointer"
-                onClick={() => onNavigate(card.pageId)}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-col gap-2">
-                    <div className="size-10 rounded-xl bg-brand-gold/15 flex items-center justify-center text-brand-gold">
-                      {card.icon}
-                    </div>
-                    <h3 className="text-sm font-bold text-foreground dark:text-night-text mt-1">
-                      <T k={card.titleKey} />
-                    </h3>
-                    <p className="text-xs text-muted dark:text-night-muted leading-relaxed line-clamp-2">
-                      <T k={card.descKey} />
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    isIconOnly
-                    size="sm"
-                    className="text-muted group-hover:text-brand-gold group-hover:bg-brand-gold/10 transition-colors duration-200 shrink-0"
-                    onPress={() => onNavigate(card.pageId)}
-                  >
-                    <ArrowRight className="size-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 }

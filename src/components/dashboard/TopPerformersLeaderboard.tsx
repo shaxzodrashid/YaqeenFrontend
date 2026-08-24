@@ -3,6 +3,7 @@ import { Trophy, Building2 } from 'lucide-react';
 import type { DashboardTopPerformersResponse } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface TopPerformersLeaderboardProps {
   data: DashboardTopPerformersResponse | null;
@@ -12,6 +13,8 @@ interface TopPerformersLeaderboardProps {
 
 export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> = React.memo(
   ({ data, loading, currency: propCurrency }) => {
+    const { t } = useTranslation();
+
     if (loading) {
       return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -85,7 +88,7 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                             {mgr.employeeName}
                           </span>
                           <span className="text-[10px] text-muted truncate">
-                            {mgr.departmentName || 'Sales Dept'}
+                            {mgr.departmentName || t('ovSalesDept')}
                           </span>
                         </div>
                       </div>
@@ -101,7 +104,9 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                           <span className="text-emerald-500 font-bold truncate">
                             +{formatMoney(mgr.totalMargin, currency)} net
                           </span>
-                          <span className="text-muted shrink-0">• {mgr.orderCount} orders</span>
+                          <span className="text-muted shrink-0">
+                            • {t('ovOrdersCount', { count: mgr.orderCount })}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -186,7 +191,9 @@ export const TopPerformersLeaderboard: React.FC<TopPerformersLeaderboardProps> =
                           <span className="text-emerald-500 font-bold truncate">
                             +{formatMoney(cli.totalMargin, currency)} net
                           </span>
-                          <span className="text-muted shrink-0">• {cli.orderCount} orders</span>
+                          <span className="text-muted shrink-0">
+                            • {t('ovOrdersCount', { count: cli.orderCount })}
+                          </span>
                         </div>
                       </div>
                     </div>

@@ -2,6 +2,8 @@ import React from 'react';
 import { MapPin, ArrowRight, Globe2, TrendingUp } from 'lucide-react';
 import type { DashboardRouteAnalyticsResponse } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
+import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface RouteAnalyticsPanelProps {
   data: DashboardRouteAnalyticsResponse | null;
@@ -11,6 +13,8 @@ interface RouteAnalyticsPanelProps {
 
 export const RouteAnalyticsPanel: React.FC<RouteAnalyticsPanelProps> = React.memo(
   ({ data, loading, currency: propCurrency }) => {
+    const { t } = useTranslation();
+
     if (loading) {
       return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -37,15 +41,19 @@ export const RouteAnalyticsPanel: React.FC<RouteAnalyticsPanelProps> = React.mem
             </div>
             <div>
               <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-                Top Trade Routes
+                <T k="ovTopTradeCorridors" />
               </h4>
-              <p className="text-[11px] text-muted">Volume & revenue by corridor</p>
+              <p className="text-[11px] text-muted">
+                <T k="ovVolumeRevenueCorridor" />
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-3.5 mt-4 flex-1">
             {routes.length === 0 ? (
-              <p className="text-xs text-muted py-6 text-center">No route data available</p>
+              <p className="text-xs text-muted py-6 text-center">
+                <T k="ovNoRouteDataAvailable" />
+              </p>
             ) : (
               routes.map((r, idx) => (
                 <div key={r.route} className="min-w-0">
@@ -68,7 +76,7 @@ export const RouteAnalyticsPanel: React.FC<RouteAnalyticsPanelProps> = React.mem
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted">
-                        {r.count} trips
+                        {t('ovTripsCountWithPct', { count: r.count, pct: r.percentage })}
                       </span>
                       <span className="text-xs font-extrabold text-foreground dark:text-night-text">
                         {formatMoney(r.totalSales, currency)}
@@ -91,7 +99,10 @@ export const RouteAnalyticsPanel: React.FC<RouteAnalyticsPanelProps> = React.mem
                     </span>
                     {r.totalMargin !== undefined && (
                       <span className="text-emerald-500 font-bold shrink-0">
-                        +{formatMoney(r.totalMargin, currency)} net · {r.percentage}%
+                        {t('ovMarginWithPct', {
+                          amount: formatMoney(r.totalMargin, currency),
+                          pct: r.percentage,
+                        })}
                       </span>
                     )}
                   </div>
@@ -109,15 +120,19 @@ export const RouteAnalyticsPanel: React.FC<RouteAnalyticsPanelProps> = React.mem
             </div>
             <div>
               <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-                Origin Countries
+                <T k="ovOriginCountriesHubs" />
               </h4>
-              <p className="text-[11px] text-muted">Where your cargo comes from</p>
+              <p className="text-[11px] text-muted">
+                <T k="ovWhereCargoComesFrom" />
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-4 mt-4 flex-1 justify-center">
             {countries.length === 0 ? (
-              <p className="text-xs text-muted py-6 text-center">No country data available</p>
+              <p className="text-xs text-muted py-6 text-center">
+                <T k="ovNoCountryDataAvailable" />
+              </p>
             ) : (
               countries.map((c) => (
                 <div key={c.countryName}>
@@ -126,7 +141,7 @@ export const RouteAnalyticsPanel: React.FC<RouteAnalyticsPanelProps> = React.mem
                       {c.countryName}
                     </span>
                     <span className="text-[10px] font-bold text-muted shrink-0 ml-2">
-                      {c.count} orders · {c.percentage}%
+                      {t('ovOrdersWithPct', { count: c.count, pct: c.percentage })}
                     </span>
                   </div>
                   <div className="h-6 w-full rounded-lg bg-border/20 dark:bg-night-border/40 overflow-hidden relative">
