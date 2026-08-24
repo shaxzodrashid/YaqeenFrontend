@@ -14,8 +14,8 @@ import {
   Clock3,
   PackageCheck,
   Timer,
-  LayoutGrid,
   TrendingUp,
+  PieChart,
 } from 'lucide-react';
 import type {
   DashboardCargoDistributionResponse,
@@ -25,6 +25,7 @@ import type {
 } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface LogisticsOperationsHubProps {
   cargoDist: DashboardCargoDistributionResponse | null;
@@ -33,8 +34,6 @@ interface LogisticsOperationsHubProps {
   loading: boolean;
   currency?: string;
 }
-
-type LogisticsViewTab = 'overview' | 'corridors' | 'modalities' | 'speed';
 
 const TRANSPORT_VISUALS: Record<string, { icon: React.ReactNode; bar: string; chip: string }> = {
   AUTO: {
@@ -222,7 +221,7 @@ function PremiumPieChart({ slices, size = 216 }: { slices: PieSliceData[]; size?
                   {total.toLocaleString()}
                 </span>
                 <span className="mt-1 text-[8px] font-bold uppercase tracking-wider text-muted dark:text-night-muted">
-                  Total
+                  <T k="ovTotal" />
                 </span>
               </>
             )}
@@ -300,7 +299,7 @@ function OnTimeGauge({ percentage }: { percentage: number }) {
           <span className="text-sm font-bold text-muted">%</span>
         </span>
         <span className="block text-[9px] font-bold uppercase tracking-wider text-muted">
-          On-Time Rate
+          <T k="ovOnTimeRate" />
         </span>
       </div>
     </div>
@@ -309,11 +308,11 @@ function OnTimeGauge({ percentage }: { percentage: number }) {
 
 export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = React.memo(
   ({ cargoDist, routeData, deliveryData, loading, currency: propCurrency }) => {
-    const [viewTab, setViewTab] = useState<LogisticsViewTab>('overview');
+    const { t } = useTranslation();
 
     if (loading) {
       return (
-        <div className="p-6 rounded-2xl bg-surface/60 dark:bg-night-surface/60 border border-border/40 dark:border-night-border animate-pulse h-[460px]" />
+        <div className="p-6 rounded-2xl bg-surface/60 dark:bg-night-surface/60 border border-border/40 dark:border-night-border animate-pulse h-[520px]" />
       );
     }
 
@@ -348,106 +347,115 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
           )
         : 50;
 
+    const getModalityName = (type: string, fallbackName?: string) => {
+      const upper = (type || '').toUpperCase();
+      if (upper === 'AUTO') return t('ovTransportAuto');
+      if (upper === 'RAILWAY') return t('ovTransportRailway');
+      if (upper === 'AIR') return t('ovTransportAir');
+      if (upper === 'SEA') return t('ovTransportSea');
+      if (upper === 'OTHER') return t('ovTransportOther');
+      return fallbackName || type;
+    };
+
+    const statusLabelMap: Record<string, string> = {
+      Waiting: t('statusWaiting'),
+      Station: t('statusStation'),
+      'On the way': t('statusOnTheWay'),
+      'On the border': t('statusOnTheBorder'),
+      Reload: t('statusReload'),
+      Arrived: t('statusArrived'),
+      Delivered: t('ovStatusDelivered'),
+      'In transit': t('ovStatusInTransit'),
+      Active: t('ovStatusActive'),
+    };
+    const getStatusLabel = (st: string) => statusLabelMap[st] || st;
+
     return (
-      <div className="p-5 sm:p-6 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border shadow-xs space-y-5 transition-all duration-300">
-        {/* Header Bar with Title & Multi-Spec View Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/40 dark:border-night-border/40">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-500 shrink-0">
+      <div className="p-5 sm:p-6 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border shadow-xs space-y-6 transition-all duration-300">
+        {/* ── HEADER ──────────────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border/40 dark:border-night-border/40">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-500 shrink-0 shadow-xs">
               <Truck className="size-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground dark:text-night-text">
-                <T k="ovLogisticsHubTitle" />
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-night-text">
+                  <T k="ovLogisticsHubTitle" />
+                </h3>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
+                  <T k="ovLiveErpBadge" />
+                </span>
+              </div>
               <p className="text-xs text-muted dark:text-night-muted mt-0.5">
                 <T k="ovLogisticsHubSubtitle" />
               </p>
             </div>
           </div>
 
-          {/* Segmented View Mode Tabs */}
-          <div className="flex items-center p-1 bg-border/20 dark:bg-night-border/40 rounded-xl border border-border/30 dark:border-night-border/30">
-            <button
-              type="button"
-              onClick={() => setViewTab('overview')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                viewTab === 'overview'
-                  ? 'bg-brand-gold text-neutral-950 shadow-xs'
-                  : 'text-muted dark:text-night-muted hover:text-foreground'
-              }`}
-            >
-              <LayoutGrid className="size-3.5" />
-              <T k="ovLogisticsViewOverview" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewTab('corridors')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                viewTab === 'corridors'
-                  ? 'bg-brand-gold text-neutral-950 shadow-xs'
-                  : 'text-muted dark:text-night-muted hover:text-foreground'
-              }`}
-            >
-              <MapPin className="size-3.5" />
-              <T k="ovLogisticsViewCorridors" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewTab('modalities')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                viewTab === 'modalities'
-                  ? 'bg-brand-gold text-neutral-950 shadow-xs'
-                  : 'text-muted dark:text-night-muted hover:text-foreground'
-              }`}
-            >
-              <Boxes className="size-3.5" />
-              <T k="ovLogisticsViewModalities" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewTab('speed')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                viewTab === 'speed'
-                  ? 'bg-brand-gold text-neutral-950 shadow-xs'
-                  : 'text-muted dark:text-night-muted hover:text-foreground'
-              }`}
-            >
-              <Gauge className="size-3.5" />
-              <T k="ovLogisticsViewEfficiency" />
-            </button>
+          {/* Header Summary Chips */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {deliveryData?.onTimeRatePercentage !== undefined && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-black">
+                <PackageCheck className="size-3.5" />
+                <span>
+                  {deliveryData.onTimeRatePercentage.toFixed(1)}% {t('ovOnTimeRate')}
+                </span>
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border text-xs font-bold text-muted">
+              <MapPin className="size-3.5 text-brand-gold" />
+              <span>{t('ovActiveCorridorsCount', { count: routes.length })}</span>
+            </span>
           </div>
         </div>
 
-        {/* ── TAB 1: ALL-IN-ONE HIGH-DENSITY OVERVIEW ─────────────────────────── */}
-        {viewTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column: Top Corridors & Modality Bars */}
-            <div className="space-y-5 flex flex-col justify-between">
-              {/* Top Trade Corridors (Compact) */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-                    <MapPin className="size-3.5 text-brand-gold" />
-                    Top Trade Corridors
-                  </span>
-                  <span className="text-[10px] text-muted font-semibold">
-                    {routes.length} Active Corridors
-                  </span>
-                </div>
+        {/* ── ROW 1: TRADE CORRIDORS & ORIGIN LOADING HUBS ───────────────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-lg bg-amber-500/15 text-amber-500">
+                <MapPin className="size-3.5" />
+              </span>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
+                <T k="ovTopCorridorsFinancials" />
+              </h4>
+            </div>
+            <span className="text-[11px] text-muted font-medium">
+              <T k="ovVolumeRevenueCorridor" />
+            </span>
+          </div>
 
-                <div className="space-y-2.5">
-                  {routes.slice(0, 3).map((r, idx) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* 1. Top Trade Corridors */}
+            <div className="p-4 sm:p-4.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-border/30">
+                <span className="text-xs font-bold text-foreground dark:text-night-text flex items-center gap-2">
+                  <MapPin className="size-4 text-brand-gold" />
+                  <T k="ovTopTradeCorridors" />
+                </span>
+                <span className="text-[11px] font-bold text-muted">
+                  {t('ovCorridorsCount', { count: routes.length })}
+                </span>
+              </div>
+
+              <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                {routes.length === 0 ? (
+                  <p className="text-xs text-muted py-8 text-center">
+                    <T k="ovNoRouteDataAvailable" />
+                  </p>
+                ) : (
+                  routes.map((r, idx) => (
                     <div
                       key={r.route}
-                      className="p-2.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 min-w-0"
+                      className="p-3 rounded-xl bg-surface dark:bg-night-surface border border-border/30 hover:border-brand-gold/40 transition-all min-w-0 shadow-2xs"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className={`size-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                            className={`size-5.5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
                               idx === 0
-                                ? 'bg-brand-gold text-neutral-950'
+                                ? 'bg-brand-gold text-neutral-950 shadow-xs'
                                 : 'bg-border/40 text-muted'
                             }`}
                           >
@@ -461,6 +469,7 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
                           {formatMoney(r.totalSales, currency)}
                         </span>
                       </div>
+
                       <div className="h-1.5 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-brand-gold to-orange-400 transition-all duration-700"
@@ -469,465 +478,419 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
                           }}
                         />
                       </div>
-                      <div className="flex items-center justify-between mt-1 text-[10px] text-muted">
-                        <span className="truncate">
-                          {r.originCity || r.originCountry} →{' '}
-                          {r.destinationCity || r.destinationCountry}
+
+                      <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted">
+                        <span className="flex items-center gap-1 truncate">
+                          {r.originCity || r.originCountry || '?'}
+                          <ArrowRight className="size-2.5" />
+                          {r.destinationCity || r.destinationCountry || '?'}
                         </span>
-                        <span className="text-emerald-500 font-bold shrink-0">
-                          {r.count} trips · {r.percentage}% share
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Transport Modality Mix — Big Pie */}
-              {transportDist.length > 0 && (
-                <div className="pt-3 border-t border-border/30 dark:border-night-border/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-                      <Boxes className="size-3.5 text-cyan-500" />
-                      Transport Modality Mix
-                    </span>
-                    <span className="text-[10px] text-muted font-semibold tabular-nums">
-                      {transportDist.reduce((acc, t) => acc + t.count, 0)} orders
-                    </span>
-                  </div>
-                  <PremiumPieChart
-                    size={216}
-                    slices={transportDist.map((t) => ({
-                      key: t.type,
-                      label: t.name || t.type,
-                      value: t.count,
-                      percentage: t.percentage,
-                      color: TRANSPORT_PIE_COLORS[t.type] || TRANSPORT_PIE_COLORS.OTHER,
-                    }))}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Right Column: On-Time Speed Gauge, Delivery Benchmark & Status Pipeline */}
-            <div className="space-y-5 flex flex-col justify-between">
-              {/* Delivery Speed Scorecard */}
-              <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 flex flex-col items-center justify-center gap-3">
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-                    <Gauge className="size-3.5 text-emerald-500" />
-                    Delivery Speed & Reliability
-                  </span>
-                  {deliveryData?.averageTransitDays !== undefined && (
-                    <span className="text-xs font-black text-brand-gold">
-                      Avg: {deliveryData.averageTransitDays.toFixed(1)} days
-                    </span>
-                  )}
-                </div>
-
-                <OnTimeGauge percentage={deliveryData?.onTimeRatePercentage ?? 0} />
-
-                {/* Scorecard Mini Counter Chips */}
-                <div className="grid grid-cols-3 gap-2 w-full">
-                  <div className="p-2 rounded-lg bg-emerald-500/10 text-center">
-                    <PackageCheck className="size-3.5 text-emerald-500 mx-auto mb-0.5" />
-                    <span className="block text-xs font-black text-foreground dark:text-night-text">
-                      {deliveryData?.totalDeliveredCount ?? 0}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase text-muted">Delivered</span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-cyan-500/10 text-center">
-                    <Truck className="size-3.5 text-cyan-500 mx-auto mb-0.5" />
-                    <span className="block text-xs font-black text-foreground dark:text-night-text">
-                      {deliveryData?.totalInTransitCount ?? 0}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase text-muted">In Transit</span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-violet-500/10 text-center">
-                    <Clock3 className="size-3.5 text-violet-500 mx-auto mb-0.5" />
-                    <span className="block text-xs font-black text-foreground dark:text-night-text">
-                      {deliveryData?.totalActiveCount ?? 0}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase text-muted">Active</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Pipeline — Big Pie */}
-              {statusDist.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-                      Cargo Status Pipeline
-                    </span>
-                    <span className="text-[10px] text-muted tabular-nums">
-                      {totalCargoOrders} total shipments
-                    </span>
-                  </div>
-                  <PremiumPieChart
-                    size={216}
-                    slices={statusDist.map((s) => ({
-                      key: s.category,
-                      label: s.category,
-                      value: s.count,
-                      percentage: s.percentage,
-                      color: statusHex(s.category),
-                    }))}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 2: CORRIDORS & GEOGRAPHY ────────────────────────────────────── */}
-        {viewTab === 'corridors' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Top Trade Routes Full Breakdown */}
-            <div className="space-y-3 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-                  <MapPin className="size-4 text-brand-gold" />
-                  Top Corridors & Financials
-                </h4>
-                <span className="text-xs font-semibold text-muted">{routes.length} corridors</span>
-              </div>
-
-              <div className="space-y-3">
-                {routes.map((r, idx) => (
-                  <div
-                    key={r.route}
-                    className="p-3 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30 min-w-0"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className={`size-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                            idx === 0 ? 'bg-amber-500 text-neutral-950' : 'bg-border/40 text-muted'
-                          }`}
-                        >
-                          {idx + 1}
-                        </span>
-                        <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
-                          {r.route}
-                        </span>
-                      </div>
-                      <span className="text-xs font-extrabold text-foreground dark:text-night-text shrink-0">
-                        {formatMoney(r.totalSales, currency)}
-                      </span>
-                    </div>
-
-                    <div className="h-2 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-brand-gold to-orange-400 transition-all duration-700"
-                        style={{
-                          width: `${Math.max(6, Math.round((r.totalSales / maxRouteSales) * 100))}%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted">
-                      <span className="flex items-center gap-1 truncate">
-                        {r.originCity || r.originCountry || '?'}
-                        <ArrowRight className="size-3" />
-                        {r.destinationCity || r.destinationCountry || '?'}
-                      </span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-foreground dark:text-night-text font-semibold">
-                          {r.count} trips ({r.percentage}%)
-                        </span>
-                        {r.totalMargin !== undefined && (
+                        <div className="flex items-center gap-2 shrink-0">
                           <span className="text-emerald-500 font-bold">
-                            +{formatMoney(r.totalMargin, currency)} margin
+                            {t('ovTripsShare', { count: r.count, pct: r.percentage })}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Origin Countries Loading Hubs */}
-            <div className="space-y-3 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-                  <Globe2 className="size-4 text-blue-500" />
-                  Origin Countries & Loading Hubs
-                </h4>
-                <span className="text-xs font-semibold text-muted">
-                  {countries.length} Hub Countries
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {countries.map((c) => (
-                  <div
-                    key={c.countryName}
-                    className="p-3 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 dark:border-night-border/30"
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-foreground dark:text-night-text">
-                        {c.countryName}
-                      </span>
-                      <span className="text-[11px] font-bold text-muted">
-                        {c.count} orders · {c.percentage}% share
-                      </span>
-                    </div>
-
-                    <div className="h-6 w-full rounded-lg bg-border/20 dark:bg-night-border/40 overflow-hidden relative">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-700"
-                        style={{
-                          width: `${Math.max(8, Math.round((c.count / maxCountryCount) * 100))}%`,
-                        }}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-extrabold text-foreground dark:text-night-text flex items-center gap-1">
-                        <TrendingUp className="size-3" />
-                        {formatMoney(c.totalSales, currency)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 3: MODALITIES & CARGO MIX ───────────────────────────────────── */}
-        {viewTab === 'modalities' && (
-          <div className="space-y-6">
-            {/* Transport Modalities Large Progress Bars */}
-            <div className="space-y-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-                Multimodal Transport Modality Breakdown
-              </span>
-              <div className="space-y-3">
-                {transportDist.map((t) => {
-                  const v = TRANSPORT_VISUALS[t.type] || TRANSPORT_VISUALS.OTHER;
-                  const widthPct = Math.max(
-                    6,
-                    Math.round((t.totalSales / maxTransportSales) * 100)
-                  );
-                  return (
-                    <div key={t.type} className="group min-w-0">
-                      <div className="flex items-center justify-between gap-3 mb-1">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`p-1.5 rounded-lg shrink-0 ${v.chip}`}>{v.icon}</div>
-                          <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
-                            {t.name || t.type}
-                          </span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-border/30 text-muted shrink-0">
-                            {t.count} shipments
-                          </span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="text-xs font-extrabold text-foreground dark:text-night-text block leading-tight">
-                            {formatMoney(t.totalSales, currency)}
-                          </span>
-                          {t.totalMargin !== undefined && (
-                            <span className="text-[10px] text-emerald-500 font-bold">
-                              +{formatMoney(t.totalMargin, currency)} margin · {t.percentage}%
+                          {r.totalMargin !== undefined && (
+                            <span className="text-foreground dark:text-night-text font-bold">
+                              ({formatMoney(r.totalMargin, currency)})
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="h-3 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full bg-gradient-to-r ${v.bar} transition-all duration-700 group-hover:brightness-110`}
-                          style={{ width: `${widthPct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* LTL vs FTL Split Dual Cards */}
-            {cargoTypeDist.length > 0 && (
-              <div className="space-y-2.5 pt-2 border-t border-border/30 dark:border-night-border/30">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-                  LTL (Groupage) vs FTL (Full Truck) Split
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {cargoTypeDist.map((c) => (
-                    <div
-                      key={c.category}
-                      className={`p-4 rounded-xl border ${
-                        c.category === 'FTL'
-                          ? 'border-blue-500/30 bg-blue-500/5'
-                          : 'border-amber-500/30 bg-amber-500/5'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Boxes
-                            className={`size-4.5 ${
-                              c.category === 'FTL' ? 'text-blue-500' : 'text-amber-500'
-                            }`}
-                          />
-                          <span className="text-sm font-black text-foreground dark:text-night-text">
-                            {c.category === 'FTL'
-                              ? 'FTL (Full Truck Load)'
-                              : 'LTL (Less than Truck)'}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold text-muted">
-                          {c.count} orders · {c.percentage}%
-                        </span>
-                      </div>
-                      <div className="h-2.5 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ${
-                            c.category === 'FTL'
-                              ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-                              : 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                          }`}
-                          style={{ width: `${Math.round((c.count / totalCargoOrders) * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-black text-foreground dark:text-night-text block mt-2">
-                        {formatMoney(c.totalSales, currency)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── TAB 4: SPEED & RELIABILITY ──────────────────────────────────────── */}
-        {viewTab === 'speed' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* On-Time Delivery Rate Gauge */}
-              <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 flex flex-col items-center justify-center gap-4">
-                <OnTimeGauge percentage={deliveryData?.onTimeRatePercentage ?? 0} />
-                <div className="grid grid-cols-3 gap-2 w-full">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-center">
-                    <PackageCheck className="size-4 text-emerald-500 mx-auto mb-0.5" />
-                    <span className="block text-sm font-black text-foreground dark:text-night-text">
-                      {deliveryData?.totalDeliveredCount ?? 0}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase text-muted">Delivered</span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-cyan-500/10 text-center">
-                    <Truck className="size-4 text-cyan-500 mx-auto mb-0.5" />
-                    <span className="block text-sm font-black text-foreground dark:text-night-text">
-                      {deliveryData?.totalInTransitCount ?? 0}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase text-muted">In transit</span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-violet-500/10 text-center">
-                    <Clock3 className="size-4 text-violet-500 mx-auto mb-0.5" />
-                    <span className="block text-sm font-black text-foreground dark:text-night-text">
-                      {deliveryData?.totalActiveCount ?? 0}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase text-muted">Active</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Transit Speed Spectrum */}
-              {deliveryData && (
-                <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 flex flex-col justify-center gap-4">
-                  <div className="text-center lg:text-left">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
-                      Average Freight Transit Time
-                    </span>
-                    <span className="text-3xl font-black text-foreground dark:text-night-text tracking-tight">
-                      {deliveryData.averageTransitDays.toFixed(1)}
-                      <span className="text-base font-bold text-muted"> days</span>
-                    </span>
-                  </div>
-
-                  {transitRange > 0 && (
-                    <div>
-                      <div className="relative h-2.5 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500">
-                        <div
-                          className="absolute -top-1 size-4.5 rounded-full bg-white dark:bg-night-surface border-[3px] border-brand-gold shadow-md transition-all duration-700"
-                          style={{
-                            left: `calc(${Math.min(Math.max(avgSpeedPos, 0), 100)}% - 9px)`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1.5 text-[10px] font-bold text-muted">
-                        <span>Fastest: {deliveryData.minTransitDays}d</span>
-                        <span>Slowest: {deliveryData.maxTransitDays}d</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {(deliveryData.onTimeDeliveriesCount !== undefined ||
-                    deliveryData.delayedDeliveriesCount !== undefined) && (
-                    <div className="flex gap-2">
-                      <span className="flex-1 text-center py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-extrabold">
-                        ✓ {deliveryData.onTimeDeliveriesCount ?? 0} on-time
-                      </span>
-                      <span className="flex-1 text-center py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-extrabold">
-                        ✕ {deliveryData.delayedDeliveriesCount ?? 0} delayed
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Transit Time By Corridor */}
-              <div className="p-4 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/30 flex flex-col justify-center gap-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
-                  <Timer className="size-3.5 text-brand-gold" />
-                  Transit Speed By Corridor
-                </span>
-                {routeTransitTimes.length === 0 ? (
-                  <p className="text-xs text-muted">No route timing data available</p>
-                ) : (
-                  routeTransitTimes.map((r) => (
-                    <div key={r.route}>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
-                          {r.route}
-                        </span>
-                        <span className="text-xs font-extrabold text-brand-gold shrink-0">
-                          {r.averageTransitDays.toFixed(1)}d
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-700"
-                          style={{
-                            width: `${Math.max(
-                              8,
-                              Math.round((r.averageTransitDays / maxRouteDays) * 100)
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted">{r.count} shipments</span>
                     </div>
                   ))
                 )}
               </div>
             </div>
 
-            {/* Status Breakdown Chips */}
-            {statusBreakdown.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
-                {statusBreakdown.map((b) => (
-                  <span
-                    key={b.status}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background dark:bg-night-bg border border-border/40 text-xs font-bold"
-                  >
-                    <span className="text-muted">{b.label || b.status}:</span>
-                    <span className="text-foreground dark:text-night-text">{b.count} orders</span>
-                    <span className="text-brand-gold">({b.percentage}%)</span>
-                  </span>
-                ))}
+            {/* 2. Origin Countries & Loading Hubs */}
+            <div className="p-4 sm:p-4.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-border/30">
+                <span className="text-xs font-bold text-foreground dark:text-night-text flex items-center gap-2">
+                  <Globe2 className="size-4 text-blue-500" />
+                  <T k="ovOriginCountriesHubs" />
+                </span>
+                <span className="text-[11px] font-bold text-muted">
+                  {t('ovHubCountriesCount', { count: countries.length })}
+                </span>
               </div>
-            )}
+
+              <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                {countries.length === 0 ? (
+                  <p className="text-xs text-muted py-8 text-center">
+                    <T k="ovNoCountryDataAvailable" />
+                  </p>
+                ) : (
+                  countries.map((c) => (
+                    <div
+                      key={c.countryName}
+                      className="p-3 rounded-xl bg-surface dark:bg-night-surface border border-border/30 hover:border-blue-500/40 transition-all shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-foreground dark:text-night-text">
+                          {c.countryName}
+                        </span>
+                        <span className="text-[10px] font-bold text-muted">
+                          {t('ovOrdersShare', { count: c.count, pct: c.percentage })}
+                        </span>
+                      </div>
+
+                      <div className="h-6 w-full rounded-lg bg-border/20 dark:bg-night-border/40 overflow-hidden relative">
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-700"
+                          style={{
+                            width: `${Math.max(8, Math.round((c.count / maxCountryCount) * 100))}%`,
+                          }}
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-extrabold text-foreground dark:text-night-text flex items-center gap-1">
+                          <TrendingUp className="size-3 text-emerald-500" />
+                          {formatMoney(c.totalSales, currency)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* ── ROW 2: TRANSPORT MODALITIES & CARGO MIX ────────────────────────── */}
+        <div className="space-y-3 pt-2 border-t border-border/30 dark:border-night-border/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-lg bg-cyan-500/15 text-cyan-500">
+                <Boxes className="size-3.5" />
+              </span>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
+                <T k="ovTransportModalities" />
+              </h4>
+            </div>
+            <span className="text-[11px] text-muted font-medium">
+              <T k="ovMultimodalShare" />
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Left 7 Columns: Modality Bars + LTL/FTL Split */}
+            <div className="lg:col-span-7 space-y-4 p-4 sm:p-4.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40">
+              <div className="space-y-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
+                  <T k="ovTransportBreakdown" />
+                </span>
+                <div className="space-y-2.5">
+                  {transportDist.map((tItem) => {
+                    const v = TRANSPORT_VISUALS[tItem.type] || TRANSPORT_VISUALS.OTHER;
+                    const widthPct = Math.max(
+                      6,
+                      Math.round((tItem.totalSales / maxTransportSales) * 100)
+                    );
+                    return (
+                      <div
+                        key={tItem.type}
+                        className="group min-w-0 p-2 rounded-xl bg-surface dark:bg-night-surface border border-border/30 shadow-2xs"
+                      >
+                        <div className="flex items-center justify-between gap-3 mb-1.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className={`p-1.5 rounded-lg shrink-0 ${v.chip}`}>{v.icon}</div>
+                            <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
+                              {getModalityName(tItem.type, tItem.name)}
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-border/30 text-muted shrink-0">
+                              {t('ovShipmentsCount', { count: tItem.count })}
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-xs font-extrabold text-foreground dark:text-night-text block leading-tight">
+                              {formatMoney(tItem.totalSales, currency)}
+                            </span>
+                            {tItem.totalMargin !== undefined && (
+                              <span className="text-[10px] text-emerald-500 font-bold">
+                                {t('ovMarginWithPct', {
+                                  amount: formatMoney(tItem.totalMargin, currency),
+                                  pct: tItem.percentage,
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${v.bar} transition-all duration-700 group-hover:brightness-110`}
+                            style={{ width: `${widthPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* LTL vs FTL Split Dual Cards */}
+              {cargoTypeDist.length > 0 && (
+                <div className="space-y-2 pt-3 border-t border-border/30">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                    <T k="ovLtlFtlSplit" />
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {cargoTypeDist.map((c) => (
+                      <div
+                        key={c.category}
+                        className={`p-3.5 rounded-xl border ${
+                          c.category === 'FTL'
+                            ? 'border-blue-500/30 bg-blue-500/5'
+                            : 'border-amber-500/30 bg-amber-500/5'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <Boxes
+                              className={`size-4 ${
+                                c.category === 'FTL' ? 'text-blue-500' : 'text-amber-500'
+                              }`}
+                            />
+                            <span className="text-xs font-black text-foreground dark:text-night-text">
+                              {c.category === 'FTL' ? t('ovFtlFullName') : t('ovLtlFullName')}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-muted">
+                            {t('ovOrdersWithPct', { count: c.count, pct: c.percentage })}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              c.category === 'FTL'
+                                ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
+                                : 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                            }`}
+                            style={{ width: `${Math.round((c.count / totalCargoOrders) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-black text-foreground dark:text-night-text block mt-1.5">
+                          {formatMoney(c.totalSales, currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right 5 Columns: Modality Pie Chart */}
+            <div className="lg:col-span-5 p-4 sm:p-4.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 flex flex-col items-center justify-between gap-4">
+              <div className="flex items-center justify-between w-full pb-2 border-b border-border/30">
+                <span className="text-xs font-bold text-foreground dark:text-night-text flex items-center gap-1.5">
+                  <PieChart className="size-4 text-cyan-500" />
+                  <T k="ovTransportModalityMix" />
+                </span>
+                <span className="text-[10px] text-muted font-bold">
+                  {t('ovOrdersCount', {
+                    count: transportDist.reduce((acc, t) => acc + t.count, 0),
+                  })}
+                </span>
+              </div>
+
+              {transportDist.length > 0 ? (
+                <div className="py-2">
+                  <PremiumPieChart
+                    size={200}
+                    slices={transportDist.map((t) => ({
+                      key: t.type,
+                      label: getModalityName(t.type, t.name),
+                      value: t.count,
+                      percentage: t.percentage,
+                      color: TRANSPORT_PIE_COLORS[t.type] || TRANSPORT_PIE_COLORS.OTHER,
+                    }))}
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted py-12 text-center">
+                  <T k="ovNotAvailable" />
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── ROW 3: DELIVERY SPEED & CARGO STATUS PIPELINE ──────────────────── */}
+        <div className="space-y-3 pt-2 border-t border-border/30 dark:border-night-border/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-lg bg-emerald-500/15 text-emerald-500">
+                <Gauge className="size-3.5" />
+              </span>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted">
+                <T k="ovDeliverySpeedReliability" />
+              </h4>
+            </div>
+            <span className="text-[11px] text-muted font-medium">
+              <T k="ovTransitSpeedScorecard" />
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Left 7 Columns: Delivery Speed Scorecard & Corridor Speeds */}
+            <div className="lg:col-span-7 space-y-4 p-4 sm:p-4.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="w-full sm:w-auto">
+                  <OnTimeGauge percentage={deliveryData?.onTimeRatePercentage ?? 0} />
+                </div>
+
+                <div className="flex-1 w-full space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                      <T k="ovAvgTransitTime" />
+                    </span>
+                    {deliveryData?.averageTransitDays !== undefined && (
+                      <span className="text-sm font-black text-brand-gold">
+                        {deliveryData.averageTransitDays.toFixed(1)} {t('ovDaysSuffix')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Spectrum Slider */}
+                  {transitRange > 0 && deliveryData && (
+                    <div>
+                      <div className="relative h-2 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500">
+                        <div
+                          className="absolute -top-1 size-4 rounded-full bg-white dark:bg-night-surface border-[2.5px] border-brand-gold shadow-md transition-all duration-700"
+                          style={{
+                            left: `calc(${Math.min(Math.max(avgSpeedPos, 0), 100)}% - 8px)`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1 text-[9px] font-bold text-muted">
+                        <span>
+                          {t('ovFastestDays', { days: deliveryData.minTransitDays ?? 0 })}
+                        </span>
+                        <span>
+                          {t('ovSlowestDays', { days: deliveryData.maxTransitDays ?? 0 })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Counters */}
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-center">
+                      <PackageCheck className="size-3.5 text-emerald-500 mx-auto mb-0.5" />
+                      <span className="block text-xs font-black text-foreground dark:text-night-text">
+                        {deliveryData?.totalDeliveredCount ?? 0}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase text-muted">
+                        <T k="ovStatusDelivered" />
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-cyan-500/10 text-center">
+                      <Truck className="size-3.5 text-cyan-500 mx-auto mb-0.5" />
+                      <span className="block text-xs font-black text-foreground dark:text-night-text">
+                        {deliveryData?.totalInTransitCount ?? 0}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase text-muted">
+                        <T k="ovStatusInTransit" />
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-violet-500/10 text-center">
+                      <Clock3 className="size-3.5 text-violet-500 mx-auto mb-0.5" />
+                      <span className="block text-xs font-black text-foreground dark:text-night-text">
+                        {deliveryData?.totalActiveCount ?? 0}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase text-muted">
+                        <T k="ovStatusActive" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Corridor Speeds List */}
+              {routeTransitTimes.length > 0 && (
+                <div className="space-y-2 pt-3 border-t border-border/30">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                    <Timer className="size-3.5 text-brand-gold" />
+                    <T k="ovTransitSpeedByCorridor" />
+                  </span>
+                  <div className="space-y-2">
+                    {routeTransitTimes.map((r) => (
+                      <div
+                        key={r.route}
+                        className="p-2 rounded-xl bg-surface dark:bg-night-surface border border-border/30"
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
+                            {r.route}
+                          </span>
+                          <span className="text-xs font-extrabold text-brand-gold shrink-0">
+                            {r.averageTransitDays.toFixed(1)}d
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-700"
+                            style={{
+                              width: `${Math.max(
+                                8,
+                                Math.round((r.averageTransitDays / maxRouteDays) * 100)
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right 5 Columns: Status Pipeline Pie */}
+            <div className="lg:col-span-5 p-4 sm:p-4.5 rounded-xl bg-background/50 dark:bg-night-bg/50 border border-border/40 dark:border-night-border/40 flex flex-col items-center justify-between gap-4">
+              <div className="flex items-center justify-between w-full pb-2 border-b border-border/30">
+                <span className="text-xs font-bold text-foreground dark:text-night-text flex items-center gap-1.5">
+                  <Clock3 className="size-4 text-emerald-500" />
+                  <T k="ovCargoStatusPipeline" />
+                </span>
+                <span className="text-[10px] text-muted font-bold">
+                  {t('ovTotalShipmentsCount', { count: totalCargoOrders })}
+                </span>
+              </div>
+
+              {statusDist.length > 0 ? (
+                <div className="py-2">
+                  <PremiumPieChart
+                    size={200}
+                    slices={statusDist.map((s) => ({
+                      key: s.category,
+                      label: getStatusLabel(s.category),
+                      value: s.count,
+                      percentage: s.percentage,
+                      color: statusHex(s.category),
+                    }))}
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted py-12 text-center">
+                  <T k="ovNotAvailable" />
+                </p>
+              )}
+
+              {/* Status Breakdown Chips */}
+              {statusBreakdown.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/30 w-full justify-center">
+                  {statusBreakdown.map((b) => (
+                    <span
+                      key={b.status}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface dark:bg-night-surface border border-border/40 text-[10px] font-bold"
+                    >
+                      <span className="text-muted">{getStatusLabel(b.label || b.status)}:</span>
+                      <span className="text-foreground dark:text-night-text">{b.count}</span>
+                      <span className="text-brand-gold">({b.percentage}%)</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

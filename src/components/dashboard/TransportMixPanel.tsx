@@ -5,6 +5,8 @@ import type {
   TransportTypeDistributionItem,
 } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
+import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface TransportMixPanelProps {
   data: DashboardCargoDistributionResponse | null;
@@ -59,6 +61,8 @@ function statusColor(category: string): string {
 
 export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
   ({ data, loading, currency: propCurrency }) => {
+    const { t } = useTranslation();
+
     if (loading) {
       return (
         <div className="h-96 rounded-2xl bg-surface/60 dark:bg-night-surface/60 border border-border/40 dark:border-night-border animate-pulse p-5" />
@@ -70,8 +74,28 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
     const transportDist: TransportTypeDistributionItem[] = data.transportTypeDistribution || [];
     const statusDist = data.statusDistribution || [];
     const cargoDist = data.cargoTypeDistribution || [];
-    const maxTransportSales = Math.max(...transportDist.map((t) => t.totalSales), 1);
+    const maxTransportSales = Math.max(...transportDist.map((tItem) => tItem.totalSales), 1);
     const totalCargoOrders = cargoDist.reduce((acc, c) => acc + c.count, 0) || 1;
+
+    const modalityNameMap: Record<string, string> = {
+      AUTO: t('ovTransportAuto'),
+      RAILWAY: t('ovTransportRailway'),
+      AIR: t('ovTransportAir'),
+      SEA: t('ovTransportSea'),
+      OTHER: t('ovTransportOther'),
+    };
+    const getModalityName = (type: string, name?: string) =>
+      modalityNameMap[type.toUpperCase()] || name || type;
+
+    const statusLabelMap: Record<string, string> = {
+      Waiting: t('statusWaiting'),
+      Station: t('statusStation'),
+      'On the way': t('statusOnTheWay'),
+      'On the border': t('statusOnTheBorder'),
+      Reload: t('statusReload'),
+      Arrived: t('statusArrived'),
+    };
+    const getStatusLabel = (st: string) => statusLabelMap[st] || st;
 
     return (
       <div className="p-5 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border shadow-xs space-y-6">
@@ -82,10 +106,10 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
           </div>
           <div>
             <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-              Transport & Cargo Mix
+              <T k="ovTransportModalityMix" />
             </h4>
             <p className="text-[11px] text-muted">
-              Multimodal share · status pipeline · LTL vs FTL
+              <T k="ovMultimodalShare" />
             </p>
           </div>
         </div>
@@ -94,30 +118,36 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
         {transportDist.length > 0 && (
           <div className="space-y-3">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-              By transport type
+              <T k="ovByTransportType" />
             </span>
-            {transportDist.map((t) => {
-              const v = TRANSPORT_VISUALS[t.type] || TRANSPORT_VISUALS.OTHER;
-              const widthPct = Math.max(6, Math.round((t.totalSales / maxTransportSales) * 100));
+            {transportDist.map((tItem) => {
+              const v = TRANSPORT_VISUALS[tItem.type] || TRANSPORT_VISUALS.OTHER;
+              const widthPct = Math.max(
+                6,
+                Math.round((tItem.totalSales / maxTransportSales) * 100)
+              );
               return (
-                <div key={t.type} className="group min-w-0">
+                <div key={tItem.type} className="group min-w-0">
                   <div className="flex items-center justify-between gap-3 mb-1">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`p-1.5 rounded-lg shrink-0 ${v.chip}`}>{v.icon}</div>
                       <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
-                        {t.name || t.type}
+                        {getModalityName(tItem.type, tItem.name)}
                       </span>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted shrink-0">
-                        {t.count} orders
+                        {t('ovOrdersCount', { count: tItem.count })}
                       </span>
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-xs font-extrabold text-foreground dark:text-night-text block leading-tight">
-                        {formatMoney(t.totalSales, currency)}
+                        {formatMoney(tItem.totalSales, currency)}
                       </span>
-                      {t.totalMargin !== undefined && (
+                      {tItem.totalMargin !== undefined && (
                         <span className="text-[10px] text-emerald-500 font-bold">
-                          +{formatMoney(t.totalMargin, currency)} margin · {t.percentage}%
+                          {t('ovMarginWithPct', {
+                            amount: formatMoney(tItem.totalMargin, currency),
+                            pct: tItem.percentage,
+                          })}
                         </span>
                       )}
                     </div>
@@ -138,13 +168,13 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
         {statusDist.length > 0 && (
           <div className="space-y-2.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-              Status pipeline
+              <T k="ovCargoStatusPipeline" />
             </span>
             <div className="flex w-full h-7 rounded-xl overflow-hidden border border-border/40 dark:border-night-border/40">
               {statusDist.map((s) => (
                 <div
                   key={s.category}
-                  title={`${s.category}: ${s.count} orders (${s.percentage}%)`}
+                  title={`${getStatusLabel(s.category)}: ${s.count} orders (${s.percentage}%)`}
                   style={{ width: `${Math.max(s.percentage, 2)}%` }}
                   className={`transition-all duration-500 hover:brightness-110 ${statusColor(s.category)}`}
                 />
@@ -157,7 +187,7 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
                   className="flex items-center gap-1.5 text-[10px] font-bold text-muted"
                 >
                   <span className={`size-2 rounded-full shrink-0 ${statusColor(s.category)}`} />
-                  <span className="truncate">{s.category}</span>
+                  <span className="truncate">{getStatusLabel(s.category)}</span>
                   <span className="text-foreground dark:text-night-text ml-auto shrink-0">
                     {s.count}
                   </span>
@@ -171,7 +201,7 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
         {cargoDist.length > 0 && (
           <div className="space-y-2.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-              LTL vs FTL split
+              <T k="ovLtlFtlSplit" />
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {cargoDist.map((c) => (
@@ -191,11 +221,11 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
                         }`}
                       />
                       <span className="text-xs font-black text-foreground dark:text-night-text">
-                        {c.category}
+                        {c.category === 'FTL' ? t('ovFtlFullName') : t('ovLtlFullName')}
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-muted">
-                      {c.count} orders · {c.percentage}%
+                      {t('ovOrdersWithPct', { count: c.count, pct: c.percentage })}
                     </span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">

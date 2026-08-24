@@ -253,9 +253,20 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   // Filter lists & options
   const cargoTypes = [
     { label: t('ovAllCargoTypes'), value: '', icon: Layers },
-    { label: 'FTL (Full Truck)', value: 'FTL', icon: Package },
-    { label: 'LTL (Less Truck)', value: 'LTL', icon: Package },
+    { label: t('ovFtlFullName'), value: 'FTL', icon: Package },
+    { label: t('ovLtlFullName'), value: 'LTL', icon: Package },
   ];
+
+  const statusLabelMap: Record<string, string> = {
+    Waiting: t('statusWaiting'),
+    Station: t('statusStation'),
+    'On the way': t('statusOnTheWay'),
+    'On the border': t('statusOnTheBorder'),
+    Reload: t('statusReload'),
+    Arrived: t('statusArrived'),
+  };
+
+  const getStatusLabel = (st: string) => statusLabelMap[st] || st;
 
   const statuses = [
     { label: t('ovAllStatuses'), value: '', color: 'bg-neutral-400' },
@@ -294,8 +305,8 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     if (!filters.employee_id) return null;
     const emp = employees.find((e) => e.id === filters.employee_id);
     if (!emp) return null;
-    return `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone || 'Manager';
-  }, [employees, filters.employee_id]);
+    return `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.phone || t('ovManager');
+  }, [employees, filters.employee_id, t]);
 
   const selectedClientName = useMemo(() => {
     if (!filters.client_id) return null;
@@ -305,9 +316,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
       cli.company_name ||
       `${cli.first_name || ''} ${cli.last_name || ''}`.trim() ||
       cli.phone ||
-      'Client'
+      t('ovClient')
     );
-  }, [clients, filters.client_id]);
+  }, [clients, filters.client_id, t]);
 
   // Check if current period is one of the extra periods (1D, 5D, 5Y)
   const isExtraPeriodActive = EXTRA_PERIODS.some((p) => p.value === currentPeriod);
@@ -901,7 +912,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 onClick={() =>
                   setActivePopover(activePopover === 'morePeriods' ? null : 'morePeriods')
                 }
-                title="More timeframes"
+                title={t('ovMoreTimeframes')}
                 className={`relative px-2 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer select-none flex items-center gap-1 ${
                   isExtraPeriodActive
                     ? 'text-neutral-950 font-bold'
@@ -925,7 +936,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 <div className="absolute top-full right-0 mt-1.5 z-40 w-36 p-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border dark:border-night-border shadow-xl backdrop-blur-lg animate-fadeIn">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted px-2 py-1 flex items-center gap-1">
                     <Clock className="size-3 text-brand-gold" />
-                    <span>Timeframes</span>
+                    <span>{t('ovTimeframes')}</span>
                   </div>
                   {EXTRA_PERIODS.map((ep) => {
                     const isSelected = currentPeriod === ep.value;
@@ -1064,7 +1075,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 >
                   <Package className="size-3.5 text-brand-gold shrink-0" />
                   <span>
-                    {filters.cargo_type ? `Cargo: ${filters.cargo_type}` : t('ovCargoType')}
+                    {filters.cargo_type
+                      ? `${t('ovCargoType')}: ${filters.cargo_type}`
+                      : t('ovCargoType')}
                   </span>
                   <ChevronDown className="size-3 opacity-60 ml-0.5" />
                 </button>
@@ -1115,7 +1128,11 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   }`}
                 >
                   <Filter className="size-3.5 text-brand-gold shrink-0" />
-                  <span>{filters.status ? `Status: ${filters.status}` : t('ovStatus')}</span>
+                  <span>
+                    {filters.status
+                      ? `${t('ovStatus')}: ${getStatusLabel(filters.status)}`
+                      : t('ovStatus')}
+                  </span>
                   <ChevronDown className="size-3 opacity-60 ml-0.5" />
                 </button>
 
@@ -1211,7 +1228,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                         const fullName =
                           `${emp.first_name || ''} ${emp.last_name || ''}`.trim() ||
                           emp.phone ||
-                          'Manager';
+                          t('ovManager');
                         const initials =
                           (
                             (emp.first_name?.[0] || '') + (emp.last_name?.[0] || '')
@@ -1313,7 +1330,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                           cli.company_name ||
                           `${cli.first_name || ''} ${cli.last_name || ''}`.trim() ||
                           cli.phone ||
-                          'Client';
+                          t('ovClient');
 
                         return (
                           <button
@@ -1390,7 +1407,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             {/* Cargo filter chip */}
             {filters.cargo_type && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-gold/10 text-foreground dark:text-night-text border border-brand-gold/30 text-[11px] font-medium">
-                <span>Cargo: {filters.cargo_type}</span>
+                <span>
+                  {t('ovCargoType')}: {filters.cargo_type}
+                </span>
                 <button
                   type="button"
                   onClick={() => onFilterChange({ cargo_type: '' })}
@@ -1404,7 +1423,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             {/* Status filter chip */}
             {filters.status && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-gold/10 text-foreground dark:text-night-text border border-brand-gold/30 text-[11px] font-medium">
-                <span>Status: {filters.status}</span>
+                <span>
+                  {t('ovStatus')}: {getStatusLabel(filters.status)}
+                </span>
                 <button
                   type="button"
                   onClick={() => onFilterChange({ status: '' })}
@@ -1418,7 +1439,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             {/* Manager filter chip */}
             {selectedEmployeeName && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-gold/10 text-foreground dark:text-night-text border border-brand-gold/30 text-[11px] font-medium max-w-[180px] truncate">
-                <span className="truncate">Manager: {selectedEmployeeName}</span>
+                <span className="truncate">
+                  {t('ovManager')}: {selectedEmployeeName}
+                </span>
                 <button
                   type="button"
                   onClick={() => onFilterChange({ employee_id: '' })}
@@ -1432,7 +1455,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             {/* Client filter chip */}
             {selectedClientName && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-gold/10 text-foreground dark:text-night-text border border-brand-gold/30 text-[11px] font-medium max-w-[180px] truncate">
-                <span className="truncate">Client: {selectedClientName}</span>
+                <span className="truncate">
+                  {t('ovClient')}: {selectedClientName}
+                </span>
                 <button
                   type="button"
                   onClick={() => onFilterChange({ client_id: '' })}

@@ -16,7 +16,7 @@ import {
 import type { DashboardSummaryResponse } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
-import type { TranslationKey } from '../../context/LanguageContext';
+import { useTranslation, type TranslationKey } from '../../context/LanguageContext';
 
 interface DashboardKpiCardsProps {
   summary: DashboardSummaryResponse | null;
@@ -27,6 +27,7 @@ type KpiSpecMode = 'actuals' | 'monthly' | 'yearly';
 
 export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
   ({ summary, loading }) => {
+    const { t, locale } = useTranslation();
     const [specMode, setSpecMode] = useState<KpiSpecMode>('actuals');
 
     if (loading) {
@@ -153,7 +154,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
             </span>
           ) : (
             <span className="text-[10px] font-bold text-brand-gold px-1.5 py-0.5 rounded-full bg-brand-gold/10">
-              {activeMarginPct}% yield
+              {activeMarginPct}% {t('ovYieldSuffix')}
             </span>
           ),
       },
@@ -170,7 +171,8 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         iconBg: 'bg-purple-500/10 text-purple-500 dark:bg-purple-500/15',
         badge: (
           <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-full">
-            {activeSales > 0 ? Math.round((activeCost / activeSales) * 100) : 0}% of rev
+            {activeSales > 0 ? Math.round((activeCost / activeSales) * 100) : 0}%{' '}
+            {t('ovOfRevenueSuffix')}
           </span>
         ),
       },
@@ -193,7 +195,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         iconBg: 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/15',
         badge: (
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            F: {summary.ftlOrderCount} | L: {summary.ltlOrderCount}
+            {t('ovFtlShort')}: {summary.ftlOrderCount} | {t('ovLtlShort')}: {summary.ltlOrderCount}
           </span>
         ),
       },
@@ -218,7 +220,11 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
           <span className="truncate">
             <T
               k="ovSubTotalWeight"
-              replacements={{ weight: summary.totalWeight.toLocaleString() }}
+              replacements={{
+                weight: summary.totalWeight.toLocaleString(
+                  locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US'
+                ),
+              }}
             />
           </span>
         ),

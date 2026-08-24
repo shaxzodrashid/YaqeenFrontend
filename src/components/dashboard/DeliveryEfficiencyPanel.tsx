@@ -2,6 +2,8 @@ import React from 'react';
 import { Gauge, Clock3, PackageCheck, Truck, Timer } from 'lucide-react';
 import type { DashboardDeliveryEfficiencyResponse } from '../../types/dashboard';
 import { formatMoney } from '../../services/api';
+import { T } from '../T';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface DeliveryEfficiencyPanelProps {
   data: DashboardDeliveryEfficiencyResponse | null;
@@ -52,7 +54,7 @@ function OnTimeGauge({ percentage }: { percentage: number }) {
           <span className="text-base">%</span>
         </span>
         <span className="block text-[10px] font-bold uppercase tracking-wider text-muted">
-          On-time delivery rate
+          <T k="ovOnTimeRate" />
         </span>
       </div>
     </div>
@@ -61,6 +63,8 @@ function OnTimeGauge({ percentage }: { percentage: number }) {
 
 export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = React.memo(
   ({ data, loading, currency: propCurrency }) => {
+    const { t } = useTranslation();
+
     if (loading) {
       return (
         <div className="h-96 rounded-2xl bg-surface/60 dark:bg-night-surface/60 border border-border/40 dark:border-night-border animate-pulse p-5" />
@@ -81,6 +85,19 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
         ? Math.round(((data.averageTransitDays - (data.minTransitDays ?? 0)) / transitRange) * 100)
         : 50;
 
+    const statusLabelMap: Record<string, string> = {
+      Waiting: t('statusWaiting'),
+      Station: t('statusStation'),
+      'On the way': t('statusOnTheWay'),
+      'On the border': t('statusOnTheBorder'),
+      Reload: t('statusReload'),
+      Arrived: t('statusArrived'),
+      Delivered: t('ovStatusDelivered'),
+      'In transit': t('ovStatusInTransit'),
+      Active: t('ovStatusActive'),
+    };
+    const getStatusLabel = (st: string) => statusLabelMap[st] || st;
+
     return (
       <div className="p-5 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border shadow-xs space-y-6">
         {/* Header */}
@@ -90,9 +107,11 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
           </div>
           <div>
             <h4 className="text-sm font-bold text-foreground dark:text-night-text">
-              Delivery Efficiency
+              <T k="ovDeliverySpeedScore" />
             </h4>
-            <p className="text-[11px] text-muted">Transit speed & reliability scorecard</p>
+            <p className="text-[11px] text-muted">
+              <T k="ovTransitSpeedScorecard" />
+            </p>
           </div>
         </div>
 
@@ -107,7 +126,7 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
                   {data.totalDeliveredCount}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-wide text-muted">
-                  Delivered
+                  <T k="ovStatusDelivered" />
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-cyan-500/10 text-center">
@@ -116,7 +135,7 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
                   {data.totalInTransitCount ?? 0}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-wide text-muted">
-                  In transit
+                  <T k="ovStatusInTransit" />
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-violet-500/10 text-center">
@@ -125,7 +144,7 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
                   {data.totalActiveCount ?? 0}
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-wide text-muted">
-                  Active
+                  <T k="ovStatusActive" />
                 </span>
               </div>
             </div>
@@ -135,11 +154,11 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
           <div className="flex flex-col justify-center gap-4 min-w-0">
             <div className="text-center lg:text-left">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
-                Average transit time
+                <T k="ovAvgTransitTime" />
               </span>
               <span className="text-4xl font-black text-foreground dark:text-night-text tracking-tight">
                 {data.averageTransitDays.toFixed(1)}
-                <span className="text-lg font-bold text-muted"> days</span>
+                <span className="text-lg font-bold text-muted"> {t('ovDaysSuffix')}</span>
               </span>
             </div>
 
@@ -152,8 +171,8 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
                   />
                 </div>
                 <div className="flex justify-between mt-1.5 text-[10px] font-bold text-muted">
-                  <span>Fastest: {data.minTransitDays}d</span>
-                  <span>Slowest: {data.maxTransitDays}d</span>
+                  <span>{t('ovFastestDays', { days: data.minTransitDays ?? 0 })}</span>
+                  <span>{t('ovSlowestDays', { days: data.maxTransitDays ?? 0 })}</span>
                 </div>
               </div>
             )}
@@ -162,10 +181,10 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
               data.delayedDeliveriesCount !== undefined) && (
               <div className="flex gap-2">
                 <span className="flex-1 text-center py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-extrabold">
-                  ✓ {data.onTimeDeliveriesCount ?? 0} on-time
+                  {t('ovOnTimeCount', { count: data.onTimeDeliveriesCount ?? 0 })}
                 </span>
                 <span className="flex-1 text-center py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-extrabold">
-                  ✕ {data.delayedDeliveriesCount ?? 0} delayed
+                  {t('ovDelayedCount', { count: data.delayedDeliveriesCount ?? 0 })}
                 </span>
               </div>
             )}
@@ -175,10 +194,12 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
           <div className="flex flex-col justify-center gap-3 min-w-0">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
               <Timer className="size-3.5" />
-              Transit time by route
+              <T k="ovTransitSpeedByCorridor" />
             </span>
             {routes.length === 0 ? (
-              <p className="text-xs text-muted">No route timing data</p>
+              <p className="text-xs text-muted">
+                <T k="ovNoRouteTimingData" />
+              </p>
             ) : (
               routes.map((r) => (
                 <div key={r.route}>
@@ -201,7 +222,9 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
                       }}
                     />
                   </div>
-                  <span className="text-[10px] text-muted">{r.count} shipments</span>
+                  <span className="text-[10px] text-muted">
+                    {t('ovShipmentsCount', { count: r.count })}
+                  </span>
                 </div>
               ))
             )}
@@ -217,7 +240,7 @@ export const DeliveryEfficiencyPanel: React.FC<DeliveryEfficiencyPanelProps> = R
                 title={b.totalSales !== undefined ? formatMoney(b.totalSales, currency) : undefined}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-[11px] font-bold text-muted-foreground"
               >
-                {b.label || b.status}
+                {getStatusLabel(b.label || b.status)}
                 <span className="text-foreground dark:text-night-text">{b.count}</span>
                 <span className="text-muted">({b.percentage}%)</span>
               </span>
