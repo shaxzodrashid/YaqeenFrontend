@@ -32,6 +32,7 @@ import type {
 import type { CurrencyType, TransportType } from '../../services/cargoRegistrations.service';
 import { CitySelect } from './CitySelect';
 import { NumberInput } from '../NumberInput';
+import { PhoneInput } from '../PhoneInput';
 
 const TRANSPORT_TYPE_ICONS: Record<TransportType, React.ReactNode> = {
   auto: <Truck className="size-3.5" />,
@@ -655,15 +656,12 @@ export function ConsolidationModal({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('carrierPhone')}
-                  </label>
-                  <input
-                    type="text"
+                  <PhoneInput
+                    size="sm"
+                    label={t('carrierPhone')}
                     placeholder="e.g. +998 90 123 4567"
                     value={carrierPhone}
-                    onChange={(e) => setCarrierPhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                    onChange={(val) => setCarrierPhone(val)}
                   />
                 </div>
               </div>

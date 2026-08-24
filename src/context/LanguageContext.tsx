@@ -729,7 +729,7 @@ const translations = {
     consolidationTitle: 'Cargo Consolidations & Truck Groupage (LTL)',
     consolidationSubtitle:
       'Manage multi-client truck capacity, track volume & weight utilization, route logistics, and consolidated net profit.',
-    newConsolidationBtn: '+ New Consolidation',
+    newConsolidationBtn: 'New Consolidation',
     editConsolidation: 'Edit Consolidation',
     createConsolidation: 'Create Consolidation',
     assignCargos: 'Assign Cargos',
@@ -2406,7 +2406,7 @@ const translations = {
     consolidationTitle: 'Консолидация грузов и сборные рейсы (LTL)',
     consolidationSubtitle:
       'Управление вместимостью машин, учет объема (м³) и веса (кг), логистика маршрута и сводная маржа рейса.',
-    newConsolidationBtn: '+ Новая консолидация',
+    newConsolidationBtn: 'Новая консолидация',
     editConsolidation: 'Редактировать рейс',
     createConsolidation: 'Создать консолидацию',
     assignCargos: 'Назначить грузы',
@@ -4084,7 +4084,7 @@ const translations = {
     consolidationTitle: "Yuklar konsolidatsiyasi va Yig'ma reyslar (LTL)",
     consolidationSubtitle:
       "Avtomobil sig'imi, hajm (m³) va og'irlik (kg) yuklamasi, yo'nalish logistikasi hamda reys sof foydasi boshqaruvi.",
-    newConsolidationBtn: '+ Yangi konsolidatsiya',
+    newConsolidationBtn: 'Yangi konsolidatsiya',
     editConsolidation: 'Reysni tahrirlash',
     createConsolidation: 'Konsolidatsiya yaratish',
     assignCargos: 'Yuklarni biriktirish',
