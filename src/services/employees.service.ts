@@ -6,6 +6,7 @@ export interface Department {
   id: string;
   name: string;
   display_name: string;
+  employee_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -562,6 +563,7 @@ export const demoDepartmentsDb: Map<string, Department> = new Map([
       id: '07d223ca-4167-47f7-a929-61d47a3628a7',
       name: 'sales',
       display_name: 'Sales HQ',
+      employee_count: 3,
       created_at: '2026-07-19T13:22:58.587Z',
       updated_at: '2026-07-19T13:22:58.587Z',
     },
@@ -572,6 +574,7 @@ export const demoDepartmentsDb: Map<string, Department> = new Map([
       id: 'dep-logistics',
       name: 'logistics',
       display_name: 'Logistics',
+      employee_count: 1,
       created_at: '2026-07-19T15:00:00.000Z',
       updated_at: '2026-07-19T15:00:00.000Z',
     },
@@ -582,6 +585,7 @@ export const demoDepartmentsDb: Map<string, Department> = new Map([
       id: 'dep-seo',
       name: 'seo',
       display_name: 'SEO & Marketing',
+      employee_count: 1,
       created_at: '2026-07-19T16:00:00.000Z',
       updated_at: '2026-07-19T16:00:00.000Z',
     },
@@ -592,6 +596,7 @@ export const demoDepartmentsDb: Map<string, Department> = new Map([
       id: 'dep-groupage',
       name: 'groupage',
       display_name: "Yig'ma yuklar",
+      employee_count: 1,
       created_at: '2026-07-19T14:30:00.000Z',
       updated_at: '2026-07-19T14:30:00.000Z',
     },
@@ -602,6 +607,7 @@ export const demoDepartmentsDb: Map<string, Department> = new Map([
       id: 'dep-customs',
       name: 'customs',
       display_name: 'Bojxona',
+      employee_count: 1,
       created_at: '2026-07-19T17:00:00.000Z',
       updated_at: '2026-07-19T17:00:00.000Z',
     },
@@ -614,9 +620,20 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // GET /departments
   if (path === '/departments' && method === 'GET') {
+    // Compute employee_count dynamically from employees
+    const empCountMap: Record<string, number> = {};
+    for (const emp of demoEmployeesDb.values()) {
+      if (emp.department_id) {
+        empCountMap[emp.department_id] = (empCountMap[emp.department_id] || 0) + 1;
+      }
+    }
+    const depts = Array.from(demoDepartmentsDb.values()).map((dept) => ({
+      ...dept,
+      employee_count: empCountMap[dept.id] || 0,
+    }));
     return {
       handled: true,
-      result: Array.from(demoDepartmentsDb.values()),
+      result: depts,
     };
   }
 
@@ -635,6 +652,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       id: `dep-${Math.random().toString(36).substring(2, 9)}`,
       name: body.name,
       display_name: body.display_name,
+      employee_count: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
