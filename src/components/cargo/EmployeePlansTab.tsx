@@ -22,6 +22,7 @@ import {
   Crown,
   Medal,
   Flame,
+  Building,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -33,6 +34,9 @@ import { EmployeeSelect } from './EmployeeSelect';
 import { EmployeePlanDetailsModal } from './EmployeePlanDetailsModal';
 import { PlansDepartmentAnalytics } from './PlansDepartmentAnalytics';
 import { NumberInput } from '../NumberInput';
+import { Select } from '../Select';
+import type { SelectOption } from '../Select';
+import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 
 export type PlanViewMode = 'leaderboard' | 'table' | 'analytics';
 
@@ -66,6 +70,10 @@ export function EmployeePlansTab() {
   // Detail / Performance History Modal State
   const [detailEmpId, setDetailEmpId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
+
+  // Deletion approval
+  const [pendingDeletePlan, setPendingDeletePlan] = useState<EmployeePlanProgress | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
@@ -108,17 +116,27 @@ export function EmployeePlansTab() {
     setIsDetailModalOpen(true);
   };
 
-  const handleDeletePlan = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this target plan?')) return;
+  const handleDeletePlan = (id: string) => {
+    const plan = data?.plans.find((p) => p.id === id) ?? null;
+    if (plan) setPendingDeletePlan(plan);
+    else setPendingDeletePlan({ id, employee_name: 'Target Plan' } as EmployeePlanProgress);
+  };
+
+  const handleConfirmDeletePlan = async () => {
+    if (!pendingDeletePlan) return;
+    setIsDeleting(true);
     try {
-      await cargoKpiApi.deletePlan(id);
+      await cargoKpiApi.deletePlan(pendingDeletePlan.id);
       showNotification(
         t('successPlanDeleted') || 'Employee target plan deleted successfully',
         'success'
       );
+      setPendingDeletePlan(null);
       loadPlans();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to delete plan', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -255,6 +273,15 @@ export function EmployeePlansTab() {
     });
     return Array.from(depts);
   }, [data?.plans]);
+
+  // Memoized Select Options for department filter
+  const departmentSelectOptions = useMemo<SelectOption[]>(() => {
+    return departmentsList.map((d) => ({
+      value: d,
+      label: d,
+      icon: <Building className="size-3.5 text-muted shrink-0" />,
+    }));
+  }, [departmentsList]);
 
   // Aggregate totals
   const totalLtlTarget = useMemo(
@@ -770,18 +797,18 @@ export function EmployeePlansTab() {
               {departmentsList.length > 0 && (
                 <>
                   <div className="h-5 w-px bg-border mx-1 shrink-0" />
-                  <select
-                    value={deptFilter}
-                    onChange={(e) => setDeptFilter(e.target.value)}
-                    className="px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">{t('allDepartments') || 'All Departments'}</option>
-                    {departmentsList.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    size="sm"
+                    value={deptFilter === 'all' ? '' : deptFilter}
+                    onChange={(val) => setDeptFilter(val || 'all')}
+                    placeholder={t('allDepartments') || 'All Departments'}
+                    allowClear
+                    fullWidth={false}
+                    className="w-40 sm:w-48 shrink-0"
+                    startContent={<Building className="size-3.5 text-muted shrink-0" />}
+                    options={departmentSelectOptions}
+                    aria-label={t('allDepartments') || 'All Departments'}
+                  />
                 </>
               )}
             </div>
@@ -1333,6 +1360,68 @@ export function EmployeePlansTab() {
         onClose={() => setIsDetailModalOpen(false)}
         employeeId={detailEmpId}
         month={month}
+      />
+
+      <DeletionApprovalModal
+        isOpen={!!pendingDeletePlan}
+        onClose={() => !isDeleting && setPendingDeletePlan(null)}
+        onConfirm={handleConfirmDeletePlan}
+        isBusy={isDeleting}
+        title={
+          pendingDeletePlan
+            ? t('confirmDeletePlan', { name: pendingDeletePlan.employee_name })
+            : t('confirmDeletePlan', { name: '' })
+        }
+        description={t('deletePlanDetail')}
+        confirmLabel={t('actionDelete')}
+        cancelLabel={t('actionCancel')}
+        entityPreview={
+          pendingDeletePlan ? (
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="space-y-0.5">
+                <div className="text-muted-foreground font-semibold">
+                  {t('assignedEmployeeLabel')}
+                </div>
+                <div className="font-bold text-foreground truncate">
+                  {pendingDeletePlan.employee_name}
+                </div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-muted-foreground font-semibold">{t('targetPeriodMonth')}</div>
+                <div className="font-mono font-bold text-foreground">{month}</div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-muted-foreground font-semibold">
+                  {t('planLtlTargetVolume')}
+                </div>
+                <div className="font-bold text-foreground">
+                  {pendingDeletePlan.ltl_plan?.target_volume ??
+                    pendingDeletePlan.ltl_target_volume ??
+                    0}{' '}
+                  m³
+                </div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-muted-foreground font-semibold">
+                  {t('planFtlTargetAmount')}
+                </div>
+                <div className="font-mono font-bold text-foreground">
+                  {formatMoney(
+                    pendingDeletePlan.ftl_plan?.target_amount ??
+                      pendingDeletePlan.ftl_target_amount ??
+                      0,
+                    pendingDeletePlan.currency || 'USD'
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : undefined
+        }
+        consequences={[
+          t('deletePlanConsequencePermanent'),
+          t('deletePlanConsequenceRanking'),
+          t('deletePlanConsequenceUndo'),
+        ]}
       />
     </div>
   );

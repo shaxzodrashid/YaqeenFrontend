@@ -603,6 +603,7 @@ const translations = {
     fieldPhoneFormat: 'Enter a valid phone number (9-15 digits)',
     fieldNameLength: 'Must be 2-100 characters',
     fieldSelectDept: 'Select a department',
+    fieldSelectRole: 'Select Role',
 
     // Employee table columns
     colName: 'Name',
@@ -1448,6 +1449,82 @@ const translations = {
     lblTotalCost: 'Total Cost',
     confirmDeleteCargoReg: 'Are you sure you want to delete this cargo registration?',
     successCargoRegDeleted: 'Cargo registration deleted successfully',
+
+    // Deletion Approval Modal (locale-aware)
+    deleteModalPleaseNote: 'Please note',
+    deleting: 'Deleting...',
+    closeDialog: 'Close dialog',
+    deleteModalTruckContainer: 'Truck / Container',
+    deleteModalTruckCode: 'Truck / Code',
+    deleteModalCargo: 'Cargo',
+    deleteModalClient: 'Client',
+    deleteModalRoute: 'Route',
+    deleteModalStatus: 'Status',
+    deleteModalCarrier: 'Carrier',
+    deleteModalLoad: 'Load',
+    deleteModalContainer: 'Container',
+    deleteModalBuy: 'Buy',
+    deleteModalSell: 'Sell',
+    deleteModalMargin: 'Margin',
+    deleteModalCargosCount: '{count} cargos',
+    deleteModalContainersSelected: '{count} containers selected',
+    deleteModalMore: '+{count} more',
+    deleteCargoConsequencePermanent:
+      'Registration will be permanently removed from the ledger and cannot be restored.',
+    deleteCargoConsequenceRecalc:
+      'Aggregated net yield & gross revenue totals will be recalculated after deletion.',
+    deleteCargoConsequenceVolumeFreed:
+      'If this cargo is packed into a consolidation truck, its volume will be freed.',
+    deleteConsolidationConsequencePermanent:
+      'The consolidation trip will be permanently removed; this cannot be undone.',
+    deleteConsolidationConsequenceUnlinked:
+      'All {count} packed cargo(s) will be unlinked and returned to the unassigned pool.',
+    deleteConsolidationConsequenceRecalc:
+      'Volume & weight capacity and net margin aggregates will be recalculated.',
+    deleteShipmentConsequencePermanent:
+      'The shipment record will be permanently deleted and cannot be restored.',
+    deleteShipmentConsequenceTotals:
+      'Ledger totals, active container counts and margin analytics will be refreshed.',
+    deleteShipmentConsequenceConsolidation:
+      'If part of a consolidation, verify truck capacity separately.',
+    deleteBatchConsequenceAllRemoved: 'All {count} selected shipments will be permanently removed.',
+    deleteBatchConsequenceRecalc:
+      'Bulk totals and pipeline distribution will be recalculated immediately.',
+    deleteBatchConsequenceUndo: 'This action cannot be undone – ensure selection is correct.',
+    deleteDetachConsequenceFreed: 'Cargo volume & weight will be freed from this truck’s capacity.',
+    deleteDetachConsequenceMargin: 'Net margin for this consolidation will be recalculated.',
+    deleteDetachConsequenceRemains: 'Cargo remains in ledger and can be repacked to another truck.',
+    deleteCargoRegDetail:
+      'This will permanently delete the cargo registration and recalculate yield & revenue metrics. No funds will be charged; only the record is removed.',
+    deleteConsolidationDetail:
+      'The consolidation trip will be permanently deleted. Packed client cargos will be safely unlinked and returned to unassigned pool. No funds are charged.',
+    deleteShipmentDetail:
+      'This shipment will be permanently deleted from tracking and ledger. No charges are applied on deletion; aggregated revenue and margin will be recalculated.',
+    deleteBatchShipmentDetail:
+      'You are about to permanently delete {count} container shipments. This bulk action is irreversible.',
+    deleteDetachDetail:
+      '“{name}” will be unlinked from {truck} [{code}] and returned to the unassigned LTL pool. No data is deleted.',
+    confirmDeleteBatchShipment: 'Delete {count} selected shipments?',
+    confirmResetLtlDesc:
+      'All LTL cargo items and derived KPI calculations for every employee will be permanently cleared. This cannot be undone.',
+    confirmRemoveCargoDesc:
+      '“{name}” will be unlinked from {truck} [{code}] and returned to the unassigned LTL pool. No data is deleted.',
+    actionDetach: 'Detach cargo',
+    confirmDeletePlan: 'Delete target plan for {name}?',
+    deleteModalEmployeesCount: '{count} employees',
+    deleteModalLtlItemsCount: '{count} LTL items',
+    deleteLtlConsequenceAllDeleted: 'Every LTL item across all employees will be deleted.',
+    deleteLtlConsequenceCoeff: 'Volume coefficients and final KPI amounts will be reset to zero.',
+    deleteLtlConsequenceRegistrations:
+      'Cargo registrations remain untouched; only LTL KPI sandbox is cleared.',
+    deletePlanConsequencePermanent: 'The target plan for this period will be permanently removed.',
+    deletePlanConsequenceRanking:
+      'Leaderboard ranking and department analytics will be recalculated.',
+    deletePlanConsequenceUndo: 'This action cannot be undone.',
+    deletePlanDetail:
+      'The monthly LTL volume & FTL revenue targets for this employee will be permanently deleted. Progress will be recalculated without this plan.',
+    deleteModalUnlink: 'Unlink',
+    deleteModalRemaining: 'Remaining',
 
     // Cargo Filter Modal & Button
     cargoFilterModalTitle: 'Filters',
@@ -2387,6 +2464,7 @@ const translations = {
     fieldPhoneFormat: 'Введите корректный номер телефона (9-15 цифр)',
     fieldNameLength: 'Должно быть от 2 до 100 символов',
     fieldSelectDept: 'Выберите отдел',
+    fieldSelectRole: 'Выберите роль',
 
     // Employee table columns
     colName: 'Имя',
@@ -3227,6 +3305,79 @@ const translations = {
     lblTotalCost: 'Общая стоимость',
     confirmDeleteCargoReg: 'Вы уверены, что хотите удалить эту регистрацию груза?',
     successCargoRegDeleted: 'Регистрация груза успешно удалена',
+
+    // Deletion Approval Modal (locale-aware)
+    deleteModalPleaseNote: 'Пожалуйста, обратите внимание',
+    deleting: 'Удаление...',
+    closeDialog: 'Закрыть окно',
+    deleteModalTruckContainer: 'Грузовик / Контейнер',
+    deleteModalTruckCode: 'Грузовик / Код',
+    deleteModalCargo: 'Груз',
+    deleteModalClient: 'Клиент',
+    deleteModalRoute: 'Маршрут',
+    deleteModalStatus: 'Статус',
+    deleteModalCarrier: 'Перевозчик',
+    deleteModalLoad: 'Загрузка',
+    deleteModalContainer: 'Контейнер',
+    deleteModalBuy: 'Покупка',
+    deleteModalSell: 'Продажа',
+    deleteModalMargin: 'Маржа',
+    deleteModalCargosCount: '{count} грузов',
+    deleteModalContainersSelected: 'Выбрано контейнеров: {count}',
+    deleteModalMore: '+ещё {count}',
+    deleteCargoConsequencePermanent:
+      'Запись будет безвозвратно удалена из реестра и не подлежит восстановлению.',
+    deleteCargoConsequenceRecalc:
+      'Итоговые показатели чистой прибыли и выручки будут пересчитаны после удаления.',
+    deleteCargoConsequenceVolumeFreed:
+      'Если груз размещён в консолидационном рейсе, его объём будет освобождён.',
+    deleteConsolidationConsequencePermanent:
+      'Консолидационный рейс будет безвозвратно удалён; действие нельзя отменить.',
+    deleteConsolidationConsequenceUnlinked:
+      'Все {count} прикреплённых грузов будут откреплены и возвращены в пул нераспределённых.',
+    deleteConsolidationConsequenceRecalc: 'Объём, вес и маржа будут пересчитаны.',
+    deleteShipmentConsequencePermanent:
+      'Запись рейса будет безвозвратно удалена и не подлежит восстановлению.',
+    deleteShipmentConsequenceTotals:
+      'Итоги реестра, количество активных контейнеров и аналитика маржи будут обновлены.',
+    deleteShipmentConsequenceConsolidation:
+      'Если рейс является частью консолидации, проверьте загрузку грузовика отдельно.',
+    deleteBatchConsequenceAllRemoved: 'Все {count} выбранных рейсов будут безвозвратно удалены.',
+    deleteBatchConsequenceRecalc: 'Массовые итоги и распределение будут пересчитаны немедленно.',
+    deleteBatchConsequenceUndo: 'Действие нельзя отменить — убедитесь, что выбор верный.',
+    deleteDetachConsequenceFreed: 'Объём и вес груза будут освобождены в этом грузовике.',
+    deleteDetachConsequenceMargin: 'Чистая маржа консолидации будет пересчитана.',
+    deleteDetachConsequenceRemains: 'Груз остаётся в реестре и может быть повторно упакован.',
+    deleteCargoRegDetail:
+      'Запись груза будет безвозвратно удалена с пересчётом доходности и выручки. Средства не списываются; удаляется только запись.',
+    deleteConsolidationDetail:
+      'Консолидационный рейс будет безвозвратно удалён. Прикреплённые грузы клиентов будут откреплены и возвращены в пул нераспределённых. Средства не списываются.',
+    deleteShipmentDetail:
+      'Рейс будет безвозвратно удалён из трекинга и реестра. Списаний нет; агрегированная выручка и маржа будут пересчитаны.',
+    deleteBatchShipmentDetail:
+      'Вы собираетесь безвозвратно удалить {count} контейнерных рейсов. Массовое действие необратимо.',
+    deleteDetachDetail:
+      '“{name}” будет откреплён от {truck} [{code}] и возвращён в пул нераспределённых LTL. Данные не удаляются.',
+    confirmDeleteBatchShipment: 'Удалить {count} выбранных рейсов?',
+    confirmResetLtlDesc:
+      'Все LTL грузы и производные расчёты KPI для каждого сотрудника будут безвозвратно очищены. Действие нельзя отменить.',
+    confirmRemoveCargoDesc:
+      '“{name}” будет откреплён от {truck} [{code}] и возвращён в пул нераспределённых LTL. Данные не удаляются.',
+    actionDetach: 'Открепить груз',
+    confirmDeletePlan: 'Удалить целевой план для {name}?',
+    deleteModalEmployeesCount: '{count} сотрудников',
+    deleteModalLtlItemsCount: '{count} LTL грузов',
+    deleteLtlConsequenceAllDeleted: 'Каждый LTL груз всех сотрудников будет удалён.',
+    deleteLtlConsequenceCoeff: 'Коэффициенты объёма и итоговые KPI будут сброшены в ноль.',
+    deleteLtlConsequenceRegistrations:
+      'Регистрации грузов не затрагиваются; очищается только LTL песочница KPI.',
+    deletePlanConsequencePermanent: 'Целевой план за этот период будет безвозвратно удалён.',
+    deletePlanConsequenceRanking: 'Рейтинг лидерборда и аналитика отделов будут пересчитаны.',
+    deletePlanConsequenceUndo: 'Действие нельзя отменить.',
+    deletePlanDetail:
+      'Месячные цели по LTL объёму и FTL выручке для этого сотрудника будут безвозвратно удалены. Прогресс будет пересчитан без этого плана.',
+    deleteModalUnlink: 'Открепить',
+    deleteModalRemaining: 'Осталось',
 
     // Cargo Filter Modal & Button
     cargoFilterModalTitle: 'Фильтры',
@@ -4173,6 +4324,7 @@ const translations = {
     fieldPhoneFormat: "To'g'ri telefon raqamini kiriting (9-15 raqam)",
     fieldNameLength: "2 dan 100 gacha belgi bo'lishi kerak",
     fieldSelectDept: "Bo'limni tanlang",
+    fieldSelectRole: 'Lavozimni tanlang',
 
     // Employee table columns
     colName: 'Ism',
@@ -5016,6 +5168,79 @@ const translations = {
     lblTotalCost: 'Umumiy qiymat',
     confirmDeleteCargoReg: "Haqiqatan ham ushbu yuk ro'yxatini o'chirmoqchimisiz?",
     successCargoRegDeleted: "Yuk ro'yxati muvaffaqiyatli o'chirildi",
+
+    // Deletion Approval Modal (locale-aware)
+    deleteModalPleaseNote: 'Iltimos, e’tibor bering',
+    deleting: 'O‘chirilmoqda...',
+    closeDialog: 'Oynani yopish',
+    deleteModalTruckContainer: 'Yuk mashinasi / Konteyner',
+    deleteModalTruckCode: 'Mashina / Kod',
+    deleteModalCargo: 'Yuk',
+    deleteModalClient: 'Mijoz',
+    deleteModalRoute: 'Yo‘nalish',
+    deleteModalStatus: 'Holat',
+    deleteModalCarrier: 'Tashuvchi',
+    deleteModalLoad: 'Yuklama',
+    deleteModalContainer: 'Konteyner',
+    deleteModalBuy: 'Sotib olish',
+    deleteModalSell: 'Sotish',
+    deleteModalMargin: 'Marja',
+    deleteModalCargosCount: '{count} ta yuk',
+    deleteModalContainersSelected: 'Tanlangan konteynerlar: {count} ta',
+    deleteModalMore: 'yana +{count} ta',
+    deleteCargoConsequencePermanent: 'Yozuv reestrdan butunlay o‘chiriladi va qayta tiklanmaydi.',
+    deleteCargoConsequenceRecalc:
+      'Jami sof foyda va tushum ko‘rsatkichlari o‘chirishdan so‘ng qayta hisoblanadi.',
+    deleteCargoConsequenceVolumeFreed:
+      'Agar yuk konsolidatsiya reysiga yuklangan bo‘lsa, uning hajmi bo‘shatiladi.',
+    deleteConsolidationConsequencePermanent:
+      'Konsolidatsiya reysi butunlay o‘chiriladi; buni bekor qilib bo‘lmaydi.',
+    deleteConsolidationConsequenceUnlinked:
+      'Barcha {count} ta biriktirilgan yuklar ajratilib, taqsimlanmaganlar puliga qaytariladi.',
+    deleteConsolidationConsequenceRecalc: 'Hajm, vazn sig‘imi va sof marja qayta hisoblanadi.',
+    deleteShipmentConsequencePermanent: 'Reys yozuvi butunlay o‘chiriladi va qayta tiklanmaydi.',
+    deleteShipmentConsequenceTotals:
+      'Reestr jami, faol konteynerlar soni va marja tahlili yangilanadi.',
+    deleteShipmentConsequenceConsolidation:
+      'Agar reys konsolidatsiya tarkibida bo‘lsa, yuk mashinasi sig‘imini alohida tekshiring.',
+    deleteBatchConsequenceAllRemoved: 'Barcha {count} ta tanlangan reyslar butunlay o‘chiriladi.',
+    deleteBatchConsequenceRecalc: 'Ommaviy jamlamalar va taqsimot darhol qayta hisoblanadi.',
+    deleteBatchConsequenceUndo:
+      'Bu amalni bekor qilib bo‘lmaydi – tanlov to‘g‘riligiga ishonch hosil qiling.',
+    deleteDetachConsequenceFreed: 'Yukning hajmi va og‘irligi ushbu mashinadan bo‘shatiladi.',
+    deleteDetachConsequenceMargin: 'Konsolidatsiyaning sof marjasi qayta hisoblanadi.',
+    deleteDetachConsequenceRemains:
+      'Yuk reestrda qoladi va boshqa mashinaga qayta yuklanishi mumkin.',
+    deleteCargoRegDetail:
+      'Yuk yozuvi butunlay o‘chiriladi, daromad va marja qayta hisoblanadi. Mablag‘ yechilmaydi; faqat yozuv o‘chiriladi.',
+    deleteConsolidationDetail:
+      'Konsolidatsiya reysi butunlay o‘chiriladi. Biriktirilgan mijoz yuklari ajratilib, taqsimlanmaganlar puliga qaytariladi. Mablag‘ yechilmaydi.',
+    deleteShipmentDetail:
+      'Reys kuzatuv va reestrdan butunlay o‘chiriladi. To‘lov undirilmaydi; jami tushum va marja qayta hisoblanadi.',
+    deleteBatchShipmentDetail:
+      '{count} ta konteyner reysini butunlay o‘chirmoqchisiz. Ommaviy amalni qaytarib bo‘lmaydi.',
+    deleteDetachDetail:
+      '“{name}” {truck} [{code}] dan ajratilib, taqsimlanmagan LTL puliga qaytariladi. Ma’lumotlar o‘chirilmaydi.',
+    confirmDeleteBatchShipment: '{count} ta tanlangan reys o‘chirilsinmi?',
+    confirmResetLtlDesc:
+      'Barcha LTL yuklari va har bir xodim uchun hosilaviy KPI hisoblari butunlay tozalanadi. Buni bekor qilib bo‘lmaydi.',
+    confirmRemoveCargoDesc:
+      '“{name}” {truck} [{code}] dan ajratilib, taqsimlanmagan LTL puliga qaytariladi. Ma’lumotlar o‘chirilmaydi.',
+    actionDetach: 'Ajratish',
+    confirmDeletePlan: '{name} uchun maqsadli rejani o‘chirish kerakmi?',
+    deleteModalEmployeesCount: '{count} ta xodim',
+    deleteModalLtlItemsCount: '{count} ta LTL yuk',
+    deleteLtlConsequenceAllDeleted: 'Barcha xodimlarning har bir LTL yuki o‘chiriladi.',
+    deleteLtlConsequenceCoeff: 'Hajm koeffitsientlari va yakuniy KPI miqdorlari nolga qaytariladi.',
+    deleteLtlConsequenceRegistrations:
+      'Yuk ro‘yxatlari daxlsiz qoladi; faqat LTL KPI sinov maydoni tozalanadi.',
+    deletePlanConsequencePermanent: 'Ushbu davr uchun maqsadli reja butunlay o‘chiriladi.',
+    deletePlanConsequenceRanking: 'Peshqadamlar reytingi va bo‘lim tahlili qayta hisoblanadi.',
+    deletePlanConsequenceUndo: 'Bu amalni bekor qilib bo‘lmaydi.',
+    deletePlanDetail:
+      'Ushbu xodim uchun oylik LTL hajm va FTL tushum maqsadlari butunlay o‘chiriladi. Jarayon ushbu rejasiz qayta hisoblanadi.',
+    deleteModalUnlink: 'Ajratish',
+    deleteModalRemaining: 'Qoldi',
 
     // Cargo Filter Modal & Button
     cargoFilterModalTitle: 'Filtrlar',

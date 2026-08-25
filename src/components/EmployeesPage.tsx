@@ -19,6 +19,7 @@ import {
   List,
   X,
   Coins,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
@@ -33,9 +34,13 @@ import type {
 } from '../services/api';
 import { EmployeeFormModal } from './EmployeeFormModal';
 import { EmployeeProfilePage } from './EmployeeProfilePage';
+import { Select } from './Select';
+import type { SelectOption } from './Select';
 import { T } from './T';
 
 type DisplayCurrency = 'USD' | 'UZS' | 'RUB';
+type SortOption =
+  'name_asc' | 'name_desc' | 'revenue_desc' | 'revenue_asc' | 'plan_desc' | 'newest';
 
 /* ── Animation variants ────────────────────────────────────── */
 const containerVariants = {
@@ -234,11 +239,46 @@ export function EmployeesPage() {
   // Filter states
   const [activeDepartmentTab, setActiveDepartmentTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Open' | 'Pending' | 'Banned'>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('name_asc');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInputValue, setSearchInputValue] = useState('');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Memoized options for toolbar Select components
+  const statusSelectOptions = useMemo<SelectOption[]>(
+    () => [
+      {
+        value: 'Open',
+        label: t('statusOpen') || 'Open / Active',
+        icon: <span className="size-2 rounded-full bg-emerald-500 shrink-0" />,
+      },
+      {
+        value: 'Pending',
+        label: t('statusPending') || 'Pending',
+        icon: <span className="size-2 rounded-full bg-amber-500 shrink-0" />,
+      },
+      {
+        value: 'Banned',
+        label: t('statusBanned') || 'Banned',
+        icon: <span className="size-2 rounded-full bg-rose-500 shrink-0" />,
+      },
+    ],
+    [t]
+  );
+
+  const sortSelectOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: 'name_asc', label: t('deptSortNameAsc') || 'Name (A-Z)' },
+      { value: 'name_desc', label: t('deptSortNameDesc') || 'Name (Z-A)' },
+      { value: 'revenue_desc', label: `${t('colRevenue') || 'Revenue'} (High → Low)` },
+      { value: 'revenue_asc', label: `${t('colRevenue') || 'Revenue'} (Low → High)` },
+      { value: 'plan_desc', label: `${t('colPlanFact') || 'Plan'} (High → Low)` },
+      { value: 'newest', label: t('deptSortNewest') || 'Newest First' },
+    ],
+    [t]
+  );
 
   // Modal / Drawer states
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -314,15 +354,6 @@ export function EmployeesPage() {
     setPage(1);
   };
 
-  // Filtered employees by status locally if selected
-  const filteredEmployees = useMemo(() => {
-    if (statusFilter === 'all') return employees;
-    return employees.filter((emp) => {
-      const s = (emp.status || emp.user_status || '').toLowerCase();
-      return s === statusFilter.toLowerCase();
-    });
-  }, [employees, statusFilter]);
-
   // Computed count of employees per department for tabs
   const deptCountMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -348,6 +379,58 @@ export function EmployeesPage() {
     if (currency === 'UZS') return 25000000;
     return emp.tushum?.amount || 120000;
   };
+
+  // Filtered and sorted employees
+  const filteredAndSortedEmployees = useMemo(() => {
+    let list = employees;
+    if (statusFilter !== 'all') {
+      list = list.filter((emp) => {
+        const s = (emp.status || emp.user_status || '').toLowerCase();
+        return s === statusFilter.toLowerCase();
+      });
+    }
+
+    return [...list].sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc': {
+          const nameA = (a.full_name || `${a.first_name || ''} ${a.last_name || ''}`).trim();
+          const nameB = (b.full_name || `${b.first_name || ''} ${b.last_name || ''}`).trim();
+          return nameA.localeCompare(nameB);
+        }
+        case 'name_desc': {
+          const nameA = (a.full_name || `${a.first_name || ''} ${a.last_name || ''}`).trim();
+          const nameB = (b.full_name || `${b.first_name || ''} ${b.last_name || ''}`).trim();
+          return nameB.localeCompare(nameA);
+        }
+        case 'revenue_desc': {
+          const revA = getEmployeeRevenue(a);
+          const revB = getEmployeeRevenue(b);
+          return revB - revA;
+        }
+        case 'revenue_asc': {
+          const revA = getEmployeeRevenue(a);
+          const revB = getEmployeeRevenue(b);
+          return revA - revB;
+        }
+        case 'plan_desc': {
+          const planA = Math.max(
+            a.plan_completion?.ltl_completion ?? 0,
+            a.plan_completion?.ftl_completion ?? 0
+          );
+          const planB = Math.max(
+            b.plan_completion?.ltl_completion ?? 0,
+            b.plan_completion?.ftl_completion ?? 0
+          );
+          return planB - planA;
+        }
+        case 'newest': {
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [employees, statusFilter, sortBy, currency]);
 
   // Actions
   const handleCreateEmployee = () => {
@@ -727,41 +810,43 @@ export function EmployeesPage() {
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
-            {/* Status Filter */}
-            <div className="inline-flex items-center bg-surface border border-border/60 p-1 rounded-xl text-xs font-semibold">
-              {(['all', 'Open', 'Pending', 'Banned'] as const).map((st) => {
-                const isActive = statusFilter === st;
-                return (
-                  <button
-                    key={st}
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer text-[11px] font-semibold ${
-                      isActive
-                        ? 'bg-brand-gold text-brand-navy font-bold shadow-sm'
-                        : 'text-muted hover:text-foreground'
-                    }`}
-                  >
-                    {st === 'all' ? (
-                      <T k="empAllStatuses" />
-                    ) : st === 'Open' ? (
-                      <T k="statusOpen" />
-                    ) : st === 'Pending' ? (
-                      <T k="statusPending" />
-                    ) : (
-                      <T k="statusBanned" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Status Filter Select */}
+            <Select
+              size="sm"
+              value={statusFilter === 'all' ? '' : statusFilter}
+              onChange={(val) => {
+                setStatusFilter((val as 'Open' | 'Pending' | 'Banned') || 'all');
+                setPage(1);
+              }}
+              placeholder={t('empAllStatuses') || 'All Statuses'}
+              allowClear
+              fullWidth={false}
+              className="w-36 sm:w-44 shrink-0"
+              startContent={<Activity className="size-3.5 text-muted shrink-0" />}
+              options={statusSelectOptions}
+              aria-label={t('empAllStatuses') || 'All Statuses'}
+            />
+
+            {/* Sort Select */}
+            <Select
+              size="sm"
+              value={sortBy}
+              onChange={(val) => setSortBy(val as SortOption)}
+              allowClear={false}
+              fullWidth={false}
+              className="w-40 sm:w-48 shrink-0"
+              startContent={<ArrowUpDown className="size-3.5 text-muted shrink-0" />}
+              options={sortSelectOptions}
+              aria-label={t('deptSortBy') || 'Sort by'}
+            />
 
             {/* View Mode Switcher */}
-            <div className="inline-flex items-center bg-surface border border-border/60 p-1 rounded-xl text-xs">
+            <div className="flex items-center gap-0.5 bg-default/30 border border-border/40 p-1 rounded-xl shrink-0">
               <button
                 onClick={() => setViewMode('table')}
                 className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                   viewMode === 'table'
-                    ? 'bg-brand-gold text-brand-navy shadow-sm'
+                    ? 'bg-brand-gold text-brand-navy shadow-sm font-bold'
                     : 'text-muted hover:text-foreground'
                 }`}
                 title={t('empViewTable') || 'Table View'}
@@ -772,7 +857,7 @@ export function EmployeesPage() {
                 onClick={() => setViewMode('cards')}
                 className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                   viewMode === 'cards'
-                    ? 'bg-brand-gold text-brand-navy shadow-sm'
+                    ? 'bg-brand-gold text-brand-navy shadow-sm font-bold'
                     : 'text-muted hover:text-foreground'
                 }`}
                 title={t('empViewCards') || 'Cards View'}
@@ -851,7 +936,7 @@ export function EmployeesPage() {
                       </td>
                     </tr>
                   ))
-                ) : filteredEmployees.length === 0 ? (
+                ) : filteredAndSortedEmployees.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
@@ -869,7 +954,7 @@ export function EmployeesPage() {
                   </tr>
                 ) : (
                   <AnimatePresence mode="popLayout">
-                    {filteredEmployees.map((emp, i) => {
+                    {filteredAndSortedEmployees.map((emp, i) => {
                       const initials =
                         `${emp.first_name?.[0] || emp.full_name?.[0] || ''}${
                           emp.last_name?.[0] || emp.full_name?.split(' ')?.[1]?.[0] || ''
@@ -1108,7 +1193,7 @@ export function EmployeesPage() {
                 </div>
               </div>
             ))
-          ) : filteredEmployees.length === 0 ? (
+          ) : filteredAndSortedEmployees.length === 0 ? (
             <div className="col-span-full flex flex-col items-center gap-3 py-16 text-center">
               <div className="size-14 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
                 <Users className="size-7" />
@@ -1121,7 +1206,7 @@ export function EmployeesPage() {
               </p>
             </div>
           ) : (
-            filteredEmployees.map((emp) => {
+            filteredAndSortedEmployees.map((emp) => {
               const initials =
                 `${emp.first_name?.[0] || emp.full_name?.[0] || ''}${
                   emp.last_name?.[0] || emp.full_name?.split(' ')?.[1]?.[0] || ''

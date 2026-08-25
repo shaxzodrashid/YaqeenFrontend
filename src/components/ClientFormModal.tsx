@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Modal, Button, Spinner } from '@heroui/react';
 import { User, Building, MapPin, Lock, UserCheck } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
@@ -7,6 +7,8 @@ import { usePermissions } from '../context/PermissionsContext';
 import { api } from '../services/api';
 import type { Client, Employee, CreateClientDto, ApiError } from '../services/api';
 import { PhoneInput } from './PhoneInput';
+import { Select } from './Select';
+import type { SelectOption } from './Select';
 
 export interface ClientFormModalProps {
   isOpen: boolean;
@@ -76,6 +78,20 @@ export function ClientFormModal({
     client?.assigned_employee;
 
   const inheritedColor = selectedEmployee?.color || '#808080';
+
+  const employeeOptions: SelectOption[] = useMemo(() => {
+    return employees.map((emp) => ({
+      value: emp.id,
+      label: `${emp.first_name} ${emp.last_name}`.trim(),
+      description: `${emp.phone || ''}${emp.color ? ` • #${emp.color}` : ''}`,
+      icon: (
+        <span
+          className="size-3 rounded-full shrink-0 shadow-xs border border-black/10 dark:border-white/10"
+          style={{ backgroundColor: emp.color || '#808080' }}
+        />
+      ),
+    }));
+  }, [employees]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -286,61 +302,68 @@ export function ClientFormModal({
 
             {/* Assigned Employee Selector & Color Tag Preview */}
             <div className="flex flex-col gap-2 text-left">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <User className="size-3.5 text-muted" />
-                {t('assignedEmployee') || 'Responsible Employee'}
-              </label>
-
               {canAllClients ? (
-                <select
+                <Select
+                  label={
+                    <span className="flex items-center gap-1.5">
+                      <User className="size-3.5 text-muted" />
+                      {t('assignedEmployee') || 'Responsible Employee'}
+                    </span>
+                  }
                   value={assignedEmployeeId}
-                  onChange={(e) => setAssignedEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer"
-                >
-                  <option value="">{t('noneUnassigned') || 'Unassigned (No Employee)'}</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} ({emp.phone}) - #{emp.color || '808080'}
-                    </option>
-                  ))}
-                </select>
-              ) : mode === 'create' ? (
-                <div className="p-3 rounded-xl bg-default-100/60 dark:bg-default-50/10 border border-border/40 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <UserCheck className="size-4 text-emerald-500 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-foreground">
-                        {currentEmployee
-                          ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
-                          : t('clientAutoAssignedToYou')}
-                      </p>
-                      <p className="text-[11px] text-muted">{t('clientAutoAssignedToYou')}</p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/20">
-                    Auto-Linked
-                  </span>
-                </div>
+                  onChange={(val) => setAssignedEmployeeId(val)}
+                  placeholder={t('noneUnassigned') || 'Unassigned (No Employee)'}
+                  options={employeeOptions}
+                  isSearchable
+                  allowClear
+                  size="md"
+                  startContent={<User className="size-4 text-muted shrink-0" />}
+                />
               ) : (
-                <div className="p-3 rounded-xl bg-default-100/60 dark:bg-default-50/10 border border-border/40 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Lock className="size-3.5 text-muted shrink-0" />
-                      <span className="text-xs font-bold text-foreground">
-                        {selectedEmployee
-                          ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
-                          : t('noneUnassigned')}
+                <>
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <User className="size-3.5 text-muted" />
+                    {t('assignedEmployee') || 'Responsible Employee'}
+                  </label>
+                  {mode === 'create' ? (
+                    <div className="p-3 rounded-xl bg-default-100/60 dark:bg-default-50/10 border border-border/40 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <UserCheck className="size-4 text-emerald-500 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-foreground">
+                            {currentEmployee
+                              ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
+                              : t('clientAutoAssignedToYou')}
+                          </p>
+                          <p className="text-[11px] text-muted">{t('clientAutoAssignedToYou')}</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/20">
+                        Auto-Linked
                       </span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-md bg-default-200/60 dark:bg-default-100/20 text-muted font-mono text-[10px]">
-                      Locked
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted">
-                    {t('clientReassignmentLocked') ||
-                      'Client assignment cannot be modified with your current permissions.'}
-                  </p>
-                </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-default-100/60 dark:bg-default-50/10 border border-border/40 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Lock className="size-3.5 text-muted shrink-0" />
+                          <span className="text-xs font-bold text-foreground">
+                            {selectedEmployee
+                              ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+                              : t('noneUnassigned')}
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-md bg-default-200/60 dark:bg-default-100/20 text-muted font-mono text-[10px]">
+                          Locked
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted">
+                        {t('clientReassignmentLocked') ||
+                          'Client assignment cannot be modified with your current permissions.'}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Inherited Color Tag Badge Box */}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Modal, Button, Spinner, Avatar } from '@heroui/react';
 import {
   User,
@@ -25,6 +25,8 @@ import type {
 } from '../services/api';
 import { PhoneInput } from './PhoneInput';
 import { NumberInput } from './NumberInput';
+import { Select } from './Select';
+import type { SelectOption } from './Select';
 
 interface EmployeeFormModalProps {
   isOpen: boolean;
@@ -93,6 +95,33 @@ export function EmployeeFormModal({
 
   // Errors state
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Memoized Select Options
+  const roleOptions = useMemo<SelectOption[]>(() => {
+    return availableRoles.map((roleObj) => ({
+      value: roleObj.name,
+      label: `${roleObj.display_name} (${roleObj.name})`,
+      description: roleObj.description || undefined,
+      icon: <ShieldCheck className="size-3.5 text-brand-royal dark:text-night-royal shrink-0" />,
+    }));
+  }, [availableRoles]);
+
+  const departmentOptions = useMemo<SelectOption[]>(() => {
+    return departments.map((dept) => ({
+      value: dept.id,
+      label: dept.display_name,
+      icon: <Building className="size-3.5 text-brand-gold shrink-0" />,
+    }));
+  }, [departments]);
+
+  const currencyOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: 'UZS', label: "UZS (so'm)", description: "O'zbekiston so'mi" },
+      { value: 'USD', label: 'USD ($)', description: 'US Dollar' },
+      { value: 'RUB', label: 'RUB (₽)', description: 'Russian Ruble' },
+    ],
+    []
+  );
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -666,36 +695,37 @@ export function EmployeeFormModal({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  {t('fieldRole') || 'System Access Role'} *
-                </label>
-                {loadingRoles ? (
-                  <div className="flex items-center gap-2 px-3 py-2 sm:py-2.5 rounded-xl border border-field-border bg-field text-xs sm:text-sm text-muted">
-                    <Spinner size="sm" />
-                    <span>{t('loadingRoles') || 'Loading roles...'}</span>
-                  </div>
-                ) : (
-                  <select
-                    value={role}
-                    onChange={(e) => {
-                      setRole(e.target.value);
-                      setErrors((p) => ({ ...p, role: '' }));
-                    }}
-                    className={`w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
-                      errors.role ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border'
-                    }`}
-                  >
-                    <option value="">{t('fieldSelectRole') || 'Select Role'}</option>
-                    {availableRoles.map((roleObj) => (
-                      <option key={roleObj.id} value={roleObj.name}>
-                        {roleObj.display_name} ({roleObj.name})
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {errors.role && (
-                  <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.role}</p>
-                )}
+                <Select
+                  label={
+                    <span className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                      <ShieldCheck className="size-3.5 text-muted" />
+                      {t('fieldRole') || 'System Access Role'}
+                    </span>
+                  }
+                  isRequired
+                  value={role || null}
+                  onChange={(val) => {
+                    setRole(val);
+                    setErrors((p) => ({ ...p, role: '' }));
+                  }}
+                  options={roleOptions}
+                  placeholder={
+                    loadingRoles
+                      ? t('loadingRoles') || 'Loading roles...'
+                      : t('fieldSelectRole') || 'Select Role'
+                  }
+                  error={errors.role}
+                  disabled={loadingRoles}
+                  isSearchable
+                  size="md"
+                  startContent={
+                    loadingRoles ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <ShieldCheck className="size-4 text-muted shrink-0" />
+                    )
+                  }
+                />
               </div>
             </div>
 
@@ -753,33 +783,26 @@ export function EmployeeFormModal({
               </h4>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  {t('fieldDepartment') || 'Assigned Department'} *
-                </label>
-                <select
-                  value={departmentId}
-                  onChange={(e) => {
-                    setDepartmentId(e.target.value);
+                <Select
+                  label={
+                    <span className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                      <Building className="size-3.5 text-muted" />
+                      {t('fieldDepartment') || 'Assigned Department'}
+                    </span>
+                  }
+                  isRequired
+                  value={departmentId || null}
+                  onChange={(val) => {
+                    setDepartmentId(val);
                     setErrors((p) => ({ ...p, departmentId: '' }));
                   }}
-                  className={`w-full px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer ${
-                    errors.departmentId
-                      ? 'border-rose-500 focus:ring-rose-500/30'
-                      : 'border-field-border'
-                  }`}
-                >
-                  <option value="">{t('fieldSelectDept') || 'Select Department'}</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.display_name}
-                    </option>
-                  ))}
-                </select>
-                {errors.departmentId && (
-                  <p className="text-[11px] text-rose-500 font-semibold mt-0.5">
-                    {errors.departmentId}
-                  </p>
-                )}
+                  options={departmentOptions}
+                  placeholder={t('fieldSelectDept') || 'Select Department'}
+                  error={errors.departmentId}
+                  isSearchable
+                  size="md"
+                  startContent={<Building className="size-4 text-muted shrink-0" />}
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
@@ -803,19 +826,20 @@ export function EmployeeFormModal({
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-foreground">
-                    {t('fieldCurrency') || 'Currency'}
-                  </label>
-                  <select
+                <div className="sm:col-span-1 flex flex-col gap-1.5">
+                  <Select
+                    label={
+                      <span className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                        <Coins className="size-3.5 text-muted" />
+                        {t('fieldCurrency') || 'Currency'}
+                      </span>
+                    }
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
-                    className="w-full h-11 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-field text-field-foreground border border-field-border transition-colors focus:outline-none focus:ring-2 focus:ring-focus/30 cursor-pointer font-mono"
-                  >
-                    <option value="UZS">UZS</option>
-                    <option value="USD">USD</option>
-                    <option value="RUB">RUB</option>
-                  </select>
+                    onChange={(val) => setCurrency(val as SupportedCurrency)}
+                    options={currencyOptions}
+                    allowClear={false}
+                    size="md"
+                  />
                 </div>
               </div>
             </div>
