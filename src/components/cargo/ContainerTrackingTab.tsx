@@ -40,6 +40,7 @@ import type {
 } from '../../services/cargoKpi.service';
 import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { CargoTransactionsTable } from './CargoTransactionsTable';
+import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 import {
   CargoFilterModal,
   INITIAL_CARGO_FILTERS,
@@ -156,6 +157,11 @@ export function ContainerTrackingTab() {
   // Filter modal state
   const [filters, setFilters] = useState<CargoFilterState>(INITIAL_CARGO_FILTERS);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
+
+  // Deletion approval state (single + batch)
+  const [pendingSingleDelete, setPendingSingleDelete] = useState<Shipment | null>(null);
+  const [pendingBatchDelete, setPendingBatchDelete] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const getStatusLabel = useCallback(
     (st: ShipmentStatus | string) => {
@@ -386,20 +392,35 @@ export function ContainerTrackingTab() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        t('confirmDeleteShipment') || 'Are you sure you want to delete this shipment?'
-      )
-    )
-      return;
+  const handleDelete = (id: string) => {
+    const shipment = data?.shipments.find((s) => s.id === id) ?? null;
+    if (shipment) setPendingSingleDelete(shipment);
+    else
+      setPendingSingleDelete({
+        id,
+        containerNo: id,
+        clientName: '—',
+        cargoType: '—',
+        status: 'Waiting',
+      } as unknown as Shipment);
+  };
+
+  const handleConfirmSingleDelete = async () => {
+    if (!pendingSingleDelete) return;
+    setIsDeleting(true);
     try {
-      await Promise.allSettled([cargoKpiApi.deleteShipment(id), cargoRegistrationsApi.delete(id)]);
+      await Promise.allSettled([
+        cargoKpiApi.deleteShipment(pendingSingleDelete.id),
+        cargoRegistrationsApi.delete(pendingSingleDelete.id),
+      ]);
       showNotification(t('successShipmentDeleted') || 'Shipment deleted successfully', 'success');
-      setSelectedIds((prev) => prev.filter((i) => i !== id));
+      setSelectedIds((prev) => prev.filter((i) => i !== pendingSingleDelete.id));
+      setPendingSingleDelete(null);
       loadShipments();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to delete shipment', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -465,16 +486,28 @@ export function ContainerTrackingTab() {
     }
   };
 
-  const handleBatchDelete = async () => {
+  const handleBatchDelete = () => {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Delete ${selectedIds.length} selected container shipments?`)) return;
+    setPendingBatchDelete(true);
+  };
+
+  const handleConfirmBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setIsDeleting(true);
     try {
       await cargoKpiApi.batchDelete(selectedIds);
-      showNotification(`Deleted ${selectedIds.length} container(s)`, 'success');
+      showNotification(
+        t('successBatchDeleted', { count: selectedIds.length }) ||
+          `Deleted ${selectedIds.length} container(s)`,
+        'success'
+      );
       setSelectedIds([]);
+      setPendingBatchDelete(false);
       loadShipments();
     } catch (err: any) {
       showNotification(err?.message || 'Batch delete failed', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1615,6 +1648,133 @@ export function ContainerTrackingTab() {
           setPage(1);
         }}
         onResetFilters={handleClearAllFilters}
+      />
+
+      {/* Single shipment deletion – general DeletionApprovalModal with custom content */}
+      <DeletionApprovalModal
+        isOpen={!!pendingSingleDelete}
+        onClose={() => !isDeleting && setPendingSingleDelete(null)}
+        onConfirm={handleConfirmSingleDelete}
+        isBusy={isDeleting}
+        title={t('confirmDeleteShipment')}
+        description={t('deleteShipmentDetail')}
+        confirmLabel={t('actionDelete')}
+        cancelLabel={t('actionCancel')}
+        entityPreview={
+          pendingSingleDelete ? (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t('deleteModalContainer')}
+                </span>
+                <span
+                  className="font-mono text-xs font-bold text-foreground truncate max-w-[190px]"
+                  title={pendingSingleDelete.containerNo}
+                >
+                  {pendingSingleDelete.containerNo}
+                </span>
+              </div>
+              <div className="h-px bg-border/60" />
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">
+                    {t('deleteModalClient')}
+                  </div>
+                  <div className="font-semibold text-foreground truncate">
+                    {pendingSingleDelete.clientName || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">{t('deleteModalCargo')}</div>
+                  <div className="font-medium text-foreground truncate">
+                    {pendingSingleDelete.cargoType || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">{t('deleteModalRoute')}</div>
+                  <div className="font-medium text-foreground truncate">
+                    {pendingSingleDelete.confirmedDate || pendingSingleDelete.loadedDate || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">
+                    {t('deleteModalStatus')}
+                  </div>
+                  <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted/50 border-border/60">
+                    {pendingSingleDelete.status || '—'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1 text-[11px] font-mono">
+                <span className="px-2 py-1 rounded-lg bg-muted/50 border border-border/60">
+                  {t('deleteModalBuy')}:{' '}
+                  {formatMoney(
+                    pendingSingleDelete.buyCost ?? 0,
+                    (pendingSingleDelete.buyCostCurrency as any) || 'USD'
+                  )}
+                </span>
+                <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  {t('deleteModalSell')}: {formatMoney(pendingSingleDelete.sellPrice ?? 0, 'USD')}
+                </span>
+                <span
+                  className={`px-2 py-1 rounded-lg border font-bold ${(pendingSingleDelete.profit ?? 0) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'}`}
+                >
+                  {t('deleteModalMargin')}: {formatMoney(pendingSingleDelete.profit ?? 0, 'USD')}
+                </span>
+              </div>
+            </div>
+          ) : undefined
+        }
+        consequences={[
+          t('deleteShipmentConsequencePermanent'),
+          t('deleteShipmentConsequenceTotals'),
+          t('deleteShipmentConsequenceConsolidation'),
+        ]}
+      />
+
+      {/* Batch delete – general component, custom bulk content */}
+      <DeletionApprovalModal
+        isOpen={pendingBatchDelete}
+        onClose={() => !isDeleting && setPendingBatchDelete(false)}
+        onConfirm={handleConfirmBatchDelete}
+        isBusy={isDeleting}
+        title={t('confirmDeleteBatchShipment', { count: selectedIds.length })}
+        description={t('deleteBatchShipmentDetail', { count: selectedIds.length })}
+        confirmLabel={t('actionDelete')}
+        cancelLabel={t('actionCancel')}
+        entityPreview={
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <div className="size-7 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600">
+                <Trash2 className="size-3.5" />
+              </div>
+              <span>{t('deleteModalContainersSelected', { count: selectedIds.length })}</span>
+            </div>
+            <div className="max-h-28 overflow-y-auto rounded-xl bg-muted/30 border border-border/60 p-2 flex flex-wrap gap-1.5">
+              {selectedIds.slice(0, 12).map((id) => {
+                const s = data?.shipments.find((x) => x.id === id);
+                return (
+                  <span
+                    key={id}
+                    className="px-2 py-1 rounded-full bg-surface border border-border text-[11px] font-mono font-semibold"
+                  >
+                    {s?.containerNo || id.slice(0, 8)}
+                  </span>
+                );
+              })}
+              {selectedIds.length > 12 && (
+                <span className="px-2 py-1 rounded-full bg-muted border border-border text-[11px] font-bold">
+                  {t('deleteModalMore', { count: selectedIds.length - 12 })}
+                </span>
+              )}
+            </div>
+          </div>
+        }
+        consequences={[
+          t('deleteBatchConsequenceAllRemoved', { count: selectedIds.length }),
+          t('deleteBatchConsequenceRecalc'),
+          t('deleteBatchConsequenceUndo'),
+        ]}
       />
     </div>
   );

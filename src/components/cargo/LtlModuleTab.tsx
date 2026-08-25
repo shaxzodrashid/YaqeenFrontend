@@ -13,6 +13,7 @@ import type {
 
 import { EmployeeSelect } from './EmployeeSelect';
 import { NumberInput } from '../NumberInput';
+import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 
 const CARGO_TYPES: { key: LtlCargoType; labelKey: string; hint: string }[] = [
   { key: 'oddiy', labelKey: 'cargoTypeOddiy', hint: 'Density rate ($3 - $10 / m³)' },
@@ -46,6 +47,8 @@ export function LtlModuleTab() {
   const [weightStr, setWeightStr] = useState<string>('1000');
   const [cargoType, setCargoType] = useState<LtlCargoType>('oddiy');
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState<boolean>(false);
+  const [isClearing, setIsClearing] = useState<boolean>(false);
 
   const loadLtlData = useCallback(async () => {
     setLoading(true);
@@ -63,15 +66,19 @@ export function LtlModuleTab() {
     loadLtlData();
   }, [loadLtlData]);
 
-  const handleClearAll = async () => {
-    if (!window.confirm(t('confirmResetLtl') || 'Are you sure you want to clear all LTL items?'))
-      return;
+  const handleClearAll = () => setIsConfirmClearOpen(true);
+
+  const handleConfirmClearAll = async () => {
+    setIsClearing(true);
     try {
       await cargoKpiApi.resetLtlItems();
       showNotification('All LTL cargo items cleared', 'success');
+      setIsConfirmClearOpen(false);
       loadLtlData();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to reset LTL items', 'error');
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -455,6 +462,34 @@ export function LtlModuleTab() {
           </div>
         )}
       </AnimatePresence>
+
+      <DeletionApprovalModal
+        isOpen={isConfirmClearOpen}
+        onClose={() => !isClearing && setIsConfirmClearOpen(false)}
+        onConfirm={handleConfirmClearAll}
+        isBusy={isClearing}
+        title={t('confirmResetLtl')}
+        description={t('confirmResetLtlDesc')}
+        confirmLabel={t('btnResetLtl')}
+        cancelLabel={t('actionCancel')}
+        entityPreview={
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-foreground">
+              {t('deleteModalEmployeesCount', { count: data?.employees?.length ?? 0 })}
+            </span>
+            <span className="text-muted-foreground">
+              {t('deleteModalLtlItemsCount', {
+                count: data?.employees?.reduce((s, e) => s + (e.items?.length ?? 0), 0) ?? 0,
+              })}
+            </span>
+          </div>
+        }
+        consequences={[
+          t('deleteLtlConsequenceAllDeleted'),
+          t('deleteLtlConsequenceCoeff'),
+          t('deleteLtlConsequenceRegistrations'),
+        ]}
+      />
     </div>
   );
 }

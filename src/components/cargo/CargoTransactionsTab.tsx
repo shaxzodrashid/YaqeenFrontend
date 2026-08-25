@@ -29,6 +29,7 @@ import {
   getActiveCargoFilterCount,
 } from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
+import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 
 export function CargoTransactionsTab() {
   const { t } = useTranslation();
@@ -51,6 +52,10 @@ export function CargoTransactionsTab() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [duplicateFromId, setDuplicateFromId] = useState<string | null>(null);
+
+  // Deletion approval state (professional workflow)
+  const [pendingDelete, setPendingDelete] = useState<CargoRegistrationListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Fetch Cargo Registrations
   const loadRegistrations = useCallback(async () => {
@@ -182,22 +187,35 @@ export function CargoTransactionsTab() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        t('confirmDeleteCargoReg') || 'Are you sure you want to delete this cargo registration?'
-      )
-    )
-      return;
+  const handleDelete = (id: string) => {
+    // Open professional deletion approval modal
+    // Resolve full item for rich preview; fallback to id-only if not in current page
+    const item = data?.data.find((r) => r.id === id) ?? null;
+    if (item) setPendingDelete(item);
+    else
+      setPendingDelete({
+        id,
+        container_truck_id: id,
+        cargo: '—',
+        client_full_name: '—',
+      } as CargoRegistrationListItem);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
     try {
-      await cargoRegistrationsApi.delete(id);
+      await cargoRegistrationsApi.delete(pendingDelete.id);
       showNotification(
         t('successCargoRegDeleted') || 'Cargo registration deleted successfully',
         'success'
       );
+      setPendingDelete(null);
       loadRegistrations();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to delete registration', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -753,6 +771,98 @@ export function CargoTransactionsTab() {
           setPage(1);
         }}
         onResetFilters={handleClearAllFilters}
+      />
+
+      {/* Dedicated deletion approval modal – general component with custom cargo content */}
+      <DeletionApprovalModal
+        isOpen={!!pendingDelete}
+        onClose={() => !isDeleting && setPendingDelete(null)}
+        onConfirm={handleConfirmDelete}
+        isBusy={isDeleting}
+        title={t('confirmDeleteCargoReg')}
+        description={t('deleteCargoRegDetail')}
+        confirmLabel={t('actionDelete')}
+        cancelLabel={t('actionCancel')}
+        entityPreview={
+          pendingDelete ? (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t('deleteModalTruckContainer')}
+                </span>
+                <span
+                  className="font-mono text-xs font-bold text-foreground truncate max-w-[180px]"
+                  title={pendingDelete.container_truck_id}
+                >
+                  {pendingDelete.container_truck_id}
+                </span>
+              </div>
+              <div className="h-px bg-border/60" />
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">{t('deleteModalCargo')}</div>
+                  <div className="font-bold text-foreground truncate" title={pendingDelete.cargo}>
+                    {pendingDelete.cargo || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">
+                    {t('deleteModalClient')}
+                  </div>
+                  <div
+                    className="font-semibold text-foreground truncate"
+                    title={pendingDelete.client_full_name}
+                  >
+                    {pendingDelete.client_full_name || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">{t('deleteModalRoute')}</div>
+                  <div className="font-medium text-foreground truncate">
+                    {[pendingDelete.origin_city, pendingDelete.destination_city]
+                      .filter(Boolean)
+                      .join(' → ') || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">
+                    {t('deleteModalStatus')}
+                  </div>
+                  <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted/50 border-border/60">
+                    {pendingDelete.status || '—'}
+                  </span>
+                </div>
+              </div>
+              {(pendingDelete.purchase_price || pendingDelete.sell_price) && (
+                <div className="flex flex-wrap gap-2 pt-1 text-[11px] font-mono">
+                  {pendingDelete.purchase_price && (
+                    <span className="px-2 py-1 rounded-lg bg-muted/50 border border-border/60">
+                      {t('deleteModalBuy')}:{' '}
+                      {formatMoney(
+                        pendingDelete.purchase_price.amount,
+                        pendingDelete.purchase_price.currency
+                      )}
+                    </span>
+                  )}
+                  {pendingDelete.sell_price && (
+                    <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                      {t('deleteModalSell')}:{' '}
+                      {formatMoney(
+                        pendingDelete.sell_price.amount,
+                        pendingDelete.sell_price.currency
+                      )}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : undefined
+        }
+        consequences={[
+          t('deleteCargoConsequencePermanent'),
+          t('deleteCargoConsequenceRecalc'),
+          t('deleteCargoConsequenceVolumeFreed'),
+        ]}
       />
     </div>
   );

@@ -17,6 +17,7 @@ import {
   Copy,
   X,
   RefreshCw,
+  User,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
@@ -25,6 +26,8 @@ import { api } from '../services/api';
 import type { Client, Employee, ClientColorStats, ClientPaginatedResponse } from '../services/api';
 import { ClientFormModal } from './ClientFormModal';
 import { ClientDrawer } from './ClientDrawer';
+import { Select } from './Select';
+import type { SelectOption } from './Select';
 import { T } from './T';
 
 // Color preset definitions for filtering swatches
@@ -286,6 +289,35 @@ export function ClientsPage() {
     return totalClients;
   }, [stats, totalClients]);
 
+  // Memoized options for toolbar filter Select components
+  const employeeSelectOptions = useMemo<SelectOption[]>(() => {
+    return employees.map((emp) => ({
+      value: emp.id,
+      label: `${emp.first_name} ${emp.last_name}`.trim(),
+      description: emp.phone || emp.role_name || undefined,
+      icon: (
+        <span
+          className="size-2.5 rounded-full shrink-0 shadow-xs"
+          style={{ backgroundColor: emp.color || '#808080' }}
+        />
+      ),
+    }));
+  }, [employees]);
+
+  const colorSelectOptions = useMemo<SelectOption[]>(() => {
+    return COLOR_PRESETS.map((c) => ({
+      value: c.hex,
+      label: c.name,
+      description: c.hex,
+      icon: (
+        <span
+          className="size-2.5 rounded-full shrink-0 shadow-xs"
+          style={{ backgroundColor: c.hex }}
+        />
+      ),
+    }));
+  }, []);
+
   return (
     <div className="space-y-6 pb-12">
       {/* ── 1. Page Header ────────────────────────────────────────── */}
@@ -500,39 +532,40 @@ export function ClientsPage() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Responsible Employee Select (Only if permitted to work with all clients) */}
             {canAllClients && (
-              <select
+              <Select
+                size="sm"
                 value={selectedEmployeeId}
-                onChange={(e) => {
-                  setSelectedEmployeeId(e.target.value);
+                onChange={(val) => {
+                  setSelectedEmployeeId(val);
                   setPage(1);
                 }}
-                className="px-3 py-2 rounded-xl text-xs font-semibold bg-default-100/50 dark:bg-default-50/10 border border-border/30 text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/40 transition-all cursor-pointer"
-              >
-                <option value="">{t('clientAllManagers') || 'All Managers'}</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.first_name} {emp.last_name}
-                  </option>
-                ))}
-              </select>
+                placeholder={t('clientAllManagers') || 'All Managers'}
+                allowClear
+                isSearchable
+                fullWidth={false}
+                className="w-44 sm:w-52 shrink-0"
+                startContent={<User className="size-3.5 text-muted shrink-0" />}
+                options={employeeSelectOptions}
+                aria-label={t('clientAllManagers') || 'All Managers'}
+              />
             )}
 
             {/* Color Swatch Select */}
-            <select
+            <Select
+              size="sm"
               value={selectedColor}
-              onChange={(e) => {
-                setSelectedColor(e.target.value);
+              onChange={(val) => {
+                setSelectedColor(val);
                 setPage(1);
               }}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-default-100/50 dark:bg-default-50/10 border border-border/30 text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/40 transition-all cursor-pointer font-mono"
-            >
-              <option value="">All Colors</option>
-              {COLOR_PRESETS.map((c) => (
-                <option key={c.hex} value={c.hex}>
-                  {c.name} ({c.hex})
-                </option>
-              ))}
-            </select>
+              placeholder={t('clientAllColors') || 'All Colors'}
+              allowClear
+              fullWidth={false}
+              className="w-36 sm:w-44 shrink-0"
+              startContent={<Palette className="size-3.5 text-muted shrink-0" />}
+              options={colorSelectOptions}
+              aria-label={t('clientAllColors') || 'All Colors'}
+            />
 
             {/* Active Status Segment Switch */}
             <div className="flex items-center p-1 rounded-xl bg-default-100/60 dark:bg-default-50/20 border border-border/30">

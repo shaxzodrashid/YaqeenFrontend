@@ -46,6 +46,7 @@ import { formatMoney } from '../../services/api';
 import { ConsolidationModal } from './ConsolidationModal';
 import { ConsolidationDetailsDrawer } from './ConsolidationDetailsDrawer';
 import { AssignCargosModal } from './AssignCargosModal';
+import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 
 export type ConsolidationViewMode = 'grid' | 'table' | 'kanban' | 'analytics';
 
@@ -113,6 +114,10 @@ export function CargoConsolidationsTab() {
   // Expandable rows in table view
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  // Deletion approval
+  const [pendingDelete, setPendingDelete] = useState<ConsolidationListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
   // Load consolidations
   const loadConsolidations = useCallback(async () => {
     setLoading(true);
@@ -175,17 +180,33 @@ export function CargoConsolidationsTab() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(t('confirmDeleteConsolidation') || 'Delete this consolidation trip?')) {
-      return;
-    }
+  const handleDelete = (id: string) => {
+    const item = data?.data.find((c) => c.id === id) ?? null;
+    if (item) setPendingDelete(item);
+    else
+      setPendingDelete({
+        id,
+        container_truck_id: id,
+        consolidation_code: id,
+      } as ConsolidationListItem);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
     try {
-      await cargoConsolidationsApi.delete(id);
-      showNotification('Consolidation trip deleted successfully', 'success');
-      if (selectedDetails?.id === id) setSelectedDetails(null);
+      await cargoConsolidationsApi.delete(pendingDelete.id);
+      showNotification(
+        t('successConsolidationDeleted') || 'Consolidation trip deleted successfully',
+        'success'
+      );
+      if (selectedDetails?.id === pendingDelete.id) setSelectedDetails(null);
+      setPendingDelete(null);
       loadConsolidations();
     } catch (err: any) {
       showNotification(err?.message || 'Failed to delete consolidation', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1269,6 +1290,100 @@ export function CargoConsolidationsTab() {
           }
           loadConsolidations();
         }}
+      />
+
+      {/* Deletion approval – general component with custom consolidation content */}
+      <DeletionApprovalModal
+        isOpen={!!pendingDelete}
+        onClose={() => !isDeleting && setPendingDelete(null)}
+        onConfirm={handleConfirmDelete}
+        isBusy={isDeleting}
+        title={t('confirmDeleteConsolidation')}
+        description={t('deleteConsolidationDetail')}
+        confirmLabel={t('actionDelete')}
+        cancelLabel={t('actionCancel')}
+        entityPreview={
+          pendingDelete ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t('deleteModalTruckCode')}
+                </span>
+                <span className="flex items-center gap-1.5 font-mono text-xs font-bold text-foreground">
+                  <span>{pendingDelete.container_truck_id}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-brand-gold/15 text-brand-navy dark:text-brand-gold text-[10px] border border-brand-gold/30">
+                    {pendingDelete.consolidation_code}
+                  </span>
+                </span>
+              </div>
+              <div className="h-px bg-border/60" />
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">{t('deleteModalRoute')}</div>
+                  <div className="font-bold text-foreground truncate">
+                    {[pendingDelete.origin_place, pendingDelete.destination_place]
+                      .filter(Boolean)
+                      .join(' → ') || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">
+                    {t('deleteModalStatus')}
+                  </div>
+                  <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted/50 border-border/60">
+                    {pendingDelete.status || '—'}
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">
+                    {t('deleteModalCarrier')}
+                  </div>
+                  <div className="font-medium text-foreground truncate">
+                    {pendingDelete.carrier_name || '—'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-muted-foreground font-semibold">{t('deleteModalLoad')}</div>
+                  <div className="font-mono font-bold text-foreground">
+                    {pendingDelete.capacity
+                      ? `${pendingDelete.capacity.assigned_volume_m3} / ${pendingDelete.capacity.max_volume_m3} m³ · ${t('deleteModalCargosCount', { count: pendingDelete.capacity.total_cargos_count })}`
+                      : t('deleteModalCargosCount', { count: pendingDelete.cargos?.length ?? 0 })}
+                  </div>
+                </div>
+              </div>
+              {pendingDelete.financials && (
+                <div className="flex flex-wrap gap-1.5 pt-1 text-[11px] font-mono">
+                  <span className="px-2 py-1 rounded-lg bg-muted/50 border border-border/60">
+                    {t('deleteModalCarrier')}:{' '}
+                    {formatMoney(
+                      getCarrierCostAmount(pendingDelete.financials) ||
+                        pendingDelete.total_carrier_cost ||
+                        0,
+                      getCarrierCostCurrency(pendingDelete.financials)
+                    )}
+                  </span>
+                  <span
+                    className={`px-2 py-1 rounded-lg border font-bold ${getConsolidatedNetMargin(pendingDelete.financials) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'}`}
+                  >
+                    {t('deleteModalMargin')}:{' '}
+                    {formatMoney(
+                      getConsolidatedNetMargin(pendingDelete.financials),
+                      getConsolidatedNetMarginCurrency(pendingDelete.financials)
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : undefined
+        }
+        consequences={[
+          t('deleteConsolidationConsequencePermanent'),
+          t('deleteConsolidationConsequenceUnlinked', {
+            count:
+              pendingDelete?.capacity?.total_cargos_count ?? pendingDelete?.cargos?.length ?? 0,
+          }),
+          t('deleteConsolidationConsequenceRecalc'),
+        ]}
       />
     </div>
   );
