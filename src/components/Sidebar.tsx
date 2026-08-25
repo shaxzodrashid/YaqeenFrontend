@@ -60,8 +60,8 @@ interface NavItem {
 }
 
 const sidebarVariants = {
-  expanded: { width: 260 },
-  collapsed: { width: 72 },
+  expanded: { width: 290 },
+  collapsed: { width: 76 },
 };
 
 /* ── Extracted NavLink component to prevent unmount/remount on re-renders ── */
@@ -79,7 +79,7 @@ const NavLink = memo(function NavLink({
   const buttonContent = (
     <button
       onClick={() => onNavigate(item.id)}
-      className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 cursor-pointer focus:outline-none relative overflow-hidden ${
+      className={`group flex items-center gap-3.5 w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 cursor-pointer focus:outline-none relative overflow-hidden ${
         isActive
           ? 'bg-brand-gold/15 text-brand-gold dark:text-brand-gold font-semibold'
           : 'text-neutral-300 dark:text-neutral-300 hover:bg-white/5 hover:text-white'
@@ -89,7 +89,7 @@ const NavLink = memo(function NavLink({
       {isActive && (
         <motion.div
           layoutId="sidebar-active-indicator"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-brand-gold rounded-r-full"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 bg-brand-gold rounded-r-full"
           transition={{ type: 'spring', stiffness: 350, damping: 30 }}
         />
       )}
@@ -352,7 +352,7 @@ export function Sidebar({
   const sidebarContent = (
     <>
       {/* Logo Section */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-brand-royal/30 shrink-0">
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-brand-royal/30 shrink-0">
         {/* Mobile close button */}
         {isMobile && (
           <button
@@ -364,28 +364,28 @@ export function Sidebar({
         )}
         {!effectiveCollapsed ? (
           <YaqeenHorizontalLogo
-            height={30}
+            height={34}
             markVariant="gold"
             textVariant="gold"
             className="transition-all duration-300"
           />
         ) : (
-          <div className="size-9 rounded-xl bg-brand-gold/15 flex items-center justify-center border border-brand-gold/30 shrink-0 mx-auto">
-            <YaqeenMark size={22} variant="gold" />
+          <div className="size-10 rounded-xl bg-brand-gold/15 flex items-center justify-center border border-brand-gold/30 shrink-0 mx-auto">
+            <YaqeenMark size={24} variant="gold" />
           </div>
         )}
       </div>
 
       {/* Navigation Links grouped into consistent sections */}
-      <nav className="flex-1 px-3 py-3 flex flex-col gap-3 overflow-y-auto">
+      <nav className="flex-1 px-3.5 py-3.5 flex flex-col gap-3 overflow-y-auto">
         {sections.map((sec, secIdx) => (
           <div key={sec.key} className="flex flex-col gap-1">
             {!effectiveCollapsed ? (
-              <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400/60 select-none">
+              <div className="px-3.5 pt-1.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400/70 select-none">
                 {sec.title}
               </div>
             ) : (
-              secIdx > 0 && <div className="my-1 mx-2 border-t border-brand-royal/20" />
+              secIdx > 0 && <div className="my-1.5 mx-2 border-t border-brand-royal/20" />
             )}
 
             {sec.items.map((item) => (
@@ -402,7 +402,7 @@ export function Sidebar({
       </nav>
 
       {/* Bottom Controls */}
-      <div className="px-3 py-3 border-t border-brand-royal/30 flex flex-col gap-2 shrink-0">
+      <div className="px-3.5 py-3.5 border-t border-brand-royal/30 flex flex-col gap-2.5 shrink-0">
         {/* Theme & Language Controls */}
         <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
           {/* Theme Toggle */}
@@ -411,7 +411,7 @@ export function Sidebar({
               <Tooltip.Trigger>
                 <button
                   onClick={(e) => toggleTheme(e)}
-                  className="p-2 rounded-xl bg-brand-royal/30 border border-brand-royal/40 text-brand-gold hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none flex items-center justify-center size-9"
+                  className="p-2 rounded-xl bg-brand-royal/30 border border-brand-royal/40 text-brand-gold hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none flex items-center justify-center size-10"
                 >
                   {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
                 </button>
@@ -423,7 +423,7 @@ export function Sidebar({
           ) : (
             <button
               onClick={(e) => toggleTheme(e)}
-              className="flex items-center gap-2 flex-1 px-3 py-2 bg-brand-royal/30 border border-brand-royal/40 rounded-xl text-[11px] font-medium text-neutral-300 hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none"
+              className="flex items-center gap-2 flex-1 px-3.5 py-2.5 bg-brand-royal/30 border border-brand-royal/40 rounded-xl text-xs font-medium text-neutral-300 hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none"
             >
               {theme === 'dark' ? (
                 <>
@@ -447,7 +447,7 @@ export function Sidebar({
                   <button
                     onClick={() => setIsLangOpen((prev) => !prev)}
                     aria-label="Select language"
-                    className={`p-2 rounded-xl bg-brand-royal/30 border border-brand-royal/40 text-brand-gold hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none flex items-center justify-center size-9 relative ${
+                    className={`p-2 rounded-xl bg-brand-royal/30 border border-brand-royal/40 text-brand-gold hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none flex items-center justify-center size-10 relative ${
                       isLangOpen ? 'ring-2 ring-brand-gold/50 bg-brand-royal/50' : ''
                     }`}
                   >
@@ -461,7 +461,7 @@ export function Sidebar({
             ) : (
               <button
                 onClick={() => setIsLangOpen((prev) => !prev)}
-                className="flex items-center gap-2 w-full px-3 py-2 bg-brand-royal/30 border border-brand-royal/40 rounded-xl text-[11px] font-medium text-neutral-300 hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none"
+                className="flex items-center gap-2 w-full px-3.5 py-2.5 bg-brand-royal/30 border border-brand-royal/40 rounded-xl text-xs font-medium text-neutral-300 hover:bg-brand-royal/50 transition-all duration-200 cursor-pointer focus:outline-none"
               >
                 <Globe className="size-4 text-brand-gold shrink-0" />
                 <span className="truncate">
@@ -505,7 +505,7 @@ export function Sidebar({
                         setLocale(lang);
                         setIsLangOpen(false);
                       }}
-                      className={`flex items-center justify-between w-full px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer focus:outline-none ${
+                      className={`flex items-center justify-between w-full px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer focus:outline-none ${
                         locale === lang
                           ? 'bg-brand-gold/15 text-brand-gold font-extrabold'
                           : 'text-neutral-300 hover:bg-white/5 hover:text-white'
@@ -517,7 +517,7 @@ export function Sidebar({
                           {lang === 'uz' ? "O'zbek" : lang === 'ru' ? 'Русский' : 'English'}
                         </span>
                       </span>
-                      <span className="text-[9px] opacity-60 ml-2">{lang.toUpperCase()}</span>
+                      <span className="text-[10px] opacity-60 ml-2">{lang.toUpperCase()}</span>
                     </button>
                   ))}
                 </motion.div>
@@ -529,7 +529,7 @@ export function Sidebar({
         {/* User Profile Box & Logout */}
         <div
           onClick={() => handleNavigate('profile')}
-          className={`group flex items-center ${effectiveCollapsed ? 'flex-col justify-center' : ''} gap-2 p-2 rounded-xl transition-colors duration-200 cursor-pointer relative ${
+          className={`group flex items-center ${effectiveCollapsed ? 'flex-col justify-center' : ''} gap-2.5 p-2 rounded-xl transition-colors duration-200 cursor-pointer relative ${
             currentPage === 'profile'
               ? 'bg-brand-gold/15 border border-brand-gold/40 text-brand-gold font-semibold'
               : 'hover:bg-white/5 border border-transparent text-neutral-300'
@@ -538,7 +538,7 @@ export function Sidebar({
           {currentPage === 'profile' && (
             <motion.div
               layoutId="sidebar-active-indicator"
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-brand-gold rounded-r-full"
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 bg-brand-gold rounded-r-full"
               transition={{ type: 'spring', stiffness: 350, damping: 30 }}
             />
           )}
@@ -546,7 +546,7 @@ export function Sidebar({
           {effectiveCollapsed ? (
             <Tooltip delay={150} closeDelay={0}>
               <Tooltip.Trigger>
-                <Avatar className="size-9 border border-brand-gold/30 bg-brand-royal text-brand-gold shrink-0 group-hover:scale-105 transition-transform">
+                <Avatar className="size-10 border border-brand-gold/30 bg-brand-royal text-brand-gold shrink-0 group-hover:scale-105 transition-transform">
                   {profile?.picture_url && (
                     <Avatar.Image src={getImageUrl(profile.picture_url)} alt={displayName} />
                   )}
@@ -563,7 +563,7 @@ export function Sidebar({
               </Tooltip.Content>
             </Tooltip>
           ) : (
-            <Avatar className="size-9 border border-brand-gold/30 bg-brand-royal text-brand-gold shrink-0 group-hover:scale-105 transition-transform">
+            <Avatar className="size-10 border border-brand-gold/30 bg-brand-royal text-brand-gold shrink-0 group-hover:scale-105 transition-transform">
               {profile?.picture_url && (
                 <Avatar.Image src={getImageUrl(profile.picture_url)} alt={displayName} />
               )}
@@ -583,7 +583,7 @@ export function Sidebar({
                 <p className="text-xs font-semibold text-white truncate group-hover:text-brand-gold transition-colors">
                   {displayName}
                 </p>
-                <p className="text-[10px] text-brand-gold font-medium truncate">
+                <p className="text-[11px] text-brand-gold font-medium truncate">
                   {user?.role || 'EMPLOYEE'}
                 </p>
               </motion.div>
@@ -598,7 +598,7 @@ export function Sidebar({
                     e.stopPropagation();
                     onLogout();
                   }}
-                  className="p-1.5 rounded-lg text-neutral-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200 cursor-pointer focus:outline-none shrink-0"
+                  className="p-2 rounded-lg text-neutral-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200 cursor-pointer focus:outline-none shrink-0"
                 >
                   <LogOut className="size-4" />
                 </button>
@@ -613,7 +613,7 @@ export function Sidebar({
                 e.stopPropagation();
                 onLogout();
               }}
-              className="p-1.5 rounded-lg text-neutral-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200 cursor-pointer focus:outline-none shrink-0"
+              className="p-2 rounded-lg text-neutral-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200 cursor-pointer focus:outline-none shrink-0"
             >
               <LogOut className="size-4" />
             </button>
@@ -627,7 +627,7 @@ export function Sidebar({
               setCollapsed(!collapsed);
               setIsLangOpen(false);
             }}
-            className="flex items-center justify-center gap-2 w-full py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-300/60 hover:text-neutral-300 transition-colors cursor-pointer focus:outline-none"
+            className="flex items-center justify-center gap-2 w-full py-2 text-[11px] font-bold uppercase tracking-wider text-neutral-300/60 hover:text-neutral-300 transition-colors cursor-pointer focus:outline-none"
           >
             <ChevronLeft
               className={`size-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
@@ -660,11 +660,11 @@ export function Sidebar({
             />
             {/* Slide-in sidebar drawer */}
             <motion.aside
-              initial={{ x: -280 }}
+              initial={{ x: -290 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: -290 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed top-0 left-0 h-screen w-[280px] flex flex-col bg-brand-navy dark:bg-night-sidebar border-r border-brand-royal/40 dark:border-border select-none overflow-hidden z-50 shadow-2xl"
+              className="fixed top-0 left-0 h-screen w-[290px] flex flex-col bg-brand-navy dark:bg-night-sidebar border-r border-brand-royal/40 dark:border-border select-none overflow-hidden z-50 shadow-2xl"
             >
               {sidebarContent}
             </motion.aside>

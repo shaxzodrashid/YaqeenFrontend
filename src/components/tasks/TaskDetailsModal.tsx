@@ -269,7 +269,7 @@ export function TaskDetailsModal({
       onTaskUpdated();
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Failed to update task');
+      alert(err.message || t('taskErrUpdateTask'));
     }
   };
 
@@ -342,9 +342,9 @@ export function TaskDetailsModal({
     } catch (err: any) {
       console.error(err);
       if (err.response?.data?.location === 'forbidden_comment_deletion') {
-        alert('Access Denied: You can only delete your own comments.');
+        alert(t('taskErrOwnCommentOnly'));
       } else {
-        alert(err.message || 'Failed to delete comment');
+        alert(err.message || t('taskErrDeleteComment'));
       }
     }
   };
@@ -355,13 +355,13 @@ export function TaskDetailsModal({
     if (!file || !taskId) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      setUploadError('File size exceeds maximum limit of 50MB');
+      setUploadError(t('taskErrFileSize'));
       return;
     }
 
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     if (EXECUTABLE_EXTENSIONS.includes(ext)) {
-      setUploadError('Executable files (.exe, .bat, .dll, etc.) are forbidden');
+      setUploadError(t('taskErrExecutableForbidden'));
       return;
     }
 
@@ -373,7 +373,7 @@ export function TaskDetailsModal({
       onTaskUpdated();
     } catch (err: any) {
       console.error(err);
-      setUploadError(err.message || 'Failed to upload attachment');
+      setUploadError(err.message || t('taskErrUploadAttachment'));
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -392,7 +392,7 @@ export function TaskDetailsModal({
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!confirm('Are you sure you want to delete this attachment?')) return;
+    if (!confirm(t('taskDeleteAttachmentConfirm'))) return;
     try {
       await api.tasks.deleteAttachment(attachmentId);
       if (taskId) await fetchTaskDetails(taskId);
@@ -403,7 +403,7 @@ export function TaskDetailsModal({
   };
 
   const handleDeleteTask = async () => {
-    if (!taskId || !confirm('Are you sure you want to delete this task?')) return;
+    if (!taskId || !confirm(t('taskDeleteTaskConfirm'))) return;
     try {
       await api.tasks.deleteTask(taskId);
       onTaskUpdated();
@@ -499,22 +499,24 @@ export function TaskDetailsModal({
                     )}`}
                   >
                     <option value="LOW" className="bg-surface text-foreground">
-                      LOW Priority
+                      {t('taskPriorityLow')}
                     </option>
                     <option value="MEDIUM" className="bg-surface text-foreground">
-                      MEDIUM Priority
+                      {t('taskPriorityMedium')}
                     </option>
                     <option value="HIGH" className="bg-surface text-foreground">
-                      HIGH Priority
+                      {t('taskPriorityHigh')}
                     </option>
                     <option value="URGENT" className="bg-surface text-foreground">
-                      URGENT Priority
+                      {t('taskPriorityUrgent')}
                     </option>
                   </select>
 
                   {isDoneColumn && task?.completedAt && (
                     <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                      Completed at {new Date(task.completedAt).toLocaleDateString()}
+                      {t('taskCompletedAtBadge', {
+                        date: new Date(task.completedAt).toLocaleDateString(),
+                      })}
                     </span>
                   )}
                 </div>
@@ -527,7 +529,7 @@ export function TaskDetailsModal({
                     onBlur={() => {
                       handleSaveMainDetails();
                     }}
-                    placeholder="Task Title..."
+                    placeholder={t('taskTitlePlaceholder')}
                     className="w-full text-base md:text-lg font-bold text-foreground bg-transparent border-none outline-none focus:ring-1 focus:ring-brand-gold/50 rounded px-1 -ml-1"
                   />
                 ) : (
@@ -544,7 +546,7 @@ export function TaskDetailsModal({
                   type="button"
                   onClick={handleDeleteTask}
                   className="p-2 rounded-xl text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-colors cursor-pointer"
-                  title="Delete Task"
+                  title={t('taskDeleteTaskTitle')}
                 >
                   <Trash2 className="size-4" />
                 </button>
@@ -569,7 +571,7 @@ export function TaskDetailsModal({
                   }`}
                 >
                   <FileText className="size-3.5" />
-                  <span>Details & Checklists</span>
+                  <span>{t('taskTabDetails')}</span>
                 </button>
                 <button
                   type="button"
@@ -581,7 +583,9 @@ export function TaskDetailsModal({
                   }`}
                 >
                   <MessageSquare className="size-3.5" />
-                  <span>Comments ({task?.comments?.length || 0})</span>
+                  <span>
+                    {t('taskTabComments')} ({task?.comments?.length || 0})
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -593,7 +597,9 @@ export function TaskDetailsModal({
                   }`}
                 >
                   <Paperclip className="size-3.5" />
-                  <span>Attachments ({task?.attachments?.length || 0})</span>
+                  <span>
+                    {t('taskTabAttachments')} ({task?.attachments?.length || 0})
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -605,7 +611,7 @@ export function TaskDetailsModal({
                   }`}
                 >
                   <History className="size-3.5" />
-                  <span>Audit Logs</span>
+                  <span>{t('taskTabLogs')}</span>
                 </button>
               </div>
 
@@ -615,14 +621,14 @@ export function TaskDetailsModal({
                   {/* Description */}
                   <div>
                     <label className="text-xs font-bold text-foreground uppercase tracking-wider block mb-2">
-                      Description & Specifications
+                      {t('taskDescriptionLabel')}
                     </label>
                     <RichTextEditor
                       value={description}
                       onChange={(val) => {
                         setDescription(val);
                       }}
-                      placeholder="Enter detailed task instructions, markdown, code snippets, or notes..."
+                      placeholder={t('taskDescriptionPlaceholder')}
                       readOnly={!canUpdate('tasks')}
                       minHeight="140px"
                     />
@@ -634,7 +640,7 @@ export function TaskDetailsModal({
                           }}
                           className="px-4 py-1.5 rounded-xl bg-brand-gold text-brand-navy font-bold text-xs cursor-pointer"
                         >
-                          Save Specs
+                          {t('taskSaveSpecsBtn')}
                         </Button>
                       </div>
                     )}
@@ -646,7 +652,7 @@ export function TaskDetailsModal({
                       <div className="flex items-center gap-2">
                         <CheckSquare className="size-4 text-brand-gold" />
                         <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                          Checklist ({completedChecklists}/{totalChecklists})
+                          {t('taskChecklists')} ({completedChecklists}/{totalChecklists})
                         </h4>
                       </div>
                       {totalChecklists > 0 && (
@@ -712,7 +718,7 @@ export function TaskDetailsModal({
                           onKeyDown={(e) =>
                             e.key === 'Enter' && (e.preventDefault(), handleAddChecklist())
                           }
-                          placeholder="Add a checklist item..."
+                          placeholder={t('taskChecklistItemPlaceholder')}
                           className="flex-1 px-3 py-1.5 rounded-xl text-xs bg-surface text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
                         />
                         <Button
@@ -721,7 +727,7 @@ export function TaskDetailsModal({
                           className="px-3 py-1.5 rounded-xl bg-brand-gold text-brand-navy font-bold text-xs cursor-pointer flex items-center gap-1"
                         >
                           <Plus className="size-3.5" />
-                          Add
+                          {t('taskAddBtn')}
                         </Button>
                       </div>
                     )}
@@ -736,12 +742,12 @@ export function TaskDetailsModal({
                   {canUpdate('tasks') && (
                     <div className="p-4 rounded-xl border border-border bg-border/10 flex flex-col gap-3">
                       <label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-                        Write Comment / Update
+                        {t('taskWriteCommentLabel')}
                       </label>
                       <RichTextEditor
                         value={newCommentContent}
                         onChange={setNewCommentContent}
-                        placeholder="Share updates, markdown notes, or feedback..."
+                        placeholder={t('taskCommentPlaceholder')}
                         minHeight="100px"
                       />
                       <div className="flex justify-end">
@@ -750,7 +756,7 @@ export function TaskDetailsModal({
                           isDisabled={postingComment || !newCommentContent.trim()}
                           className="px-4 py-1.5 rounded-xl bg-brand-gold text-brand-navy font-bold text-xs cursor-pointer"
                         >
-                          Post Comment
+                          {t('taskAddComment')}
                         </Button>
                       </div>
                     </div>
@@ -778,7 +784,7 @@ export function TaskDetailsModal({
                                 </span>
                                 {isAuthor && (
                                   <span className="text-[9px] bg-brand-gold/15 text-brand-gold px-1.5 py-0.2 rounded font-semibold">
-                                    You
+                                    {t('taskYouBadge')}
                                   </span>
                                 )}
                               </div>
@@ -791,7 +797,7 @@ export function TaskDetailsModal({
                                     type="button"
                                     onClick={() => handleDeleteComment(comment.id)}
                                     className="p-1 rounded text-muted hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                    title="Delete Comment"
+                                    title={t('taskDeleteCommentTitle')}
                                   >
                                     <Trash2 className="size-3.5" />
                                   </button>
@@ -807,7 +813,7 @@ export function TaskDetailsModal({
                       })
                     ) : (
                       <div className="text-center py-8 text-muted text-xs italic">
-                        No comments posted yet.
+                        {t('taskNoComments')}
                       </div>
                     )}
                   </div>
@@ -834,12 +840,9 @@ export function TaskDetailsModal({
                       >
                         <Upload className="size-6 text-brand-gold group-hover:scale-110 transition-transform" />
                         <span className="text-xs font-bold text-foreground">
-                          {uploadingFile ? 'Uploading File...' : 'Click to Upload Document / File'}
+                          {uploadingFile ? t('taskUploadingFile') : t('taskUploadPrompt')}
                         </span>
-                        <span className="text-[10px] text-muted">
-                          Maximum file size allowed is 50MB. Executables (.exe, .dll, .sh) strictly
-                          rejected.
-                        </span>
+                        <span className="text-[10px] text-muted">{t('taskUploadHint')}</span>
                       </button>
                       {uploadError && (
                         <p className="text-xs text-rose-400 font-medium mt-2 flex items-center gap-1">
@@ -877,7 +880,7 @@ export function TaskDetailsModal({
                               type="button"
                               onClick={() => handleDownloadAttachment(att.id)}
                               className="p-1.5 rounded-lg text-muted hover:text-brand-gold hover:bg-border/30 transition-colors cursor-pointer"
-                              title="Download File"
+                              title={t('taskDownloadFileTitle')}
                             >
                               <Download className="size-4" />
                             </button>
@@ -886,7 +889,7 @@ export function TaskDetailsModal({
                                 type="button"
                                 onClick={() => handleDeleteAttachment(att.id)}
                                 className="p-1.5 rounded-lg text-muted hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer"
-                                title="Delete File"
+                                title={t('taskDeleteFileTitle')}
                               >
                                 <Trash2 className="size-4" />
                               </button>
@@ -896,7 +899,7 @@ export function TaskDetailsModal({
                       ))
                     ) : (
                       <div className="col-span-full text-center py-8 text-muted text-xs italic">
-                        No attachments uploaded for this task.
+                        {t('taskNoAttachments')}
                       </div>
                     )}
                   </div>
@@ -930,7 +933,7 @@ export function TaskDetailsModal({
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted text-xs italic">
-                      No activity logs recorded.
+                      {t('taskNoLogs')}
                     </div>
                   )}
                 </div>
@@ -942,7 +945,7 @@ export function TaskDetailsModal({
               {/* Status Column Selector */}
               <div>
                 <label className="text-[11px] font-bold text-foreground uppercase tracking-wider block mb-1.5">
-                  Column Status
+                  {t('taskColumnStatusLabel')}
                 </label>
                 <select
                   value={columnId || task?.columnId}
@@ -956,7 +959,7 @@ export function TaskDetailsModal({
                 >
                   {columns.map((col) => (
                     <option key={col.id} value={col.id}>
-                      {col.name} {col.is_done_status ? ' (Done)' : ''}
+                      {col.name} {col.is_done_status ? ` ${t('taskColumnDoneSuffix')}` : ''}
                     </option>
                   ))}
                 </select>
@@ -966,11 +969,11 @@ export function TaskDetailsModal({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[11px] font-bold text-foreground uppercase tracking-wider block">
-                    Assigned Employees ({selectedAssigneeIds.length})
+                    {t('taskAssignedEmployeesLabel', { count: selectedAssigneeIds.length })}
                   </label>
                   {selectedAssigneeIds.length > 0 && (
                     <span className="text-[10px] font-semibold text-brand-gold bg-brand-gold/15 px-2 py-0.5 rounded-full border border-brand-gold/30">
-                      {selectedAssigneeIds.length} active
+                      {t('taskActiveCount', { count: selectedAssigneeIds.length })}
                     </span>
                   )}
                 </div>
@@ -1004,7 +1007,7 @@ export function TaskDetailsModal({
                               type="button"
                               onClick={() => toggleAssignee(empId)}
                               className="p-0.5 hover:bg-brand-gold/20 rounded text-brand-gold/70 hover:text-brand-gold transition-colors cursor-pointer"
-                              title={`Remove ${name}`}
+                              title={t('taskRemoveAssigneeTitle', { name })}
                             >
                               <X className="size-2.5" />
                             </button>
@@ -1022,7 +1025,7 @@ export function TaskDetailsModal({
                     type="text"
                     value={employeeSearchQuery}
                     onChange={(e) => setEmployeeSearchQuery(e.target.value)}
-                    placeholder="Search all employees..."
+                    placeholder={t('taskSearchEmployeesPlaceholder')}
                     className="w-full pl-8 pr-7 py-1.5 bg-surface border border-border rounded-xl text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-brand-gold transition-colors"
                   />
                   {loadingEmployees ? (
@@ -1043,7 +1046,7 @@ export function TaskDetailsModal({
                   {loadingEmployees && employeeList.length === 0 ? (
                     <div className="py-8 flex flex-col items-center justify-center gap-2 text-xs text-muted">
                       <Loader2 className="size-4 animate-spin text-brand-gold" />
-                      <span>Loading employees...</span>
+                      <span>{t('taskLoadingEmployees')}</span>
                     </div>
                   ) : employeeList.length > 0 ? (
                     employeeList.map((emp) => {
@@ -1091,8 +1094,10 @@ export function TaskDetailsModal({
                   ) : (
                     <div className="py-6 text-center text-xs text-muted italic bg-surface/40 rounded-xl border border-border/40">
                       {debouncedEmployeeSearchQuery
-                        ? `No employees found for "${debouncedEmployeeSearchQuery}"`
-                        : 'No employees found'}
+                        ? t('taskNoEmployeesFoundFor', {
+                            query: debouncedEmployeeSearchQuery,
+                          })
+                        : t('taskNoEmployeesFound')}
                     </div>
                   )}
                 </div>
@@ -1101,7 +1106,10 @@ export function TaskDetailsModal({
                 {employeeMeta.totalPages > 1 && (
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 px-1 text-[11px] text-muted">
                     <span className="text-[10px]">
-                      Page {employeeMeta.currentPage} of {employeeMeta.totalPages}
+                      {t('taskPageOf', {
+                        current: employeeMeta.currentPage,
+                        total: employeeMeta.totalPages,
+                      })}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -1109,7 +1117,7 @@ export function TaskDetailsModal({
                         onClick={() => setEmployeePage((p) => Math.max(1, p - 1))}
                         disabled={employeePage <= 1 || loadingEmployees}
                         className="p-1 rounded-lg border border-border bg-surface hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                        title="Previous Page"
+                        title={t('taskPrevPageTitle')}
                       >
                         <ChevronLeft className="size-3 text-foreground" />
                       </button>
@@ -1120,7 +1128,7 @@ export function TaskDetailsModal({
                         }
                         disabled={employeePage >= employeeMeta.totalPages || loadingEmployees}
                         className="p-1 rounded-lg border border-border bg-surface hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                        title="Next Page"
+                        title={t('taskNextPageTitle')}
                       >
                         <ChevronRight className="size-3 text-foreground" />
                       </button>
@@ -1134,7 +1142,7 @@ export function TaskDetailsModal({
                 <div>
                   <label className="text-[11px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                     <Calendar className="size-3.5 text-brand-gold" />
-                    Due Date
+                    {t('taskDueDate')}
                   </label>
                   <input
                     type="datetime-local"
@@ -1151,7 +1159,7 @@ export function TaskDetailsModal({
                 <div>
                   <label className="text-[11px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                     <Clock className="size-3.5 text-amber-400" />
-                    Target Notification Warning Time
+                    {t('taskTargetWarningTime')}
                   </label>
                   <input
                     type="datetime-local"
@@ -1169,14 +1177,18 @@ export function TaskDetailsModal({
               {/* Metadata Timestamps */}
               <div className="border-t border-border/40 pt-4 text-[10px] text-muted flex flex-col gap-1 font-mono">
                 <div>
-                  Created: {task?.createdAt ? new Date(task.createdAt).toLocaleString() : 'N/A'}
+                  {t('taskCreatedLabel')}{' '}
+                  {task?.createdAt ? new Date(task.createdAt).toLocaleString() : '—'}
                 </div>
                 <div>
-                  Started: {task?.startedAt ? new Date(task.startedAt).toLocaleString() : 'N/A'}
+                  {t('taskStartedLabel')}{' '}
+                  {task?.startedAt ? new Date(task.startedAt).toLocaleString() : '—'}
                 </div>
                 <div>
-                  Completed:{' '}
-                  {task?.completedAt ? new Date(task.completedAt).toLocaleString() : 'Not yet'}
+                  {t('taskCompletedLabel')}{' '}
+                  {task?.completedAt
+                    ? new Date(task.completedAt).toLocaleString()
+                    : t('taskNotYet')}
                 </div>
               </div>
             </div>
