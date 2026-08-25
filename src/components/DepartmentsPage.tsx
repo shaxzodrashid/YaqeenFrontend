@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, memo } from 'react';
-import { Card, Button, Modal, Spinner, Skeleton } from '@heroui/react';
+import { Card, Button, Modal, Spinner, Skeleton, Avatar } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building2,
@@ -13,198 +13,584 @@ import {
   Users,
   LayoutGrid,
   List,
-  Hash,
+  RotateCw,
   TrendingUp,
+  Sparkles,
+  ArrowUpDown,
+  Phone,
+  UserCheck,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePermissions } from '../context/PermissionsContext';
-import { api } from '../services/api';
-import type { Department, CreateDepartmentDto, ApiError } from '../services/api';
-import { T } from './T';
+import { api, getImageUrl, formatMoney } from '../services/api';
+import type { Department, CreateDepartmentDto, EmployeeListItem, ApiError } from '../services/api';
+import { YaqeenMark } from './icons/YaqeenIcons';
+import { Select } from './Select';
 
-// Motion variants – lightweight transforms for silky stagger animations
+// Motion variants – refined, calm durations adhering to Yaqeen motion tokens (180-240ms)
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.08 },
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.97 },
+  hidden: { opacity: 0, y: 12, scale: 0.98 },
   show: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    transition: { duration: 0.24, ease: [0.2, 0, 0, 1] as const },
   },
 };
 
-/* ── Memoized Department Card ─────────────────────────────── */
+type SortOption = 'name_asc' | 'name_desc' | 'employees_desc' | 'employees_asc' | 'newest';
+type FilterStatus = 'all' | 'staffed' | 'empty';
+
+/* ── Status Badge Subcomponent ────────────────────────────── */
+const StatusBadge = memo(function StatusBadge({
+  hasEmployees,
+  count,
+}: {
+  hasEmployees: boolean;
+  count: number;
+}) {
+  const { t } = useTranslation();
+
+  if (hasEmployees) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-tight bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+        <span className="tabular-nums font-bold">{count}</span>
+        <span>{t('deptEmployeeCount')}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-tight bg-default/40 text-muted border border-border/30">
+      <span className="size-1.5 rounded-full bg-muted/60 shrink-0" />
+      <span>{t('deptUnstaffed')}</span>
+    </span>
+  );
+});
+
+/* ── Centered Department Team Members Modal ─────────────────── */
+interface DepartmentMembersModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  dept: Department | null;
+  onEdit: (dept: Department) => void;
+}
+
+const DepartmentMembersModal = memo(function DepartmentMembersModal({
+  isOpen,
+  onClose,
+  dept,
+  onEdit,
+}: DepartmentMembersModalProps) {
+  const { t } = useTranslation();
+  const { showNotification } = useNotification();
+  const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [staffSearch, setStaffSearch] = useState('');
+
+  // Fetch employees assigned to this department
+  useEffect(() => {
+    if (isOpen && dept?.id) {
+      let isMounted = true;
+      setLoading(true);
+      setStaffSearch('');
+      api.employees
+        .list({ department_id: dept.id, limit: 100 })
+        .then((res) => {
+          if (isMounted) {
+            setEmployees(res?.data || res?.items || []);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load department employees:', err);
+          showNotification(t('internal_error'), 'error');
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+      return () => {
+        isMounted = false;
+      };
+    } else {
+      setEmployees([]);
+    }
+  }, [isOpen, dept?.id, showNotification, t]);
+
+  const filteredStaff = useMemo(() => {
+    if (!staffSearch.trim()) return employees;
+    const q = staffSearch.toLowerCase().trim();
+    return employees.filter(
+      (emp) =>
+        emp.full_name?.toLowerCase().includes(q) ||
+        `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(q) ||
+        emp.role_name?.toLowerCase().includes(q) ||
+        emp.phone?.includes(q)
+    );
+  }, [employees, staffSearch]);
+
+  if (!dept) return null;
+
+  return (
+    <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Modal.Container>
+        <Modal.Dialog className="max-w-lg w-[92vw] sm:w-full mx-auto rounded-2xl p-0 overflow-hidden bg-surface dark:bg-surface border border-border/30 shadow-2xl">
+          <Modal.CloseTrigger className="absolute top-4 right-4 p-2 rounded-xl text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none z-10 transition-colors">
+            <X className="size-4" />
+          </Modal.CloseTrigger>
+
+          {/* Modal Header */}
+          <Modal.Header className="px-6 py-5 border-b border-border/20 bg-surface">
+            <div className="flex items-start gap-3.5 pr-8">
+              <div className="size-11 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 text-brand-royal dark:text-accent border border-brand-royal/15 dark:border-brand-royal/30 flex items-center justify-center shrink-0">
+                <Building2 className="size-5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <Modal.Heading className="font-serif font-bold text-lg sm:text-xl text-foreground truncate">
+                  {dept.display_name}
+                </Modal.Heading>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="text-[10px] text-muted/80 font-mono bg-default/40 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                    {dept.name}
+                  </code>
+                  <StatusBadge
+                    hasEmployees={(dept.employee_count ?? 0) > 0}
+                    count={dept.employee_count ?? 0}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* In-Modal Search bar if there are employees */}
+            {employees.length > 0 && (
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted/50 pointer-events-none" />
+                <input
+                  type="text"
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                  placeholder={t('deptSearchStaff')}
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-field text-field-foreground border border-border/40 rounded-xl placeholder:text-muted/50 focus:outline-none focus:border-brand-royal focus:ring-2 focus:ring-brand-royal/10 transition-all duration-150"
+                />
+                {staffSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setStaffSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-1 rounded-lg cursor-pointer"
+                    aria-label="Clear search"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </Modal.Header>
+
+          {/* Modal Body */}
+          <Modal.Body className="p-6 max-h-[55vh] overflow-y-auto space-y-3">
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl border border-border/20 bg-surface flex items-center gap-3"
+                  >
+                    <Skeleton className="size-10 rounded-full shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-32 rounded-md" />
+                      <Skeleton className="h-3 w-20 rounded-md" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : employees.length === 0 ? (
+              /* Empty state: No employees assigned to this dept */
+              <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                <div className="size-12 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 text-brand-royal dark:text-accent border border-brand-royal/15 flex items-center justify-center mb-3">
+                  <Users className="size-6 opacity-70" />
+                </div>
+                <h4 className="font-serif font-bold text-sm sm:text-base text-foreground mb-1">
+                  {t('deptNoStaffAssigned')}
+                </h4>
+                <p className="text-xs text-muted/70 max-w-xs leading-relaxed">
+                  {t('deptStaffDrawerSubtitle')}
+                </p>
+              </div>
+            ) : filteredStaff.length === 0 ? (
+              /* No matching staff in search */
+              <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                <Search className="size-7 text-muted/40 mb-2" />
+                <h4 className="font-bold text-sm text-foreground mb-1">{t('deptNoStaffFound')}</h4>
+                <p className="text-xs text-muted/70 max-w-xs mb-3">{t('deptNoStaffFoundDesc')}</p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setStaffSearch('')}
+                  className="text-xs text-brand-royal dark:text-accent font-semibold"
+                >
+                  {t('deptClearSearch')}
+                </Button>
+              </div>
+            ) : (
+              /* Staff member list */
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-muted uppercase tracking-wider px-1">
+                  <span>
+                    {t('deptStaffMembers')} ({filteredStaff.length})
+                  </span>
+                </div>
+
+                {filteredStaff.map((emp) => {
+                  const fullName =
+                    emp.full_name || `${emp.first_name} ${emp.last_name}`.trim() || 'Employee';
+                  const initials =
+                    `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase();
+                  const empColor = emp.color || '#0F2D5C';
+
+                  return (
+                    <div
+                      key={emp.id}
+                      className="group relative p-3.5 rounded-xl border border-border/30 bg-surface hover:border-border-strong hover:shadow-sm transition-all duration-150 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar
+                          className="size-10 text-xs font-bold text-white shrink-0 shadow-sm"
+                          style={{ backgroundColor: empColor }}
+                        >
+                          {emp.picture_url && (
+                            <Avatar.Image src={getImageUrl(emp.picture_url)} alt={fullName} />
+                          )}
+                          <Avatar.Fallback>{initials}</Avatar.Fallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-foreground truncate">
+                              {fullName}
+                            </span>
+                            {emp.user_role && (
+                              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-brand-royal/10 text-brand-royal dark:text-accent shrink-0">
+                                {emp.user_role}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-[11px] text-muted mt-0.5">
+                            {emp.role_name && (
+                              <span className="truncate max-w-[140px]">{emp.role_name}</span>
+                            )}
+                            {emp.phone && (
+                              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted/80">
+                                <Phone className="size-2.5" />
+                                {emp.phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right side salary or status */}
+                      <div className="flex flex-col items-end shrink-0">
+                        {emp.fixed_salary && Number(emp.fixed_salary) > 0 ? (
+                          <span className="text-xs font-bold font-mono text-foreground tabular-nums">
+                            {formatMoney(Number(emp.fixed_salary), emp.currency || 'USD')}
+                          </span>
+                        ) : (
+                          <span className="size-2 rounded-full bg-emerald-500" />
+                        )}
+                        <span className="text-[10px] text-muted/70 capitalize mt-0.5">
+                          {emp.status
+                            ? emp.status === 'active'
+                              ? t('statusActive')
+                              : emp.status
+                            : t('statusActive')}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Modal.Body>
+
+          {/* Modal Footer */}
+          <Modal.Footer className="px-6 py-4 border-t border-border/20 bg-surface flex items-center justify-between gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={() => {
+                onClose();
+                onEdit(dept);
+              }}
+              className="text-xs font-semibold text-muted hover:text-foreground gap-1.5"
+            >
+              <Pencil className="size-3.5" />
+              {t('deptEditDept')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={onClose}
+              className="text-xs font-semibold px-4 min-h-[38px] rounded-xl"
+            >
+              {t('actionClose')}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
+  );
+});
+
+/* ── Memoized Department Grid Card ─────────────────────────── */
 interface DepartmentCardProps {
   dept: Department;
+  totalCompanyEmployees: number;
   canUpdate: boolean;
   canDelete: boolean;
   onEdit: (dept: Department) => void;
   onDelete: (dept: Department) => void;
+  onInspect: (dept: Department) => void;
   formatDate: (dateStr: string) => string;
-  viewMode: 'grid' | 'list';
 }
 
 const DepartmentCard = memo(function DepartmentCard({
   dept,
+  totalCompanyEmployees,
   canUpdate,
   canDelete,
   onEdit,
   onDelete,
+  onInspect,
   formatDate,
-  viewMode,
 }: DepartmentCardProps) {
   const { t } = useTranslation();
   const employeeCount = dept.employee_count ?? 0;
+  const workforceShare =
+    totalCompanyEmployees > 0 ? Math.round((employeeCount / totalCompanyEmployees) * 1000) / 10 : 0;
 
-  if (viewMode === 'list') {
-    return (
-      <div className="group relative p-3.5 sm:p-4 border border-border/30 bg-surface/80 backdrop-blur-sm rounded-xl hover:border-brand-gold/30 hover:shadow-lg hover:shadow-brand-gold/5 transition-all duration-300 transform-gpu flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div className="size-10 rounded-xl bg-gradient-to-br from-brand-gold/15 to-brand-gold/5 flex items-center justify-center text-brand-gold shrink-0 ring-1 ring-brand-gold/10">
-            <Building2 className="size-5" />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h3 className="text-sm font-bold text-foreground tracking-tight truncate">
-                {dept.display_name}
-              </h3>
-              <code className="text-[10px] text-muted/70 font-mono bg-default/40 px-1.5 py-0.5 rounded-md shrink-0 tracking-wide uppercase">
-                {dept.name}
-              </code>
-            </div>
-            <div className="flex items-center gap-4 text-[11px] text-muted mt-1 flex-wrap">
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="size-3 text-brand-gold/70" />
-                <span className="font-semibold text-foreground tabular-nums">{employeeCount}</span>
-                <span className="text-muted/80">{t('deptEmployeeCount')}</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-muted/60">
-                <Calendar className="size-3" />
-                {formatDate(dept.created_at)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-0.5 self-end sm:self-center opacity-60 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
-          {canUpdate && (
-            <Button
-              isIconOnly
-              size="sm"
-              variant="ghost"
-              onPress={() => onEdit(dept)}
-              aria-label="Edit department"
-              className="text-muted hover:text-foreground hover:bg-default/60 min-h-[36px] min-w-[36px] rounded-lg"
-            >
-              <Pencil className="size-3.5" />
-            </Button>
-          )}
-          {canDelete && (
-            <Button
-              isIconOnly
-              size="sm"
-              variant="ghost"
-              onPress={() => onDelete(dept)}
-              aria-label="Delete department"
-              className="text-muted hover:text-rose-500 hover:bg-rose-500/10 min-h-[36px] min-w-[36px] rounded-lg"
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Grid card
   return (
-    <Card className="group relative overflow-hidden border border-border/30 bg-surface/90 backdrop-blur-sm rounded-2xl hover:border-brand-gold/30 hover:shadow-xl hover:shadow-brand-gold/5 transition-all duration-300 transform-gpu flex flex-col justify-between h-full">
-      {/* Subtle gradient accent at top */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-      <div className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-2 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="size-11 sm:size-12 rounded-xl bg-gradient-to-br from-brand-gold/15 to-brand-gold/5 flex items-center justify-center text-brand-gold shrink-0 ring-1 ring-brand-gold/10 group-hover:ring-brand-gold/20 transition-all duration-300">
-              <Building2 className="size-5 sm:size-[22px]" />
+    <Card className="group relative overflow-hidden border border-border/30 bg-surface rounded-2xl hover:border-brand-royal/40 dark:hover:border-border-strong hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full">
+      {/* Main Content Area */}
+      <div className="p-5 sm:p-5.5 flex-1 flex flex-col justify-between gap-4">
+        <div>
+          {/* Top Row: Emblem Icon on Left, Edit & Delete actions on Right */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="size-11 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 text-brand-royal dark:text-accent border border-brand-royal/15 dark:border-brand-royal/30 flex items-center justify-center shrink-0">
+              <Building2 className="size-5" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <h3
-                className="text-sm sm:text-[15px] font-bold text-foreground tracking-tight truncate leading-tight"
-                title={dept.display_name}
-              >
-                {dept.display_name}
-              </h3>
-              <code className="text-[10px] text-muted/60 font-mono bg-default/30 px-1.5 py-0.5 rounded-md mt-1 w-fit truncate max-w-full tracking-wide uppercase">
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity duration-150 shrink-0">
+              {canUpdate && (
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => onEdit(dept)}
+                  aria-label={t('deptEditDept')}
+                  className="text-muted hover:text-foreground hover:bg-default/60 min-h-[32px] min-w-[32px] rounded-lg"
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => onDelete(dept)}
+                  aria-label={t('deptDeleteTitle')}
+                  className="text-muted hover:text-rose-600 hover:bg-rose-500/10 min-h-[32px] min-w-[32px] rounded-lg"
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Department Name & Machine Slug (Full Width, never truncated prematurely) */}
+          <div className="space-y-1 mb-3.5">
+            <h3
+              className="font-serif font-bold text-base sm:text-[17px] text-foreground tracking-tight leading-snug cursor-pointer hover:text-brand-royal dark:hover:text-accent transition-colors break-words"
+              title={dept.display_name}
+              onClick={() => onInspect(dept)}
+            >
+              {dept.display_name}
+            </h3>
+            <div>
+              <code className="text-[10px] text-muted font-mono bg-default/40 px-2 py-0.5 rounded-md uppercase tracking-wider inline-block">
                 {dept.name}
               </code>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-0.5 opacity-40 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
-            {canUpdate && (
-              <Button
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                onPress={() => onEdit(dept)}
-                aria-label="Edit department"
-                className="text-muted hover:text-foreground hover:bg-default/60 min-h-[34px] min-w-[34px] rounded-lg"
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            )}
-            {canDelete && (
-              <Button
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                onPress={() => onDelete(dept)}
-                aria-label="Delete department"
-                className="text-muted hover:text-rose-500 hover:bg-rose-500/10 min-h-[34px] min-w-[34px] rounded-lg"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            )}
+          {/* Workforce Share Progress Bar */}
+          <div className="p-3 rounded-xl bg-default/20 border border-border/20 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted font-medium">{t('deptWorkforceShare')}</span>
+              <span className="font-mono font-bold text-foreground tabular-nums">
+                {workforceShare}%
+              </span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-border/40 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-brand-royal dark:bg-accent transition-all duration-300"
+                style={{ width: `${Math.min(workforceShare, 100)}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom stats bar */}
-      <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
-        <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/15">
-          <div className="inline-flex items-center gap-2 bg-brand-gold/5 dark:bg-brand-gold/8 px-2.5 py-1.5 rounded-lg">
-            <Users className="size-3.5 text-brand-gold/80" />
-            <span className="text-xs font-semibold text-brand-gold tabular-nums">
-              {employeeCount}
-            </span>
-            <span className="text-[10px] text-brand-gold/60 font-medium">
-              {t('deptEmployeeCount')}
+        {/* Status + Date + Dedicated Full-Width Inspect Button */}
+        <div className="space-y-2.5 pt-2.5 border-t border-border/15">
+          <div className="flex items-center justify-between gap-2">
+            <StatusBadge hasEmployees={employeeCount > 0} count={employeeCount} />
+            <span className="text-[11px] text-muted/70 flex items-center gap-1 shrink-0">
+              <Calendar className="size-3 shrink-0" />
+              <span>{formatDate(dept.created_at)}</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[10px] text-muted/50">
-            <Calendar className="size-3 shrink-0" />
-            <span className="truncate">{formatDate(dept.created_at)}</span>
-          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => onInspect(dept)}
+            className="w-full h-9 rounded-xl text-xs font-semibold text-brand-royal dark:text-accent bg-brand-royal/5 dark:bg-brand-royal/15 hover:bg-brand-royal/10 dark:hover:bg-brand-royal/25 border border-brand-royal/15 dark:border-brand-royal/30 gap-2 transition-colors justify-center"
+          >
+            <Users className="size-3.5 shrink-0" />
+            <span className="truncate">{t('deptInspectStaff')}</span>
+          </Button>
         </div>
       </div>
     </Card>
   );
 });
 
-/* ── Form Modal ───────────────────────────────────────────── */
+/* ── Memoized Department Table Row (List View) ─────────────── */
+interface DepartmentTableRowProps {
+  dept: Department;
+  totalCompanyEmployees: number;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onEdit: (dept: Department) => void;
+  onDelete: (dept: Department) => void;
+  onInspect: (dept: Department) => void;
+  formatDate: (dateStr: string) => string;
+}
+
+const DepartmentTableRow = memo(function DepartmentTableRow({
+  dept,
+  totalCompanyEmployees,
+  canUpdate,
+  canDelete,
+  onEdit,
+  onDelete,
+  onInspect,
+  formatDate,
+}: DepartmentTableRowProps) {
+  const { t } = useTranslation();
+  const employeeCount = dept.employee_count ?? 0;
+  const workforceShare =
+    totalCompanyEmployees > 0 ? Math.round((employeeCount / totalCompanyEmployees) * 1000) / 10 : 0;
+
+  return (
+    <div className="group relative p-3.5 sm:p-4 border border-border/30 bg-surface rounded-xl hover:border-brand-royal/40 dark:hover:border-border-strong hover:shadow-sm transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Left: Emblem & Details */}
+      <div className="flex items-center gap-3 min-w-0 md:w-1/3">
+        <div className="size-10 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 text-brand-royal dark:text-accent border border-brand-royal/15 dark:border-brand-royal/30 flex items-center justify-center shrink-0">
+          <Building2 className="size-5" />
+        </div>
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3
+              className="font-serif font-bold text-sm sm:text-base text-foreground tracking-tight truncate cursor-pointer hover:text-brand-royal dark:hover:text-accent transition-colors"
+              title={dept.display_name}
+              onClick={() => onInspect(dept)}
+            >
+              {dept.display_name}
+            </h3>
+            <code className="text-[10px] text-muted font-mono bg-default/40 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+              {dept.name}
+            </code>
+          </div>
+          <span className="text-[11px] text-muted/70 flex items-center gap-1.5 mt-0.5">
+            <Calendar className="size-3" />
+            {formatDate(dept.created_at)}
+          </span>
+        </div>
+      </div>
+
+      {/* Center: Workforce Distribution */}
+      <div className="flex items-center gap-4 md:w-1/3">
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-muted font-medium">{t('deptWorkforceShare')}</span>
+            <span className="font-mono font-bold text-foreground tabular-nums">
+              {workforceShare}%
+            </span>
+          </div>
+          <div className="w-full h-1.5 rounded-full bg-border/40 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-brand-royal dark:bg-accent transition-all duration-300"
+              style={{ width: `${Math.min(workforceShare, 100)}%` }}
+            />
+          </div>
+        </div>
+
+        <StatusBadge hasEmployees={employeeCount > 0} count={employeeCount} />
+      </div>
+
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1 self-end md:self-center shrink-0">
+        <Button
+          size="sm"
+          variant="ghost"
+          onPress={() => onInspect(dept)}
+          className="text-xs font-semibold text-brand-royal dark:text-accent hover:bg-brand-royal/10 dark:hover:bg-brand-royal/20 px-3 h-8 rounded-lg gap-1.5"
+        >
+          <Users className="size-3.5" />
+          <span className="hidden sm:inline">{t('deptInspectStaff')}</span>
+        </Button>
+
+        {canUpdate && (
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            onPress={() => onEdit(dept)}
+            aria-label={t('deptEditDept')}
+            className="text-muted hover:text-foreground hover:bg-default/60 min-h-[36px] min-w-[36px] rounded-lg"
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+        )}
+        {canDelete && (
+          <Button
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            onPress={() => onDelete(dept)}
+            aria-label={t('deptDeleteTitle')}
+            className="text-muted hover:text-rose-600 hover:bg-rose-500/10 min-h-[36px] min-w-[36px] rounded-lg"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+});
+
+/* ── Create / Edit Form Modal ──────────────────────────────── */
 interface DepartmentFormModalProps {
   isOpen: boolean;
   editingDept: Department | null;
@@ -221,35 +607,59 @@ const DepartmentFormModal = memo(function DepartmentFormModal({
   const { t } = useTranslation();
   const { showNotification } = useNotification();
 
-  // Internal form state to prevent parent page re-renders on keystroke
   const [formName, setFormName] = useState('');
   const [formDisplayName, setFormDisplayName] = useState('');
   const [formErrors, setFormErrors] = useState<{ name?: string; display_name?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [isSlugAuto, setIsSlugAuto] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
       if (editingDept) {
         setFormName(editingDept.name);
         setFormDisplayName(editingDept.display_name);
+        setIsSlugAuto(false);
       } else {
         setFormName('');
         setFormDisplayName('');
+        setIsSlugAuto(true);
       }
       setFormErrors({});
     }
   }, [isOpen, editingDept]);
 
+  // Helper to generate machine slug from display name
+  const generateSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s_-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 100);
+  };
+
+  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFormDisplayName(val);
+    setFormErrors((p) => ({ ...p, display_name: undefined }));
+
+    if (isSlugAuto && !editingDept) {
+      setFormName(generateSlug(val));
+      setFormErrors((p) => ({ ...p, name: undefined }));
+    }
+  };
+
   const validateForm = (): boolean => {
     const errors: { name?: string; display_name?: string } = {};
-    if (!formName || formName.length < 2 || formName.length > 100) {
-      errors.name = t('fieldNameLength');
+    if (!formDisplayName || formDisplayName.trim().length < 2 || formDisplayName.length > 100) {
+      errors.display_name = t('fieldNameLength') || 'Name must be between 2 and 100 characters';
+    }
+    if (!formName || formName.trim().length < 2 || formName.length > 100) {
+      errors.name = t('fieldNameLength') || 'Name must be between 2 and 100 characters';
     }
     if (!/^[a-z0-9_-]+$/.test(formName)) {
       errors.name = t('deptFieldNameHint');
-    }
-    if (!formDisplayName || formDisplayName.length < 2 || formDisplayName.length > 100) {
-      errors.display_name = t('fieldNameLength');
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -260,7 +670,10 @@ const DepartmentFormModal = memo(function DepartmentFormModal({
     if (!validateForm()) return;
     setSaving(true);
     try {
-      const dto: CreateDepartmentDto = { name: formName, display_name: formDisplayName };
+      const dto: CreateDepartmentDto = {
+        name: formName.trim().toLowerCase(),
+        display_name: formDisplayName.trim(),
+      };
       if (editingDept) {
         await api.departments.update(editingDept.id, dto);
         showNotification(t('successDeptUpdated'), 'success');
@@ -288,97 +701,116 @@ const DepartmentFormModal = memo(function DepartmentFormModal({
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Modal.Container>
         <Modal.Dialog className="max-w-md w-[92vw] sm:w-full mx-auto rounded-2xl p-0 overflow-hidden bg-surface dark:bg-surface border border-border/30 shadow-2xl">
-          <Modal.CloseTrigger className="absolute top-4 right-4 p-2 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none z-10" />
+          <Modal.CloseTrigger className="absolute top-4 right-4 p-2 rounded-xl text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none z-10 transition-colors">
+            <X className="size-4" />
+          </Modal.CloseTrigger>
 
           <form onSubmit={handleSave} className="flex flex-col max-h-[85vh]">
-            <Modal.Header className="px-5 sm:px-6 py-4 border-b border-border/20">
+            <Modal.Header className="px-6 py-5 border-b border-border/20 bg-surface">
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-gradient-to-br from-brand-gold/15 to-brand-gold/5 flex items-center justify-center text-brand-gold ring-1 ring-brand-gold/10">
-                  <Building2 className="size-4.5" />
+                <div className="size-10 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 text-brand-royal dark:text-accent border border-brand-royal/15 dark:border-brand-royal/30 flex items-center justify-center">
+                  <Building2 className="size-5" />
                 </div>
-                <Modal.Heading className="font-serif font-bold text-base sm:text-lg text-foreground">
-                  {editingDept ? <T k="deptEditDept" /> : <T k="deptNewDept" />}
-                </Modal.Heading>
+                <div>
+                  <Modal.Heading className="font-serif font-bold text-lg sm:text-xl text-foreground">
+                    {editingDept ? t('deptEditDept') : t('deptNewDept')}
+                  </Modal.Heading>
+                  <p className="text-xs text-muted/70 mt-0.5">{t('deptSubtitle')}</p>
+                </div>
               </div>
             </Modal.Header>
 
-            <Modal.Body className="flex flex-col gap-5 p-5 sm:p-6 overflow-y-auto">
-              {/* Machine Name */}
-              <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-xs font-semibold text-foreground tracking-wide uppercase">
-                  <T k="deptFieldName" />
-                </label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => {
-                    setFormName(e.target.value.toLowerCase());
-                    setFormErrors((p) => ({ ...p, name: undefined }));
-                  }}
-                  placeholder="marketing-hq"
-                  autoComplete="off"
-                  className={`w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-field text-field-foreground border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-focus/30 font-mono
-                      ${formErrors.name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border hover:border-brand-gold/30'}`}
-                />
-                <p
-                  className={`text-[11px] ${formErrors.name ? 'text-rose-500 font-medium' : 'text-muted/70'}`}
-                >
-                  {formErrors.name ? formErrors.name : <T k="deptFieldNameHint" />}
-                </p>
-              </div>
-
+            <Modal.Body className="flex flex-col gap-5 p-6 overflow-y-auto">
               {/* Display Name */}
               <div className="flex flex-col gap-1.5 text-left">
                 <label className="text-xs font-semibold text-foreground tracking-wide uppercase">
-                  <T k="deptFieldDisplayName" />
+                  {t('deptFieldDisplayName')} *
                 </label>
                 <input
                   type="text"
                   value={formDisplayName}
-                  onChange={(e) => {
-                    setFormDisplayName(e.target.value);
-                    setFormErrors((p) => ({ ...p, display_name: undefined }));
-                  }}
-                  placeholder="Marketing HQ"
+                  onChange={handleDisplayNameChange}
+                  placeholder={t('deptFieldDisplayNamePlaceholder')}
                   autoComplete="off"
-                  className={`w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-field text-field-foreground border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-focus/30
-                      ${formErrors.display_name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border hover:border-brand-gold/30'}`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-all duration-150 focus:outline-none focus:border-brand-royal focus:ring-2 focus:ring-brand-royal/10
+                      ${formErrors.display_name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border hover:border-border-strong'}`}
                 />
                 <p
                   className={`text-[11px] ${formErrors.display_name ? 'text-rose-500 font-medium' : 'text-muted/70'}`}
                 >
-                  {formErrors.display_name ? (
-                    formErrors.display_name
-                  ) : (
-                    <T k="deptFieldDisplayNameHint" />
+                  {formErrors.display_name
+                    ? formErrors.display_name
+                    : t('deptFieldDisplayNameHint')}
+                </p>
+              </div>
+
+              {/* Machine Name Slug */}
+              <div className="flex flex-col gap-1.5 text-left">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground tracking-wide uppercase">
+                    {t('deptFieldName')} *
+                  </label>
+                  {!editingDept && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSlugAuto(!isSlugAuto);
+                        if (!isSlugAuto) setFormName(generateSlug(formDisplayName));
+                      }}
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
+                        isSlugAuto
+                          ? 'bg-brand-royal/10 text-brand-royal dark:text-accent'
+                          : 'bg-default/40 text-muted hover:text-foreground'
+                      }`}
+                    >
+                      {isSlugAuto ? t('deptAutoSlugOn') : t('deptAutoSlugOff')}
+                    </button>
                   )}
+                </div>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => {
+                    setIsSlugAuto(false);
+                    setFormName(e.target.value.toLowerCase());
+                    setFormErrors((p) => ({ ...p, name: undefined }));
+                  }}
+                  placeholder={t('deptFieldNamePlaceholder')}
+                  autoComplete="off"
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-sm bg-field text-field-foreground border transition-all duration-150 focus:outline-none focus:border-brand-royal focus:ring-2 focus:ring-brand-royal/10 font-mono
+                      ${formErrors.name ? 'border-rose-500 focus:ring-rose-500/30' : 'border-field-border hover:border-border-strong'}`}
+                />
+                <p
+                  className={`text-[11px] ${formErrors.name ? 'text-rose-500 font-medium' : 'text-muted/70'}`}
+                >
+                  {formErrors.name ? formErrors.name : t('deptFieldNameHint')}
                 </p>
               </div>
             </Modal.Body>
 
-            <Modal.Footer className="flex items-center justify-end gap-2 px-5 sm:px-6 py-3.5 border-t border-border/20 bg-surface/50">
+            <Modal.Footer className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border/20 bg-surface">
               <Button
                 type="button"
                 variant="ghost"
                 onPress={onClose}
-                className="font-semibold text-xs sm:text-sm min-h-[44px] sm:min-h-[38px] px-4 rounded-xl"
+                className="font-semibold text-xs sm:text-sm min-h-[40px] px-4 rounded-xl"
               >
-                <T k="actionCancel" />
+                {t('actionCancel')}
               </Button>
               <Button
                 type="submit"
                 isDisabled={saving}
-                className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-semibold text-xs sm:text-sm min-h-[44px] sm:min-h-[38px] px-5 min-w-[100px] rounded-xl shadow-sm shadow-brand-gold/20"
+                className="bg-brand-royal hover:bg-brand-royal-hover text-white font-semibold text-xs sm:text-sm min-h-[40px] px-5 min-w-[110px] rounded-xl shadow-sm"
               >
                 {saving ? (
                   <span className="inline-flex items-center gap-2">
                     <Spinner size="sm" />
-                    {editingDept ? <T k="actionSaving" /> : <T k="actionCreating" />}
+                    {editingDept ? t('actionSaving') : t('actionCreating')}
                   </span>
                 ) : editingDept ? (
-                  <T k="actionSave" />
+                  t('actionSave')
                 ) : (
-                  <T k="actionCreate" />
+                  t('actionCreate')
                 )}
               </Button>
             </Modal.Footer>
@@ -430,49 +862,52 @@ const DepartmentDeleteModal = memo(function DepartmentDeleteModal({
   return (
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Modal.Container>
-        <Modal.Dialog className="max-w-sm w-[92vw] sm:w-full mx-auto rounded-2xl p-5 sm:p-6 bg-surface dark:bg-surface border border-border/30 shadow-2xl">
-          <Modal.CloseTrigger className="absolute top-4 right-4 p-2 rounded-lg text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
-          <Modal.Body className="flex flex-col items-center text-center py-4 gap-4">
-            <div className="size-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 ring-1 ring-rose-500/10">
+        <Modal.Dialog className="max-w-sm w-[92vw] sm:w-full mx-auto rounded-2xl p-6 bg-surface dark:bg-surface border border-border/30 shadow-2xl">
+          <Modal.CloseTrigger className="absolute top-4 right-4 p-2 rounded-xl text-muted hover:text-foreground hover:bg-default/50 cursor-pointer focus:outline-none" />
+          <Modal.Body className="flex flex-col items-center text-center py-3 gap-4">
+            <div className="size-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 ring-1 ring-rose-500/20 shadow-sm">
               <AlertTriangle className="size-7" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-foreground font-serif">
-              <T k="deptDeleteTitle" />
-            </h3>
-            <p className="text-xs sm:text-sm text-muted leading-relaxed max-w-[280px]">
-              <T k="deptDeleteDesc" />
-            </p>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-foreground font-serif">
+                {t('deptDeleteTitle')}
+              </h3>
+              <p className="text-xs text-muted/80 leading-relaxed max-w-[280px] mt-1.5">
+                {t('deptDeleteDesc')}
+              </p>
+            </div>
+
             {dept && (
-              <div className="flex items-center gap-2.5 bg-default/30 px-3.5 py-2.5 rounded-xl border border-border/20 max-w-full">
-                <Building2 className="size-4 text-muted/60 shrink-0" />
+              <div className="flex items-center gap-2.5 bg-default/30 px-3.5 py-2.5 rounded-xl border border-border/25 max-w-full">
+                <Building2 className="size-4 text-brand-royal dark:text-accent shrink-0" />
                 <span className="text-xs sm:text-sm font-semibold text-foreground truncate">
                   {dept.display_name}
                 </span>
-                <code className="text-[10px] text-muted/60 font-mono shrink-0">({dept.name})</code>
+                <code className="text-[10px] text-muted/70 font-mono shrink-0">({dept.name})</code>
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer className="flex items-center justify-center gap-2.5 pt-2 pb-1">
+          <Modal.Footer className="flex items-center justify-center gap-2.5 pt-2">
             <Button
               type="button"
               variant="ghost"
               onPress={onClose}
-              className="font-semibold text-xs sm:text-sm min-h-[44px] sm:min-h-[38px] px-4 rounded-xl"
+              className="font-semibold text-xs sm:text-sm min-h-[38px] px-4 rounded-xl"
             >
-              <T k="actionCancel" />
+              {t('actionCancel')}
             </Button>
             <Button
               type="button"
               onPress={handleDelete}
               isDisabled={deleting}
-              className="bg-rose-500 text-white hover:bg-rose-600 font-semibold text-xs sm:text-sm min-h-[44px] sm:min-h-[38px] px-5 min-w-[130px] rounded-xl shadow-sm shadow-rose-500/20"
+              className="bg-rose-600 text-white hover:bg-rose-700 font-semibold text-xs sm:text-sm min-h-[38px] px-5 min-w-[130px] rounded-xl shadow-sm"
             >
               {deleting ? (
                 <span className="inline-flex items-center gap-2">
-                  <Spinner size="sm" /> <T k="actionDelete" />
+                  <Spinner size="sm" /> {t('actionDelete')}
                 </span>
               ) : (
-                <T k="deptDeleteConfirm" />
+                t('deptDeleteConfirm')
               )}
             </Button>
           </Modal.Footer>
@@ -482,64 +917,115 @@ const DepartmentDeleteModal = memo(function DepartmentDeleteModal({
   );
 });
 
-/* ── Main Page Component ──────────────────────────────────── */
+/* ── Main Redesigned Departments Page Component ────────────── */
 export function DepartmentsPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
   const { canCreate, canUpdate, canDelete } = usePermissions();
 
   // Data states
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Search & View Mode states
+  // Search, Filter & Sort states
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('name_asc');
 
   // Modal visibility states
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [inspectOpen, setInspectOpen] = useState(false);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [deletingDept, setDeletingDept] = useState<Department | null>(null);
+  const [inspectingDept, setInspectingDept] = useState<Department | null>(null);
 
-  // Fetch departments only – employee_count comes from the API now
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const deptData = await api.departments.list();
-      setDepartments(deptData || []);
-    } catch (err) {
-      const error = err as ApiError;
-      showNotification(t(error?.location || 'internal_error'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [showNotification, t]);
+  // Fetch departments list
+  const fetchData = useCallback(
+    async (isManualRefresh = false) => {
+      try {
+        if (isManualRefresh) setRefreshing(true);
+        else setLoading(true);
+
+        const deptData = await api.departments.list();
+        setDepartments(deptData || []);
+      } catch (err) {
+        const error = err as ApiError;
+        showNotification(t(error?.location || 'internal_error'), 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [showNotification, t]
+  );
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Computed stats from departments data (employee_count from API)
+  // Computed aggregate metrics
   const totalEmployeesCount = useMemo(
     () => departments.reduce((sum, dept) => sum + (dept.employee_count ?? 0), 0),
     [departments]
   );
 
-  const avgEmployeesPerDept = useMemo(
-    () =>
-      departments.length > 0 ? Math.round((totalEmployeesCount / departments.length) * 10) / 10 : 0,
-    [departments, totalEmployeesCount]
+  const staffedDepartmentsCount = useMemo(
+    () => departments.filter((d) => (d.employee_count ?? 0) > 0).length,
+    [departments]
   );
 
-  // Filtered departments by search query
-  const filteredDepartments = useMemo(() => {
-    if (!searchQuery.trim()) return departments;
-    const q = searchQuery.toLowerCase().trim();
-    return departments.filter(
-      (dept) => dept.display_name.toLowerCase().includes(q) || dept.name.toLowerCase().includes(q)
-    );
-  }, [departments, searchQuery]);
+  const staffedRate = useMemo(
+    () =>
+      departments.length > 0 ? Math.round((staffedDepartmentsCount / departments.length) * 100) : 0,
+    [departments, staffedDepartmentsCount]
+  );
+
+  const largestDept = useMemo(() => {
+    if (departments.length === 0) return null;
+    return [...departments].sort((a, b) => (b.employee_count ?? 0) - (a.employee_count ?? 0))[0];
+  }, [departments]);
+
+  // Filtered & Sorted departments
+  const filteredAndSortedDepartments = useMemo(() => {
+    let list = [...departments];
+
+    // Status filter
+    if (statusFilter === 'staffed') {
+      list = list.filter((d) => (d.employee_count ?? 0) > 0);
+    } else if (statusFilter === 'empty') {
+      list = list.filter((d) => (d.employee_count ?? 0) === 0);
+    }
+
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (dept) => dept.display_name.toLowerCase().includes(q) || dept.name.toLowerCase().includes(q)
+      );
+    }
+
+    // Sorting
+    list.sort((a, b) => {
+      switch (sortBy) {
+        case 'name_desc':
+          return b.display_name.localeCompare(a.display_name);
+        case 'employees_desc':
+          return (b.employee_count ?? 0) - (a.employee_count ?? 0);
+        case 'employees_asc':
+          return (a.employee_count ?? 0) - (b.employee_count ?? 0);
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'name_asc':
+        default:
+          return a.display_name.localeCompare(b.display_name);
+      }
+    });
+
+    return list;
+  }, [departments, statusFilter, searchQuery, sortBy]);
 
   const openCreateModal = useCallback(() => {
     setEditingDept(null);
@@ -556,301 +1042,428 @@ export function DepartmentsPage() {
     setDeleteOpen(true);
   }, []);
 
-  const formatDate = useCallback((dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
+  const openInspectModal = useCallback((dept: Department) => {
+    setInspectingDept(dept);
+    setInspectOpen(true);
   }, []);
 
+  const formatDate = useCallback(
+    (dateStr: string) => {
+      try {
+        const localeCode = locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US';
+        return new Date(dateStr).toLocaleDateString(localeCode, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      } catch {
+        return dateStr;
+      }
+    },
+    [locale]
+  );
+
   return (
-    <div className="flex flex-col gap-5 sm:gap-6 md:gap-8 pb-10">
-      {/* ── Page Header ───────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight">
-            <T k="deptTitle" />
-          </h1>
-          <p className="text-xs sm:text-sm text-muted/70 mt-0.5">
-            <T k="deptSubtitle" />
-          </p>
+    <div className="flex flex-col gap-6 sm:gap-7 md:gap-8 pb-12">
+      {/* ── Executive Branded Header ───────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl bg-surface border border-border/30 p-6 sm:p-7 md:p-8 shadow-sm">
+        {/* Subtle Arabic Emblem Watermark Atmosphere (2-5% opacity) */}
+        <div className="absolute -right-8 -bottom-10 opacity-[0.03] dark:opacity-[0.06] pointer-events-none select-none">
+          <YaqeenMark size={260} variant="current" />
         </div>
 
-        {canCreate('departments') && (
-          <Button
-            onPress={openCreateModal}
-            className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-semibold rounded-xl px-4 sm:px-5 min-h-[44px] sm:min-h-[40px] w-full sm:w-auto shrink-0 transition-all duration-200 shadow-sm shadow-brand-gold/20"
-          >
-            <Plus className="size-4 mr-2" />
-            <T k="deptAddNew" />
-          </Button>
-        )}
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 text-[11px] font-bold text-brand-royal dark:text-accent uppercase tracking-widest font-mono">
+              <Sparkles className="size-3 text-brand-gold" />
+              {t('deptOverline')}
+            </div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
+              {t('deptTitle')}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted max-w-xl leading-relaxed">
+              {t('deptSubtitle')}
+            </p>
+          </div>
+
+          {/* Action Cluster */}
+          <div className="flex items-center gap-2.5 self-start md:self-center shrink-0 flex-wrap">
+            <Button
+              variant="ghost"
+              onPress={() => fetchData(true)}
+              isDisabled={refreshing || loading}
+              className="border border-border/40 text-foreground hover:bg-default/40 font-semibold rounded-xl px-3.5 min-h-[42px] gap-2 transition-all duration-150"
+              aria-label={t('deptRefresh')}
+            >
+              <RotateCw className={`size-4 ${refreshing ? 'animate-spin text-brand-royal' : ''}`} />
+              <span className="text-xs sm:text-sm">{t('deptRefresh')}</span>
+            </Button>
+
+            {canCreate('departments') && (
+              <Button
+                onPress={openCreateModal}
+                className="bg-brand-royal hover:bg-brand-royal-hover text-white font-semibold rounded-xl px-5 min-h-[42px] shadow-sm transition-all duration-150 gap-2"
+              >
+                <Plus className="size-4" />
+                <span className="text-xs sm:text-sm">{t('deptAddNew')}</span>
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* ── Stats Cards ───────────────────────────────────────── */}
+      {/* ── Summary Metric Analytics Grid ─────────────────────── */}
       {!loading && departments.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+          transition={{ duration: 0.24, delay: 0.05 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4"
         >
-          {/* Total Departments */}
-          <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-surface/80 backdrop-blur-sm border border-border/30 flex items-center gap-3 group hover:border-brand-gold/20 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="size-10 rounded-xl bg-gradient-to-br from-brand-gold/15 to-brand-gold/5 flex items-center justify-center text-brand-gold shrink-0 ring-1 ring-brand-gold/10">
-              <Building2 className="size-5" />
+          {/* 1. Total Departments */}
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-surface border border-border/30 flex items-center gap-3.5 group hover:border-border-strong hover:shadow-sm transition-all duration-200">
+            <div className="size-11 sm:size-12 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 flex items-center justify-center text-brand-royal dark:text-accent shrink-0 border border-brand-royal/15 dark:border-brand-royal/30">
+              <Building2 className="size-5 sm:size-6" />
             </div>
-            <div className="relative">
-              <p className="text-[10px] sm:text-xs text-muted/70 font-medium uppercase tracking-wider">
-                <T k="deptTotalCount" />
+            <div className="relative min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted font-medium uppercase tracking-wider truncate">
+                {t('deptTotalCount')}
               </p>
-              <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5 tabular-nums">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-foreground mt-0.5 tabular-nums">
                 {departments.length}
               </p>
             </div>
           </div>
 
-          {/* Total Employees */}
-          <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-surface/80 backdrop-blur-sm border border-border/30 flex items-center gap-3 group hover:border-blue-500/20 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="size-10 rounded-xl bg-gradient-to-br from-blue-500/15 to-blue-500/5 flex items-center justify-center text-blue-500 shrink-0 ring-1 ring-blue-500/10">
-              <Users className="size-5" />
+          {/* 2. Total Employees */}
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-surface border border-border/30 flex items-center gap-3.5 group hover:border-border-strong hover:shadow-sm transition-all duration-200">
+            <div className="size-11 sm:size-12 rounded-xl bg-default/40 flex items-center justify-center text-foreground shrink-0 border border-border/40">
+              <Users className="size-5 sm:size-6" />
             </div>
-            <div className="relative">
-              <p className="text-[10px] sm:text-xs text-muted/70 font-medium uppercase tracking-wider">
-                <T k="deptTotalEmployees" />
+            <div className="relative min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted font-medium uppercase tracking-wider truncate">
+                {t('deptTotalEmployees')}
               </p>
-              <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5 tabular-nums">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-foreground mt-0.5 tabular-nums">
                 {totalEmployeesCount}
               </p>
             </div>
           </div>
 
-          {/* Average per Department */}
-          <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-surface/80 backdrop-blur-sm border border-border/30 flex items-center gap-3 group hover:border-emerald-500/20 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="size-10 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 flex items-center justify-center text-emerald-500 shrink-0 ring-1 ring-emerald-500/10">
-              <TrendingUp className="size-5" />
+          {/* 3. Staffed Coverage Rate */}
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-surface border border-border/30 flex items-center gap-3.5 group hover:border-border-strong hover:shadow-sm transition-all duration-200">
+            <div className="size-11 sm:size-12 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-500/20">
+              <UserCheck className="size-5 sm:size-6" />
             </div>
-            <div className="relative">
-              <p className="text-[10px] sm:text-xs text-muted/70 font-medium uppercase tracking-wider">
-                {t('deptAvgPerDept')}
+            <div className="relative min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted font-medium uppercase tracking-wider truncate">
+                {t('deptStaffedRate')}
               </p>
-              <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5 tabular-nums">
-                {avgEmployeesPerDept}
-              </p>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <p className="text-xl sm:text-2xl font-bold font-mono text-foreground tabular-nums">
+                  {staffedRate}%
+                </p>
+                <span className="text-[10px] text-muted font-mono">
+                  ({staffedDepartmentsCount}/{departments.length})
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Active Departments (departments with at least 1 employee) */}
-          <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-surface/80 backdrop-blur-sm border border-border/30 flex items-center gap-3 group hover:border-violet-500/20 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="size-10 rounded-xl bg-gradient-to-br from-violet-500/15 to-violet-500/5 flex items-center justify-center text-violet-500 shrink-0 ring-1 ring-violet-500/10">
-              <Hash className="size-5" />
+          {/* 4. Largest Department */}
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-surface border border-border/30 flex items-center gap-3.5 group hover:border-border-strong hover:shadow-sm transition-all duration-200">
+            <div className="size-11 sm:size-12 rounded-xl bg-brand-royal/10 dark:bg-brand-royal/20 flex items-center justify-center text-brand-royal dark:text-accent shrink-0 border border-brand-royal/15 dark:border-brand-royal/30">
+              <TrendingUp className="size-5 sm:size-6" />
             </div>
-            <div className="relative">
-              <p className="text-[10px] sm:text-xs text-muted/70 font-medium uppercase tracking-wider">
-                {t('deptActiveCount')}
+            <div className="relative min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted font-medium uppercase tracking-wider truncate">
+                {t('deptLargestTeam')}
               </p>
-              <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5 tabular-nums">
-                {departments.filter((d) => (d.employee_count ?? 0) > 0).length}
+              <p
+                className="text-sm sm:text-base font-bold font-serif text-foreground truncate mt-0.5"
+                title={largestDept?.display_name || '-'}
+              >
+                {largestDept?.display_name || '-'}
               </p>
+              <span className="text-[10px] text-muted font-mono tabular-nums">
+                {largestDept?.employee_count ?? 0} {t('deptEmployeeCount')}
+              </span>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* ── Toolbar: Search & View Mode Toggle ────────────────── */}
+      {/* ── Advanced Toolbar: Filters, Search, Sort & View Mode ── */}
       {departments.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface/40 backdrop-blur-sm border border-border/20 p-2.5 sm:p-3 rounded-2xl">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted/50 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('deptSearchPlaceholder')}
-              className="w-full pl-9 pr-8 py-2 text-base sm:text-sm bg-surface/80 border border-border/30 rounded-xl text-foreground placeholder:text-muted/50 focus:outline-none focus:border-brand-gold/40 focus:ring-2 focus:ring-brand-gold/10 transition-all duration-200"
-            />
-            <AnimatePresence>
-              {searchQuery && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-surface border border-border/30 p-3 sm:p-3.5 rounded-2xl">
+          {/* Left: Search + Filter Tabs */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted/60 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('deptSearchPlaceholder')}
+                className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-field text-field-foreground border border-border/40 rounded-xl placeholder:text-muted/50 focus:outline-none focus:border-brand-royal focus:ring-2 focus:ring-brand-royal/10 transition-all duration-150"
+              />
+              <AnimatePresence>
+                {searchQuery && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-1 rounded-lg cursor-pointer transition-colors"
+                    aria-label={t('deptClearSearch')}
+                  >
+                    <X className="size-3.5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 bg-default/30 p-1 rounded-xl shrink-0 overflow-x-auto no-scrollbar">
+              {(
+                [
+                  { key: 'all', labelKey: 'deptFilterAll', count: departments.length },
+                  { key: 'staffed', labelKey: 'deptFilterStaffed', count: staffedDepartmentsCount },
+                  {
+                    key: 'empty',
+                    labelKey: 'deptFilterEmpty',
+                    count: departments.length - staffedDepartmentsCount,
+                  },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
                   type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-1 rounded-lg cursor-pointer transition-colors"
-                  aria-label="Clear search"
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                    statusFilter === tab.key
+                      ? 'bg-surface text-brand-royal dark:text-accent shadow-sm ring-1 ring-border/20'
+                      : 'text-muted hover:text-foreground'
+                  }`}
                 >
-                  <X className="size-3.5" />
-                </motion.button>
-              )}
-            </AnimatePresence>
+                  <span>{t(tab.labelKey)}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full tabular-nums font-mono ${
+                      statusFilter === tab.key
+                        ? 'bg-brand-royal/10 text-brand-royal dark:text-accent'
+                        : 'bg-default/60 text-muted'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-0.5 bg-default/30 p-1 rounded-xl shrink-0 self-end sm:self-center">
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                viewMode === 'grid'
-                  ? 'bg-surface text-brand-gold shadow-sm ring-1 ring-border/20'
-                  : 'text-muted hover:text-foreground'
-              }`}
-              aria-label="Grid View"
-            >
-              <LayoutGrid className="size-3.5" />
-              <span className="hidden sm:inline">
-                <T k="deptViewGrid" />
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                viewMode === 'list'
-                  ? 'bg-surface text-brand-gold shadow-sm ring-1 ring-border/20'
-                  : 'text-muted hover:text-foreground'
-              }`}
-              aria-label="List View"
-            >
-              <List className="size-3.5" />
-              <span className="hidden sm:inline">
-                <T k="deptViewList" />
-              </span>
-            </button>
+          {/* Right: Sort & View Mode */}
+          <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/20">
+            {/* Sort select */}
+            <Select
+              size="sm"
+              value={sortBy}
+              onChange={(v) => setSortBy(v as SortOption)}
+              aria-label={t('deptSortBy')}
+              startContent={<ArrowUpDown className="size-3.5 text-muted shrink-0" />}
+              hideSelectedIcon
+              allowClear={false}
+              fullWidth={false}
+              className="shrink-0"
+              options={[
+                { value: 'name_asc', label: t('deptSortNameAsc') },
+                { value: 'name_desc', label: t('deptSortNameDesc') },
+                { value: 'employees_desc', label: t('deptSortEmployeesDesc') },
+                { value: 'employees_asc', label: t('deptSortEmployeesAsc') },
+                { value: 'newest', label: t('deptSortNewest') },
+              ]}
+            />
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-0.5 bg-default/30 p-1 rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-surface text-brand-royal dark:text-accent shadow-sm ring-1 ring-border/20'
+                    : 'text-muted hover:text-foreground'
+                }`}
+                aria-label={t('deptViewGrid')}
+              >
+                <LayoutGrid className="size-3.5" />
+                <span className="hidden sm:inline">{t('deptViewGrid')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                  viewMode === 'list'
+                    ? 'bg-surface text-brand-royal dark:text-accent shadow-sm ring-1 ring-border/20'
+                    : 'text-muted hover:text-foreground'
+                }`}
+                aria-label={t('deptViewList')}
+              >
+                <List className="size-3.5" />
+                <span className="hidden sm:inline">{t('deptViewList')}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Department Grid / List Display ──────────────────── */}
+      {/* ── Main Content: Grid / Table Display / Loading / Empty States ── */}
       {loading ? (
         <div
           className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5'
               : 'flex flex-col gap-3'
           }
         >
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="p-4 sm:p-5 border border-border/20 bg-surface/60 rounded-2xl">
-              <div className="flex items-center gap-3 mb-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <Card
+              key={i}
+              className="p-5 sm:p-6 border border-border/30 bg-surface rounded-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3.5">
                 <Skeleton className="size-11 rounded-xl" />
-                <div className="flex-1">
-                  <Skeleton className="h-4 w-28 rounded-lg mb-2" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32 rounded-md" />
                   <Skeleton className="h-3 w-20 rounded-md" />
                 </div>
               </div>
-              <Skeleton className="h-px w-full mb-3" />
-              <div className="flex justify-between">
-                <Skeleton className="h-6 w-24 rounded-lg" />
+              <Skeleton className="h-8 w-full rounded-xl" />
+              <div className="flex justify-between items-center pt-2">
+                <Skeleton className="h-5 w-24 rounded-full" />
                 <Skeleton className="h-4 w-20 rounded-md" />
               </div>
             </Card>
           ))}
         </div>
       ) : departments.length === 0 ? (
-        /* Empty State: No Departments Created */
+        /* Empty State: Zero Departments in System */
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4"
+          transition={{ duration: 0.24 }}
+          className="flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4 rounded-3xl border border-border/30 bg-surface shadow-sm"
         >
-          <div className="size-20 sm:size-24 rounded-3xl bg-gradient-to-br from-brand-gold/10 to-brand-gold/5 flex items-center justify-center text-brand-gold mb-6 ring-1 ring-brand-gold/10">
-            <Building2 className="size-9 sm:size-10" />
+          <div className="size-16 rounded-2xl bg-brand-royal/10 dark:bg-brand-royal/20 text-brand-royal dark:text-accent border border-brand-royal/20 flex items-center justify-center mb-5">
+            <Building2 className="size-8" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-foreground mb-2 font-serif">
-            <T k="deptNoDepartments" />
+          <h3 className="text-lg sm:text-xl font-bold font-serif text-foreground mb-2">
+            {t('deptNoDepartments')}
           </h3>
-          <p className="text-xs sm:text-sm text-muted/70 max-w-sm mb-7 leading-relaxed">
-            <T k="deptNoDepartmentsDesc" />
+          <p className="text-xs sm:text-sm text-muted max-w-sm mb-7 leading-relaxed">
+            {t('deptNoDepartmentsDesc')}
           </p>
           {canCreate('departments') && (
             <Button
               onPress={openCreateModal}
-              className="bg-brand-gold text-brand-navy hover:bg-brand-gold/90 font-semibold rounded-xl px-5 min-h-[44px] shadow-sm shadow-brand-gold/20"
+              className="bg-brand-royal hover:bg-brand-royal-hover text-white font-semibold rounded-xl px-6 min-h-[44px] shadow-sm gap-2"
             >
-              <Plus className="size-4 mr-2" />
-              <T k="deptAddNew" />
+              <Plus className="size-4" />
+              {t('deptAddNew')}
             </Button>
           )}
         </motion.div>
-      ) : filteredDepartments.length === 0 ? (
-        /* Empty State: No Search Matches */
+      ) : filteredAndSortedDepartments.length === 0 ? (
+        /* Empty State: Zero Search / Filter matches */
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-4 bg-surface/30 border border-border/20 rounded-2xl"
+          transition={{ duration: 0.2 }}
+          className="flex flex-col items-center justify-center py-14 sm:py-20 text-center px-4 bg-surface border border-border/30 rounded-2xl"
         >
-          <div className="size-14 rounded-2xl bg-default/30 flex items-center justify-center text-muted/50 mb-4">
+          <div className="size-14 rounded-2xl bg-default/40 flex items-center justify-center text-muted/60 mb-4 border border-border/30">
             <Search className="size-6" />
           </div>
-          <h3 className="text-base font-bold text-foreground mb-1">
-            <T k="deptNoSearchResults" />
+          <h3 className="text-base font-bold font-serif text-foreground mb-1">
+            {t('deptNoSearchResults')}
           </h3>
-          <p className="text-xs sm:text-sm text-muted/70 max-w-xs mb-5 leading-relaxed">
-            <T k="deptNoSearchResultsDesc" />
+          <p className="text-xs text-muted max-w-xs mb-5 leading-relaxed">
+            {t('deptNoSearchResultsDesc')}
           </p>
           <Button
             variant="ghost"
-            onPress={() => setSearchQuery('')}
-            className="text-brand-gold hover:bg-brand-gold/10 font-semibold text-xs rounded-xl px-4"
+            onPress={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+            className="text-brand-royal dark:text-accent hover:bg-brand-royal/10 font-semibold text-xs rounded-xl px-4 min-h-[38px]"
           >
-            <T k="deptClearSearch" />
+            {t('deptClearSearch')}
           </Button>
         </motion.div>
       ) : (
-        /* Department Cards */
+        /* Render Department Cards (Grid / List) */
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
           className={
             viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5'
-              : 'flex flex-col gap-2.5 sm:gap-3'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5'
+              : 'flex flex-col gap-3'
           }
         >
-          {filteredDepartments.map((dept) => (
+          {filteredAndSortedDepartments.map((dept) => (
             <motion.div key={dept.id} variants={itemVariants}>
-              <DepartmentCard
-                dept={dept}
-                canUpdate={canUpdate('departments')}
-                canDelete={canDelete('departments')}
-                onEdit={openEditModal}
-                onDelete={openDeleteDialog}
-                formatDate={formatDate}
-                viewMode={viewMode}
-              />
+              {viewMode === 'grid' ? (
+                <DepartmentCard
+                  dept={dept}
+                  totalCompanyEmployees={totalEmployeesCount}
+                  canUpdate={canUpdate('departments')}
+                  canDelete={canDelete('departments')}
+                  onEdit={openEditModal}
+                  onDelete={openDeleteDialog}
+                  onInspect={openInspectModal}
+                  formatDate={formatDate}
+                />
+              ) : (
+                <DepartmentTableRow
+                  dept={dept}
+                  totalCompanyEmployees={totalEmployeesCount}
+                  canUpdate={canUpdate('departments')}
+                  canDelete={canDelete('departments')}
+                  onEdit={openEditModal}
+                  onDelete={openDeleteDialog}
+                  onInspect={openInspectModal}
+                  formatDate={formatDate}
+                />
+              )}
             </motion.div>
           ))}
         </motion.div>
       )}
 
       {/* ── Modals ────────────────────────────────────────────── */}
+      <DepartmentMembersModal
+        isOpen={inspectOpen}
+        dept={inspectingDept}
+        onClose={() => setInspectOpen(false)}
+        onEdit={openEditModal}
+      />
+
       <DepartmentFormModal
         isOpen={modalOpen}
         editingDept={editingDept}
         onClose={() => setModalOpen(false)}
-        onSuccess={fetchData}
+        onSuccess={() => fetchData()}
       />
 
       <DepartmentDeleteModal
         isOpen={deleteOpen}
         dept={deletingDept}
         onClose={() => setDeleteOpen(false)}
-        onSuccess={fetchData}
+        onSuccess={() => fetchData()}
       />
     </div>
   );

@@ -114,9 +114,7 @@ export function ColumnModal({
                 <Modal.Heading className="text-base font-bold text-foreground">
                   {column ? t('taskEditColumn') : t('taskNewColumn')}
                 </Modal.Heading>
-                <p className="text-xs text-muted">
-                  Configure status name, color badge, and transition permissions
-                </p>
+                <p className="text-xs text-muted">{t('taskColumnSubtitle')}</p>
               </div>
             </Modal.Header>
 
@@ -124,13 +122,13 @@ export function ColumnModal({
               {/* Column Name */}
               <div>
                 <label className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-1.5">
-                  Column Name <span className="text-rose-500">*</span>
+                  {t('taskColumnNameLabel')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. To Do, In Review, Released"
+                  placeholder={t('taskColumnNamePlaceholder')}
                   required
                   className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-surface text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
                 />
@@ -139,7 +137,7 @@ export function ColumnModal({
               {/* Color Accent Picker */}
               <div>
                 <label className="text-xs font-semibold text-foreground uppercase tracking-wider block mb-2">
-                  Column Color Accent
+                  {t('taskColumnColorLabel')}
                 </label>
                 <div className="flex items-center gap-3 flex-wrap">
                   {PRESET_COLORS.map((c) => (
@@ -156,7 +154,9 @@ export function ColumnModal({
                     />
                   ))}
                   <div className="flex items-center gap-2 ml-2 bg-border/20 px-3 py-1 rounded-xl border border-border">
-                    <span className="text-xs font-mono text-muted">Custom:</span>
+                    <span className="text-xs font-mono text-muted">
+                      {t('taskColumnColorCustom')}
+                    </span>
                     <input
                       type="color"
                       value={color}
@@ -173,12 +173,11 @@ export function ColumnModal({
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldAlert className="size-4 text-brand-gold" />
                   <label className="text-xs font-bold text-foreground uppercase tracking-wider">
-                    Restricted Transition Roles (`allowed_roles`)
+                    {t('taskColumnRolesLabel')}
                   </label>
                 </div>
                 <p className="text-xs text-muted mb-3 leading-relaxed">
-                  If specified, only users with these roles (and CEO superusers) can create or move
-                  tasks into this column. Leave empty to allow all roles.
+                  {t('taskColumnRolesHint')}
                 </p>
 
                 <div className="flex flex-wrap gap-2">
@@ -206,11 +205,10 @@ export function ColumnModal({
               <label className="flex items-center justify-between p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 cursor-pointer">
                 <div>
                   <span className="text-xs font-bold text-foreground block">
-                    Mark Tasks in this Column as Completed (`is_done_status`)
+                    {t('taskColumnDoneLabel')}
                   </span>
                   <span className="text-[11px] text-muted block mt-0.5">
-                    Tasks reaching this column automatically record completion timestamps and show
-                    green checkmarks.
+                    {t('taskColumnDoneHint')}
                   </span>
                 </div>
                 <input
@@ -229,14 +227,14 @@ export function ColumnModal({
                 isDisabled={loading}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-border/20 hover:bg-border/40 text-foreground transition-colors cursor-pointer"
               >
-                Cancel
+                {t('taskModalCancel')}
               </Button>
               <Button
                 type="submit"
                 isDisabled={loading || !name.trim()}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-gold text-brand-navy hover:opacity-90 transition-opacity cursor-pointer"
               >
-                {column ? 'Save Changes' : 'Create Column'}
+                {column ? t('taskModalSaveChanges') : t('taskColumnCreateBtn')}
               </Button>
             </Modal.Footer>
           </form>
