@@ -1,7 +1,8 @@
 import { request, requestNoContent } from './httpClient';
 import type { SupportedCurrency, CbuRateItem } from '../types/currency';
 
-export type ExpenseCategory = 'tax' | 'utility' | 'rent' | 'salary_payout' | 'cleaner' | 'other';
+export type ExpenseCategory =
+  'tax' | 'utility' | 'rent' | 'salary_payout' | 'cleaner' | 'kpi' | 'food' | 'other';
 
 export interface Expense {
   id: string;
