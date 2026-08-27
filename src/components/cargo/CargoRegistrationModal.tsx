@@ -55,6 +55,7 @@ import { ConsolidationSelect } from './ConsolidationSelect';
 import { ConsolidationModal } from './ConsolidationModal';
 import { RouteSelector, type RouteState } from './RouteSelector';
 import { NumberInput } from '../NumberInput';
+import { Select, type SelectOption } from '../Select';
 
 const STATUS_STAGE_CONFIG: {
   key: CargoRegistrationStatus;
@@ -128,6 +129,18 @@ const STATUS_STAGE_CONFIG: {
 ];
 
 const CURRENCIES: CurrencyType[] = ['USD', 'UZS', 'RUB', 'RMB'];
+
+// Shared Select options for the standardized container specification picker
+const CONTAINER_TYPE_SELECT_OPTIONS: SelectOption[] = CONTAINER_TYPES.map((ct) => ({
+  value: ct,
+  label: ct,
+}));
+
+// Shared Select options for the currency pickers
+const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((c) => ({
+  value: c,
+  label: c,
+}));
 
 const TRANSPORT_TYPE_ICONS: Record<TransportType, React.ReactNode> = {
   auto: <Truck className="size-3.5" />,
@@ -894,18 +907,14 @@ export function CargoRegistrationModal({
                       <span>Container Specification</span>
                       <span className="text-rose-500 font-bold">*</span>
                     </label>
-                    <select
-                      required
+                    <Select
+                      isRequired
                       value={containerType}
-                      onChange={(e) => setContainerType(e.target.value as ContainerType)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
-                    >
-                      {CONTAINER_TYPES.map((ct) => (
-                        <option key={ct} value={ct}>
-                          {ct}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setContainerType((val as ContainerType) || '40HQ')}
+                      allowClear={false}
+                      aria-label="Container Specification"
+                      options={CONTAINER_TYPE_SELECT_OPTIONS}
+                    />
                     <p className="text-[11px] text-muted-foreground">
                       Select one of the 22 whitelisted standardized container specifications.
                     </p>
@@ -1125,17 +1134,16 @@ export function CargoRegistrationModal({
                               suffix={purchaseCurrency === 'UZS' ? "so'm" : undefined}
                             />
                           </div>
-                          <select
+                          <Select
+                            size="sm"
                             value={purchaseCurrency}
-                            onChange={(e) => setPurchaseCurrency(e.target.value as CurrencyType)}
-                            className="h-9 px-3 rounded-lg border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
-                          >
-                            {CURRENCIES.map((c) => (
-                              <option key={c} value={c}>
-                                {c}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(val) => setPurchaseCurrency((val as CurrencyType) || 'USD')}
+                            allowClear={false}
+                            fullWidth={false}
+                            className="w-28 shrink-0"
+                            aria-label="Purchase Currency"
+                            options={CURRENCY_SELECT_OPTIONS}
+                          />
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
                           <div>
@@ -1195,17 +1203,16 @@ export function CargoRegistrationModal({
                               suffix={sellCurrency === 'UZS' ? "so'm" : undefined}
                             />
                           </div>
-                          <select
+                          <Select
+                            size="sm"
                             value={sellCurrency}
-                            onChange={(e) => setSellCurrency(e.target.value as CurrencyType)}
-                            className="h-9 px-3 rounded-lg border border-field-border bg-field text-field-foreground text-xs font-bold focus:ring-2 focus:ring-focus/30 shrink-0 cursor-pointer"
-                          >
-                            {CURRENCIES.map((c) => (
-                              <option key={c} value={c}>
-                                {c}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(val) => setSellCurrency((val as CurrencyType) || 'USD')}
+                            allowClear={false}
+                            fullWidth={false}
+                            className="w-28 shrink-0"
+                            aria-label="Sell Currency"
+                            options={CURRENCY_SELECT_OPTIONS}
+                          />
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
                           <div>

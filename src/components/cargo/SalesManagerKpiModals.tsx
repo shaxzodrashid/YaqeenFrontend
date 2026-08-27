@@ -18,6 +18,7 @@ import type {
 } from '../../types/salesManagerKpi';
 import { EmployeeSelect } from './EmployeeSelect';
 import { NumberInput } from '../NumberInput';
+import { Select } from '../Select';
 
 // ---------------------------------------------------------------------------
 // 1. Calculate Monthly Evaluations Modal
@@ -544,17 +545,12 @@ export function UpdateEmployeeLevelModal({
               <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">
                 <T k="smkSelectCareerLevel" />
               </label>
-              <select
+              <Select
                 value={level}
-                onChange={(e) => setLevel(e.target.value as CareerLevel)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-semibold focus:outline-none focus:border-brand-gold"
-              >
-                {levels.map((lvl) => (
-                  <option key={lvl} value={lvl}>
-                    {lvl}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setLevel((val as CareerLevel) || 'JUNIOR')}
+                allowClear={false}
+                options={levels.map((lvl) => ({ value: lvl, label: lvl }))}
+              />
             </div>
 
             <div>

@@ -33,6 +33,7 @@ import type { CurrencyType, TransportType } from '../../services/cargoRegistrati
 import { CitySelect } from './CitySelect';
 import { NumberInput } from '../NumberInput';
 import { PhoneInput } from '../PhoneInput';
+import { Select, type SelectOption } from '../Select';
 
 const TRANSPORT_TYPE_ICONS: Record<TransportType, React.ReactNode> = {
   auto: <Truck className="size-3.5" />,
@@ -125,6 +126,21 @@ const CONTAINER_PRESETS: Record<string, { vol: number; weight: number }> = {
   Tent: { vol: 92.0, weight: 22000 },
   Avto: { vol: 90.0, weight: 22000 },
 };
+
+// Shared Select options for the container / body type picker (with capacity presets)
+const CONTAINER_TYPE_SELECT_OPTIONS: SelectOption[] = CONSOLIDATION_CONTAINER_TYPES.map((type) => ({
+  value: type,
+  label: type,
+  description: CONTAINER_PRESETS[type]
+    ? `${CONTAINER_PRESETS[type].vol} m³ / ${CONTAINER_PRESETS[type].weight} kg`
+    : undefined,
+}));
+
+// Shared Select options for the currency pickers
+const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((cur) => ({
+  value: cur,
+  label: cur,
+}));
 
 export interface ConsolidationModalProps {
   isOpen: boolean;
@@ -449,20 +465,13 @@ export function ConsolidationModal({
                   <label className="block text-[11px] font-bold text-foreground mb-1">
                     {t('containerType')}
                   </label>
-                  <select
+                  <Select
                     value={containerType}
-                    onChange={(e) => handleContainerTypeChange(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
-                  >
-                    {CONSOLIDATION_CONTAINER_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}{' '}
-                        {CONTAINER_PRESETS[type]
-                          ? `(${CONTAINER_PRESETS[type].vol} m³ / ${CONTAINER_PRESETS[type].weight} kg)`
-                          : ''}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleContainerTypeChange}
+                    allowClear={false}
+                    aria-label={t('containerType')}
+                    options={CONTAINER_TYPE_SELECT_OPTIONS}
+                  />
                 </div>
 
                 {/* Custom Consolidation Code (optional override) */}
@@ -696,17 +705,13 @@ export function ConsolidationModal({
                   <label className="block text-[11px] font-bold text-foreground mb-1">
                     {t('carrierCostCurrency')}
                   </label>
-                  <select
+                  <Select
                     value={carrierCostCurrency}
-                    onChange={(e) => setCarrierCostCurrency(e.target.value as CurrencyType)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
-                  >
-                    {CURRENCIES.map((cur) => (
-                      <option key={cur} value={cur}>
-                        {cur}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setCarrierCostCurrency((val as CurrencyType) || 'USD')}
+                    allowClear={false}
+                    aria-label={t('carrierCostCurrency')}
+                    options={CURRENCY_SELECT_OPTIONS}
+                  />
                 </div>
               </div>
             </div>
