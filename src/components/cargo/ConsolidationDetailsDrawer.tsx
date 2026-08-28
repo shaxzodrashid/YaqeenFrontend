@@ -352,7 +352,9 @@ export function ConsolidationDetailsDrawer({
                 </div>
 
                 <div className="text-right text-xs">
-                  <span className="text-[10px] text-muted-foreground block">Departure</span>
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('departureDate') || 'Departure'}
+                  </span>
                   <span className="font-bold text-foreground">
                     {consolidation.departure_date || 'Pending'}
                   </span>
@@ -361,19 +363,41 @@ export function ConsolidationDetailsDrawer({
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
                 <div className="p-2.5 rounded-xl bg-surface border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">Est. Arrival</span>
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('loadingCompletionDate') || t('loadedDate') || 'Loaded Date'}
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {consolidation.loaded_date || consolidation.load_date || '—'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-surface border border-border/60">
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('borderArrivalDate') || 'Border Arrival'}
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {consolidation.border_arrival_date || '—'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-surface border border-border/60">
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('tashkentArrivalDate') || 'Tashkent Arrival'}
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {consolidation.tashkent_arrival_date || '—'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-surface border border-border/60">
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('estimatedArrival') || 'Est. Arrival'}
+                  </span>
                   <span className="font-bold text-foreground">
                     {consolidation.estimated_arrival_date || '—'}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-surface border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">Loaded Date</span>
-                  <span className="font-bold text-foreground">
-                    {consolidation.loaded_date || '—'}
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('actualArrival') || 'Actual Arrival'}
                   </span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-surface border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">Actual Arrival</span>
                   <span className="font-bold text-foreground">
                     {consolidation.arrived_date || '—'}
                   </span>
@@ -572,13 +596,23 @@ export function ConsolidationDetailsDrawer({
                       className="p-3 sm:p-3.5 rounded-2xl bg-surface border border-border/80 flex items-center justify-between gap-3 hover:border-border transition-all"
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-xs text-foreground truncate">
                             {cargo.cargo}
                           </span>
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">
                             {cargo.container_truck_id}
                           </span>
+                          {cargo.load_code && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-gold/15 text-brand-navy dark:text-brand-gold font-bold border border-brand-gold/30">
+                              {cargo.load_code}
+                            </span>
+                          )}
+                          {cargo.is_turnkey && (
+                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                              {t('turnkeyBadge') || 'Turnkey'}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
                           {cargo.client?.name && <span>Client: {cargo.client.name}</span>}

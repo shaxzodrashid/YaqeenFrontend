@@ -110,6 +110,8 @@ export interface CreateCargoRegistrationDto {
   idempotency_key?: string;
   status?: CargoRegistrationStatus;
   description?: string;
+  load_code?: string;
+  is_turnkey?: boolean;
   client_id: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -222,6 +224,8 @@ export interface CargoRegistrationListItem {
   destination_lng?: number | null;
   status: CargoRegistrationStatus;
   description?: string | null;
+  load_code?: string | null;
+  is_turnkey?: boolean;
   client_id?: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -374,6 +378,8 @@ export interface CargoRegistrationDetail {
   usd_rmb_rate?: number | null;
   status: CargoRegistrationStatus;
   description?: string | null;
+  load_code?: string | null;
+  is_turnkey?: boolean;
   client_id: string;
   consolidation_id?: string | null;
   consolidation?: {
@@ -480,6 +486,8 @@ interface InternalCargoRegistrationRecord {
   usd_rmb_rate: number | null;
   status: CargoRegistrationStatus;
   description: string | null;
+  load_code?: string | null;
+  is_turnkey?: boolean;
   client_id: string;
   employee_id: string;
   consolidation_id?: string | null;
@@ -569,6 +577,8 @@ export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     usd_rmb_rate: null,
     status: 'Waiting',
     description: 'Fragile items, handle with care',
+    load_code: 'LTL-2026-0881',
+    is_turnkey: true,
     client_id: 'c-client-1',
     employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
     created_at: '2026-08-05T11:50:00.000Z',
@@ -1393,6 +1403,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         transport_types: r.transport_types || [],
         status: r.status,
         description: r.description,
+        load_code: r.load_code || null,
+        is_turnkey: Boolean(r.is_turnkey),
         client_id: r.client_id,
         employee_id: r.employee_id,
         confirmed_date: r.confirmed_date,
@@ -1606,6 +1618,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       usd_rmb_rate: found.usd_rmb_rate,
       status: found.status,
       description: found.description,
+      load_code: found.load_code || null,
+      is_turnkey: Boolean(found.is_turnkey),
       client_id: found.client_id,
       client: client
         ? {
@@ -1673,6 +1687,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       usd_rmb_rate,
       status,
       description,
+      load_code,
+      is_turnkey,
       client_id,
       employee_id,
     } = body || {};
@@ -1815,6 +1831,13 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         purchase_currency === 'RMB' || sell_currency === 'RMB' ? Number(usd_rmb_rate) : null,
       status: status || 'Waiting',
       description: description || null,
+      load_code:
+        cargo_type === 'LTL' && load_code
+          ? String(load_code).trim()
+          : load_code
+            ? String(load_code).trim()
+            : null,
+      is_turnkey: Boolean(is_turnkey),
       client_id,
       employee_id: assignedEmpId,
       created_at: nowIso,
@@ -1844,6 +1867,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     const updatedState: InternalCargoRegistrationRecord = {
       ...current,
       ...body,
+      load_code:
+        body?.load_code !== undefined
+          ? body.load_code
+            ? String(body.load_code).trim()
+            : null
+          : current.load_code,
+      is_turnkey:
+        body?.is_turnkey !== undefined ? Boolean(body.is_turnkey) : (current.is_turnkey ?? false),
       purchase_custom_rate: pCustom ? Number(pCustom) : null,
       sell_custom_rate: sCustom ? Number(sCustom) : null,
       updated_at: new Date().toISOString(),

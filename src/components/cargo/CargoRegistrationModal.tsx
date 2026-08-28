@@ -179,6 +179,8 @@ export function CargoRegistrationModal({
   const [isConsolidationModalOpen, setIsConsolidationModalOpen] = useState<boolean>(false);
   const [volumeStr, setVolumeStr] = useState<string>('10');
   const [weightStr, setWeightStr] = useState<string>('1200');
+  const [loadCode, setLoadCode] = useState<string>('');
+  const [isTurnkey, setIsTurnkey] = useState<boolean>(false);
   const [containerType, setContainerType] = useState<ContainerType>('40HQ');
   const [transportTypes, setTransportTypes] = useState<TransportType[]>(['auto']);
   const [containerTruckId, setContainerTruckId] = useState<string>('');
@@ -317,6 +319,8 @@ export function CargoRegistrationModal({
           setCargoType(detail.cargo_type || 'LTL');
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
+          setLoadCode(detail.load_code || '');
+          setIsTurnkey(Boolean(detail.is_turnkey));
           setContainerType((detail.container_type as ContainerType) || '40HQ');
           setTransportTypes(
             detail.transport_types && detail.transport_types.length > 0
@@ -388,6 +392,8 @@ export function CargoRegistrationModal({
           setCargoType(detail.cargo_type || 'LTL');
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
+          setLoadCode(detail.load_code ? `${detail.load_code}-COPY` : '');
+          setIsTurnkey(Boolean(detail.is_turnkey));
           setContainerType((detail.container_type as ContainerType) || '40HQ');
           setTransportTypes(
             detail.transport_types && detail.transport_types.length > 0
@@ -459,6 +465,8 @@ export function CargoRegistrationModal({
       setConsolidationId(null);
       setVolumeStr('10');
       setWeightStr('1200');
+      setLoadCode('');
+      setIsTurnkey(false);
       setContainerType('40HQ');
       setTransportTypes(['auto']);
       setContainerTruckId('TRK-' + Math.floor(1000 + Math.random() * 9000));
@@ -612,6 +620,8 @@ export function CargoRegistrationModal({
           transport_types: transportTypes.length > 0 ? transportTypes : undefined,
           status,
           description: description.trim() || undefined,
+          load_code: loadCode.trim() || undefined,
+          is_turnkey: isTurnkey,
           client_id: selectedClientId,
           employee_id: finalEmployeeId,
           consolidation_id: cargoType === 'LTL' ? consolidationId || null : null,
@@ -657,6 +667,8 @@ export function CargoRegistrationModal({
           usd_rmb_rate: isRmbRateRequired ? rate : undefined,
           status,
           description: description.trim() || undefined,
+          load_code: loadCode.trim() || undefined,
+          is_turnkey: isTurnkey,
           client_id: selectedClientId,
           employee_id: finalEmployeeId,
           consolidation_id: cargoType === 'LTL' ? consolidationId || undefined : undefined,
@@ -876,7 +888,7 @@ export function CargoRegistrationModal({
 
                 {/* DYNAMIC CAPACITY FIELDS */}
                 {cargoType === 'LTL' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
                     <NumberInput
                       label="Volume (m³)"
                       isRequired
@@ -900,6 +912,22 @@ export function CargoRegistrationModal({
                       decimalScale={2}
                       min={1}
                     />
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1.5 flex items-center justify-between">
+                        <span>{t('loadCode') || 'Load Code'}</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          (Optional)
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={t('loadCodePlaceholder') || 'e.g. LTL-2026-0881'}
+                        value={loadCode}
+                        onChange={(e) => setLoadCode(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 font-mono"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-1.5">
@@ -920,6 +948,43 @@ export function CargoRegistrationModal({
                     </p>
                   </div>
                 )}
+
+                {/* TURNKEY SERVICE TOGGLE */}
+                <div
+                  onClick={() => setIsTurnkey(!isTurnkey)}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
+                    isTurnkey
+                      ? 'bg-indigo-500/10 border-indigo-500/40 text-foreground shadow-sm'
+                      : 'bg-surface hover:bg-muted/30 border-border/70 text-muted-foreground'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`size-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                        isTurnkey
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'border-muted-foreground/40 bg-surface'
+                      }`}
+                    >
+                      {isTurnkey && <Check className="size-3.5 stroke-[3]" />}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-foreground flex items-center gap-2">
+                        <span>{t('isTurnkey') || 'Turnkey Cargo'}</span>
+                        <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                          {t('turnkeyBadge') || 'Turnkey'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {t('isTurnkeyDesc') ||
+                          'Turnkey end-to-end cargo delivery service (all-inclusive logistics)'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shrink-0 font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                    {isTurnkey ? 'ACTIVE' : 'OFF'}
+                  </div>
+                </div>
 
                 {/* TRANSPORT TYPES */}
                 <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2">
