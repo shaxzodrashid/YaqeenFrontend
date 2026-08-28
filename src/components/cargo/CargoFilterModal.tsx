@@ -20,6 +20,7 @@ import { ClientSelect } from './ClientSelect';
 import { EmployeeSelect } from './EmployeeSelect';
 import { CitySelect } from './CitySelect';
 import { DateRangePicker } from './DateRangePicker';
+import { Select } from '../Select';
 import { useTranslation } from '../../context/LanguageContext';
 
 export interface CargoFilterState {
@@ -701,18 +702,15 @@ export function CargoFilterModal({
                       <label className="block text-[11px] font-semibold text-muted-foreground mb-1.5">
                         {t('containerTypeLabel')}
                       </label>
-                      <select
+                      <Select
+                        size="sm"
                         value={localFilters.container_type}
-                        onChange={(e) => update({ container_type: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
-                      >
-                        <option value="">{t('allContainerTypes')}</option>
-                        {CONTAINER_TYPES.map((ct) => (
-                          <option key={ct} value={ct}>
-                            {ct}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => update({ container_type: val })}
+                        placeholder={t('allContainerTypes')}
+                        allowClear
+                        aria-label={t('containerTypeLabel')}
+                        options={CONTAINER_TYPES.map((ct) => ({ value: ct, label: ct }))}
+                      />
                     </div>
 
                     {/* Transport Types (multi-select) */}

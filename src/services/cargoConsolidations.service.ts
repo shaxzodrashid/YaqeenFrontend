@@ -142,6 +142,8 @@ export interface ConsolidationCargoItem {
   container_type?: string | null;
   transport_types?: TransportType[] | null;
   agent_name?: string | null;
+  load_code?: string | null;
+  is_turnkey?: boolean;
   client_id?: string;
   client_name?: string;
   client?: {
@@ -204,8 +206,11 @@ export interface ConsolidationListItem {
   origin?: LocationDetail | null;
   destination?: LocationDetail | null;
   route?: RouteInfo | null;
+  load_date?: string | null;
   loaded_date?: string | null;
   departure_date?: string | null;
+  border_arrival_date?: string | null;
+  tashkent_arrival_date?: string | null;
   estimated_arrival_date?: string | null;
   arrived_date?: string | null;
   total_carrier_cost: number;
@@ -264,8 +269,11 @@ export interface CreateConsolidationDto {
   destination_geoname_id?: number | null;
   destination_lat?: number | null;
   destination_lng?: number | null;
+  load_date?: string;
   loaded_date?: string;
   departure_date?: string;
+  border_arrival_date?: string;
+  tashkent_arrival_date?: string;
   estimated_arrival_date?: string;
   arrived_date?: string;
   total_carrier_cost?: number;
@@ -348,8 +356,11 @@ interface InternalConsolidationRecord {
   destination_geoname_id: number | null;
   destination_lat: number | null;
   destination_lng: number | null;
+  load_date?: string | null;
   loaded_date: string | null;
   departure_date: string | null;
+  border_arrival_date?: string | null;
+  tashkent_arrival_date?: string | null;
   estimated_arrival_date: string | null;
   arrived_date: string | null;
   total_carrier_cost: number;
@@ -384,8 +395,11 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     destination_geoname_id: 1512569,
     destination_lat: 41.26465,
     destination_lng: 69.21627,
+    load_date: '2026-08-18',
     loaded_date: '2026-08-18',
     departure_date: '2026-08-20',
+    border_arrival_date: '2026-08-26',
+    tashkent_arrival_date: '2026-08-29',
     estimated_arrival_date: '2026-08-29',
     arrived_date: null,
     total_carrier_cost: 3800,
@@ -601,6 +615,8 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
       container_type: c.container_type,
       container_truck_id: c.container_truck_id || record.container_truck_id,
       agent_name: c.agent_name,
+      load_code: (c as any).load_code || null,
+      is_turnkey: Boolean((c as any).is_turnkey),
       client: client
         ? {
             id: client.id,
@@ -739,8 +755,11 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
     origin: origDetail,
     destination: destDetail,
     route: routeInfo,
-    loaded_date: record.loaded_date,
+    load_date: (record as any).load_date || record.loaded_date || null,
+    loaded_date: record.loaded_date || (record as any).load_date || null,
     departure_date: record.departure_date,
+    border_arrival_date: (record as any).border_arrival_date || null,
+    tashkent_arrival_date: (record as any).tashkent_arrival_date || null,
     estimated_arrival_date: record.estimated_arrival_date,
     arrived_date: record.arrived_date,
     total_carrier_cost: record.total_carrier_cost,
@@ -1047,8 +1066,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         body.destination_geoname_id !== undefined ? body.destination_geoname_id : null,
       destination_lat: body.destination_lat !== undefined ? body.destination_lat : null,
       destination_lng: body.destination_lng !== undefined ? body.destination_lng : null,
-      loaded_date: body.loaded_date || null,
+      load_date: body.load_date || body.loaded_date || null,
+      loaded_date: body.loaded_date || body.load_date || null,
       departure_date: body.departure_date || null,
+      border_arrival_date: body.border_arrival_date || null,
+      tashkent_arrival_date: body.tashkent_arrival_date || null,
       estimated_arrival_date: body.estimated_arrival_date || null,
       arrived_date: body.arrived_date || null,
       total_carrier_cost: Number(body.total_carrier_cost) || 0,
@@ -1356,6 +1378,8 @@ export const cargoConsolidationsApi = {
           container_type: c.container_type,
           container_truck_id: c.container_truck_id,
           agent_name: c.agent_name,
+          load_code: c.load_code || null,
+          is_turnkey: Boolean(c.is_turnkey),
           client_id: c.client_id || c.client?.id,
           client_name: c.client?.name || c.client_full_name,
           client:
@@ -1445,6 +1469,8 @@ export const cargoConsolidationsApi = {
         container_type: c.container_type,
         container_truck_id: c.container_truck_id,
         agent_name: c.agent_name,
+        load_code: (c as any).load_code || null,
+        is_turnkey: Boolean((c as any).is_turnkey),
         client: client
           ? {
               id: client.id,

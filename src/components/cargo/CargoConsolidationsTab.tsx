@@ -1008,9 +1008,21 @@ export function CargoConsolidationsTab() {
                                       className="p-2.5 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between"
                                     >
                                       <div className="min-w-0">
-                                        <span className="font-bold text-foreground block truncate">
-                                          {cargo.cargo}
-                                        </span>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-bold text-foreground block truncate">
+                                            {cargo.cargo}
+                                          </span>
+                                          {cargo.load_code && (
+                                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-brand-gold/15 text-brand-navy dark:text-brand-gold font-bold border border-brand-gold/30">
+                                              {cargo.load_code}
+                                            </span>
+                                          )}
+                                          {cargo.is_turnkey && (
+                                            <span className="text-[8px] font-extrabold uppercase px-1 py-0.2 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                                              {t('turnkeyBadge') || 'Turnkey'}
+                                            </span>
+                                          )}
+                                        </div>
                                         <span className="text-[11px] text-muted-foreground block truncate">
                                           {cargo.client?.name || 'Client'}
                                         </span>

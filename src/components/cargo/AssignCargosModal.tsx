@@ -335,13 +335,23 @@ export function AssignCargosModal({
                         </div>
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold text-xs text-foreground truncate">
                               {cargo.cargo}
                             </span>
                             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">
                               {cargo.container_truck_id}
                             </span>
+                            {cargo.load_code && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-gold/15 text-brand-navy dark:text-brand-gold font-bold border border-brand-gold/30">
+                                {cargo.load_code}
+                              </span>
+                            )}
+                            {cargo.is_turnkey && (
+                              <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                                {t('turnkeyBadge') || 'Turnkey'}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
                             {(cargo.client?.name ||

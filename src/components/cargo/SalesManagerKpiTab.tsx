@@ -22,6 +22,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { T } from '../T';
+import { Select } from '../Select';
 import {
   salesManagerKpiApi,
   SALES_BONUS_MATRIX,
@@ -296,26 +297,35 @@ export function SalesManagerKpiTab() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-neutral-300 font-semibold">Status:</span>
-            <select
+            <Select
+              size="sm"
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-white/20 bg-neutral-900 text-white text-xs font-semibold focus:outline-none cursor-pointer"
-            >
-              <option value="">{t('smkFilterStatus') || 'All Statuses'}</option>
-              <option value="APPROVED">{t('smkStatusApproved') || 'Approved'}</option>
-              <option value="PENDING_SR_CHECK_APPROVAL">
-                {t('smkStatusPendingSrCheck') || 'Pending SR Check'}
-              </option>
-              <option value="DEMOTION_PENDING_REVIEW">
-                {t('smkStatusDemotionPending') || 'Demotion Pending'}
-              </option>
-              <option value="DEMOTION_APPROVED">
-                {t('smkStatusDemotionApproved') || 'Demoted'}
-              </option>
-              <option value="DEMOTION_REJECTED">
-                {t('smkStatusDemotionRejected') || 'Level Retained'}
-              </option>
-            </select>
+              onChange={setSelectedStatus}
+              placeholder={t('smkFilterStatus') || 'All Statuses'}
+              allowClear
+              fullWidth={false}
+              className="w-52"
+              aria-label={t('smkFilterStatus') || 'All Statuses'}
+              options={[
+                { value: 'APPROVED', label: t('smkStatusApproved') || 'Approved' },
+                {
+                  value: 'PENDING_SR_CHECK_APPROVAL',
+                  label: t('smkStatusPendingSrCheck') || 'Pending SR Check',
+                },
+                {
+                  value: 'DEMOTION_PENDING_REVIEW',
+                  label: t('smkStatusDemotionPending') || 'Demotion Pending',
+                },
+                {
+                  value: 'DEMOTION_APPROVED',
+                  label: t('smkStatusDemotionApproved') || 'Demoted',
+                },
+                {
+                  value: 'DEMOTION_REJECTED',
+                  label: t('smkStatusDemotionRejected') || 'Level Retained',
+                },
+              ]}
+            />
           </div>
 
           <div className="w-48">

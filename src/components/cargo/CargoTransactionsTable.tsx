@@ -746,14 +746,29 @@ export function CargoTransactionsTable({
 
                       {/* 2. Cargo Description & Agent */}
                       <td className="py-3 px-3.5 w-[200px] min-w-[200px] max-w-[200px] overflow-hidden">
-                        <div className="font-bold text-foreground truncate" title={item.cargo}>
-                          {item.cargo}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-bold text-foreground truncate" title={item.cargo}>
+                            {item.cargo}
+                          </span>
+                          {item.is_turnkey && (
+                            <span
+                              className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 shrink-0"
+                              title="Turnkey Delivery Service"
+                            >
+                              {t('turnkeyBadge') || 'Turnkey'}
+                            </span>
+                          )}
                         </div>
                         <div
-                          className="text-[11px] text-muted-foreground truncate"
+                          className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5"
                           title={item.agent_name}
                         >
-                          {item.agent_name}
+                          <span className="truncate">{item.agent_name}</span>
+                          {item.load_code && (
+                            <span className="font-mono font-bold text-[9px] px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border shrink-0">
+                              {item.load_code}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -1063,6 +1078,16 @@ export function CargoTransactionsTable({
                       </span>
                       <span className="font-semibold text-foreground">{detailsItem.weight} kg</span>
                     </div>
+                    {detailsItem.load_code && (
+                      <div className="flex justify-between py-1 border-b border-border/50">
+                        <span className="text-muted-foreground font-semibold">
+                          {t('loadCode') || 'Load Code'}:
+                        </span>
+                        <span className="font-mono font-bold text-foreground">
+                          {detailsItem.load_code}
+                        </span>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="flex justify-between py-1 border-b border-border/50">
@@ -1074,6 +1099,20 @@ export function CargoTransactionsTable({
                     </span>
                   </div>
                 )}
+                <div className="flex justify-between py-1 border-b border-border/50">
+                  <span className="text-muted-foreground font-semibold">
+                    {t('isTurnkey') || 'Turnkey Cargo'}:
+                  </span>
+                  <span className="font-semibold">
+                    {detailsItem.is_turnkey ? (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                        {t('turnkeyBadge') || 'Turnkey'} (Yes)
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Standard</span>
+                    )}
+                  </span>
+                </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-muted-foreground font-semibold">{t('colAgentName')}:</span>
                   <span className="font-semibold text-foreground">{detailsItem.agent_name}</span>
