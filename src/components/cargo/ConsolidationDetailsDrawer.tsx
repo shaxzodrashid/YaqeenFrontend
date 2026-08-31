@@ -84,6 +84,7 @@ export interface ConsolidationDetailsDrawerProps {
   onEdit: (item: ConsolidationListItem) => void;
   onDelete: (id: string) => void;
   onAssignCargos: (item: ConsolidationListItem) => void;
+  onAddLtlCargo?: (item: ConsolidationListItem) => void;
   onUpdate: (updated: ConsolidationListItem) => void;
 }
 
@@ -94,6 +95,7 @@ export function ConsolidationDetailsDrawer({
   onEdit,
   onDelete,
   onAssignCargos,
+  onAddLtlCargo,
   onUpdate,
 }: ConsolidationDetailsDrawerProps) {
   const { t } = useTranslation();
@@ -563,30 +565,69 @@ export function ConsolidationDetailsDrawer({
 
             {/* Attached Client Packages List */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                   <Package className="size-4 text-brand-gold" />
                   <span>Attached Client Cargos ({consolidation.cargos.length})</span>
                 </div>
-                {canAssignCargo() && (
-                  <button
-                    type="button"
-                    onClick={() => onAssignCargos(consolidation)}
-                    className="px-3 py-1.5 rounded-xl bg-brand-gold/20 text-brand-navy dark:text-brand-gold border border-brand-gold/40 text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Pack More Cargos</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {onAddLtlCargo && (
+                    <button
+                      type="button"
+                      onClick={() => onAddLtlCargo(consolidation)}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>{t('btnRegisterLtlCargo') || '+ Register LTL Cargo'}</span>
+                    </button>
+                  )}
+                  {canAssignCargo() && (
+                    <button
+                      type="button"
+                      onClick={() => onAssignCargos(consolidation)}
+                      className="px-3 py-1.5 rounded-xl bg-brand-gold/20 text-brand-navy dark:text-brand-gold border border-brand-gold/40 text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Boxes className="size-3.5" />
+                      <span>Pack More Cargos</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {consolidation.cargos.length === 0 ? (
-                <div className="py-8 text-center p-4 rounded-2xl border border-dashed border-border bg-muted/10 text-muted-foreground">
-                  <Package className="size-7 mx-auto mb-1.5 opacity-40" />
-                  <p className="text-xs font-bold text-foreground">No client cargos attached yet</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Click "Pack More Cargos" to attach unassigned LTL packages to this trip.
-                  </p>
+                <div className="py-8 text-center p-5 rounded-2xl border border-dashed border-border bg-muted/10 text-muted-foreground space-y-3">
+                  <Package className="size-8 mx-auto opacity-40 text-brand-gold" />
+                  <div>
+                    <p className="text-xs font-bold text-foreground">
+                      No client cargos attached yet
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Register a new LTL cargo directly into this trip or pack existing unassigned
+                      packages.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    {onAddLtlCargo && (
+                      <button
+                        type="button"
+                        onClick={() => onAddLtlCargo(consolidation)}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>{t('btnRegisterLtlCargo') || 'Register LTL Cargo'}</span>
+                      </button>
+                    )}
+                    {canAssignCargo() && (
+                      <button
+                        type="button"
+                        onClick={() => onAssignCargos(consolidation)}
+                        className="px-3.5 py-1.5 rounded-xl bg-surface border border-border text-foreground hover:bg-muted text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Boxes className="size-3.5 text-brand-gold" />
+                        <span>Pack Existing Cargos</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">

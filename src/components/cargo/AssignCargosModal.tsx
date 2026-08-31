@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Package,
+  Plus,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -25,6 +26,7 @@ export interface AssignCargosModalProps {
   onClose: () => void;
   onSuccess: (updated: ConsolidationListItem) => void;
   consolidation: ConsolidationListItem | null;
+  onRegisterNewLtlCargo?: (consolidation: ConsolidationListItem) => void;
 }
 
 export function AssignCargosModal({
@@ -32,6 +34,7 @@ export function AssignCargosModal({
   onClose,
   onSuccess,
   consolidation,
+  onRegisterNewLtlCargo,
 }: AssignCargosModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
@@ -273,6 +276,19 @@ export function AssignCargosModal({
               />
             </div>
             <div className="flex items-center gap-2">
+              {onRegisterNewLtlCargo && consolidation && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onRegisterNewLtlCargo(consolidation);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Plus className="size-3.5" />
+                  <span>{t('btnRegisterLtlCargo') || '+ Register New Cargo'}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={toggleSelectAll}
@@ -301,13 +317,30 @@ export function AssignCargosModal({
                 <span className="text-xs font-bold">Scanning unassigned LTL packages...</span>
               </div>
             ) : filteredCargos.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
-                <Package className="size-8 opacity-40" />
-                <span className="text-sm font-bold">No unassigned LTL packages available</span>
-                <span className="text-xs text-muted-foreground">
-                  All current LTL cargos are already attached to consolidation trips or none match
-                  your search.
-                </span>
+              <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-3">
+                <Package className="size-8 opacity-40 text-brand-gold" />
+                <div>
+                  <span className="text-sm font-bold text-foreground block">
+                    No unassigned LTL packages available
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-0.5 block">
+                    All current LTL cargos are already attached to consolidation trips or none match
+                    your search.
+                  </span>
+                </div>
+                {onRegisterNewLtlCargo && consolidation && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onRegisterNewLtlCargo(consolidation);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="size-4" />
+                    <span>{t('btnRegisterLtlCargo') || 'Register New LTL Cargo'}</span>
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-2">

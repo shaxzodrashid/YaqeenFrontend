@@ -42,6 +42,7 @@ import {
   convertPriceToUsdAndUzs,
   locationsApi,
 } from '../../services/api';
+import { cargoConsolidationsApi } from '../../services/cargoConsolidations.service';
 import type {
   CargoType,
   ContainerType,
@@ -157,6 +158,11 @@ export interface CargoRegistrationModalProps {
   editingId?: string | null;
   duplicateFromId?: string | null;
   initialStatus?: CargoRegistrationStatus;
+  initialCargoType?: CargoType;
+  lockCargoType?: CargoType;
+  initialConsolidationId?: string | null;
+  initialContainerTruckId?: string | null;
+  lockConsolidation?: boolean;
 }
 
 export function CargoRegistrationModal({
@@ -166,6 +172,11 @@ export function CargoRegistrationModal({
   editingId,
   duplicateFromId,
   initialStatus = 'Waiting',
+  initialCargoType = 'LTL',
+  lockCargoType,
+  initialConsolidationId,
+  initialContainerTruckId,
+  lockConsolidation,
 }: CargoRegistrationModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
@@ -174,8 +185,12 @@ export function CargoRegistrationModal({
   const [myEmployeeId, setMyEmployeeId] = useState<string>('');
 
   // Form Fields
-  const [cargoType, setCargoType] = useState<CargoType>('LTL');
-  const [consolidationId, setConsolidationId] = useState<string | null>(null);
+  const [cargoType, setCargoType] = useState<CargoType>(
+    initialConsolidationId ? 'LTL' : lockCargoType || initialCargoType || 'LTL'
+  );
+  const [consolidationId, setConsolidationId] = useState<string | null>(
+    initialConsolidationId || null
+  );
   const [isConsolidationModalOpen, setIsConsolidationModalOpen] = useState<boolean>(false);
   const [volumeStr, setVolumeStr] = useState<string>('10');
   const [weightStr, setWeightStr] = useState<string>('1200');
@@ -183,7 +198,7 @@ export function CargoRegistrationModal({
   const [isTurnkey, setIsTurnkey] = useState<boolean>(false);
   const [containerType, setContainerType] = useState<ContainerType>('40HQ');
   const [transportTypes, setTransportTypes] = useState<TransportType[]>(['auto']);
-  const [containerTruckId, setContainerTruckId] = useState<string>('');
+  const [containerTruckId, setContainerTruckId] = useState<string>(initialContainerTruckId || '');
   const [agentName, setAgentName] = useState<string>('SilkRoad Express');
   const [cargo, setCargo] = useState<string>('General Cargo');
   const [confirmedDate, setConfirmedDate] = useState<string>(
@@ -461,15 +476,17 @@ export function CargoRegistrationModal({
         });
     } else {
       const todayStr = new Date().toISOString().split('T')[0];
-      setCargoType('LTL');
-      setConsolidationId(null);
+      setCargoType(initialConsolidationId ? 'LTL' : lockCargoType || initialCargoType || 'LTL');
+      setConsolidationId(initialConsolidationId || null);
       setVolumeStr('10');
       setWeightStr('1200');
       setLoadCode('');
       setIsTurnkey(false);
       setContainerType('40HQ');
       setTransportTypes(['auto']);
-      setContainerTruckId('TRK-' + Math.floor(1000 + Math.random() * 9000));
+      setContainerTruckId(
+        initialContainerTruckId || 'TRK-' + Math.floor(1000 + Math.random() * 9000)
+      );
       setAgentName('SilkRoad Express');
       setCargo('General Cargo');
       setConfirmedDate(todayStr);
@@ -504,7 +521,18 @@ export function CargoRegistrationModal({
         destination_lng: 69.21627,
       });
     }
-  }, [isOpen, editingId, duplicateFromId, initialStatus, myEmployeeId, showNotification]);
+  }, [
+    isOpen,
+    editingId,
+    duplicateFromId,
+    initialStatus,
+    initialCargoType,
+    lockCargoType,
+    initialConsolidationId,
+    initialContainerTruckId,
+    myEmployeeId,
+    showNotification,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -628,7 +656,7 @@ export function CargoRegistrationModal({
         });
         showNotification('Cargo registration updated successfully', 'success');
       } else {
-        await cargoRegistrationsApi.create({
+        const created = await cargoRegistrationsApi.create({
           cargo_type: cargoType,
           volume: cargoType === 'LTL' ? vol : undefined,
           weight: cargoType === 'LTL' ? wt : undefined,
@@ -673,6 +701,15 @@ export function CargoRegistrationModal({
           employee_id: finalEmployeeId,
           consolidation_id: cargoType === 'LTL' ? consolidationId || undefined : undefined,
         });
+
+        if (cargoType === 'LTL' && consolidationId && created?.id) {
+          try {
+            await cargoConsolidationsApi.assignCargos(consolidationId, [created.id]);
+          } catch {
+            // Consolidation may already be linked on backend
+          }
+        }
+
         showNotification('Cargo registration created successfully', 'success');
       }
 
@@ -839,51 +876,91 @@ export function CargoRegistrationModal({
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     1. Cargo Type & Logistics Method <span className="text-rose-500">*</span>
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setCargoType('LTL')}
-                      className={`p-4 rounded-2xl border transition-all text-left flex items-start gap-3.5 cursor-pointer ${
-                        cargoType === 'LTL'
-                          ? 'border-amber-500/60 bg-amber-500/10 text-foreground ring-1 ring-amber-500/40 shadow-sm'
-                          : 'border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                      }`}
-                    >
-                      <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
-                        <Box className="size-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-sm text-foreground">
-                          LTL Cargo (Groupage)
+                  {lockCargoType === 'LTL' ? (
+                    <div className="p-4 rounded-2xl border border-amber-500/60 bg-amber-500/10 text-foreground flex items-center justify-between gap-3.5 shadow-xs">
+                      <div className="flex items-center gap-3.5">
+                        <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+                          <Box className="size-5" />
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                          Partial container load calculated by Volume (m³) & Weight (kg)
+                        <div>
+                          <div className="font-bold text-sm text-foreground flex items-center gap-2">
+                            <span>LTL Cargo (Groupage)</span>
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-mono">
+                              Consolidations
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                            Partial container load calculated by Volume (m³) & Weight (kg)
+                          </div>
                         </div>
                       </div>
-                    </button>
+                    </div>
+                  ) : lockCargoType === 'FTL' ? (
+                    <div className="p-4 rounded-2xl border border-indigo-500/60 bg-indigo-500/10 text-foreground flex items-center justify-between gap-3.5 shadow-xs">
+                      <div className="flex items-center gap-3.5">
+                        <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
+                          <Layers className="size-5" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-foreground flex items-center gap-2">
+                            <span>FTL Cargo (Full Truck / Container)</span>
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 font-mono">
+                              Container Tracking
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                            Full container load with standard whitelisted container specifications
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCargoType('LTL')}
+                        className={`p-4 rounded-2xl border transition-all text-left flex items-start gap-3.5 cursor-pointer ${
+                          cargoType === 'LTL'
+                            ? 'border-amber-500/60 bg-amber-500/10 text-foreground ring-1 ring-amber-500/40 shadow-sm'
+                            : 'border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                        }`}
+                      >
+                        <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+                          <Box className="size-5" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-foreground">
+                            LTL Cargo (Groupage)
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                            Partial container load calculated by Volume (m³) & Weight (kg)
+                          </div>
+                        </div>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setCargoType('FTL')}
-                      className={`p-4 rounded-2xl border transition-all text-left flex items-start gap-3.5 cursor-pointer ${
-                        cargoType === 'FTL'
-                          ? 'border-indigo-500/60 bg-indigo-500/10 text-foreground ring-1 ring-indigo-500/40 shadow-sm'
-                          : 'border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                      }`}
-                    >
-                      <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
-                        <Layers className="size-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-sm text-foreground">
-                          FTL Cargo (Full Truck)
+                      <button
+                        type="button"
+                        onClick={() => setCargoType('FTL')}
+                        className={`p-4 rounded-2xl border transition-all text-left flex items-start gap-3.5 cursor-pointer ${
+                          cargoType === 'FTL'
+                            ? 'border-indigo-500/60 bg-indigo-500/10 text-foreground ring-1 ring-indigo-500/40 shadow-sm'
+                            : 'border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                        }`}
+                      >
+                        <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
+                          <Layers className="size-5" />
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                          Full container load with standard whitelisted specifications
+                        <div>
+                          <div className="font-bold text-sm text-foreground">
+                            FTL Cargo (Full Truck)
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                            Full container load with standard whitelisted specifications
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  </div>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* DYNAMIC CAPACITY FIELDS */}
@@ -1034,28 +1111,48 @@ export function CargoRegistrationModal({
                           <Truck className="size-3.5" />
                           <span>Consolidation Truck Trip (LTL Groupage)</span>
                         </label>
-                        <span className="text-[11px] text-muted-foreground">
-                          Optionally link to active truck or create new
-                        </span>
+                        {lockConsolidation ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-gold/20 text-brand-navy dark:text-brand-gold border border-brand-gold/40">
+                            Assigned to Trip
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Optionally link to active truck or create new
+                          </span>
+                        )}
                       </div>
-                      <ConsolidationSelect
-                        value={consolidationId}
-                        requiredVolume={parseFloat(volumeStr) || undefined}
-                        onChange={(id, selected) => {
-                          setConsolidationId(id);
-                          if (selected) {
-                            setContainerTruckId(selected.container_truck_id);
-                            if (selected.carrier_name && !agentName) {
-                              setAgentName(selected.carrier_name);
+                      {lockConsolidation ? (
+                        <div className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Truck className="size-4 text-brand-gold" />
+                            <span className="font-mono font-bold text-xs text-foreground">
+                              {containerTruckId || 'Consolidation Trip'}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-medium text-muted-foreground">
+                            Locked to current consolidation
+                          </span>
+                        </div>
+                      ) : (
+                        <ConsolidationSelect
+                          value={consolidationId}
+                          requiredVolume={parseFloat(volumeStr) || undefined}
+                          onChange={(id, selected) => {
+                            setConsolidationId(id);
+                            if (selected) {
+                              setContainerTruckId(selected.container_truck_id);
+                              if (selected.carrier_name && !agentName) {
+                                setAgentName(selected.carrier_name);
+                              }
                             }
+                          }}
+                          onRequestCreateNew={
+                            canCreate('cargo_consolidations')
+                              ? () => setIsConsolidationModalOpen(true)
+                              : undefined
                           }
-                        }}
-                        onRequestCreateNew={
-                          canCreate('cargo_consolidations')
-                            ? () => setIsConsolidationModalOpen(true)
-                            : undefined
-                        }
-                      />
+                        />
+                      )}
                     </div>
                   )}
 

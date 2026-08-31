@@ -46,6 +46,7 @@ import { formatMoney } from '../../services/api';
 import { ConsolidationModal } from './ConsolidationModal';
 import { ConsolidationDetailsDrawer } from './ConsolidationDetailsDrawer';
 import { AssignCargosModal } from './AssignCargosModal';
+import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 
 export type ConsolidationViewMode = 'grid' | 'table' | 'kanban' | 'analytics';
@@ -105,6 +106,10 @@ export function CargoConsolidationsTab() {
   const [loading, setLoading] = useState<boolean>(true);
 
   // Modals & Drawers
+  const [activeConsolidationForNewCargo, setActiveConsolidationForNewCargo] =
+    useState<ConsolidationListItem | null>(null);
+  const [isNewCargoModalOpen, setIsNewCargoModalOpen] = useState<boolean>(false);
+
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<ConsolidationListItem | null>(null);
   const [selectedDetails, setSelectedDetails] = useState<ConsolidationListItem | null>(null);
@@ -743,13 +748,28 @@ export function CargoConsolidationsTab() {
 
                 {/* Bottom Card Footer */}
                 <div className="pt-2 border-t border-border/70 flex items-center justify-between gap-3 text-xs">
-                  {/* Attached packages preview & quick pack */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                  {/* Attached packages preview & quick actions */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-muted-foreground mr-1">
                       <Boxes className="size-4 text-brand-gold shrink-0" />
                       <span className="font-bold text-foreground font-mono">{c.cargos.length}</span>
                       <span className="text-[11px]">cargos</span>
                     </div>
+                    {canCreate('cargo_registrations') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveConsolidationForNewCargo(c);
+                          setIsNewCargoModalOpen(true);
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Add new LTL cargo directly into this consolidation"
+                      >
+                        <Plus className="size-3" />
+                        <span>Add Cargo</span>
+                      </button>
+                    )}
                     {canAssignCargo() && (
                       <button
                         type="button"
@@ -758,9 +778,9 @@ export function CargoConsolidationsTab() {
                           setAssigningConsolidation(c);
                         }}
                         className="px-2 py-0.5 rounded-lg bg-brand-gold/15 hover:bg-brand-gold/25 text-brand-navy dark:text-brand-gold text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
-                        title="Pack cargos into truck"
+                        title="Pack existing unassigned cargos"
                       >
-                        <Plus className="size-3" />
+                        <Boxes className="size-3" />
                         <span>Pack</span>
                       </button>
                     )}
@@ -940,21 +960,34 @@ export function CargoConsolidationsTab() {
 
                         <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
+                            {canCreate('cargo_registrations') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveConsolidationForNewCargo(c);
+                                  setIsNewCargoModalOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                                title="Add LTL Cargo to this trip"
+                              >
+                                <Plus className="size-4" />
+                              </button>
+                            )}
                             {canAssignCargo() && (
                               <button
                                 type="button"
                                 onClick={() => setAssigningConsolidation(c)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-gold hover:bg-brand-gold/10 transition-colors"
-                                title="Pack cargos"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-gold hover:bg-brand-gold/10 transition-colors cursor-pointer"
+                                title="Pack existing cargos"
                               >
-                                <Plus className="size-4" />
+                                <Boxes className="size-4" />
                               </button>
                             )}
                             {canUpdate('cargo_consolidations') && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(c)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                                 title="Edit trip"
                               >
                                 <Edit2 className="size-4" />
@@ -964,7 +997,7 @@ export function CargoConsolidationsTab() {
                               <button
                                 type="button"
                                 onClick={() => handleDelete(c.id)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
                                 title="Delete trip"
                               >
                                 <Trash2 className="size-4" />
@@ -984,16 +1017,31 @@ export function CargoConsolidationsTab() {
                                   <Package className="size-4 text-brand-gold" />
                                   <span>Attached Client Packages ({c.cargos.length})</span>
                                 </span>
-                                {canAssignCargo() && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setAssigningConsolidation(c)}
-                                    className="px-2.5 py-1 rounded-lg bg-brand-gold/20 text-brand-navy dark:text-brand-gold text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1"
-                                  >
-                                    <Plus className="size-3" />
-                                    <span>Pack More</span>
-                                  </button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {canCreate('cargo_registrations') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveConsolidationForNewCargo(c);
+                                        setIsNewCargoModalOpen(true);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Plus className="size-3" />
+                                      <span>Add Cargo</span>
+                                    </button>
+                                  )}
+                                  {canAssignCargo() && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setAssigningConsolidation(c)}
+                                      className="px-2.5 py-1 rounded-lg bg-brand-gold/20 text-brand-navy dark:text-brand-gold text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Boxes className="size-3" />
+                                      <span>Pack More</span>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               {c.cargos.length === 0 ? (
@@ -1262,6 +1310,31 @@ export function CargoConsolidationsTab() {
         </div>
       )}
 
+      {/* LTL Cargo Registration Inside Consolidation Modal */}
+      <CargoRegistrationModal
+        isOpen={isNewCargoModalOpen}
+        onClose={() => {
+          setIsNewCargoModalOpen(false);
+          setActiveConsolidationForNewCargo(null);
+        }}
+        onSuccess={async () => {
+          await loadConsolidations();
+          if (activeConsolidationForNewCargo) {
+            try {
+              const updated = await cargoConsolidationsApi.get(activeConsolidationForNewCargo.id);
+              setSelectedDetails(updated);
+            } catch {
+              // fallback
+            }
+          }
+        }}
+        initialCargoType="LTL"
+        lockCargoType="LTL"
+        initialConsolidationId={activeConsolidationForNewCargo?.id || null}
+        initialContainerTruckId={activeConsolidationForNewCargo?.container_truck_id || null}
+        lockConsolidation={true}
+      />
+
       {/* Consolidation Create & Edit Modal */}
       <ConsolidationModal
         isOpen={isModalOpen}
@@ -1285,6 +1358,10 @@ export function CargoConsolidationsTab() {
         onAssignCargos={(item) => {
           setAssigningConsolidation(item);
         }}
+        onAddLtlCargo={(item) => {
+          setActiveConsolidationForNewCargo(item);
+          setIsNewCargoModalOpen(true);
+        }}
         onUpdate={(updated) => {
           setSelectedDetails(updated);
           loadConsolidations();
@@ -1296,6 +1373,10 @@ export function CargoConsolidationsTab() {
         isOpen={!!assigningConsolidation}
         onClose={() => setAssigningConsolidation(null)}
         consolidation={assigningConsolidation}
+        onRegisterNewLtlCargo={(item) => {
+          setActiveConsolidationForNewCargo(item);
+          setIsNewCargoModalOpen(true);
+        }}
         onSuccess={(updated) => {
           if (updated?.id && selectedDetails?.id === updated.id) {
             setSelectedDetails(updated);

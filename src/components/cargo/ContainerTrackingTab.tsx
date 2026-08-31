@@ -198,7 +198,7 @@ export function ContainerTrackingTab() {
         limit: 10,
         search: searchQuery.trim() || undefined,
         status: activeStatus,
-        cargo_type: filters.cargo_type || undefined,
+        cargo_type: 'FTL',
         container_type: filters.container_type || undefined,
         transport_types:
           filters.transport_types && filters.transport_types.length > 0
@@ -324,9 +324,9 @@ export function ContainerTrackingTab() {
     }
   };
 
-  // Calculate active filter count
+  // Calculate active filter count (excluding cargo_type since it is fixed to FTL)
   const activeFilterCount = useMemo(() => {
-    let count = getActiveCargoFilterCount(filters);
+    let count = getActiveCargoFilterCount(filters, true);
     if (statusFilter !== 'all' && !filters.status) count++;
     return count;
   }, [filters, statusFilter]);
@@ -1045,18 +1045,6 @@ export function ContainerTrackingTab() {
             </span>
           )}
 
-          {filters.cargo_type && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-500 border border-indigo-500/30 font-semibold text-[11px]">
-              {t('cargoTypeLabel') || 'Cargo Type'}: {filters.cargo_type}
-              <button
-                onClick={() => handleRemoveFilterTag('cargo_type')}
-                className="hover:text-foreground cursor-pointer"
-              >
-                <X className="size-3" />
-              </button>
-            </span>
-          )}
-
           {filters.container_type && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-500 border border-blue-500/30 font-semibold text-[11px]">
               {t('containerTypeLabel') || 'Container Type'}: {filters.container_type}
@@ -1552,7 +1540,7 @@ export function ContainerTrackingTab() {
         </div>
       )}
 
-      {/* SHARED UNIFIED CARGO REGISTRATION MODAL */}
+      {/* SHARED UNIFIED CARGO REGISTRATION MODAL (LOCKED TO FTL FOR CONTAINER TRACKING) */}
       <CargoRegistrationModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -1562,6 +1550,8 @@ export function ContainerTrackingTab() {
         onSuccess={loadShipments}
         editingId={editingShipmentId}
         duplicateFromId={duplicateFromId}
+        initialCargoType="FTL"
+        lockCargoType="FTL"
       />
 
       {/* Global RMB Exchange Rate Modal */}
@@ -1637,11 +1627,12 @@ export function ContainerTrackingTab() {
         )}
       </AnimatePresence>
 
-      {/* DEDICATED CARGO FILTER MODAL */}
+      {/* DEDICATED CARGO FILTER MODAL (CARGO TYPE HIDDEN & FIXED TO FTL) */}
       <CargoFilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
         filters={filters}
+        hideCargoType={true}
         onApplyFilters={(newFilters) => {
           setFilters(newFilters);
           setStatusFilter(newFilters.status ? newFilters.status.toLowerCase() : 'all');
