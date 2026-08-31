@@ -112,6 +112,13 @@ export interface CreateCargoRegistrationDto {
   description?: string;
   load_code?: string;
   is_turnkey?: boolean;
+  turnkey_price?: number;
+  turnkey_currency?: CurrencyType;
+  is_speed_up?: boolean;
+  speed_up?: number;
+  speed_up_currency?: CurrencyType;
+  additional_expense?: number;
+  additional_expense_currency?: CurrencyType;
   client_id: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -226,6 +233,13 @@ export interface CargoRegistrationListItem {
   description?: string | null;
   load_code?: string | null;
   is_turnkey?: boolean;
+  turnkey_price?: number | null;
+  turnkey_currency?: CurrencyType | null;
+  is_speed_up?: boolean;
+  speed_up?: number | null;
+  speed_up_currency?: CurrencyType | null;
+  additional_expense?: number | null;
+  additional_expense_currency?: CurrencyType | null;
   client_id?: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -380,6 +394,13 @@ export interface CargoRegistrationDetail {
   description?: string | null;
   load_code?: string | null;
   is_turnkey?: boolean;
+  turnkey_price?: number | null;
+  turnkey_currency?: CurrencyType | null;
+  is_speed_up?: boolean;
+  speed_up?: number | null;
+  speed_up_currency?: CurrencyType | null;
+  additional_expense?: number | null;
+  additional_expense_currency?: CurrencyType | null;
   client_id: string;
   consolidation_id?: string | null;
   consolidation?: {
@@ -488,6 +509,13 @@ interface InternalCargoRegistrationRecord {
   description: string | null;
   load_code?: string | null;
   is_turnkey?: boolean;
+  turnkey_price?: number | null;
+  turnkey_currency?: CurrencyType | null;
+  is_speed_up?: boolean;
+  speed_up?: number | null;
+  speed_up_currency?: CurrencyType | null;
+  additional_expense?: number | null;
+  additional_expense_currency?: CurrencyType | null;
   client_id: string;
   employee_id: string;
   consolidation_id?: string | null;
@@ -2274,6 +2302,15 @@ export const cargoRegistrationsApi = {
       usd_rmb_rate: source.usd_rmb_rate ?? undefined,
       status: 'Waiting',
       description: source.description ?? undefined,
+      load_code: source.load_code ? `${source.load_code}-COPY` : undefined,
+      is_turnkey: source.is_turnkey,
+      turnkey_price: source.turnkey_price ?? undefined,
+      turnkey_currency: source.turnkey_currency ?? undefined,
+      is_speed_up: source.is_speed_up,
+      speed_up: source.speed_up ?? undefined,
+      speed_up_currency: source.speed_up_currency ?? undefined,
+      additional_expense: source.additional_expense ?? undefined,
+      additional_expense_currency: source.additional_expense_currency ?? undefined,
       client_id: source.client_id,
       employee_id: source.employee_id,
     });

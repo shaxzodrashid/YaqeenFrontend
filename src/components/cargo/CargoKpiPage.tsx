@@ -1,24 +1,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calculator, Truck, Crown, Target, Receipt, Award, Boxes } from 'lucide-react';
+import { Package, Calculator, Truck, Crown, Target, Award, Boxes } from 'lucide-react';
 import { T } from '../T';
 import { usePermissions } from '../../context/PermissionsContext';
 import { LtlCalcTab } from './LtlCalcTab';
 import { RopSeoModuleTab } from './RopSeoModuleTab';
 import { EmployeePlansTab } from './EmployeePlansTab';
-import { CargoTransactionsTab } from './CargoTransactionsTab';
 import { ContainerTrackingTab } from './ContainerTrackingTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
 import { CargoConsolidationsTab } from './CargoConsolidationsTab';
 
 export type CargoTabId =
-  | 'container-tracking'
-  | 'consolidations'
-  | 'ltl-calc'
-  | 'rop-seo'
-  | 'sales-manager'
-  | 'plans'
-  | 'transactions';
+  'container-tracking' | 'consolidations' | 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans';
 
 export function CargoKpiPage() {
   const { canRead } = usePermissions();
@@ -43,7 +36,6 @@ export function CargoKpiPage() {
     { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
     { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
     { id: 'plans', labelKey: 'tabPlans', icon: <Target className="size-4" /> },
-    { id: 'transactions', labelKey: 'tabTransactions', icon: <Receipt className="size-4" /> },
   ];
 
   const renderTabContent = () => {
@@ -64,8 +56,6 @@ export function CargoKpiPage() {
         return <SalesManagerKpiTab />;
       case 'plans':
         return <EmployeePlansTab />;
-      case 'transactions':
-        return <CargoTransactionsTab />;
       default:
         return <ContainerTrackingTab />;
     }

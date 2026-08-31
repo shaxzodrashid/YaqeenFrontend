@@ -41,7 +41,7 @@ interface PeriodOption {
 }
 
 const PRIMARY_PERIODS: PeriodOption[] = [
-  { shortLabel: '1M', labelKey: 'ovPeriod1M', value: '1M' },
+  { shortLabel: 'This Month', labelKey: 'ovPeriodThisMonth', value: '1M' },
   { shortLabel: '6M', labelKey: 'ovPeriod6M', value: '6M' },
   { shortLabel: 'YTD', labelKey: 'ovPeriodYTD', value: 'YTD' },
   { shortLabel: '1Y', labelKey: 'ovPeriod1Y', value: '1Y' },
@@ -51,6 +51,7 @@ const PRIMARY_PERIODS: PeriodOption[] = [
 const EXTRA_PERIODS: PeriodOption[] = [
   { shortLabel: '1D', labelKey: 'ovPeriodToday', value: '1D' },
   { shortLabel: '5D', labelKey: 'ovPeriod5D', value: '5D' },
+  { shortLabel: '30D', labelKey: 'ovPeriod30D', value: '30D' },
   { shortLabel: '5Y', labelKey: 'ovPeriod5Y', value: '5Y' },
 ];
 
@@ -60,6 +61,18 @@ const CURRENCIES = [
   { label: 'RUB', symbol: '₽', value: 'RUB' },
   { label: 'CNY', symbol: '¥', value: 'CNY' },
 ];
+
+// Calculate date range from the 1st of current month to current date ("This month")
+export function getThisMonthDateRange(): { start_date: string; end_date: string } {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return {
+    start_date: `${year}-${month}-01`,
+    end_date: `${year}-${month}-${day}`,
+  };
+}
 
 const MONTH_NAMES: Record<Locale, string[]> = {
   en: [
@@ -333,10 +346,15 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     return count;
   }, [filters]);
 
+  const defaultThisMonth = getThisMonthDateRange();
+  const isDefaultDateRange =
+    (filters.period === '1M' || !filters.period) &&
+    (!filters.start_date || filters.start_date === defaultThisMonth.start_date) &&
+    (!filters.end_date || filters.end_date === defaultThisMonth.end_date);
+
   const hasAnyCustomFilters =
     activeSecondaryFiltersCount > 0 ||
-    filters.period !== '1M' ||
-    Boolean(filters.start_date || filters.end_date) ||
+    !isDefaultDateRange ||
     (filters.currency && filters.currency !== 'USD');
 
   // Month navigation helpers for calendar
@@ -485,12 +503,13 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
   // Clear custom dates
   const handleClearCustomDates = () => {
-    setTempRange({ start: '', end: '' });
+    const tm = getThisMonthDateRange();
+    setTempRange({ start: tm.start_date, end: tm.end_date });
     setHoverDate(null);
     onFilterChange({
       period: '1M',
-      start_date: undefined,
-      end_date: undefined,
+      start_date: tm.start_date,
+      end_date: tm.end_date,
     });
     setActivePopover(null);
   };
@@ -585,11 +604,20 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   key={opt.value}
                   type="button"
                   onClick={() => {
-                    onFilterChange({
-                      period: opt.value,
-                      start_date: undefined,
-                      end_date: undefined,
-                    });
+                    if (opt.value === '1M') {
+                      const tm = getThisMonthDateRange();
+                      onFilterChange({
+                        period: '1M',
+                        start_date: tm.start_date,
+                        end_date: tm.end_date,
+                      });
+                    } else {
+                      onFilterChange({
+                        period: opt.value,
+                        start_date: undefined,
+                        end_date: undefined,
+                      });
+                    }
                     setActivePopover(null);
                   }}
                   className={`relative px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
@@ -945,11 +973,22 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                         key={ep.value}
                         type="button"
                         onClick={() => {
-                          onFilterChange({
-                            period: ep.value,
-                            start_date: undefined,
-                            end_date: undefined,
-                          });
+                          if (ep.value === '30D') {
+                            const today = new Date();
+                            const past = new Date(today);
+                            past.setDate(past.getDate() - 29);
+                            onFilterChange({
+                              period: '30D',
+                              start_date: formatYMD(past),
+                              end_date: formatYMD(today),
+                            });
+                          } else {
+                            onFilterChange({
+                              period: ep.value,
+                              start_date: undefined,
+                              end_date: undefined,
+                            });
+                          }
                           setActivePopover(null);
                         }}
                         className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer text-left ${
@@ -1471,17 +1510,18 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             {/* Clear all secondary filters link */}
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                const tm = getThisMonthDateRange();
                 onFilterChange({
                   cargo_type: '',
                   status: '',
                   employee_id: '',
                   client_id: '',
                   period: '1M',
-                  start_date: undefined,
-                  end_date: undefined,
-                })
-              }
+                  start_date: tm.start_date,
+                  end_date: tm.end_date,
+                });
+              }}
               className="text-[11px] text-muted hover:text-foreground dark:text-night-muted dark:hover:text-night-text underline cursor-pointer ml-1"
             >
               {t('ovClearAll')}

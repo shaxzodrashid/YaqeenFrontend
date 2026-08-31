@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Truck,
@@ -16,7 +16,6 @@ import {
   Filter,
   LayoutGrid,
   Kanban,
-  BarChart3,
   ChevronRight,
   ChevronLeft,
   AlertCircle,
@@ -26,20 +25,34 @@ import {
   Shield,
   Repeat,
   CopyPlus,
+  Copy,
+  Check,
+  Eye,
+  Edit2,
+  Calendar,
+  TrainFront,
+  Plane,
+  Ship,
+  Package,
+  ShieldCheck,
+  Building2,
+  User,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
-import { cargoKpiApi } from '../../services/cargoKpi.service';
+import { usePermissions } from '../../context/PermissionsContext';
 import { cargoRegistrationsApi, formatMoney } from '../../services/api';
-import type { CargoRegistrationPaginatedResponse } from '../../services/api';
 import type {
-  Shipment,
-  ShipmentStatus,
-  ShipmentsSummaryResponse,
-} from '../../services/cargoKpi.service';
+  CargoRegistrationPaginatedResponse,
+  CargoRegistrationListItem,
+  TransportType,
+} from '../../services/api';
+import type { ShipmentStatus } from '../../services/cargoKpi.service';
 import { CargoRegistrationModal } from './CargoRegistrationModal';
+import { CargoRegistrationDetailsModal } from './CargoRegistrationDetailsModal';
 import { CargoTransactionsTable } from './CargoTransactionsTable';
+import { RouteBadge } from './RouteBadge';
 import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
 import {
   CargoFilterModal,
@@ -48,9 +61,47 @@ import {
 } from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
 import { TRANSPORT_TYPE_LABELS } from '../../services/api';
-import { NumberInput } from '../NumberInput';
 
-export type ViewMode = 'grid' | 'kanban' | 'analytics';
+export type ViewMode = 'grid' | 'kanban';
+
+const TRANSPORT_TYPE_ICONS: Record<TransportType | string, React.ReactNode> = {
+  auto: <Truck className="size-3" />,
+  railway: <TrainFront className="size-3" />,
+  air: <Plane className="size-3" />,
+  sea: <Ship className="size-3" />,
+  other: <Package className="size-3" />,
+};
+
+function formatDateDisplay(dateStr?: string | null, localeCode: string = 'en'): string {
+  if (!dateStr || !dateStr.trim()) return '—';
+  try {
+    const cleanStr = dateStr.slice(0, 10);
+    const parts = cleanStr.split('-');
+    let dateObj: Date;
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      dateObj = new Date(year, month, day);
+    } else {
+      dateObj = new Date(dateStr);
+    }
+    if (isNaN(dateObj.getTime())) return cleanStr;
+    const localeMap: Record<string, string> = {
+      uz: 'uz-UZ',
+      ru: 'ru-RU',
+      en: 'en-US',
+    };
+    const targetLocale = localeMap[localeCode] || 'en-US';
+    return dateObj.toLocaleDateString(targetLocale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return dateStr.slice(0, 10);
+  }
+}
 
 const STATUS_CONFIG: {
   key: ShipmentStatus;
@@ -127,11 +178,11 @@ const ORDERED_STATUSES: ShipmentStatus[] = [
 ];
 
 export function ContainerTrackingTab() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
 
-  // Primary states
-  const [data, setData] = useState<ShipmentsSummaryResponse | null>(null);
+  // Primary states - Single clean source of truth
   const [regData, setRegData] = useState<CargoRegistrationPaginatedResponse | null>(null);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
@@ -149,19 +200,22 @@ export function ContainerTrackingTab() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingShipmentId, setEditingShipmentId] = useState<string | null>(null);
   const [duplicateFromId, setDuplicateFromId] = useState<string | null>(null);
-  const [isRateModalOpen, setIsRateModalOpen] = useState<boolean>(false);
-
-  // Global rate updater modal state
-  const [globalRmbRate, setGlobalRmbRate] = useState<string>('7.25');
+  const [detailsModalItem, setDetailsModalItem] = useState<CargoRegistrationListItem | null>(null);
+  const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
 
   // Filter modal state
   const [filters, setFilters] = useState<CargoFilterState>(INITIAL_CARGO_FILTERS);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
 
   // Deletion approval state (single + batch)
-  const [pendingSingleDelete, setPendingSingleDelete] = useState<Shipment | null>(null);
+  const [pendingSingleDelete, setPendingSingleDelete] = useState<CargoRegistrationListItem | null>(
+    null
+  );
   const [pendingBatchDelete, setPendingBatchDelete] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  // Kanban Horizontal Scroll Reference
+  const kanbanScrollRef = useRef<HTMLDivElement>(null);
 
   const getStatusLabel = useCallback(
     (st: ShipmentStatus | string) => {
@@ -189,13 +243,14 @@ export function ContainerTrackingTab() {
     [t]
   );
 
+  // Single efficient request for all tracking views
   const loadShipments = useCallback(async () => {
     setLoading(true);
     try {
       const activeStatus = filters.status || (statusFilter !== 'all' ? statusFilter : undefined);
       const queryParams = {
         page,
-        limit: 10,
+        limit: 12,
         search: searchQuery.trim() || undefined,
         status: activeStatus,
         cargo_type: 'FTL',
@@ -226,15 +281,8 @@ export function ContainerTrackingTab() {
         created_end_date: filters.created_end_date || undefined,
       };
 
-      const [resSummary, resList] = await Promise.all([
-        cargoKpiApi.getShipments(queryParams),
-        cargoRegistrationsApi.list(queryParams),
-      ]);
-      setData(resSummary);
+      const resList = await cargoRegistrationsApi.list(queryParams);
       setRegData(resList);
-      if (resSummary.current_rmb_rate) {
-        setGlobalRmbRate(String(resSummary.current_rmb_rate));
-      }
     } catch (err: any) {
       showNotification(err?.message || 'Failed to load shipments data', 'error');
     } finally {
@@ -261,25 +309,20 @@ export function ContainerTrackingTab() {
     if (sortBy === field) {
       if (isDescDefault) {
         if (currentOrder === 'DESC') {
-          // 2nd click: Invert to ASC
           setSortOrder('ASC');
         } else {
-          // 3rd click: Cancel sorting completely!
           setSortBy(undefined);
           setSortOrder(undefined);
         }
       } else {
         if (currentOrder === 'ASC') {
-          // 2nd click: Invert to DESC
           setSortOrder('DESC');
         } else {
-          // 3rd click: Cancel sorting completely!
           setSortBy(undefined);
           setSortOrder(undefined);
         }
       }
     } else {
-      // 1st click on new column: Start with default direction
       setSortBy(field);
       setSortOrder(isDescDefault ? 'DESC' : 'ASC');
     }
@@ -380,7 +423,7 @@ export function ContainerTrackingTab() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (shipment: Shipment) => {
+  const handleOpenEdit = (shipment: { id: string }) => {
     setEditingShipmentId(shipment.id);
     setDuplicateFromId(null);
     setIsModalOpen(true);
@@ -393,26 +436,17 @@ export function ContainerTrackingTab() {
   };
 
   const handleDelete = (id: string) => {
-    const shipment = data?.shipments.find((s) => s.id === id) ?? null;
-    if (shipment) setPendingSingleDelete(shipment);
-    else
-      setPendingSingleDelete({
-        id,
-        containerNo: id,
-        clientName: '—',
-        cargoType: '—',
-        status: 'Waiting',
-      } as unknown as Shipment);
+    const match = regData?.data.find((s) => s.id === id);
+    if (match) {
+      setPendingSingleDelete(match);
+    }
   };
 
   const handleConfirmSingleDelete = async () => {
     if (!pendingSingleDelete) return;
     setIsDeleting(true);
     try {
-      await Promise.allSettled([
-        cargoKpiApi.deleteShipment(pendingSingleDelete.id),
-        cargoRegistrationsApi.delete(pendingSingleDelete.id),
-      ]);
+      await cargoRegistrationsApi.delete(pendingSingleDelete.id);
       showNotification(t('successShipmentDeleted') || 'Shipment deleted successfully', 'success');
       setSelectedIds((prev) => prev.filter((i) => i !== pendingSingleDelete.id));
       setPendingSingleDelete(null);
@@ -424,37 +458,9 @@ export function ContainerTrackingTab() {
     }
   };
 
-  const handleUpdateGlobalRate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const rate = parseFloat(globalRmbRate);
-    if (isNaN(rate) || rate <= 0) {
-      showNotification(
-        t('warnRmbRatePositive') || 'Please enter a valid positive RMB exchange rate.',
-        'warning'
-      );
-      return;
-    }
-
-    try {
-      await cargoKpiApi.updateRmbRate(rate);
-      showNotification(
-        t('successRmbRateUpdated', { rate }) ||
-          `RMB rate updated to ${rate} across active shipments`,
-        'success'
-      );
-      setIsRateModalOpen(false);
-      loadShipments();
-    } catch (err: any) {
-      showNotification(err?.message || 'Failed to update RMB rate', 'error');
-    }
-  };
-
   const handleStatusChangeInline = async (id: string, newStatus: ShipmentStatus) => {
     try {
-      await Promise.allSettled([
-        cargoKpiApi.updateShipment(id, { status: newStatus }),
-        cargoRegistrationsApi.update(id, { status: newStatus }),
-      ]);
+      await cargoRegistrationsApi.update(id, { status: newStatus as any });
       showNotification(t('successShipmentUpdated') || 'Shipment updated successfully', 'success');
       loadShipments();
     } catch (err: any) {
@@ -462,19 +468,22 @@ export function ContainerTrackingTab() {
     }
   };
 
-  const handleMoveStage = async (shipment: Shipment, direction: 'next' | 'prev') => {
-    const currentIndex = ORDERED_STATUSES.indexOf(shipment.status);
-    let targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+  const handleMoveStage = async (shp: CargoRegistrationListItem, direction: 'next' | 'prev') => {
+    const currentStatus = shp.status as ShipmentStatus;
+    const currentIndex = ORDERED_STATUSES.indexOf(currentStatus);
+    const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     if (targetIndex < 0 || targetIndex >= ORDERED_STATUSES.length) return;
 
     const newStatus = ORDERED_STATUSES[targetIndex];
-    await handleStatusChangeInline(shipment.id, newStatus);
+    await handleStatusChangeInline(shp.id, newStatus);
   };
 
   const handleBatchStatusUpdate = async (newStatus: ShipmentStatus) => {
     if (selectedIds.length === 0) return;
     try {
-      await cargoKpiApi.batchUpdateStatus(selectedIds, newStatus);
+      await Promise.all(
+        selectedIds.map((id) => cargoRegistrationsApi.update(id, { status: newStatus as any }))
+      );
       showNotification(
         `Updated ${selectedIds.length} container(s) to ${getStatusLabel(newStatus)}`,
         'success'
@@ -495,7 +504,7 @@ export function ContainerTrackingTab() {
     if (selectedIds.length === 0) return;
     setIsDeleting(true);
     try {
-      await cargoKpiApi.batchDelete(selectedIds);
+      await Promise.all(selectedIds.map((id) => cargoRegistrationsApi.delete(id)));
       showNotification(
         t('successBatchDeleted', { count: selectedIds.length }) ||
           `Deleted ${selectedIds.length} container(s)`,
@@ -513,11 +522,16 @@ export function ContainerTrackingTab() {
 
   // Export to CSV
   const handleExportCSV = () => {
-    if (!data || !data.shipments || data.shipments.length === 0) return;
+    const listToExport = regData?.data || [];
+    if (listToExport.length === 0) return;
+
     const headers = [
       t('colContainerNo') || 'Container ID',
-      t('colClientName') || 'Client',
+      t('colClient') || 'Client',
       t('colCargo') || 'Cargo',
+      t('containerTypeLabel') || 'Container Type',
+      t('originCityLabel') || 'Origin',
+      t('destinationCityLabel') || 'Destination',
       t('colConfirmed') || 'Confirmed Date',
       t('colLoaded') || 'Loaded Date',
       t('colArrived') || 'Arrived Date',
@@ -526,23 +540,26 @@ export function ContainerTrackingTab() {
       t('colBuyPrice') || 'Buy Cost',
       'Currency',
       t('colSellPrice') || 'Sell Price',
-      t('colProfit') || 'Net Profit ($)',
+      t('colNetYield') || 'Net Profit ($)',
       t('colStatus') || 'Status',
     ];
 
-    const rows = data.shipments.map((s) => [
-      `"${s.containerNo}"`,
-      `"${s.clientName}"`,
-      `"${s.cargoType}"`,
-      `"${s.confirmedDate || ''}"`,
-      `"${s.loadedDate || ''}"`,
-      `"${s.arrivedDate || ''}"`,
-      s.rmbRate,
-      `"${s.agentName}"`,
-      s.buyCost,
-      s.buyCostCurrency || 'RMB',
-      s.sellPrice,
-      s.profit,
+    const rows = listToExport.map((s) => [
+      `"${s.container_truck_id || ''}"`,
+      `"${s.client_full_name || s.client?.company_name || ''}"`,
+      `"${s.cargo || ''}"`,
+      `"${s.container_type || ''}"`,
+      `"${s.origin_city || ''}"`,
+      `"${s.destination_city || ''}"`,
+      `"${s.confirmed_date || ''}"`,
+      `"${s.loaded_date || ''}"`,
+      `"${s.arrived_date || ''}"`,
+      s.usd_rmb_rate || 7.25,
+      `"${s.agent_name || ''}"`,
+      s.purchase_price?.amount || 0,
+      s.purchase_price?.currency || 'RMB',
+      s.sell_price?.amount || 0,
+      s.net_yield?.amount_usd ?? s.net_yield?.amount ?? 0,
       `"${s.status}"`,
     ]);
 
@@ -562,87 +579,81 @@ export function ContainerTrackingTab() {
     showNotification('Shipments exported to CSV file', 'success');
   };
 
-  // Filtered shipments list
-  const filteredShipments = useMemo(() => {
-    if (!data?.shipments) return [];
-    return data.shipments.filter((s) => {
+  const items = regData?.data || [];
+
+  // Filtered items
+  const filteredItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    return items.filter((s) => {
+      const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        s.containerNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.cargoType.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        (s.container_truck_id && s.container_truck_id.toLowerCase().includes(q)) ||
+        (s.client_full_name && s.client_full_name.toLowerCase().includes(q)) ||
+        (s.agent_name && s.agent_name.toLowerCase().includes(q)) ||
+        (s.cargo && s.cargo.toLowerCase().includes(q)) ||
+        (s.origin_city && s.origin_city.toLowerCase().includes(q)) ||
+        (s.destination_city && s.destination_city.toLowerCase().includes(q));
 
       const matchesStatus =
         statusFilter === 'all' || s.status.toLowerCase() === statusFilter.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
-  }, [data?.shipments, searchQuery, statusFilter]);
+  }, [items, searchQuery, statusFilter]);
 
-  // Delayed / Action-required shipments metrics
-  const delayedShipmentsCount = useMemo(() => {
-    if (!data?.shipments) return 0;
-    return data.shipments.filter(
-      (s) =>
-        (s.status === 'On the border' ||
-          s.status === 'Border' ||
-          s.status === 'On the way' ||
-          s.status === 'In Transit' ||
-          s.status === 'Station' ||
-          s.status === 'Reload') &&
-        !s.arrivedDate
-    ).length;
-  }, [data?.shipments]);
-
-  // Analytics Metrics
-  const analyticsMetrics = useMemo(() => {
-    if (!data?.shipments) return { agents: [], totalSell: 0, totalBuyUSD: 0, avgMarginPct: 0 };
-    const agentMap: Record<
-      string,
-      { count: number; buyUSD: number; sellUSD: number; profitUSD: number }
-    > = {};
-    let totalSell = 0;
-    let totalBuyUSD = 0;
-
-    data.shipments.forEach((s) => {
-      const agent = s.agentName || 'Unassigned';
-      if (!agentMap[agent]) {
-        agentMap[agent] = { count: 0, buyUSD: 0, sellUSD: 0, profitUSD: 0 };
-      }
-      const buyUSD = s.buyCostCurrency === 'RMB' ? s.buyCost / (s.rmbRate || 7.25) : s.buyCost;
-      agentMap[agent].count += 1;
-      agentMap[agent].buyUSD += buyUSD;
-      agentMap[agent].sellUSD += s.sellPrice;
-      agentMap[agent].profitUSD += s.profit;
-
-      totalSell += s.sellPrice;
-      totalBuyUSD += buyUSD;
-    });
-
-    const agents = Object.entries(agentMap).map(([name, stat]) => ({
-      name,
-      ...stat,
-      marginPct: stat.sellUSD > 0 ? (stat.profitUSD / stat.sellUSD) * 100 : 0,
-    }));
-
-    const avgMarginPct = totalSell > 0 ? ((data.total_net_margin || 0) / totalSell) * 100 : 0;
-
-    return { agents, totalSell, totalBuyUSD, avgMarginPct };
-  }, [data?.shipments, data?.total_net_margin]);
+  const handleCopyCard = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCardId(id);
+    showNotification(`${text} copied to clipboard`, 'success');
+    setTimeout(() => setCopiedCardId(null), 2000);
+  };
 
   const meta = regData?.meta;
+  const totalPages = meta ? Math.ceil(meta.total / (meta.limit || 12)) : 1;
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-8 min-w-0 max-w-full">
       {/* Workspace Header Controls Toolbar */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-surface border border-border shadow-sm min-w-0">
-        {/* View Switcher Tabs */}
-        <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border w-full lg:w-auto overflow-x-auto min-w-0 shrink-0">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`flex-1 lg:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+        {/* Unified View Mode Switcher: Grid View | Kanban Pipeline */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={
+            viewMode === 'grid'
+              ? `${t('viewGridView') || 'Grid View'} (Press Enter to switch to ${t('viewKanbanPipeline') || 'Kanban Pipeline'})`
+              : `${t('viewKanbanPipeline') || 'Kanban Pipeline'} (Press Enter to switch to ${t('viewGridView') || 'Grid View'})`
+          }
+          aria-pressed={viewMode === 'kanban'}
+          title={
+            viewMode === 'grid'
+              ? `${t('viewGridView') || 'Grid View'} — Click or press Enter to switch`
+              : `${t('viewKanbanPipeline') || 'Kanban Pipeline'} — Click or press Enter to switch`
+          }
+          onClick={() => setViewMode((prev) => (prev === 'grid' ? 'kanban' : 'grid'))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setViewMode((prev) => (prev === 'grid' ? 'kanban' : 'grid'));
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              setViewMode('grid');
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              setViewMode('kanban');
+            }
+          }}
+          className="flex items-center p-1 rounded-xl bg-muted/50 border border-border w-full lg:w-auto overflow-x-auto min-w-0 shrink-0 cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 transition-all"
+        >
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewMode('grid');
+            }}
+            className={`flex-1 lg:flex-none px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
               viewMode === 'grid'
-                ? 'bg-background text-foreground shadow-sm border border-border'
+                ? 'bg-background text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -650,12 +661,15 @@ export function ContainerTrackingTab() {
             <span>
               <T k="viewGridView" />
             </span>
-          </button>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`flex-1 lg:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+          </div>
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewMode('kanban');
+            }}
+            className={`flex-1 lg:flex-none px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
               viewMode === 'kanban'
-                ? 'bg-background text-foreground shadow-sm border border-border'
+                ? 'bg-background text-foreground shadow-xs border border-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -663,35 +677,12 @@ export function ContainerTrackingTab() {
             <span>
               <T k="viewKanbanPipeline" />
             </span>
-          </button>
-          <button
-            onClick={() => setViewMode('analytics')}
-            className={`flex-1 lg:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              viewMode === 'analytics'
-                ? 'bg-background text-foreground shadow-sm border border-border'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <BarChart3 className="size-3.5 text-emerald-500 shrink-0" />
-            <span>
-              <T k="viewInsightsBi" />
-            </span>
-          </button>
+          </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center justify-end gap-2 w-full lg:w-auto min-w-0">
-          {/* FX RMB Rate Engine Toggle */}
-          <button
-            onClick={() => setIsRateModalOpen(true)}
-            className="px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-            title={t('currentRmbRate') || 'RMB Exchange Rate Engine'}
-          >
-            <Coins className="size-3.5 shrink-0" />
-            <span>FX: {data?.current_rmb_rate || 7.25} RMB</span>
-          </button>
-
-          {/* Filter Trigger Button (Filter | x when active, Filter when clear) */}
+          {/* Filter Trigger Button */}
           {activeFilterCount > 0 ? (
             <div className="inline-flex items-center rounded-xl border border-brand-gold text-brand-gold bg-brand-gold/10 font-bold text-xs shadow-xs shrink-0">
               <button
@@ -751,19 +742,21 @@ export function ContainerTrackingTab() {
           </button>
 
           {/* Add Container */}
-          <button
-            onClick={handleOpenAdd}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-brand-navy shadow-md transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-          >
-            <Plus className="size-4 shrink-0" />
-            <span>
-              <T k="addShipment" />
-            </span>
-          </button>
+          {canCreate('cargo_registrations') && (
+            <button
+              onClick={handleOpenAdd}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-brand-navy shadow-md transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Plus className="size-4 shrink-0" />
+              <span>
+                <T k="addShipment" />
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* KPI Overview Summary Bar — 4 Clean Single-USD Metric Cards */}
+      {/* KPI Overview Summary Bar — 4 Clean Single-USD Metric Cards Directly from backend Meta */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 min-w-0">
         {/* Card 1: Total Active Containers */}
         <div className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex items-center justify-between gap-3 min-w-0">
@@ -772,10 +765,10 @@ export function ContainerTrackingTab() {
               <T k="lblActiveContainers" />
             </span>
             <h3 className="text-2xl font-black text-foreground tracking-tight truncate">
-              {meta?.active_containers ?? data?.total_active_shipments ?? 0}
+              {meta?.active_containers ?? 0}
             </h3>
             <span className="text-[11px] text-muted-foreground block truncate">
-              {meta?.total ?? data?.shipments?.length ?? 0} <T k="lblUnits" /> <T k="lblEnRoute" />
+              {meta?.total ?? items.length} <T k="lblUnits" /> <T k="lblEnRoute" />
             </span>
           </div>
           <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
@@ -791,22 +784,20 @@ export function ContainerTrackingTab() {
             </span>
             <h3
               className={`text-2xl font-black tracking-tight truncate ${
-                (meta?.action_required ?? delayedShipmentsCount ?? 0) > 0
-                  ? 'text-amber-500'
-                  : 'text-foreground'
+                (meta?.action_required ?? 0) > 0 ? 'text-amber-500' : 'text-foreground'
               }`}
             >
-              {meta?.action_required ?? delayedShipmentsCount ?? 0}
+              {meta?.action_required ?? 0}
             </h3>
             <span className="text-[11px] text-muted-foreground block truncate">
-              {(meta?.action_required ?? delayedShipmentsCount ?? 0) > 0
+              {(meta?.action_required ?? 0) > 0
                 ? t('subActionRequired') || 'Waiting & reload checkpoints'
                 : t('subAllClear') || 'All operations on track'}
             </span>
           </div>
           <div
             className={`p-3 rounded-xl border shrink-0 ${
-              (meta?.action_required ?? delayedShipmentsCount ?? 0) > 0
+              (meta?.action_required ?? 0) > 0
                 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                 : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
             }`}
@@ -823,10 +814,7 @@ export function ContainerTrackingTab() {
             </span>
             <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight truncate">
               {formatMoney(
-                meta?.calculated_net_yield?.total_usd ??
-                  meta?.calculated_net_yield?.USD ??
-                  data?.total_net_margin ??
-                  0,
+                meta?.calculated_net_yield?.total_usd ?? meta?.calculated_net_yield?.USD ?? 0,
                 'USD'
               )}
             </h3>
@@ -849,7 +837,6 @@ export function ContainerTrackingTab() {
               {formatMoney(
                 meta?.gross_sales_revenue?.total_usd_equivalent ??
                   meta?.gross_sales_revenue?.USD ??
-                  analyticsMetrics.totalSell ??
                   0,
                 'USD'
               )}
@@ -897,15 +884,17 @@ export function ContainerTrackingTab() {
                 </button>
               ))}
 
-              <button
-                onClick={handleBatchDelete}
-                className="ml-auto lg:ml-2 px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0"
-              >
-                <Trash2 className="size-3.5" />
-                <span>
-                  <T k="btnDeleteContainer" /> ({selectedIds.length})
-                </span>
-              </button>
+              {canDelete('cargo_registrations') && (
+                <button
+                  onClick={handleBatchDelete}
+                  className="ml-auto lg:ml-2 px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0"
+                >
+                  <Trash2 className="size-3.5" />
+                  <span>
+                    <T k="btnDeleteContainer" /> ({selectedIds.length})
+                  </span>
+                </button>
+              )}
 
               <button
                 onClick={() => setSelectedIds([])}
@@ -951,8 +940,7 @@ export function ContainerTrackingTab() {
                 : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
-            {t('statusAll')} (
-            {data?.meta?.total ?? regData?.meta?.total ?? data?.shipments?.length ?? 0})
+            {t('statusAll')} ({meta?.total ?? items.length})
           </button>
           {STATUS_CONFIG.map((opt) => (
             <button
@@ -1223,7 +1211,7 @@ export function ContainerTrackingTab() {
         </div>
       )}
 
-      {/* WORKSPACE VIEW 1: CLEAN DATA VISUALIZATION GRID */}
+      {/* WORKSPACE VIEW 1: DATA TABLE GRID VIEW */}
       {viewMode === 'grid' && (
         <CargoTransactionsTable
           data={regData}
@@ -1243,26 +1231,71 @@ export function ContainerTrackingTab() {
         />
       )}
 
-      {/* WORKSPACE VIEW 2: LOGISTICS KANBAN BOARD PIPELINE (RESPONSIVE SNAP-SCROLL BOARD) */}
+      {/* WORKSPACE VIEW 2: UNCOMPRESSED, RESPONSIVE KANBAN PIPELINE BOARD */}
       {viewMode === 'kanban' && (
         <div className="space-y-3 min-w-0 max-w-full">
-          {/* Mobile stage selector indicator */}
-          <p className="text-[11px] text-muted-foreground xl:hidden font-medium">
-            <T k="lblKanbanSwipeHelp" />
-          </p>
+          {/* Top sub-toolbar with count and horizontal scroll buttons */}
+          <div className="flex items-center justify-between gap-3 px-1 py-1 min-w-0">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+              <span className="font-bold text-foreground">
+                <T k="viewKanbanPipeline" />
+              </span>
+              <span>•</span>
+              <span>
+                {filteredItems.length} <T k="lblContainersCount" />
+              </span>
+            </div>
 
-          <div className="flex xl:grid xl:grid-cols-6 overflow-x-auto snap-x snap-mandatory max-w-full pb-4 gap-3 sm:gap-3.5 scrollbar-thin min-w-0">
+            {/* Smooth Scroll Navigation controls for Laptops & Desktops */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => {
+                  if (kanbanScrollRef.current) {
+                    kanbanScrollRef.current.scrollBy({ left: -360, behavior: 'smooth' });
+                  }
+                }}
+                className="p-1.5 rounded-xl border border-border hover:bg-muted text-foreground transition-all cursor-pointer shadow-xs"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (kanbanScrollRef.current) {
+                    kanbanScrollRef.current.scrollBy({ left: 360, behavior: 'smooth' });
+                  }
+                }}
+                className="p-1.5 rounded-xl border border-border hover:bg-muted text-foreground transition-all cursor-pointer shadow-xs"
+                title="Scroll Right"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Columns Flex Container (Never compressed: columns maintain a robust min-width with smooth scroll) */}
+          <div
+            ref={kanbanScrollRef}
+            className="flex overflow-x-auto pb-4 gap-3.5 sm:gap-4 scrollbar-thin snap-x snap-mandatory min-w-0"
+            style={{ scrollBehavior: 'smooth' }}
+          >
             {STATUS_CONFIG.map((col) => {
-              const colShipments = filteredShipments.filter((s) => s.status === col.key);
-              const totalColProfit = colShipments.reduce((sum, s) => sum + s.profit, 0);
+              const colShipments = filteredItems.filter((s) => s.status === col.key);
+              const totalColProfit = colShipments.reduce((sum, s) => {
+                const p =
+                  s.net_yield?.amount_usd ??
+                  (typeof s.net_yield === 'number' ? s.net_yield : s.net_yield?.amount) ??
+                  0;
+                return sum + p;
+              }, 0);
 
               return (
                 <div
                   key={col.key}
-                  className="w-[280px] sm:w-[320px] xl:w-auto shrink-0 snap-start p-3.5 sm:p-4 rounded-2xl bg-surface border border-border shadow-sm flex flex-col h-full min-h-[480px] sm:min-h-[520px] min-w-0"
+                  className="w-[310px] sm:w-[335px] md:w-[350px] shrink-0 snap-start p-3.5 sm:p-4 rounded-2xl bg-surface border border-border shadow-sm flex flex-col min-h-[580px] max-h-[calc(100vh-250px)] min-w-0"
                 >
                   {/* Column Header */}
-                  <div className="flex items-center justify-between pb-3 border-b border-border mb-3 min-w-0">
+                  <div className="flex items-center justify-between pb-3 border-b border-border mb-3 min-w-0 shrink-0">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`p-1.5 rounded-lg border shrink-0 ${col.badgeClass}`}>
                         {col.icon}
@@ -1276,110 +1309,327 @@ export function ContainerTrackingTab() {
                         </span>
                       </div>
                     </div>
-                    <span className="text-xs font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
-                      +${Math.round(totalColProfit).toLocaleString()}
+                    <span
+                      className={`text-xs font-black px-2 py-0.5 rounded-full border shrink-0 ${
+                        totalColProfit >= 0
+                          ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                          : 'text-rose-500 bg-rose-500/10 border-rose-500/20'
+                      }`}
+                    >
+                      {totalColProfit >= 0 ? '+' : ''}${Math.round(totalColProfit).toLocaleString()}
                     </span>
                   </div>
 
                   {/* Column Card List */}
-                  <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+                  <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
                     {colShipments.length === 0 ? (
-                      <div className="py-12 text-center text-muted-foreground border border-dashed border-border rounded-xl">
-                        <Truck className="size-6 mx-auto mb-1 opacity-40" />
-                        <span className="text-xs font-semibold">
+                      <div className="py-14 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+                        <Truck className="size-6 mx-auto mb-1.5 opacity-40" />
+                        <span className="text-xs font-semibold block">
                           <T k="noContainersInStage" />
                         </span>
                       </div>
                     ) : (
                       colShipments.map((shp) => {
-                        const buyUSD =
-                          shp.buyCostCurrency === 'RMB'
-                            ? shp.buyCost / (shp.rmbRate || 7.25)
-                            : shp.buyCost;
+                        const buyAmount = Number(shp.purchase_price?.amount || 0);
+                        const buyCurrency = shp.purchase_price?.currency || 'USD';
+                        const usdRmbRate = Number(shp.usd_rmb_rate || 7.25);
+                        const buyUSD = buyCurrency === 'RMB' ? buyAmount / usdRmbRate : buyAmount;
+                        const sellUSD = Number(shp.sell_price?.amount || 0);
+                        const netUSD = Number(
+                          shp.net_yield?.amount_usd ??
+                            (typeof shp.net_yield === 'number'
+                              ? shp.net_yield
+                              : shp.net_yield?.amount) ??
+                            0
+                        );
+                        const marginPct =
+                          sellUSD > 0 ? ((netUSD / sellUSD) * 100).toFixed(1) : '0.0';
+
+                        const clientName =
+                          shp.client_full_name ||
+                          shp.client?.company_name ||
+                          (shp.client?.first_name
+                            ? `${shp.client.first_name} ${shp.client.last_name || ''}`
+                            : '') ||
+                          '—';
+
+                        const employeeName =
+                          shp.employee_full_name ||
+                          (shp.employee?.first_name
+                            ? `${shp.employee.first_name} ${shp.employee.last_name || ''}`
+                            : '') ||
+                          '—';
+
+                        const hasMilestoneDates = Boolean(
+                          shp.confirmed_date || shp.loaded_date || shp.arrived_date
+                        );
+
                         return (
                           <motion.div
                             key={shp.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.95 }}
+                            initial={{ opacity: 0, scale: 0.96 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="p-3.5 sm:p-4 rounded-xl bg-background border border-border shadow-sm hover:border-brand-gold/50 transition-all space-y-3 group min-w-0"
+                            className="p-3 sm:p-3.5 rounded-xl bg-background border border-border shadow-xs hover:border-brand-gold/50 transition-all space-y-2.5 group min-w-0"
                           >
-                            {/* Top Row: Container ID & Profit */}
-                            <div className="flex items-center justify-between min-w-0">
-                              <div className="flex items-center gap-1.5 font-mono font-bold text-xs text-foreground truncate min-w-0">
-                                <span className="p-1 rounded bg-brand-gold/15 text-brand-gold shrink-0">
-                                  <Truck className="size-3.5" />
-                                </span>
-                                <span className="truncate">{shp.containerNo}</span>
+                            {/* Card Header: Container ID, Badges & Profit */}
+                            <div className="flex items-start justify-between gap-2 min-w-0">
+                              <div className="min-w-0 space-y-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="p-1 rounded bg-brand-gold/15 text-brand-gold shrink-0">
+                                    <Truck className="size-3.5" />
+                                  </span>
+                                  <span
+                                    className="font-mono font-black text-xs text-foreground truncate cursor-pointer hover:text-brand-gold"
+                                    title={shp.container_truck_id}
+                                    onClick={() => handleCopyCard(shp.id, shp.container_truck_id)}
+                                  >
+                                    {shp.container_truck_id}
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyCard(shp.id, shp.container_truck_id)}
+                                    className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                                    title={t('btnCopyId') || 'Copy ID'}
+                                  >
+                                    {copiedCardId === shp.id ? (
+                                      <Check className="size-3 text-emerald-500" />
+                                    ) : (
+                                      <Copy className="size-3 opacity-60 group-hover:opacity-100" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Spec Tags: Container Type, Transport, Turnkey */}
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {shp.container_type && (
+                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                      {shp.container_type}
+                                    </span>
+                                  )}
+                                  {shp.is_turnkey && (
+                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-0.5">
+                                      <ShieldCheck className="size-2.5" />
+                                      <span>Turnkey</span>
+                                    </span>
+                                  )}
+                                  {shp.transport_types && shp.transport_types.length > 0 && (
+                                    <div className="flex items-center gap-0.5">
+                                      {shp.transport_types.map((tt) => (
+                                        <span
+                                          key={tt}
+                                          className="p-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                                          title={tt}
+                                        >
+                                          {TRANSPORT_TYPE_ICONS[tt] || (
+                                            <Truck className="size-2.5" />
+                                          )}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <span className="text-xs font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
-                                +${Math.round(shp.profit).toLocaleString()}
-                              </span>
+
+                              {/* Profit Yield Pill */}
+                              <div className="text-right shrink-0">
+                                <span
+                                  className={`inline-flex flex-col items-end px-2 py-0.5 rounded-lg border font-mono font-bold text-[11px] ${
+                                    netUSD >= 0
+                                      ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                                      : 'text-rose-500 bg-rose-500/10 border-rose-500/20'
+                                  }`}
+                                >
+                                  <span>
+                                    {netUSD >= 0 ? '+' : ''}${Math.round(netUSD).toLocaleString()}
+                                  </span>
+                                  <span className="text-[9px] opacity-80">
+                                    {netUSD >= 0 ? '+' : ''}
+                                    {marginPct}%
+                                  </span>
+                                </span>
+                              </div>
                             </div>
 
-                            {/* Client & Cargo */}
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-foreground truncate">
-                                {shp.clientName}
+                            {/* Cargo Description & Dimensions */}
+                            <div className="min-w-0 space-y-0.5">
+                              <p
+                                className="text-xs font-bold text-foreground truncate"
+                                title={shp.cargo}
+                              >
+                                {shp.cargo || 'General Cargo'}
                               </p>
-                              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
-                                {shp.cargoType}
-                              </p>
+                              {(shp.volume || shp.weight) && (
+                                <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1.5 truncate">
+                                  <Package className="size-3 text-muted-foreground shrink-0" />
+                                  <span>
+                                    {shp.volume ? `${shp.volume} m³` : ''}
+                                    {shp.volume && shp.weight ? ' • ' : ''}
+                                    {shp.weight ? `${shp.weight} kg` : ''}
+                                  </span>
+                                </p>
+                              )}
                             </div>
 
-                            {/* Agent & FX Rate */}
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1.5 border-t border-border/60 min-w-0">
-                              <span className="flex items-center gap-1 truncate min-w-0">
-                                <UserCheck className="size-3 shrink-0" />
-                                <span className="truncate">{shp.agentName}</span>
-                              </span>
-                              <span className="font-semibold text-brand-gold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 shrink-0">
-                                FX: {shp.rmbRate}
-                              </span>
+                            {/* Route Corridor Badge */}
+                            {(shp.origin_city || shp.destination_city) && (
+                              <div className="pt-0.5">
+                                <RouteBadge
+                                  originCity={shp.origin_city}
+                                  destinationCity={shp.destination_city}
+                                  originCountryCode={shp.origin_country_code}
+                                  destinationCountryCode={shp.destination_country_code}
+                                  originLat={shp.origin_lat}
+                                  originLng={shp.origin_lng}
+                                  destLat={shp.destination_lat}
+                                  destLng={shp.destination_lng}
+                                  route={shp.route}
+                                  showMapButton={true}
+                                />
+                              </div>
+                            )}
+
+                            {/* Stakeholders: Client, Employee, Agent */}
+                            <div className="space-y-1 text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+                              <div className="flex items-center justify-between gap-1 truncate">
+                                <span className="flex items-center gap-1 truncate min-w-0">
+                                  <Building2 className="size-3 text-brand-gold shrink-0" />
+                                  <span className="font-semibold text-foreground truncate">
+                                    {clientName}
+                                  </span>
+                                </span>
+                                {employeeName !== '—' && (
+                                  <span
+                                    className="flex items-center gap-1 truncate shrink-0 max-w-[120px]"
+                                    title={employeeName}
+                                  >
+                                    <User className="size-3 text-muted-foreground shrink-0" />
+                                    <span className="truncate">{employeeName}</span>
+                                  </span>
+                                )}
+                              </div>
+                              {shp.agent_name && (
+                                <div className="flex items-center gap-1 text-[10px] truncate">
+                                  <UserCheck className="size-3 text-muted-foreground shrink-0" />
+                                  <span className="truncate">{shp.agent_name}</span>
+                                </div>
+                              )}
                             </div>
 
-                            {/* Cost Breakdown Pill */}
+                            {/* Milestone Lifecycle Dates */}
+                            {hasMilestoneDates ? (
+                              <div className="grid grid-cols-3 gap-1 pt-1 text-[9px] font-medium border-t border-border/50 text-center">
+                                <div className="p-1 rounded bg-muted/40 border border-border/40 truncate">
+                                  <span className="text-muted-foreground block text-[8px] uppercase">
+                                    <T k="colConfirmed" />
+                                  </span>
+                                  <span className="text-foreground truncate block">
+                                    {formatDateDisplay(shp.confirmed_date, locale)}
+                                  </span>
+                                </div>
+                                <div className="p-1 rounded bg-muted/40 border border-border/40 truncate">
+                                  <span className="text-muted-foreground block text-[8px] uppercase">
+                                    <T k="colLoaded" />
+                                  </span>
+                                  <span className="text-foreground truncate block">
+                                    {formatDateDisplay(shp.loaded_date, locale)}
+                                  </span>
+                                </div>
+                                <div className="p-1 rounded bg-muted/40 border border-border/40 truncate">
+                                  <span className="text-muted-foreground block text-[8px] uppercase">
+                                    <T k="colArrived" />
+                                  </span>
+                                  <span
+                                    className={`truncate block ${shp.arrived_date ? 'text-emerald-500 font-bold' : 'text-foreground'}`}
+                                  >
+                                    {formatDateDisplay(shp.arrived_date, locale)}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="size-3 shrink-0" />
+                                  <span>{t('colCreatedAt') || 'Created'}</span>
+                                </span>
+                                <span className="font-medium text-foreground">
+                                  {formatDateDisplay(shp.created_at, locale)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Financial Breakdown Pill */}
                             <div className="p-2 rounded-lg bg-muted/40 text-[10px] flex items-center justify-between font-mono">
                               <span className="text-muted-foreground">
                                 <T k="colBuyPrice" />: ${Math.round(buyUSD).toLocaleString()}
+                                {buyCurrency === 'RMB' && (
+                                  <span className="text-[9px] text-amber-500 ml-1">
+                                    (¥{buyAmount.toLocaleString()})
+                                  </span>
+                                )}
                               </span>
                               <span className="font-bold text-foreground">
-                                <T k="colSellPrice" />: ${shp.sellPrice.toLocaleString()}
+                                <T k="colSellPrice" />: ${sellUSD.toLocaleString()}
                               </span>
                             </div>
 
                             {/* Stage Transition Quick Buttons & Actions */}
-                            <div className="flex items-center justify-between pt-1">
+                            <div className="flex items-center justify-between pt-1 border-t border-border/40">
                               <button
                                 onClick={() => handleMoveStage(shp, 'prev')}
                                 disabled={col.stepIndex === 0}
-                                className="p-1 rounded-lg border border-border hover:bg-muted disabled:opacity-30 cursor-pointer text-muted-foreground hover:text-foreground"
+                                className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-20 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                                 title={t('btnPrevStage') || 'Move to Previous Stage'}
                               >
                                 <ChevronLeft className="size-3.5" />
                               </button>
 
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1">
                                 <button
-                                  onClick={() => handleOpenDuplicate(shp)}
-                                  className="p-1 rounded-lg border border-border hover:bg-amber-500/15 hover:border-amber-500/30 text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
-                                  title={t('btnDuplicateRegistration') || 'Duplicate Registration'}
+                                  onClick={() => setDetailsModalItem(shp)}
+                                  className="p-1.5 rounded-lg border border-border hover:bg-brand-gold/15 hover:border-brand-gold/30 text-muted-foreground hover:text-brand-gold transition-colors cursor-pointer"
+                                  title={t('btnViewDetails') || 'View Details'}
                                 >
-                                  <CopyPlus className="size-3.5" />
+                                  <Eye className="size-3.5" />
                                 </button>
 
-                                <button
-                                  onClick={() => handleOpenEdit(shp)}
-                                  className="text-[11px] font-bold text-brand-gold hover:underline cursor-pointer"
-                                >
-                                  <T k="btnViewDetails" />
-                                </button>
+                                {canUpdate('cargo_registrations') && (
+                                  <button
+                                    onClick={() => handleOpenEdit(shp)}
+                                    className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                                    title={t('btnEditRegistration') || 'Edit Registration'}
+                                  >
+                                    <Edit2 className="size-3.5" />
+                                  </button>
+                                )}
+
+                                {canCreate('cargo_registrations') && (
+                                  <button
+                                    onClick={() => handleOpenDuplicate(shp)}
+                                    className="p-1.5 rounded-lg border border-border hover:bg-amber-500/15 hover:border-amber-500/30 text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
+                                    title={
+                                      t('btnDuplicateRegistration') || 'Duplicate Registration'
+                                    }
+                                  >
+                                    <CopyPlus className="size-3.5" />
+                                  </button>
+                                )}
+
+                                {canDelete('cargo_registrations') && (
+                                  <button
+                                    onClick={() => handleDelete(shp.id)}
+                                    className="p-1.5 rounded-lg border border-border hover:bg-rose-500/15 hover:border-rose-500/30 text-muted-foreground hover:text-rose-500 transition-colors cursor-pointer"
+                                    title={t('btnDeleteContainer') || 'Delete Container'}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </button>
+                                )}
                               </div>
 
                               <button
                                 onClick={() => handleMoveStage(shp, 'next')}
                                 disabled={col.stepIndex === STATUS_CONFIG.length - 1}
-                                className="p-1 rounded-lg border border-border hover:bg-muted disabled:opacity-30 cursor-pointer text-muted-foreground hover:text-foreground"
+                                className="p-1.5 rounded-lg border border-border hover:bg-muted disabled:opacity-20 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                                 title={t('btnNextStage') || 'Advance to Next Stage'}
                               >
                                 <ChevronRight className="size-3.5" />
@@ -1394,149 +1644,34 @@ export function ContainerTrackingTab() {
               );
             })}
           </div>
-        </div>
-      )}
 
-      {/* WORKSPACE VIEW 3: FINANCIAL & FORWARDER INSIGHTS DASHBOARD */}
-      {viewMode === 'analytics' && (
-        <div className="space-y-6 min-w-0 max-w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
-            {/* Agent / Forwarder Yield Matrix */}
-            <div className="lg:col-span-2 p-4 sm:p-5 rounded-2xl bg-surface border border-border shadow-sm space-y-4 min-w-0">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border pb-3">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="size-5 text-brand-gold shrink-0" />
-                  <h3 className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wider">
-                    <T k="lblForwarderPerformanceMatrix" />
-                  </h3>
-                </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-                  {analyticsMetrics.agents.length} <T k="lblActiveAgents" />
-                </span>
-              </div>
-
-              <div className="overflow-x-auto w-full min-w-0">
-                <table className="w-full text-left text-xs border-collapse min-w-[500px]">
-                  <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border uppercase">
-                    <tr>
-                      <th className="px-3 py-2.5">
-                        <T k="colAgentName" />
-                      </th>
-                      <th className="px-3 py-2.5 text-center">
-                        <T k="colContainers" />
-                      </th>
-                      <th className="px-3 py-2.5">
-                        <T k="colTotalBuyCost" />
-                      </th>
-                      <th className="px-3 py-2.5">
-                        <T k="colTotalRevenue" />
-                      </th>
-                      <th className="px-3 py-2.5">
-                        <T k="colNetYield" />
-                      </th>
-                      <th className="px-3 py-2.5 text-right">
-                        <T k="colYieldPct" />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {analyticsMetrics.agents.map((ag) => (
-                      <tr key={ag.name} className="hover:bg-muted/30">
-                        <td className="px-3 py-3 font-bold text-foreground">{ag.name}</td>
-                        <td className="px-3 py-3 text-center font-bold">
-                          <span className="px-2 py-0.5 rounded-md bg-muted border border-border">
-                            {ag.count}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-muted-foreground font-mono">
-                          ${Math.round(ag.buyUSD).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-3 font-bold text-foreground font-mono">
-                          ${Math.round(ag.sellUSD).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-3 font-black text-emerald-500 font-mono">
-                          ${Math.round(ag.profitUSD).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full bg-emerald-500 rounded-full"
-                                style={{ width: `${Math.min(100, Math.max(0, ag.marginPct))}%` }}
-                              />
-                            </div>
-                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
-                              {ag.marginPct.toFixed(1)}%
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Financial Overview & FX Sensitivity */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-border shadow-sm space-y-4 min-w-0">
-              <div className="flex items-center gap-2 border-b border-border pb-3">
-                <Coins className="size-5 text-amber-500 shrink-0" />
-                <h3 className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wider">
-                  <T k="lblFxSensitivity" />
-                </h3>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                <T k="lblCurrentRmbBaseline" />{' '}
-                <strong className="text-foreground">
-                  {data?.current_rmb_rate || 7.25} RMB / USD
-                </strong>
-                .
-              </p>
-
-              <div className="space-y-3 pt-1">
-                <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between text-xs gap-2">
-                  <div>
-                    <span className="font-bold text-foreground block">
-                      <T k="lblRmbRatePlus" />
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      <T k="lblCheaperRmbCost" />
-                    </span>
-                  </div>
-                  <span className="font-black text-emerald-500 text-sm whitespace-nowrap">
-                    +${Math.round((analyticsMetrics.totalBuyUSD * 0.1) / 7.25).toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="p-3 sm:p-3.5 rounded-xl bg-rose-500/5 border border-rose-500/20 flex items-center justify-between text-xs gap-2">
-                  <div>
-                    <span className="font-bold text-foreground block">
-                      <T k="lblRmbRateMinus" />
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      <T k="lblStrongerRmbCost" />
-                    </span>
-                  </div>
-                  <span className="font-black text-rose-500 text-sm whitespace-nowrap">
-                    -${Math.round((analyticsMetrics.totalBuyUSD * 0.1) / 7.25).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-3">
+          {/* Kanban Bottom Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-surface border border-border shadow-xs text-xs">
+              <span className="text-muted-foreground font-medium">
+                {t('showingPage', { page, total: totalPages }) ||
+                  `Page ${page} of ${totalPages} (${meta?.total || 0} total)`}
+              </span>
+              <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => setIsRateModalOpen(true)}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold bg-brand-gold hover:bg-brand-gold/90 text-brand-navy shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={page <= 1}
+                  className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted disabled:opacity-30 cursor-pointer flex items-center gap-1 text-foreground"
                 >
-                  <TrendingUp className="size-4 shrink-0" />
-                  <span>
-                    <T k="btnAdjustGlobalRmbEngine" />
-                  </span>
+                  <ChevronLeft className="size-3.5" />
+                  <span>{t('pagPrev') || 'Prev'}</span>
+                </button>
+                <button
+                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={page >= totalPages}
+                  className="px-3 py-1.5 rounded-xl border border-border hover:bg-muted disabled:opacity-30 cursor-pointer flex items-center gap-1 text-foreground"
+                >
+                  <span>{t('pagNext') || 'Next'}</span>
+                  <ChevronRight className="size-3.5" />
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1554,78 +1689,20 @@ export function ContainerTrackingTab() {
         lockCargoType="FTL"
       />
 
-      {/* Global RMB Exchange Rate Modal */}
-      <AnimatePresence>
-        {isRateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsRateModalOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-md rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden z-10"
-            >
-              <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-600 to-amber-500 text-white flex items-center justify-between">
-                <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <Coins className="size-5 shrink-0" />
-                  <span>{t('updateGlobalRmbRate') || 'Update Global RMB Rate Engine'}</span>
-                </h3>
-                <button
-                  onClick={() => setIsRateModalOpen(false)}
-                  className="p-1 rounded-lg text-neutral-200 hover:text-white hover:bg-white/10"
-                >
-                  <X className="size-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateGlobalRate} className="p-4 sm:p-6 space-y-4">
-                <p className="text-xs text-muted-foreground">
-                  <T k="updateRmbEngineDesc" />
-                </p>
-
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    {t('currentRmbRate') || 'Global RMB Rate (1 USD = X RMB)'}
-                  </label>
-                  <NumberInput
-                    size="lg"
-                    allowDecimals={true}
-                    decimalScale={3}
-                    min={0.01}
-                    value={globalRmbRate}
-                    onValueChange={(_num, raw) => setGlobalRmbRate(raw)}
-                    placeholder="7.25"
-                    prefix="¥"
-                    inputClassName="text-lg font-black font-mono"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => setIsRateModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-border hover:bg-muted cursor-pointer"
-                  >
-                    {t('cancel') || 'Cancel'}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md cursor-pointer"
-                  >
-                    {t('btnUpdateRate') || 'Update FX Rate'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Cargo Registration Details Modal */}
+      <CargoRegistrationDetailsModal
+        isOpen={!!detailsModalItem}
+        item={detailsModalItem}
+        onClose={() => setDetailsModalItem(null)}
+        onEdit={(item) => {
+          setDetailsModalItem(null);
+          handleOpenEdit(item);
+        }}
+        onDuplicate={(item) => {
+          setDetailsModalItem(null);
+          handleOpenDuplicate(item);
+        }}
+      />
 
       {/* DEDICATED CARGO FILTER MODAL (CARGO TYPE HIDDEN & FIXED TO FTL) */}
       <CargoFilterModal
@@ -1660,9 +1737,9 @@ export function ContainerTrackingTab() {
                 </span>
                 <span
                   className="font-mono text-xs font-bold text-foreground truncate max-w-[190px]"
-                  title={pendingSingleDelete.containerNo}
+                  title={pendingSingleDelete.container_truck_id}
                 >
-                  {pendingSingleDelete.containerNo}
+                  {pendingSingleDelete.container_truck_id}
                 </span>
               </div>
               <div className="h-px bg-border/60" />
@@ -1672,19 +1749,19 @@ export function ContainerTrackingTab() {
                     {t('deleteModalClient')}
                   </div>
                   <div className="font-semibold text-foreground truncate">
-                    {pendingSingleDelete.clientName || '—'}
+                    {pendingSingleDelete.client_full_name || '—'}
                   </div>
                 </div>
                 <div className="space-y-0.5">
                   <div className="text-muted-foreground font-semibold">{t('deleteModalCargo')}</div>
                   <div className="font-medium text-foreground truncate">
-                    {pendingSingleDelete.cargoType || '—'}
+                    {pendingSingleDelete.cargo || '—'}
                   </div>
                 </div>
                 <div className="space-y-0.5">
                   <div className="text-muted-foreground font-semibold">{t('deleteModalRoute')}</div>
                   <div className="font-medium text-foreground truncate">
-                    {pendingSingleDelete.confirmedDate || pendingSingleDelete.loadedDate || '—'}
+                    {pendingSingleDelete.confirmed_date || pendingSingleDelete.loaded_date || '—'}
                   </div>
                 </div>
                 <div className="space-y-0.5">
@@ -1700,17 +1777,38 @@ export function ContainerTrackingTab() {
                 <span className="px-2 py-1 rounded-lg bg-muted/50 border border-border/60">
                   {t('deleteModalBuy')}:{' '}
                   {formatMoney(
-                    pendingSingleDelete.buyCost ?? 0,
-                    (pendingSingleDelete.buyCostCurrency as any) || 'USD'
+                    Number(pendingSingleDelete.purchase_price?.amount || 0),
+                    (pendingSingleDelete.purchase_price?.currency as any) || 'USD'
                   )}
                 </span>
                 <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                  {t('deleteModalSell')}: {formatMoney(pendingSingleDelete.sellPrice ?? 0, 'USD')}
+                  {t('deleteModalSell')}:{' '}
+                  {formatMoney(Number(pendingSingleDelete.sell_price?.amount || 0), 'USD')}
                 </span>
                 <span
-                  className={`px-2 py-1 rounded-lg border font-bold ${(pendingSingleDelete.profit ?? 0) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'}`}
+                  className={`px-2 py-1 rounded-lg border font-bold ${
+                    Number(
+                      pendingSingleDelete.net_yield?.amount_usd ??
+                        (typeof pendingSingleDelete.net_yield === 'number'
+                          ? pendingSingleDelete.net_yield
+                          : pendingSingleDelete.net_yield?.amount) ??
+                        0
+                    ) >= 0
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                  }`}
                 >
-                  {t('deleteModalMargin')}: {formatMoney(pendingSingleDelete.profit ?? 0, 'USD')}
+                  {t('deleteModalMargin')}:{' '}
+                  {formatMoney(
+                    Number(
+                      pendingSingleDelete.net_yield?.amount_usd ??
+                        (typeof pendingSingleDelete.net_yield === 'number'
+                          ? pendingSingleDelete.net_yield
+                          : pendingSingleDelete.net_yield?.amount) ??
+                        0
+                    ),
+                    'USD'
+                  )}
                 </span>
               </div>
             </div>
@@ -1743,13 +1841,13 @@ export function ContainerTrackingTab() {
             </div>
             <div className="max-h-28 overflow-y-auto rounded-xl bg-muted/30 border border-border/60 p-2 flex flex-wrap gap-1.5">
               {selectedIds.slice(0, 12).map((id) => {
-                const s = data?.shipments.find((x) => x.id === id);
+                const s = items.find((x) => x.id === id);
                 return (
                   <span
                     key={id}
                     className="px-2 py-1 rounded-full bg-surface border border-border text-[11px] font-mono font-semibold"
                   >
-                    {s?.containerNo || id.slice(0, 8)}
+                    {s?.container_truck_id || id.slice(0, 8)}
                   </span>
                 );
               })}

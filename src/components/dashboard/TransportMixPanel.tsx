@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, TrainFront, Plane, Ship, Boxes, Package, Route as RouteIcon } from 'lucide-react';
+import { Route as RouteIcon, Boxes } from 'lucide-react';
 import type {
   DashboardCargoDistributionResponse,
   TransportTypeDistributionItem,
@@ -7,40 +7,13 @@ import type {
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
 import { useTranslation } from '../../context/LanguageContext';
+import { getTransportVisuals } from '../../utils/transportColors';
 
 interface TransportMixPanelProps {
   data: DashboardCargoDistributionResponse | null;
   loading: boolean;
   currency?: string;
 }
-
-const TRANSPORT_VISUALS: Record<string, { icon: React.ReactNode; bar: string; chip: string }> = {
-  AUTO: {
-    icon: <Truck className="size-4" />,
-    bar: 'from-blue-500 to-cyan-400',
-    chip: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  },
-  RAILWAY: {
-    icon: <TrainFront className="size-4" />,
-    bar: 'from-amber-500 to-orange-400',
-    chip: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  },
-  AIR: {
-    icon: <Plane className="size-4" />,
-    bar: 'from-violet-500 to-fuchsia-400',
-    chip: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-  },
-  SEA: {
-    icon: <Ship className="size-4" />,
-    bar: 'from-teal-500 to-emerald-400',
-    chip: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
-  },
-  OTHER: {
-    icon: <Package className="size-4" />,
-    bar: 'from-slate-400 to-slate-300',
-    chip: 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
-  },
-};
 
 function statusColor(category: string): string {
   switch (category) {
@@ -121,38 +94,45 @@ export const TransportMixPanel: React.FC<TransportMixPanelProps> = React.memo(
               <T k="ovByTransportType" />
             </span>
             {transportDist.map((tItem) => {
-              const v = TRANSPORT_VISUALS[tItem.type] || TRANSPORT_VISUALS.OTHER;
+              const v = getTransportVisuals(tItem.type, tItem.name);
               const widthPct = Math.max(
                 6,
                 Math.round((tItem.totalSales / maxTransportSales) * 100)
               );
               return (
-                <div key={tItem.type} className="group min-w-0">
-                  <div className="flex items-center justify-between gap-3 mb-1">
+                <div
+                  key={tItem.type}
+                  className={`group min-w-0 p-3 rounded-xl border transition-all duration-200 shadow-2xs ${v.cardBg} ${v.cardBorder}`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`p-1.5 rounded-lg shrink-0 ${v.chip}`}>{v.icon}</div>
-                      <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
-                        {getModalityName(tItem.type, tItem.name)}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted shrink-0">
+                      <div className={`p-2 rounded-xl shrink-0 ${v.chip}`}>{v.icon}</div>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`text-xs font-bold truncate ${v.textColor}`}>
+                          {getModalityName(tItem.type, tItem.name)}
+                        </span>
+                        <span className="text-[10px] text-muted truncate">
+                          {tItem.percentage}% {t('ovMultimodalShare').toLowerCase()}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${v.badgeBg}`}
+                      >
                         {t('ovOrdersCount', { count: tItem.count })}
                       </span>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-xs font-extrabold text-foreground dark:text-night-text block leading-tight">
+                      <span className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text block leading-tight">
                         {formatMoney(tItem.totalSales, currency)}
                       </span>
                       {tItem.totalMargin !== undefined && (
                         <span className="text-[10px] text-emerald-500 font-bold">
-                          {t('ovMarginWithPct', {
-                            amount: formatMoney(tItem.totalMargin, currency),
-                            pct: tItem.percentage,
-                          })}
+                          +{formatMoney(tItem.totalMargin, currency)}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="h-3 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
+                  <div className={`h-2.5 w-full rounded-full overflow-hidden ${v.trackBg}`}>
                     <div
                       className={`h-full rounded-full bg-gradient-to-r ${v.bar} transition-all duration-700 group-hover:brightness-110`}
                       style={{ width: `${widthPct}%` }}
