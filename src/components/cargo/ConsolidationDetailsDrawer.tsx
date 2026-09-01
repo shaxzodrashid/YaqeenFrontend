@@ -5,6 +5,7 @@ import {
   Truck,
   MapPin,
   DollarSign,
+  Loader2,
   Phone,
   User,
   Boxes,
@@ -34,6 +35,7 @@ import type {
 } from '../../services/cargoConsolidations.service';
 import { formatMoney, getCountryFlag } from '../../services/api';
 import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
+import { cargoRegistrationsApi } from '../../services/cargoRegistrations.service';
 
 const STATUS_ORDER: ConsolidationStatus[] = [
   'Waiting',
@@ -81,10 +83,12 @@ export interface ConsolidationDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   consolidation: ConsolidationListItem | null;
+  isLoadingDetails?: boolean;
   onEdit: (item: ConsolidationListItem) => void;
   onDelete: (id: string) => void;
   onAssignCargos: (item: ConsolidationListItem) => void;
   onAddLtlCargo?: (item: ConsolidationListItem) => void;
+  onEditCargo?: (cargoId: string, consolidation: ConsolidationListItem) => void;
   onUpdate: (updated: ConsolidationListItem) => void;
 }
 
@@ -92,10 +96,12 @@ export function ConsolidationDetailsDrawer({
   isOpen,
   onClose,
   consolidation,
+  isLoadingDetails,
   onEdit,
   onDelete,
   onAssignCargos,
   onAddLtlCargo,
+  onEditCargo,
   onUpdate,
 }: ConsolidationDetailsDrawerProps) {
   const { t } = useTranslation();
@@ -104,7 +110,9 @@ export function ConsolidationDetailsDrawer({
 
   const [advancingStatus, setAdvancingStatus] = useState<boolean>(false);
   const [removingCargoId, setRemovingCargoId] = useState<string | null>(null);
-  const [pendingDetach, setPendingDetach] = useState<{ id: string; name: string } | null>(null);
+  const [pendingDeleteCargo, setPendingDeleteCargo] = useState<{ id: string; name: string } | null>(
+    null
+  );
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -125,7 +133,36 @@ export function ConsolidationDetailsDrawer({
     }
   };
 
-  if (!isOpen || !consolidation) return null;
+  if (!isOpen) return null;
+  // Show loading state while fetching details
+  if (isLoadingDetails || !consolidation) {
+    return (
+      <AnimatePresence>
+        <div className="fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-sm overflow-hidden">
+          <div className="absolute inset-0" onClick={onClose} />
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            className="relative z-10 w-full max-w-2xl h-full bg-surface border-l border-border shadow-2xl flex flex-col items-center justify-center gap-4"
+          >
+            <Loader2 className="size-8 animate-spin text-brand-gold" />
+            <span className="text-sm font-bold text-foreground">
+              {t('loadingConsolidationDetails') || 'Loading consolidation details...'}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+  }
 
   const statusBadge = STATUS_BADGES[consolidation.status] || STATUS_BADGES.Waiting;
   const currentStatusIndex = STATUS_ORDER.indexOf(consolidation.status);
@@ -154,28 +191,34 @@ export function ConsolidationDetailsDrawer({
     }
   };
 
-  // Remove single cargo from consolidation – professional approval modal
-  const handleRequestDetach = (cargoId: string, cargoName: string) => {
-    if (!canAssignCargo()) {
-      showNotification('Permission denied: cannot detach cargos', 'error');
+  // Delete single cargo from consolidation – professional approval modal
+  const handleRequestDeleteCargo = (cargoId: string, cargoName: string) => {
+    if (!canDelete('cargo_registrations')) {
+      showNotification('Permission denied: cannot delete cargos', 'error');
       return;
     }
-    setPendingDetach({ id: cargoId, name: cargoName });
+    setPendingDeleteCargo({ id: cargoId, name: cargoName });
   };
 
-  const handleConfirmDetach = async () => {
-    if (!pendingDetach) return;
-    const cargoId = pendingDetach.id;
+  const handleConfirmDeleteCargo = async () => {
+    if (!pendingDeleteCargo) return;
+    const cargoId = pendingDeleteCargo.id;
     setRemovingCargoId(cargoId);
     try {
-      const res = await cargoConsolidationsApi.removeCargos(consolidation.id, [cargoId]);
-      showNotification(t('removedSuccessfully') || 'Cargo detached from truck', 'success');
-      const updated =
-        res?.consolidation || (res as any)?.data || (res as any)?.id ? res : consolidation;
-      onUpdate(updated as ConsolidationListItem);
-      setPendingDetach(null);
+      await cargoRegistrationsApi.delete(cargoId);
+      showNotification(t('deletedSuccessfully') || 'Cargo permanently deleted', 'success');
+      // Re-fetch fresh consolidation details to reflect updated cargos/capacity/financials
+      try {
+        const refreshed = await cargoConsolidationsApi.get(consolidation.id);
+        onUpdate(refreshed);
+      } catch {
+        // Fallback: optimistically remove from local state
+        const updatedCargos = consolidation.cargos.filter((c) => c.id !== cargoId);
+        onUpdate({ ...consolidation, cargos: updatedCargos } as ConsolidationListItem);
+      }
+      setPendingDeleteCargo(null);
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to detach cargo', 'error');
+      showNotification(err?.message || 'Failed to delete cargo', 'error');
     } finally {
       setRemovingCargoId(null);
     }
@@ -679,13 +722,26 @@ export function ConsolidationDetailsDrawer({
                           </span>
                         </div>
 
-                        {canAssignCargo() && (
+                        {onEditCargo && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditCargo(cargo.id, consolidation);
+                            }}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-royal hover:bg-brand-royal/10 transition-colors cursor-pointer"
+                            title={t('editCargo') || 'Edit cargo'}
+                          >
+                            <Edit2 className="size-3.5" />
+                          </button>
+                        )}
+                        {canDelete('cargo_registrations') && (
                           <button
                             type="button"
                             disabled={removingCargoId === cargo.id}
-                            onClick={() => handleRequestDetach(cargo.id, cargo.cargo)}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 transition-colors cursor-pointer"
-                            title="Detach from truck"
+                            onClick={() => handleRequestDeleteCargo(cargo.id, cargo.cargo)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
+                            title={t('deleteCargo') || 'Delete cargo'}
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -700,44 +756,48 @@ export function ConsolidationDetailsDrawer({
         </motion.div>
       </div>
 
-      {/* Detach cargo – general DeletionApprovalModal with custom content (locale-aware) */}
+      {/* Delete cargo – permanent deletion with confirmation */}
       <DeletionApprovalModal
-        isOpen={!!pendingDetach}
-        onClose={() => !removingCargoId && setPendingDetach(null)}
-        onConfirm={handleConfirmDetach}
+        isOpen={!!pendingDeleteCargo}
+        onClose={() => !removingCargoId && setPendingDeleteCargo(null)}
+        onConfirm={handleConfirmDeleteCargo}
         isBusy={!!removingCargoId}
-        variant="warning"
-        title={t('confirmRemoveCargo')}
+        variant="danger"
+        title={t('confirmDeleteCargo') || 'Delete Cargo Registration'}
         description={
-          pendingDetach
-            ? t('confirmRemoveCargoDesc', {
-                name: pendingDetach.name,
+          pendingDeleteCargo
+            ? t('confirmDeleteCargoDesc', {
+                name: pendingDeleteCargo.name,
                 truck: consolidation.container_truck_id,
                 code: consolidation.consolidation_code,
-              })
-            : t('confirmRemoveCargo')
+              }) ||
+              `Are you sure you want to permanently delete "${pendingDeleteCargo.name}" from truck ${consolidation.container_truck_id} [${consolidation.consolidation_code}]? This action cannot be undone.`
+            : t('confirmDeleteCargo') || 'Delete Cargo Registration'
         }
-        confirmLabel={t('actionDetach')}
+        confirmLabel={t('actionDelete') || 'Delete Permanently'}
         cancelLabel={t('actionCancel')}
         entityPreview={
-          pendingDetach ? (
+          pendingDeleteCargo ? (
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-xs font-bold text-foreground">{pendingDetach.name}</div>
+                <div className="text-xs font-bold text-foreground">{pendingDeleteCargo.name}</div>
                 <div className="text-[11px] text-muted-foreground">
-                  {consolidation.container_truck_id} → {t('clientUnassigned')}
+                  {consolidation.container_truck_id} [{consolidation.consolidation_code}]
                 </div>
               </div>
-              <span className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-bold">
-                {t('deleteModalUnlink')}
+              <span className="px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-[11px] font-bold">
+                {t('permanentDeletion') || 'Permanent'}
               </span>
             </div>
           ) : undefined
         }
         consequences={[
-          t('deleteDetachConsequenceFreed'),
-          t('deleteDetachConsequenceMargin'),
-          t('deleteDetachConsequenceRemains'),
+          t('deleteCargoConsequencePermanent') ||
+            'This cargo registration will be permanently deleted from the system',
+          t('deleteCargoConsequenceCapacity') ||
+            'Consolidation capacity and financials will be recalculated',
+          t('deleteCargoConsequenceIrreversible') ||
+            'This action is irreversible — the cargo record cannot be recovered',
         ]}
       />
     </AnimatePresence>

@@ -10,41 +10,40 @@ import {
   ArrowUpRight,
   Smile,
   AlertCircle,
+  Truck,
+  Warehouse,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 import { CATEGORY_CONFIG } from './ExpenseModal';
+import { FinanceSummarySkeleton } from './FinanceSkeletons';
 import type {
   FinanceSummaryResponse,
   ExpenseCategory,
+  ExpenseSection,
   SupportedCurrency,
 } from '../../services/api';
-import { formatMoney } from '../../services/api';
+import { FTL_EXPENSE_CATEGORIES, LTL_EXPENSE_CATEGORIES, formatMoney } from '../../services/api';
 
 interface FinanceSummaryTabProps {
   summaryData: FinanceSummaryResponse | null;
   loading: boolean;
-  onSelectCategoryFilter?: (category: ExpenseCategory) => void;
+  activeSection?: ExpenseSection;
+  onSelectCategoryFilter?: (category: ExpenseCategory, section?: ExpenseSection) => void;
+  onViewAllExpenses?: () => void;
 }
 
 export function FinanceSummaryTab({
   summaryData,
   loading,
+  activeSection = 'ftl',
   onSelectCategoryFilter,
+  onViewAllExpenses,
 }: FinanceSummaryTabProps) {
   const { t } = useTranslation();
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="h-40 rounded-3xl bg-border/20 dark:bg-night-surface border border-border/40 dark:border-night-border"
-          />
-        ))}
-      </div>
-    );
+  if (loading && !summaryData) {
+    return <FinanceSummarySkeleton section={activeSection} />;
   }
 
   if (!summaryData) {
@@ -91,8 +90,16 @@ export function FinanceSummaryTab({
         ? 'finGreetingAfternoon'
         : 'finGreetingEvening';
 
+  const isFtl = activeSection === 'ftl';
+  const categoryList = isFtl ? FTL_EXPENSE_CATEGORIES : LTL_EXPENSE_CATEGORIES;
+
   return (
-    <div className="flex flex-col gap-8">
+    <div
+      className={`flex flex-col gap-8 relative transition-opacity duration-200 ${loading ? 'opacity-80' : 'opacity-100'}`}
+    >
+      {loading && (
+        <div className="absolute -top-3 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-gold to-transparent animate-pulse z-20 rounded-full" />
+      )}
       {/* Emotional Hero Financial Health Banner */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
@@ -146,6 +153,19 @@ export function FinanceSummaryTab({
                       : t('finStatusDeficit')}
                 </span>
               </div>
+
+              {/* Active Stream Indicator */}
+              <span className="text-muted">•</span>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1.5 shadow-2xs ${
+                  isFtl
+                    ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                    : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                }`}
+              >
+                {isFtl ? <Truck className="size-3.5" /> : <Warehouse className="size-3.5" />}
+                <span>{isFtl ? 'FTL' : 'LTL'}</span>
+              </span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-serif font-extrabold text-foreground dark:text-night-text">
@@ -585,23 +605,44 @@ export function FinanceSummaryTab({
         </motion.div>
       </div>
 
-      {/* Expense Category Distribution Cards (with deep-link explore) */}
+      {/* Expense Category Distribution Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-foreground dark:text-night-text">
-            <T k="finDistributionByCategory" />
-          </h3>
-          <span className="text-xs text-muted dark:text-night-muted font-medium">
-            8 Operational Cost Categories
-          </span>
+          <div className="flex items-center gap-2">
+            {isFtl ? (
+              <Truck className="size-4.5 text-blue-600 dark:text-blue-400" />
+            ) : (
+              <Warehouse className="size-4.5 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <h3 className="text-base font-bold text-foreground dark:text-night-text">
+              {isFtl ? 'FTL' : 'LTL'} <T k="finDistributionByCategory" />
+            </h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted dark:text-night-muted font-medium">
+              {categoryList.length} Categories
+            </span>
+            {onViewAllExpenses && (
+              <button
+                onClick={onViewAllExpenses}
+                className="flex items-center gap-1.5 text-xs font-bold text-brand-gold hover:underline cursor-pointer transition-colors"
+              >
+                <T k="finViewAllExpenses" />
+                <ArrowUpRight className="size-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
-          {(Object.keys(CATEGORY_CONFIG) as ExpenseCategory[]).map((catKey) => {
-            const cfg = CATEGORY_CONFIG[catKey];
+        <div
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${
+            isFtl ? 'xl:grid-cols-8' : 'xl:grid-cols-6'
+          } gap-4`}
+        >
+          {categoryList.map((catKey) => {
+            const cfg = CATEGORY_CONFIG[catKey] || CATEGORY_CONFIG.other;
             const Icon = cfg.icon;
 
-            // Find data in expense_distribution if available, fallback to breakdown
             const distItem = expense_distribution?.find((d) => d.category === catKey);
             const catAmount = distItem?.amount ?? expense_breakdown[catKey] ?? 0;
             const catCount = distItem?.count ?? 0;
@@ -638,7 +679,7 @@ export function FinanceSummaryTab({
 
                 {onSelectCategoryFilter && (
                   <button
-                    onClick={() => onSelectCategoryFilter(catKey)}
+                    onClick={() => onSelectCategoryFilter(catKey, activeSection)}
                     className="flex items-center justify-between text-[11px] font-bold text-brand-gold group-hover:underline pt-2 border-t border-border/40 dark:border-night-border cursor-pointer"
                   >
                     <span>

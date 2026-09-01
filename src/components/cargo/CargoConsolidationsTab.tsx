@@ -113,6 +113,7 @@ export function CargoConsolidationsTab() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<ConsolidationListItem | null>(null);
   const [selectedDetails, setSelectedDetails] = useState<ConsolidationListItem | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
   const [assigningConsolidation, setAssigningConsolidation] =
     useState<ConsolidationListItem | null>(null);
 
@@ -122,6 +123,29 @@ export function CargoConsolidationsTab() {
   // Deletion approval
   const [pendingDelete, setPendingDelete] = useState<ConsolidationListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  // Cargo editing from drawer
+  const [editingCargoId, setEditingCargoId] = useState<string | null>(null);
+  const [editingCargoConsolidation, setEditingCargoConsolidation] =
+    useState<ConsolidationListItem | null>(null);
+
+  // Fetch full details from API before showing the drawer
+  const fetchAndShowDetails = useCallback(
+    async (consolidationId: string) => {
+      setIsLoadingDetails(true);
+      setSelectedDetails(null);
+      try {
+        const details = await cargoConsolidationsApi.get(consolidationId);
+        setSelectedDetails(details);
+      } catch (err: any) {
+        showNotification(err?.message || 'Failed to load consolidation details', 'error');
+        setSelectedDetails(null);
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    },
+    [showNotification]
+  );
 
   // Load consolidations
   const loadConsolidations = useCallback(async () => {
@@ -679,7 +703,7 @@ export function CargoConsolidationsTab() {
             return (
               <div
                 key={c.id}
-                onClick={() => setSelectedDetails(c)}
+                onClick={() => fetchAndShowDetails(c.id)}
                 className="group relative p-5 rounded-3xl bg-surface border border-border/80 hover:border-brand-gold/50 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4"
               >
                 {/* Top Card Info */}
@@ -871,7 +895,7 @@ export function CargoConsolidationsTab() {
                       <tr
                         key={c.id}
                         className="hover:bg-muted/20 transition-colors h-14 cursor-pointer"
-                        onClick={() => setSelectedDetails(c)}
+                        onClick={() => fetchAndShowDetails(c.id)}
                       >
                         <td
                           className="py-3 px-3 text-center"
@@ -1145,7 +1169,7 @@ export function CargoConsolidationsTab() {
                       return (
                         <div
                           key={c.id}
-                          onClick={() => setSelectedDetails(c)}
+                          onClick={() => fetchAndShowDetails(c.id)}
                           className="p-3.5 rounded-2xl bg-muted/20 border border-border/80 hover:border-brand-gold/60 shadow-sm hover:shadow transition-all cursor-pointer space-y-2"
                         >
                           <div className="flex items-center justify-between">
@@ -1335,6 +1359,34 @@ export function CargoConsolidationsTab() {
         lockConsolidation={true}
       />
 
+      {/* Edit Cargo from Consolidation Drawer */}
+      <CargoRegistrationModal
+        isOpen={!!editingCargoId}
+        onClose={() => {
+          setEditingCargoId(null);
+          setEditingCargoConsolidation(null);
+        }}
+        onSuccess={async () => {
+          setEditingCargoId(null);
+          setEditingCargoConsolidation(null);
+          await loadConsolidations();
+          if (editingCargoConsolidation) {
+            try {
+              const updated = await cargoConsolidationsApi.get(editingCargoConsolidation.id);
+              setSelectedDetails(updated);
+            } catch {
+              // fallback — drawer stays with previous data
+            }
+          }
+        }}
+        editingId={editingCargoId}
+        initialCargoType="LTL"
+        lockCargoType="LTL"
+        initialConsolidationId={editingCargoConsolidation?.id || null}
+        initialContainerTruckId={editingCargoConsolidation?.container_truck_id || null}
+        lockConsolidation={true}
+      />
+
       {/* Consolidation Create & Edit Modal */}
       <ConsolidationModal
         isOpen={isModalOpen}
@@ -1347,9 +1399,13 @@ export function CargoConsolidationsTab() {
 
       {/* Consolidation Deep-Dive Drawer */}
       <ConsolidationDetailsDrawer
-        isOpen={!!selectedDetails}
-        onClose={() => setSelectedDetails(null)}
+        isOpen={!!selectedDetails || isLoadingDetails}
+        onClose={() => {
+          setSelectedDetails(null);
+          setIsLoadingDetails(false);
+        }}
         consolidation={selectedDetails}
+        isLoadingDetails={isLoadingDetails}
         onEdit={(item) => {
           setSelectedDetails(null);
           handleOpenEdit(item);
@@ -1361,6 +1417,10 @@ export function CargoConsolidationsTab() {
         onAddLtlCargo={(item) => {
           setActiveConsolidationForNewCargo(item);
           setIsNewCargoModalOpen(true);
+        }}
+        onEditCargo={(cargoId, consolidation) => {
+          setEditingCargoId(cargoId);
+          setEditingCargoConsolidation(consolidation);
         }}
         onUpdate={(updated) => {
           setSelectedDetails(updated);

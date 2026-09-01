@@ -19,6 +19,7 @@ import {
   CheckSquare,
   FileText,
   Check,
+  BarChart3,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -36,6 +37,7 @@ export type PageId =
   | 'departments'
   | 'profile'
   | 'cargo'
+  | 'kpi'
   | 'finance'
   | 'roles'
   | 'tasks';
@@ -296,7 +298,14 @@ export function Sidebar({
     {
       id: 'cargo',
       icon: <Package className="size-5 shrink-0" />,
-      label: t('navCargoKpi'),
+      label: t('navCargo'),
+      moduleKey: 'cargo_kpi',
+      category: 'operations',
+    },
+    {
+      id: 'kpi',
+      icon: <BarChart3 className="size-5 shrink-0" />,
+      label: t('navKpi'),
       moduleKey: 'cargo_kpi',
       category: 'operations',
     },

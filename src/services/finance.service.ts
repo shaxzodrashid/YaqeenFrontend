@@ -1,11 +1,59 @@
 import { request, requestNoContent } from './httpClient';
 import type { SupportedCurrency, CbuRateItem } from '../types/currency';
 
+export type ExpenseSection = 'ftl' | 'ltl';
+export type ExpenseSectionFilter = 'all' | 'ftl' | 'ltl';
+
 export type ExpenseCategory =
-  'tax' | 'utility' | 'rent' | 'salary_payout' | 'cleaner' | 'kpi' | 'food' | 'other';
+  | 'tax'
+  | 'utility'
+  | 'rent'
+  | 'salary_payout'
+  | 'cleaner'
+  | 'kpi'
+  | 'food'
+  | 'other'
+  | 'china_warehouse'
+  | 'firm_service'
+  | 'declarant';
+
+export const FTL_EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  'tax',
+  'utility',
+  'rent',
+  'salary_payout',
+  'cleaner',
+  'kpi',
+  'food',
+  'other',
+];
+
+export const LTL_EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  'rent',
+  'salary_payout',
+  'china_warehouse',
+  'firm_service',
+  'food',
+  'declarant',
+];
+
+export const ALL_EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  'tax',
+  'utility',
+  'rent',
+  'salary_payout',
+  'cleaner',
+  'kpi',
+  'food',
+  'other',
+  'china_warehouse',
+  'firm_service',
+  'declarant',
+];
 
 export interface Expense {
   id: string;
+  section: ExpenseSection;
   category: ExpenseCategory;
   amount: number;
   currency?: SupportedCurrency;
@@ -17,6 +65,7 @@ export interface Expense {
 }
 
 export interface CreateExpenseDto {
+  section: ExpenseSection;
   category: ExpenseCategory;
   amount: number;
   currency?: SupportedCurrency;
@@ -26,6 +75,7 @@ export interface CreateExpenseDto {
 }
 
 export interface UpdateExpenseDto {
+  section?: ExpenseSection;
   category?: ExpenseCategory;
   amount?: number;
   currency?: SupportedCurrency;
@@ -35,6 +85,7 @@ export interface UpdateExpenseDto {
 }
 
 export interface ExpenseListParams {
+  section?: ExpenseSection;
   category?: string;
   employee_id?: string;
   start_date?: string;
@@ -59,15 +110,18 @@ export interface ExpensePaginatedResponse {
 
 export interface CategoryBreakdownItem {
   category: ExpenseCategory;
+  section?: ExpenseSection;
   label: string;
-  description: string;
+  description?: string;
   total_amount: number;
   expense_count: number;
 }
 
 export interface CategoryBreakdownResponse {
+  section?: ExpenseSection;
   period_start: string;
   period_end: string;
+  base_currency?: string;
   grand_total: number;
   categories: CategoryBreakdownItem[];
 }
@@ -78,6 +132,8 @@ export interface FinanceSummaryMetrics {
   gross_profit: number;
   gross_margin?: number;
   operational_expenses: number;
+  ftl_operational_expenses?: number;
+  ltl_operational_expenses?: number;
   fixed_salaries_expense: number;
   kpi_bonuses_expense: number;
   total_payroll_expense: number;
@@ -108,8 +164,9 @@ export interface FinanceFlowDiagram {
 
 export interface ExpenseDistributionItem {
   category: ExpenseCategory;
+  section?: ExpenseSection;
   label: string;
-  description: string;
+  description?: string;
   amount: number;
   percentage: number;
   count: number;
@@ -138,8 +195,25 @@ export interface FinancePeriodComparison {
   gross_profit_growth_percentage?: number;
 }
 
+export interface SectionSummaryBreakdown {
+  section: ExpenseSection;
+  label: string;
+  gross_revenue: number;
+  cost_of_goods_sold: number;
+  gross_profit: number;
+  operational_expenses: number;
+  ftl_operational_expenses?: number;
+  ltl_operational_expenses?: number;
+  kpi_bonuses_expense: number;
+  total_expenses: number;
+  net_profit: number;
+  expense_breakdown: Partial<Record<ExpenseCategory, number>>;
+  expense_distribution?: ExpenseDistributionItem[];
+}
+
 export interface FinanceSummaryResponse {
   currency?: SupportedCurrency;
+  section?: 'all' | ExpenseSection;
   normalized_currency_label?: string;
   period: {
     start_date: string;
@@ -147,6 +221,10 @@ export interface FinanceSummaryResponse {
   };
   cbu_rates?: Record<string, CbuRateItem>;
   summary: FinanceSummaryMetrics;
+  sections_breakdown?: {
+    ftl?: SectionSummaryBreakdown;
+    ltl?: SectionSummaryBreakdown;
+  };
   flow_diagram?: FinanceFlowDiagram;
   expense_distribution?: ExpenseDistributionItem[];
   expense_breakdown: Partial<Record<ExpenseCategory, number>>;
@@ -201,12 +279,14 @@ export interface BatchUpdateSalariesDto {
 export const financeApi = {
   // A. Summary & Analytics
   getSummary: (params?: {
+    section?: 'all' | ExpenseSection;
     period?: string;
     start_date?: string;
     end_date?: string;
     currency?: SupportedCurrency;
   }) => {
     const q = new URLSearchParams();
+    if (params?.section && params.section !== 'all') q.set('section', params.section);
     if (params?.period) q.set('period', params.period);
     if (params?.start_date) q.set('start_date', params.start_date);
     if (params?.end_date) q.set('end_date', params.end_date);
@@ -229,6 +309,7 @@ export const financeApi = {
 
   listExpenses: (params?: ExpenseListParams) => {
     const q = new URLSearchParams();
+    if (params?.section) q.set('section', params.section);
     if (params?.category) q.set('category', params.category);
     if (params?.employee_id) q.set('employee_id', params.employee_id);
     if (params?.start_date) q.set('start_date', params.start_date);
@@ -247,8 +328,14 @@ export const financeApi = {
     );
   },
 
-  getCategoryBreakdown: (params?: { period?: string; start_date?: string; end_date?: string }) => {
+  getCategoryBreakdown: (params?: {
+    section?: ExpenseSection;
+    period?: string;
+    start_date?: string;
+    end_date?: string;
+  }) => {
     const q = new URLSearchParams();
+    if (params?.section) q.set('section', params.section);
     if (params?.period) q.set('period', params.period);
     if (params?.start_date) q.set('start_date', params.start_date);
     if (params?.end_date) q.set('end_date', params.end_date);

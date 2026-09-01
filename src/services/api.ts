@@ -85,6 +85,8 @@ export type {
 } from './cargoKpi.service';
 
 export type {
+  ExpenseSection,
+  ExpenseSectionFilter,
   ExpenseCategory,
   Expense,
   CreateExpenseDto,
@@ -99,6 +101,7 @@ export type {
   ExpenseDistributionItem,
   PreviousPeriodSummary,
   FinancePeriodComparison,
+  SectionSummaryBreakdown,
   FinanceSummaryResponse,
   EmployeeSalaryInfo,
   DepartmentSalaryGroup,
@@ -106,6 +109,11 @@ export type {
   UpdateEmployeeSalaryDto,
   BatchUpdateSalaryItem,
   BatchUpdateSalariesDto,
+} from './finance.service';
+export {
+  FTL_EXPENSE_CATEGORIES,
+  LTL_EXPENSE_CATEGORIES,
+  ALL_EXPENSE_CATEGORIES,
 } from './finance.service';
 
 export type {

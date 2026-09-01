@@ -12,7 +12,8 @@ import { EmployeesPage } from './EmployeesPage';
 import { ClientsPage } from './ClientsPage';
 import { DepartmentsPage } from './DepartmentsPage';
 import { EmployeeProfilePage } from './EmployeeProfilePage';
-import { CargoKpiPage } from './cargo/CargoKpiPage';
+import { CargoPage } from './cargo/CargoPage';
+import { KpiPage } from './cargo/KpiPage';
 import { FinancePage } from './finance/FinancePage';
 import { RolesPage } from './roles/RolesPage';
 import { TasksPage } from './tasks/TasksPage';
@@ -35,6 +36,7 @@ const pageModuleMap: Record<string, string> = {
   clients: 'clients',
   departments: 'departments',
   cargo: 'cargo_kpi',
+  kpi: 'cargo_kpi',
   finance: 'finance',
   roles: 'roles',
   tasks: 'tasks',
@@ -88,7 +90,9 @@ export function Dashboard({
       case 'departments':
         return <DepartmentsPage />;
       case 'cargo':
-        return <CargoKpiPage />;
+        return <CargoPage />;
+      case 'kpi':
+        return <KpiPage />;
       case 'finance':
         return <FinancePage />;
       case 'roles':

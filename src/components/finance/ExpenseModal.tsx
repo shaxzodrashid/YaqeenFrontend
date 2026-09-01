@@ -19,6 +19,10 @@ import {
   ChevronDown,
   Check,
   Info,
+  Truck,
+  Warehouse,
+  Briefcase,
+  FileCheck,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -27,10 +31,12 @@ import { api } from '../../services/api';
 import type {
   Expense,
   ExpenseCategory,
+  ExpenseSection,
   CreateExpenseDto,
   UpdateExpenseDto,
   SupportedCurrency,
 } from '../../services/api';
+import { FTL_EXPENSE_CATEGORIES, LTL_EXPENSE_CATEGORIES } from '../../services/api';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -39,6 +45,7 @@ interface ExpenseModalProps {
   expenseToEdit?: Expense | null;
   defaultCurrency?: SupportedCurrency;
   defaultCategory?: ExpenseCategory;
+  defaultSection?: ExpenseSection;
 }
 
 export const CATEGORY_CONFIG: Record<
@@ -55,7 +62,7 @@ export const CATEGORY_CONFIG: Record<
 > = {
   tax: {
     labelKey: 'finCatTax',
-    defaultLabel: 'Taxes',
+    defaultLabel: 'Nalog',
     descriptionKey: 'Government taxes, official fees, legal payments',
     icon: Receipt,
     colorClass: 'text-amber-600 dark:text-amber-400',
@@ -64,7 +71,7 @@ export const CATEGORY_CONFIG: Record<
   },
   utility: {
     labelKey: 'finCatUtility',
-    defaultLabel: 'Utilities',
+    defaultLabel: 'Komunalka',
     descriptionKey: 'Electricity, internet, water, office utilities',
     icon: Zap,
     colorClass: 'text-yellow-600 dark:text-yellow-400',
@@ -73,7 +80,7 @@ export const CATEGORY_CONFIG: Record<
   },
   rent: {
     labelKey: 'finCatRent',
-    defaultLabel: 'Rent',
+    defaultLabel: 'Arenda',
     descriptionKey: 'Office space rent, warehouse space rent',
     icon: Building,
     colorClass: 'text-blue-600 dark:text-blue-400',
@@ -82,7 +89,7 @@ export const CATEGORY_CONFIG: Record<
   },
   salary_payout: {
     labelKey: 'finCatSalaryPayout',
-    defaultLabel: 'Salary Payouts',
+    defaultLabel: 'Oylik',
     descriptionKey: 'Manual cash or card salary payouts',
     icon: Banknote,
     colorClass: 'text-emerald-600 dark:text-emerald-400',
@@ -100,7 +107,7 @@ export const CATEGORY_CONFIG: Record<
   },
   kpi: {
     labelKey: 'finCatKpi',
-    defaultLabel: 'KPI & Bonuses',
+    defaultLabel: 'KPI bonus',
     descriptionKey: 'Employee KPI payouts, performance bonuses, incentives',
     icon: Award,
     colorClass: 'text-indigo-600 dark:text-indigo-400',
@@ -109,7 +116,7 @@ export const CATEGORY_CONFIG: Record<
   },
   food: {
     labelKey: 'finCatFood',
-    defaultLabel: 'Food & Meals',
+    defaultLabel: 'Pitaniya',
     descriptionKey: 'Staff meals, office tea/coffee, snacks, food supplies',
     icon: Utensils,
     colorClass: 'text-orange-600 dark:text-orange-400',
@@ -118,12 +125,39 @@ export const CATEGORY_CONFIG: Record<
   },
   other: {
     labelKey: 'finCatOther',
-    defaultLabel: 'Other Expenses',
+    defaultLabel: 'Prochiy',
     descriptionKey: 'Miscellaneous unclassified operational costs',
     icon: Tag,
     colorClass: 'text-slate-600 dark:text-slate-400',
     bgClass: 'bg-slate-500/10 dark:bg-slate-500/15',
     borderClass: 'border-slate-500/30',
+  },
+  china_warehouse: {
+    labelKey: 'finCatChinaWarehouse',
+    defaultLabel: 'Xitoy sklad',
+    descriptionKey: 'China consolidation warehouse storage & handling costs',
+    icon: Warehouse,
+    colorClass: 'text-cyan-600 dark:text-cyan-400',
+    bgClass: 'bg-cyan-500/10 dark:bg-cyan-500/15',
+    borderClass: 'border-cyan-500/30',
+  },
+  firm_service: {
+    labelKey: 'finCatFirmService',
+    defaultLabel: 'Firma usluga',
+    descriptionKey: 'Third-party agency fees, brokerage, partner firm fees',
+    icon: Briefcase,
+    colorClass: 'text-sky-600 dark:text-sky-400',
+    bgClass: 'bg-sky-500/10 dark:bg-sky-500/15',
+    borderClass: 'border-sky-500/30',
+  },
+  declarant: {
+    labelKey: 'finCatDeclarant',
+    defaultLabel: 'Deklarant',
+    descriptionKey: 'Customs declaration processing and declarant fees',
+    icon: FileCheck,
+    colorClass: 'text-rose-600 dark:text-rose-400',
+    bgClass: 'bg-rose-500/10 dark:bg-rose-500/15',
+    borderClass: 'border-rose-500/30',
   },
 };
 
@@ -152,12 +186,14 @@ export function ExpenseModal({
   onSuccess,
   expenseToEdit,
   defaultCurrency = 'USD',
-  defaultCategory = 'other',
+  defaultCategory,
+  defaultSection = 'ftl',
 }: ExpenseModalProps) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
 
-  const [category, setCategory] = useState<ExpenseCategory>(defaultCategory);
+  const [section, setSection] = useState<ExpenseSection>(defaultSection);
+  const [category, setCategory] = useState<ExpenseCategory>(defaultCategory || 'other');
   const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
   const [currency, setCurrency] = useState<SupportedCurrency>(defaultCurrency);
   const [amount, setAmount] = useState<string>('');
@@ -171,6 +207,11 @@ export function ExpenseModal({
   );
   const [loadingEmployees, setLoadingEmployees] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Available categories for currently selected section
+  const availableCategories = useMemo(() => {
+    return section === 'ftl' ? FTL_EXPENSE_CATEGORIES : LTL_EXPENSE_CATEGORIES;
+  }, [section]);
 
   // Fetch employees list for dropdown selection
   useEffect(() => {
@@ -225,8 +266,11 @@ export function ExpenseModal({
     fetchEmployeesList();
   }, [isOpen]);
 
+  // Sync state on edit / open
   useEffect(() => {
     if (expenseToEdit) {
+      const editSec = expenseToEdit.section || defaultSection || 'ftl';
+      setSection(editSec);
       setCategory(expenseToEdit.category);
       setCurrency(expenseToEdit.currency || defaultCurrency);
       setAmount(String(expenseToEdit.amount));
@@ -234,14 +278,26 @@ export function ExpenseModal({
       setExpenseDate(expenseToEdit.expense_date.split('T')[0]);
       setEmployeeId(expenseToEdit.employee_id || '');
     } else {
-      setCategory(defaultCategory);
+      const initialSec = defaultSection || 'ftl';
+      setSection(initialSec);
+      const initialCat = defaultCategory || (initialSec === 'ftl' ? 'other' : 'food');
+      setCategory(initialCat);
       setCurrency(defaultCurrency);
       setAmount('');
       setDescription('');
       setExpenseDate(new Date().toISOString().split('T')[0]);
       setEmployeeId('');
     }
-  }, [expenseToEdit, isOpen, defaultCurrency, defaultCategory]);
+  }, [expenseToEdit, isOpen, defaultCurrency, defaultCategory, defaultSection]);
+
+  // Handle section switch - auto-correct category if not available in new section
+  const handleSectionChange = (newSec: ExpenseSection) => {
+    setSection(newSec);
+    const validCats = newSec === 'ftl' ? FTL_EXPENSE_CATEGORIES : LTL_EXPENSE_CATEGORIES;
+    if (!validCats.includes(category)) {
+      setCategory(newSec === 'ftl' ? 'other' : 'food');
+    }
+  };
 
   const isSalaryPayout = category === 'salary_payout';
 
@@ -276,6 +332,7 @@ export function ExpenseModal({
     try {
       if (expenseToEdit) {
         const dto: UpdateExpenseDto = {
+          section,
           category,
           amount: parsedAmount,
           currency,
@@ -287,6 +344,7 @@ export function ExpenseModal({
         showNotification(t('finNotifUpdated'), 'success');
       } else {
         const dto: CreateExpenseDto = {
+          section,
           category,
           amount: parsedAmount,
           currency,
@@ -356,11 +414,101 @@ export function ExpenseModal({
               onSubmit={handleSubmit}
               className="p-6 flex flex-col gap-5 max-h-[80vh] overflow-y-auto"
             >
+              {/* Business Section Selector (FTL vs LTL) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted dark:text-night-muted mb-2">
+                  <T k="finSelectSection" />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* FTL Segment Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSectionChange('ftl')}
+                    className={`relative flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer text-left shadow-2xs ${
+                      section === 'ftl'
+                        ? 'bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30'
+                        : 'bg-field-background dark:bg-night-field border-border/70 hover:border-blue-500/30'
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-xl shrink-0 ${
+                        section === 'ftl'
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-border/30 text-muted'
+                      }`}
+                    >
+                      <Truck className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={`text-xs font-extrabold block ${
+                          section === 'ftl'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-foreground dark:text-night-text'
+                        }`}
+                      >
+                        FTL
+                      </span>
+                    </div>
+                    {section === 'ftl' && (
+                      <Check className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* LTL Segment Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSectionChange('ltl')}
+                    className={`relative flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer text-left shadow-2xs ${
+                      section === 'ltl'
+                        ? 'bg-emerald-500/10 border-emerald-500/50 ring-2 ring-emerald-500/30'
+                        : 'bg-field-background dark:bg-night-field border-border/70 hover:border-emerald-500/30'
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-xl shrink-0 ${
+                        section === 'ltl'
+                          ? 'bg-emerald-500 text-white shadow-sm'
+                          : 'bg-border/30 text-muted'
+                      }`}
+                    >
+                      <Warehouse className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={`text-xs font-extrabold block ${
+                          section === 'ltl'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-foreground dark:text-night-text'
+                        }`}
+                      >
+                        LTL
+                      </span>
+                    </div>
+                    {section === 'ltl' && (
+                      <Check className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
               {/* Category Selector Dropdown */}
               <div className="relative">
-                <label className="block text-xs font-bold uppercase tracking-wider text-muted dark:text-night-muted mb-1.5">
-                  <T k="finExpenseCategory" />
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted dark:text-night-muted">
+                    <T k="finExpenseCategory" />
+                  </label>
+                  <span
+                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                      section === 'ftl'
+                        ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25'
+                        : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                    }`}
+                  >
+                    {section.toUpperCase()} Categories ({availableCategories.length})
+                  </span>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
@@ -407,8 +555,8 @@ export function ExpenseModal({
                       transition={{ duration: 0.15, ease: 'easeOut' }}
                       className="absolute left-0 right-0 mt-2 bg-surface dark:bg-night-surface border border-border dark:border-night-border rounded-2xl shadow-2xl z-20 max-h-64 overflow-y-auto p-1.5 flex flex-col gap-1"
                     >
-                      {(Object.keys(CATEGORY_CONFIG) as ExpenseCategory[]).map((catKey) => {
-                        const cfg = CATEGORY_CONFIG[catKey];
+                      {availableCategories.map((catKey) => {
+                        const cfg = CATEGORY_CONFIG[catKey] || CATEGORY_CONFIG.other;
                         const Icon = cfg.icon;
                         const isSelected = category === catKey;
                         return (
