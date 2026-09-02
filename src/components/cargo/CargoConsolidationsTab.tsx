@@ -44,7 +44,7 @@ import type {
 } from '../../services/cargoConsolidations.service';
 import { formatMoney } from '../../services/api';
 import { ConsolidationModal } from './ConsolidationModal';
-import { ConsolidationDetailsDrawer } from './ConsolidationDetailsDrawer';
+import { ConsolidationDetailsModal } from './ConsolidationDetailsModal';
 import { AssignCargosModal } from './AssignCargosModal';
 import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
@@ -1397,8 +1397,8 @@ export function CargoConsolidationsTab() {
         editingItem={editingItem}
       />
 
-      {/* Consolidation Deep-Dive Drawer */}
-      <ConsolidationDetailsDrawer
+      {/* Consolidation Deep-Dive Details Modal */}
+      <ConsolidationDetailsModal
         isOpen={!!selectedDetails || isLoadingDetails}
         onClose={() => {
           setSelectedDetails(null);

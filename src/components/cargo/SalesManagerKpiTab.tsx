@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   HelpCircle,
+  Truck,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -35,6 +36,7 @@ import type {
 } from '../../types/salesManagerKpi';
 import { EmployeeSelect } from './EmployeeSelect';
 import { SalesCareerSystemVisual } from './SalesCareerSystemVisual';
+import { EmployeeCargosMonitoringTable } from './EmployeeCargosMonitoringTable';
 import {
   CalculateEvaluationsModal,
   ApproveSrCheckModal,
@@ -42,12 +44,15 @@ import {
   UpdateEmployeeLevelModal,
 } from './SalesManagerKpiModals';
 
+export type SalesManagerSubTab = 'evaluations' | 'cargos-monitoring';
+
 export function SalesManagerKpiTab() {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canUpdate, canCreate } = usePermissions();
 
-  const [month, setMonth] = useState<string>('2026-07');
+  const [activeSubTab, setActiveSubTab] = useState<SalesManagerSubTab>('evaluations');
+  const [month, setMonth] = useState<string>('2026-08');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [evaluations, setEvaluations] = useState<SalesManagerEvaluation[]>([]);
@@ -91,6 +96,7 @@ export function SalesManagerKpiTab() {
     month: string;
     employee_id?: string;
     additional_bonus_amount?: number;
+    level?: string;
   }) => {
     try {
       const res = await salesManagerKpiApi.calculateEvaluations(data);
@@ -283,67 +289,97 @@ export function SalesManagerKpiTab() {
           </div>
         </div>
 
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-300 font-semibold">Month:</span>
-            <input
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 text-white text-xs font-semibold focus:outline-none cursor-pointer"
-            />
+        {/* Sub-Tab Switcher Bar inside Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
+          <div className="inline-flex p-1 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md">
+            <button
+              onClick={() => setActiveSubTab('evaluations')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeSubTab === 'evaluations'
+                  ? 'bg-brand-gold text-brand-navy shadow-sm font-black'
+                  : 'text-neutral-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Award className="size-3.5" />
+              <span>Evaluations & Career Rankings</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSubTab('cargos-monitoring')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeSubTab === 'cargos-monitoring'
+                  ? 'bg-brand-gold text-brand-navy shadow-sm font-black'
+                  : 'text-neutral-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Truck className="size-3.5" />
+              <span>Assigned Cargos Monitoring & KPI</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-300 font-semibold">Status:</span>
-            <Select
-              size="sm"
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              placeholder={t('smkFilterStatus') || 'All Statuses'}
-              allowClear
-              fullWidth={false}
-              className="w-52"
-              aria-label={t('smkFilterStatus') || 'All Statuses'}
-              options={[
-                { value: 'APPROVED', label: t('smkStatusApproved') || 'Approved' },
-                {
-                  value: 'PENDING_SR_CHECK_APPROVAL',
-                  label: t('smkStatusPendingSrCheck') || 'Pending SR Check',
-                },
-                {
-                  value: 'DEMOTION_PENDING_REVIEW',
-                  label: t('smkStatusDemotionPending') || 'Demotion Pending',
-                },
-                {
-                  value: 'DEMOTION_APPROVED',
-                  label: t('smkStatusDemotionApproved') || 'Demoted',
-                },
-                {
-                  value: 'DEMOTION_REJECTED',
-                  label: t('smkStatusDemotionRejected') || 'Level Retained',
-                },
-              ]}
-            />
-          </div>
+          {activeSubTab === 'evaluations' && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-300 font-semibold">Month:</span>
+                <input
+                  type="month"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 text-white text-xs font-semibold focus:outline-none cursor-pointer"
+                />
+              </div>
 
-          <div className="w-48">
-            <EmployeeSelect
-              value={selectedEmployeeId}
-              onChange={setSelectedEmployeeId}
-              placeholder={t('smkFilterEmployee') || 'All Sales Managers'}
-            />
-          </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-300 font-semibold">Status:</span>
+                <Select
+                  size="sm"
+                  value={selectedStatus}
+                  onChange={setSelectedStatus}
+                  placeholder={t('smkFilterStatus') || 'All Statuses'}
+                  allowClear
+                  fullWidth={false}
+                  className="w-52"
+                  aria-label={t('smkFilterStatus') || 'All Statuses'}
+                  options={[
+                    { value: 'APPROVED', label: t('smkStatusApproved') || 'Approved' },
+                    {
+                      value: 'PENDING_SR_CHECK_APPROVAL',
+                      label: t('smkStatusPendingSrCheck') || 'Pending SR Check',
+                    },
+                    {
+                      value: 'DEMOTION_PENDING_REVIEW',
+                      label: t('smkStatusDemotionPending') || 'Demotion Pending',
+                    },
+                    {
+                      value: 'DEMOTION_APPROVED',
+                      label: t('smkStatusDemotionApproved') || 'Demoted',
+                    },
+                    {
+                      value: 'DEMOTION_REJECTED',
+                      label: t('smkStatusDemotionRejected') || 'Level Retained',
+                    },
+                  ]}
+                />
+              </div>
 
-          <button
-            onClick={loadEvaluations}
-            disabled={loading}
-            className="p-2 rounded-xl border border-white/20 hover:bg-white/10 text-white transition-all cursor-pointer ml-auto"
-            title="Refresh list"
-          >
-            <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+              <div className="w-48">
+                <EmployeeSelect
+                  value={selectedEmployeeId}
+                  onChange={setSelectedEmployeeId}
+                  placeholder={t('smkFilterEmployee') || 'All Sales Managers'}
+                />
+              </div>
+
+              <button
+                onClick={loadEvaluations}
+                disabled={loading}
+                className="p-2 rounded-xl border border-white/20 hover:bg-white/10 text-white transition-all cursor-pointer ml-auto"
+                title="Refresh list"
+              >
+                <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -442,270 +478,289 @@ export function SalesManagerKpiTab() {
       </AnimatePresence>
 
       {/* ----------------------------------------------------------------- */}
-      {/* EVALUATIONS GRID / LIST                                           */}
+      {/* SUB-TAB 1: EVALUATIONS & RANKINGS VIEW                            */}
       {/* ----------------------------------------------------------------- */}
-      {evaluations.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm space-y-3">
-          <Award className="size-12 text-muted-foreground mx-auto opacity-50" />
-          <h3 className="text-base font-bold text-foreground">
-            No Sales Manager Evaluations Found
-          </h3>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Click <strong>"Calculate Evaluations"</strong> above to compute monthly sales, bonuses,
-            and career rank evaluations for {month}.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {evaluations.map((item) => {
-            const totalSalesNum = Number(item.total_sales);
-            const targetMinNum = Number(item.plan_target_min);
-            const targetMaxNum = Number(item.plan_target_max);
-            const salesPct =
-              targetMinNum > 0 ? Math.round((totalSalesNum / targetMinNum) * 100) : 100;
+      {activeSubTab === 'evaluations' && (
+        <>
+          {evaluations.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm space-y-3">
+              <Award className="size-12 text-muted-foreground mx-auto opacity-50" />
+              <h3 className="text-base font-bold text-foreground">
+                No Sales Manager Evaluations Found
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Click <strong>"Calculate Evaluations"</strong> above to compute monthly sales,
+                bonuses, and career rank evaluations for {month}.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {evaluations.map((item) => {
+                const totalSalesNum = Number(item.total_sales);
+                const targetMinNum = Number(item.plan_target_min);
+                const targetMaxNum = Number(item.plan_target_max);
+                const salesPct =
+                  targetMinNum > 0 ? Math.round((totalSalesNum / targetMinNum) * 100) : 100;
 
-            const avgCheckNum = Number(item.average_check);
-            const srMinNum = Number(item.sr_check_min);
-            const srTargetNum = Number(item.sr_check_target);
+                const avgCheckNum = Number(item.average_check);
+                const srMinNum = Number(item.sr_check_min);
+                const srTargetNum = Number(item.sr_check_target);
 
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-6 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm hover:shadow-md transition-all space-y-5"
-              >
-                {/* Header Row: Manager Info + Status Badge + Actions */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
-                  <div className="flex items-center gap-3.5">
-                    <div className="size-11 rounded-2xl bg-gradient-to-br from-brand-navy to-brand-royal text-brand-gold flex items-center justify-center font-bold text-base border border-brand-gold/30 shadow-sm">
-                      {(item.employee_name || 'M')[0]}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2.5">
-                        <h3 className="text-base font-bold text-foreground">
-                          {item.employee_name || 'Sales Manager'}
-                        </h3>
-                        {getLevelBadge(item.career_level)}
-                        <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[11px] font-bold flex items-center gap-1">
-                          <Users className="size-3" />
-                          {item.mentees_count || 0} mentees
-                        </span>
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm hover:shadow-md transition-all space-y-5"
+                  >
+                    {/* Header Row: Manager Info + Status Badge + Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                      <div className="flex items-center gap-3.5">
+                        <div className="size-11 rounded-2xl bg-gradient-to-br from-brand-navy to-brand-royal text-brand-gold flex items-center justify-center font-bold text-base border border-brand-gold/30 shadow-sm">
+                          {(item.employee_name || 'M')[0]}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2.5">
+                            <h3 className="text-base font-bold text-foreground">
+                              {item.employee_name || 'Sales Manager'}
+                            </h3>
+                            {getLevelBadge(item.career_level)}
+                            <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[11px] font-bold flex items-center gap-1">
+                              <Users className="size-3" />
+                              {item.mentees_count || 0} mentees
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Evaluation Month:{' '}
+                            <span className="font-semibold text-foreground">{item.month}</span> •
+                            Deals:{' '}
+                            <span className="font-semibold text-foreground">{item.deal_count}</span>
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Evaluation Month:{' '}
-                        <span className="font-semibold text-foreground">{item.month}</span> • Deals:{' '}
-                        <span className="font-semibold text-foreground">{item.deal_count}</span>
-                      </p>
+
+                      <div className="flex items-center gap-3">
+                        {getStatusBadge(item.approval_status)}
+
+                        {/* ROP/CEO Action Buttons */}
+                        {canUpdate('cargo_kpi') &&
+                          item.approval_status === 'PENDING_SR_CHECK_APPROVAL' && (
+                            <button
+                              onClick={() => setActiveSrCheckEval(item)}
+                              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <CheckCircle className="size-3.5" />
+                              <span>
+                                <T k="smkApproveSrCheck" />
+                              </span>
+                            </button>
+                          )}
+
+                        {canUpdate('cargo_kpi') &&
+                          item.approval_status === 'DEMOTION_PENDING_REVIEW' && (
+                            <button
+                              onClick={() => setActiveDemotionEval(item)}
+                              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ShieldAlert className="size-3.5" />
+                              <span>
+                                <T k="smkReviewDemotion" />
+                              </span>
+                            </button>
+                          )}
+
+                        {canUpdate('cargo_kpi') && (
+                          <button
+                            onClick={() =>
+                              setActiveLevelEmp({
+                                id: item.employee_id,
+                                name: item.employee_name,
+                                level: item.career_level,
+                                mentees: item.mentees_count,
+                              })
+                            }
+                            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer border border-border"
+                            title={t('smkUpdateLevelMentees') || 'Update Rank & Mentees'}
+                          >
+                            <Edit2 className="size-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3">
-                    {getStatusBadge(item.approval_status)}
-
-                    {/* ROP/CEO Action Buttons */}
-                    {canUpdate('cargo_kpi') &&
-                      item.approval_status === 'PENDING_SR_CHECK_APPROVAL' && (
-                        <button
-                          onClick={() => setActiveSrCheckEval(item)}
-                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <CheckCircle className="size-3.5" />
-                          <span>
-                            <T k="smkApproveSrCheck" />
+                    {/* Main 3 Column Info Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                      {/* Column 1: Sales Target & Progress */}
+                      <div className="md:col-span-4 p-4 rounded-xl bg-muted/30 border border-border space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-muted-foreground uppercase tracking-wider">
+                            <T k="smkSalesProgress" />
                           </span>
-                        </button>
-                      )}
-
-                    {canUpdate('cargo_kpi') &&
-                      item.approval_status === 'DEMOTION_PENDING_REVIEW' && (
-                        <button
-                          onClick={() => setActiveDemotionEval(item)}
-                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <ShieldAlert className="size-3.5" />
-                          <span>
-                            <T k="smkReviewDemotion" />
-                          </span>
-                        </button>
-                      )}
-
-                    {canUpdate('cargo_kpi') && (
-                      <button
-                        onClick={() =>
-                          setActiveLevelEmp({
-                            id: item.employee_id,
-                            name: item.employee_name,
-                            level: item.career_level,
-                            mentees: item.mentees_count,
-                          })
-                        }
-                        className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer border border-border"
-                        title={t('smkUpdateLevelMentees') || 'Update Rank & Mentees'}
-                      >
-                        <Edit2 className="size-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Main 3 Column Info Section */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                  {/* Column 1: Sales Target & Progress */}
-                  <div className="md:col-span-4 p-4 rounded-xl bg-muted/30 border border-border space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-muted-foreground uppercase tracking-wider">
-                        <T k="smkSalesProgress" />
-                      </span>
-                      <span
-                        className={`font-black ${salesPct >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}
-                      >
-                        {salesPct}%
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-border rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 ${
-                          salesPct >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
-                        }`}
-                        style={{ width: `${Math.min(salesPct, 100)}%` }}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                      <div>
-                        <span className="text-muted-foreground block text-[11px]">Total Sales</span>
-                        <strong className="text-foreground text-sm">
-                          ${Number(item.total_sales).toLocaleString()}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block text-[11px]">
-                          Plan Min / Max
-                        </span>
-                        <strong className="text-foreground text-sm">
-                          ${targetMinNum.toLocaleString()} / ${targetMaxNum.toLocaleString()}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Column 2: Average Check Indicator & Streaks */}
-                  <div className="md:col-span-4 p-4 rounded-xl bg-muted/30 border border-border space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-muted-foreground uppercase tracking-wider">
-                        <T k="smkAverageCheckProgress" />
-                      </span>
-                      <span
-                        className={`font-bold px-2 py-0.5 rounded ${
-                          avgCheckNum >= srTargetNum
-                            ? 'bg-emerald-500/15 text-emerald-500'
-                            : avgCheckNum >= srMinNum
-                              ? 'bg-amber-500/15 text-amber-500'
-                              : 'bg-rose-500/15 text-rose-500'
-                        }`}
-                      >
-                        ${avgCheckNum}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                      <div>
-                        <span className="text-muted-foreground block text-[11px]">
-                          SR Check Target
-                        </span>
-                        <strong className="text-foreground text-sm">
-                          ${srTargetNum} (Min ${srMinNum})
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block text-[11px]">
-                          Bonus Rate (%)
-                        </span>
-                        <strong className="text-brand-gold text-sm">
-                          {item.sales_bonus_rate}%
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-1.5 text-emerald-500">
-                        <ArrowUpRight className="size-3.5" />
-                        <span>
-                          Success Streak: <strong>{item.consecutive_successes} mo</strong>
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-rose-500">
-                        <ArrowDownRight className="size-3.5" />
-                        <span>
-                          Missed Streak: <strong>{item.consecutive_failures} mo</strong>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Column 3: Total Earnings Breakdown Box */}
-                  <div className="md:col-span-4 p-4 rounded-xl bg-gradient-to-br from-brand-navy/10 to-brand-royal/10 border border-brand-gold/30 space-y-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Monthly Earnings Breakdown
-                    </span>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Fixed Salary:</span>
-                        <span className="font-semibold text-foreground">${item.fixed_salary}</span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Sales Bonus ({item.sales_bonus_rate}%):</span>
-                        <span className="font-semibold text-foreground">
-                          +${item.sales_bonus_amount}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>KPI Bonus:</span>
-                        <span className="font-semibold text-foreground">
-                          +${item.kpi_bonus_amount}
-                        </span>
-                      </div>
-                      {Number(item.additional_bonus_amount) > 0 && (
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>Add. Bonus:</span>
-                          <span className="font-semibold text-foreground">
-                            +${item.additional_bonus_amount}
+                          <span
+                            className={`font-black ${salesPct >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}
+                          >
+                            {salesPct}%
                           </span>
                         </div>
-                      )}
-                      <div className="flex justify-between items-baseline pt-2 border-t border-border font-bold">
-                        <span className="text-foreground text-xs uppercase">
-                          <T k="smkTotalEarnings" />:
+
+                        <div className="w-full bg-border rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              salesPct >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                            style={{ width: `${Math.min(salesPct, 100)}%` }}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                          <div>
+                            <span className="text-muted-foreground block text-[11px]">
+                              Total Sales
+                            </span>
+                            <strong className="text-foreground text-sm">
+                              ${Number(item.total_sales).toLocaleString()}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground block text-[11px]">
+                              Plan Min / Max
+                            </span>
+                            <strong className="text-foreground text-sm">
+                              ${targetMinNum.toLocaleString()} / ${targetMaxNum.toLocaleString()}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Column 2: Average Check Indicator & Streaks */}
+                      <div className="md:col-span-4 p-4 rounded-xl bg-muted/30 border border-border space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-muted-foreground uppercase tracking-wider">
+                            <T k="smkAverageCheckProgress" />
+                          </span>
+                          <span
+                            className={`font-bold px-2 py-0.5 rounded ${
+                              avgCheckNum >= srTargetNum
+                                ? 'bg-emerald-500/15 text-emerald-500'
+                                : avgCheckNum >= srMinNum
+                                  ? 'bg-amber-500/15 text-amber-500'
+                                  : 'bg-rose-500/15 text-rose-500'
+                            }`}
+                          >
+                            ${avgCheckNum}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                          <div>
+                            <span className="text-muted-foreground block text-[11px]">
+                              SR Check Target
+                            </span>
+                            <strong className="text-foreground text-sm">
+                              ${srTargetNum} (Min ${srMinNum})
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground block text-[11px]">
+                              Bonus Rate (%)
+                            </span>
+                            <strong className="text-brand-gold text-sm">
+                              {item.sales_bonus_rate}%
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs pt-2 border-t border-border/50">
+                          <div className="flex items-center gap-1.5 text-emerald-500">
+                            <ArrowUpRight className="size-3.5" />
+                            <span>
+                              Success Streak: <strong>{item.consecutive_successes} mo</strong>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-rose-500">
+                            <ArrowDownRight className="size-3.5" />
+                            <span>
+                              Missed Streak: <strong>{item.consecutive_failures} mo</strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Column 3: Total Earnings Breakdown Box */}
+                      <div className="md:col-span-4 p-4 rounded-xl bg-gradient-to-br from-brand-navy/10 to-brand-royal/10 border border-brand-gold/30 space-y-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Monthly Earnings Breakdown
                         </span>
-                        <span className="text-xl font-black text-brand-gold">
-                          $
-                          {Number(item.total_earnings).toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                          })}
-                        </span>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Fixed Salary:</span>
+                            <span className="font-semibold text-foreground">
+                              ${item.fixed_salary}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Sales Bonus ({item.sales_bonus_rate}%):</span>
+                            <span className="font-semibold text-foreground">
+                              +${item.sales_bonus_amount}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>KPI Bonus:</span>
+                            <span className="font-semibold text-foreground">
+                              +${item.kpi_bonus_amount}
+                            </span>
+                          </div>
+                          {Number(item.additional_bonus_amount) > 0 && (
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Add. Bonus:</span>
+                              <span className="font-semibold text-foreground">
+                                +${item.additional_bonus_amount}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-baseline pt-2 border-t border-border font-bold">
+                            <span className="text-foreground text-xs uppercase">
+                              <T k="smkTotalEarnings" />:
+                            </span>
+                            <span className="text-xl font-black text-brand-gold">
+                              $
+                              {Number(item.total_earnings).toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                              })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Reviewer Notes Banner if Present */}
-                {item.review_notes && (
-                  <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground flex items-start gap-2">
-                    <HelpCircle className="size-4 text-brand-gold shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-foreground">
-                        {item.reviewer_name || 'Reviewer'}:
-                      </strong>{' '}
-                      {item.review_notes}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+                    {/* Reviewer Notes Banner if Present */}
+                    {item.review_notes && (
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground flex items-start gap-2">
+                        <HelpCircle className="size-4 text-brand-gold shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-foreground">
+                            {item.reviewer_name || 'Reviewer'}:
+                          </strong>{' '}
+                          {item.review_notes}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* SUB-TAB 2: ASSIGNED CARGOS MONITORING & KPI VIEW (IMAGE 2 TABLE)  */}
+      {/* ----------------------------------------------------------------- */}
+      {activeSubTab === 'cargos-monitoring' && (
+        <EmployeeCargosMonitoringTable
+          initialMonth={month}
+          initialEmployeeId={selectedEmployeeId}
+        />
       )}
 
       {/* ----------------------------------------------------------------- */}

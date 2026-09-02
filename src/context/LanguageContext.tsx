@@ -1004,6 +1004,7 @@ const translations = {
     smkUpdateLevelModalTitle: 'Update Employee Level & Mentees',
     smkSelectCareerLevel: 'Career Level',
     smkMenteesCountLabel: 'Mentees Count',
+    smkLevelAuto: 'Auto (From Employee Stored Profile)',
 
     cargoVolume: 'Volume (m³)',
     cargoWeight: 'Weight (kg)',
@@ -2950,6 +2951,7 @@ const translations = {
     smkUpdateLevelModalTitle: 'Редактирование уровня и учеников',
     smkSelectCareerLevel: 'Карьерный уровень',
     smkMenteesCountLabel: 'Количество обученных учеников',
+    smkLevelAuto: 'Авто (из профиля сотрудника)',
 
     cargoVolume: 'Объем (м³)',
     cargoWeight: 'Вес (кг)',
@@ -4896,6 +4898,7 @@ const translations = {
     smkUpdateLevelModalTitle: "Menejer darajasi va shogirdlarini o'zgartirish",
     smkSelectCareerLevel: 'Karyera darajasi',
     smkMenteesCountLabel: "O'qitilgan shogirdlar soni",
+    smkLevelAuto: 'Avto (Xodim profilidagi saqlangan daraja)',
 
     cargoVolume: 'Hajm (m³)',
     cargoWeight: 'Vazn (kg)',

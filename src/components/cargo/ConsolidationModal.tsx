@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -15,6 +15,7 @@ import {
   Plane,
   Ship,
   Package,
+  Loader2,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -127,7 +128,7 @@ const CONTAINER_PRESETS: Record<string, { vol: number; weight: number }> = {
   Avto: { vol: 90.0, weight: 22000 },
 };
 
-// Shared Select options for the container / body type picker (with capacity presets)
+// Shared Select options for the container / body type picker
 const CONTAINER_TYPE_SELECT_OPTIONS: SelectOption[] = CONSOLIDATION_CONTAINER_TYPES.map((type) => ({
   value: type,
   label: type,
@@ -141,6 +142,47 @@ const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((cur) => ({
   value: cur,
   label: cur,
 }));
+
+// Helper to format date strings for input[type="date"]
+function extractDate(val?: string | null): string {
+  if (!val || typeof val !== 'string') return '';
+  return val.slice(0, 10);
+}
+
+// Helper to extract carrier cost from any payload variation
+function extractCarrierCost(item: any): { amount: string; currency: CurrencyType } {
+  if (!item) return { amount: '', currency: 'USD' };
+
+  let amt: number | string | undefined = undefined;
+  let curr: CurrencyType = 'USD';
+
+  if (item.carrier_cost && typeof item.carrier_cost === 'object') {
+    amt = item.carrier_cost.amount ?? item.carrier_cost.amount_usd;
+    curr = item.carrier_cost.currency || curr;
+  } else if (item.financials?.carrier_cost && typeof item.financials.carrier_cost === 'object') {
+    amt = item.financials.carrier_cost.amount ?? item.financials.carrier_cost.amount_usd;
+    curr = item.financials.carrier_cost.currency || curr;
+  } else if (item.total_carrier_cost !== undefined && item.total_carrier_cost !== null) {
+    amt = item.total_carrier_cost;
+  } else if (typeof item.carrier_cost === 'number') {
+    amt = item.carrier_cost;
+  } else if (item.agent !== undefined && item.agent !== null) {
+    amt = item.agent;
+  }
+
+  if (item.carrier_cost_currency) {
+    curr = item.carrier_cost_currency;
+  }
+
+  const strAmt =
+    amt !== undefined && amt !== null && !isNaN(Number(amt)) && Number(amt) > 0
+      ? String(amt)
+      : amt !== undefined && amt !== null && String(amt) !== '0'
+        ? String(amt)
+        : '';
+
+  return { amount: strAmt, currency: curr };
+}
 
 export interface ConsolidationModalProps {
   isOpen: boolean;
@@ -189,54 +231,106 @@ export function ConsolidationModal({
   const [syncTransportTypesToCargos, setSyncTransportTypesToCargos] = useState<boolean>(true);
 
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [loadingEditDetails, setLoadingEditDetails] = useState<boolean>(false);
 
-  // Initialize or reset form
+  // Populate form from any consolidation object
+  const populateForm = useCallback((data: any) => {
+    if (!data) return;
+
+    setConsolidationCode(data.consolidation_code || data.code || '');
+    setContainerTruckId(data.container_truck_id || data.truck_plate || data.container_no || '');
+    setContainerType(data.container_type || '86m3');
+
+    const vol =
+      data.capacity?.max_volume_m3 ??
+      data.max_volume_capacity ??
+      data.max_volume_m3 ??
+      data.volume_capacity ??
+      CONTAINER_PRESETS[data.container_type]?.vol ??
+      86;
+    setMaxVolumeStr(String(vol));
+
+    const wt =
+      data.capacity?.max_weight_kg ??
+      data.max_weight_capacity ??
+      data.max_weight_kg ??
+      data.weight_capacity ??
+      CONTAINER_PRESETS[data.container_type]?.weight ??
+      22000;
+    setMaxWeightStr(String(wt));
+
+    setCarrierName(data.carrier_name || data.carrier?.name || data.driver_name || '');
+    setCarrierPhone(data.carrier_phone || data.carrier?.phone || data.driver_phone || '');
+    setOriginPlace(
+      data.origin_place || data.origin?.city || data.origin?.name || data.origin_city || 'Istanbul'
+    );
+    setDestinationPlace(
+      data.destination_place ||
+        data.destination?.city ||
+        data.destination?.name ||
+        data.destination_city ||
+        'Tashkent'
+    );
+
+    setDepartureDate(extractDate(data.departure_date || data.departure_start_date));
+    setEstimatedArrivalDate(extractDate(data.estimated_arrival_date || data.eta));
+    setLoadedDate(extractDate(data.loaded_date || data.load_date));
+    setBorderArrivalDate(extractDate(data.border_arrival_date));
+    setTashkentArrivalDate(extractDate(data.tashkent_arrival_date));
+    setArrivedDate(extractDate(data.arrived_date));
+
+    const costObj = extractCarrierCost(data);
+    setCarrierCostStr(costObj.amount);
+    setCarrierCostCurrency(costObj.currency);
+
+    setStatus(data.status || 'Waiting');
+    setDescription(data.description || data.notes || '');
+
+    if (Array.isArray(data.transport_types) && data.transport_types.length > 0) {
+      setTransportTypes(data.transport_types);
+    } else if (data.transport_type) {
+      setTransportTypes([data.transport_type]);
+    } else {
+      setTransportTypes(['auto']);
+    }
+
+    setSyncStatusToCargos(true);
+    setSyncDatesToCargos(true);
+    setSyncTransportTypesToCargos(true);
+  }, []);
+
+  // Initialize and automatically fetch fresh single consolidation details on edit
   useEffect(() => {
     if (!isOpen) return;
 
     if (editingItem) {
-      setConsolidationCode(editingItem.consolidation_code || '');
-      setContainerTruckId(editingItem.container_truck_id || '');
-      setContainerType(editingItem.container_type || '86m3');
-      setMaxVolumeStr(String(editingItem.capacity?.max_volume_m3 || 86));
-      setMaxWeightStr(String(editingItem.capacity?.max_weight_kg || 22000));
-      setCarrierName(editingItem.carrier_name || '');
-      setCarrierPhone(editingItem.carrier_phone || '');
-      setOriginPlace(editingItem.origin_place || '');
-      setDestinationPlace(editingItem.destination_place || '');
-      setDepartureDate(editingItem.departure_date ? editingItem.departure_date.slice(0, 10) : '');
-      setEstimatedArrivalDate(
-        editingItem.estimated_arrival_date ? editingItem.estimated_arrival_date.slice(0, 10) : ''
-      );
-      setLoadedDate(
-        editingItem.loaded_date
-          ? editingItem.loaded_date.slice(0, 10)
-          : editingItem.load_date
-            ? editingItem.load_date.slice(0, 10)
-            : ''
-      );
-      setBorderArrivalDate(
-        editingItem.border_arrival_date ? editingItem.border_arrival_date.slice(0, 10) : ''
-      );
-      setTashkentArrivalDate(
-        editingItem.tashkent_arrival_date ? editingItem.tashkent_arrival_date.slice(0, 10) : ''
-      );
-      setArrivedDate(editingItem.arrived_date ? editingItem.arrived_date.slice(0, 10) : '');
-      setCarrierCostStr(
-        editingItem.total_carrier_cost ? String(editingItem.total_carrier_cost) : ''
-      );
-      setCarrierCostCurrency(editingItem.carrier_cost_currency || 'USD');
-      setStatus(editingItem.status || 'Waiting');
-      setDescription(editingItem.description || '');
-      setTransportTypes(
-        editingItem.transport_types && editingItem.transport_types.length > 0
-          ? editingItem.transport_types
-          : ['auto']
-      );
-      setSyncStatusToCargos(true);
-      setSyncDatesToCargos(true);
-      setSyncTransportTypesToCargos(true);
+      // 1. Populate immediately from available editingItem
+      populateForm(editingItem);
+
+      // 2. Fetch fresh single details from API to ensure complete data sync
+      if (editingItem.id) {
+        let isCancelled = false;
+        setLoadingEditDetails(true);
+        cargoConsolidationsApi
+          .get(editingItem.id)
+          .then((fresh) => {
+            if (!isCancelled && fresh) {
+              populateForm(fresh);
+            }
+          })
+          .catch((err) => {
+            console.warn('Could not fetch single consolidation details for modal:', err);
+          })
+          .finally(() => {
+            if (!isCancelled) setLoadingEditDetails(false);
+          });
+
+        return () => {
+          isCancelled = true;
+        };
+      }
     } else {
+      // Reset to create mode defaults
       setConsolidationCode('');
       setContainerTruckId('');
       setContainerType('86m3');
@@ -260,8 +354,9 @@ export function ConsolidationModal({
       setSyncStatusToCargos(false);
       setSyncDatesToCargos(false);
       setSyncTransportTypesToCargos(false);
+      setLoadingEditDetails(false);
     }
-  }, [isOpen, editingItem]);
+  }, [isOpen, editingItem, populateForm]);
 
   // Handle container type preset auto-fill
   const handleContainerTypeChange = (newType: string) => {
@@ -387,13 +482,15 @@ export function ConsolidationModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0" onClick={onClose} />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-3xl rounded-3xl bg-surface border border-border shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+          className="relative z-10 w-full max-w-3xl rounded-3xl bg-surface border border-border shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-gradient-to-r from-brand-navy/10 via-surface to-brand-royal/10 shrink-0">
@@ -403,16 +500,26 @@ export function ConsolidationModal({
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-                  {isEditing ? t('editConsolidation') : t('createConsolidation')}
+                  <span>
+                    {isEditing
+                      ? t('editConsolidation') || 'Edit Consolidation'
+                      : t('createConsolidation') || 'Create Consolidation'}
+                  </span>
                   {isEditing && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-brand-gold/20 text-brand-navy dark:text-brand-gold font-mono font-bold border border-brand-gold/30">
                       {editingItem?.consolidation_code}
                     </span>
                   )}
+                  {loadingEditDetails && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-normal">
+                      <Loader2 className="size-3 animate-spin text-brand-gold" />
+                      <span>Syncing...</span>
+                    </span>
+                  )}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   {isEditing
-                    ? 'Update trip details, truck capacity, carrier freight cost and route'
+                    ? 'Update trip details, truck capacity, carrier freight cost and schedule'
                     : 'Register a new consolidated vehicle trip for multi-client LTL groupage'}
                 </p>
               </div>
@@ -426,11 +533,11 @@ export function ConsolidationModal({
           </div>
 
           {/* Form Content */}
-          <form onSubmit={handleSubmit} className="overflow-y-auto p-5 sm:p-6 space-y-6 flex-1">
+          <form onSubmit={handleSubmit} className="overflow-y-auto p-5 sm:p-6 space-y-5 flex-1">
             {/* Status Selection Stage Pipeline */}
             <div>
               <label className="block text-xs font-bold text-foreground mb-2">
-                {t('colStatus')}
+                {t('colStatus') || 'Trip Status'}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {STATUS_CONFIG.map((cfg) => {
@@ -462,7 +569,7 @@ export function ConsolidationModal({
                   <span>Vehicle & Capacity Specifications</span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">
-                  Auto-fills capacity metrics based on preset
+                  Presets auto-fill volume & payload
                 </span>
               </div>
 
@@ -470,7 +577,8 @@ export function ConsolidationModal({
                 {/* Truck Plate */}
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('truckPlate')} <span className="text-red-500">*</span>
+                    {t('truckPlate') || 'Truck Plate / Container ID'}{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -485,7 +593,7 @@ export function ConsolidationModal({
                 {/* Container / Body Type */}
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('containerType')}
+                    {t('containerType') || 'Body / Container Type'}
                   </label>
                   <Select
                     value={containerType}
@@ -496,10 +604,10 @@ export function ConsolidationModal({
                   />
                 </div>
 
-                {/* Custom Consolidation Code (optional override) */}
+                {/* Custom Consolidation Code */}
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('consolidationCode')}{' '}
+                    {t('consolidationCode') || 'Consolidation Code'}{' '}
                     <span className="text-muted-foreground font-normal">(Optional)</span>
                   </label>
                   <input
@@ -514,7 +622,7 @@ export function ConsolidationModal({
               </div>
 
               {/* Transport Types */}
-              <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2">
+              <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 space-y-1.5">
                 <label className="block text-[11px] font-bold text-foreground">
                   Transport Types
                   <span className="ml-1.5 text-[10px] font-medium text-muted-foreground normal-case">
@@ -551,7 +659,8 @@ export function ConsolidationModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('volumeCapacity')} <span className="text-red-500">*</span>
+                    {t('volumeCapacity') || 'Volume Capacity (m³)'}{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <NumberInput
                     size="sm"
@@ -567,7 +676,7 @@ export function ConsolidationModal({
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('weightCapacity')}
+                    {t('weightCapacity') || 'Payload Weight Capacity (kg)'}
                   </label>
                   <NumberInput
                     size="sm"
@@ -587,7 +696,7 @@ export function ConsolidationModal({
             <div className="p-4 rounded-2xl bg-muted/20 border border-border/70 space-y-4">
               <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                 <MapPin className="size-4 text-brand-royal" />
-                <span>{t('routeLogistics')}</span>
+                <span>{t('routeLogistics') || 'Route Corridor & Milestones'}</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -617,24 +726,24 @@ export function ConsolidationModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('loadingCompletionDate') || t('loadedDate')}
+                    {t('departureDate') || 'Departure Date'}
                   </label>
                   <input
                     type="date"
-                    value={loadedDate}
-                    onChange={(e) => setLoadedDate(e.target.value)}
+                    value={departureDate}
+                    onChange={(e) => setDepartureDate(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('departureDate')}
+                    {t('loadingCompletionDate') || t('loadedDate') || 'Loaded Date'}
                   </label>
                   <input
                     type="date"
-                    value={departureDate}
-                    onChange={(e) => setDepartureDate(e.target.value)}
+                    value={loadedDate}
+                    onChange={(e) => setLoadedDate(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 cursor-pointer"
                   />
                 </div>
@@ -653,7 +762,7 @@ export function ConsolidationModal({
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('tashkentArrivalDate') || 'Tashkent Arrival Date'}
+                    {t('tashkentArrivalDate') || 'Destination Hub Arrival'}
                   </label>
                   <input
                     type="date"
@@ -665,7 +774,7 @@ export function ConsolidationModal({
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('estimatedArrival')}
+                    {t('estimatedArrival') || 'Est. Arrival Date'}
                   </label>
                   <input
                     type="date"
@@ -677,7 +786,7 @@ export function ConsolidationModal({
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('actualArrival')}
+                    {t('actualArrival') || 'Actual Arrival Date'}
                   </label>
                   <input
                     type="date"
@@ -699,7 +808,7 @@ export function ConsolidationModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('carrierName')}
+                    {t('carrierName') || 'Carrier / Driver Name'}
                   </label>
                   <input
                     type="text"
@@ -713,7 +822,7 @@ export function ConsolidationModal({
                 <div>
                   <PhoneInput
                     size="sm"
-                    label={t('carrierPhone')}
+                    label={t('carrierPhone') || 'Carrier Phone'}
                     placeholder="e.g. +998 90 123 4567"
                     value={carrierPhone}
                     onChange={(val) => setCarrierPhone(val)}
@@ -724,7 +833,7 @@ export function ConsolidationModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('carrierCost')} (Total Truck Freight)
+                    {t('carrierCost') || 'Total Carrier Freight Cost'}
                   </label>
                   <NumberInput
                     size="sm"
@@ -749,7 +858,7 @@ export function ConsolidationModal({
 
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('carrierCostCurrency')}
+                    {t('carrierCostCurrency') || 'Cost Currency'}
                   </label>
                   <Select
                     value={carrierCostCurrency}
@@ -762,14 +871,14 @@ export function ConsolidationModal({
               </div>
             </div>
 
-            {/* Section 4: Notes / Customs Details */}
+            {/* Section 4: Notes / Remarks */}
             <div>
               <label className="block text-xs font-bold text-foreground mb-1">
                 Notes / Customs Documentation
               </label>
               <textarea
                 rows={2}
-                placeholder="Optional cargo description, customs border crossing info or remarks..."
+                placeholder="Optional trip notes, border clearance instructions or remarks..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none"
@@ -791,7 +900,7 @@ export function ConsolidationModal({
                       onChange={(e) => setSyncStatusToCargos(e.target.checked)}
                       className="rounded border-border text-brand-navy focus:ring-brand-gold"
                     />
-                    <span>{t('syncStatusToCargos')}</span>
+                    <span>{t('syncStatusToCargos') || 'Sync status to attached child cargos'}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
@@ -800,7 +909,7 @@ export function ConsolidationModal({
                       onChange={(e) => setSyncDatesToCargos(e.target.checked)}
                       className="rounded border-border text-brand-navy focus:ring-brand-gold"
                     />
-                    <span>{t('syncDatesToCargos')}</span>
+                    <span>{t('syncDatesToCargos') || 'Sync dates to attached child cargos'}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
@@ -809,7 +918,7 @@ export function ConsolidationModal({
                       onChange={(e) => setSyncTransportTypesToCargos(e.target.checked)}
                       className="rounded border-border text-brand-navy focus:ring-brand-gold"
                     />
-                    <span>Sync transport types to cargos</span>
+                    <span>Sync transport types to attached child cargos</span>
                   </label>
                 </div>
               </div>
