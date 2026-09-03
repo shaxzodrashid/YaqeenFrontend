@@ -16,6 +16,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { T } from '../T';
 import { usePermissions } from '../../context/PermissionsContext';
+import { SalaryManagementSkeleton } from './FinanceSkeletons';
 import { api, formatMoney } from '../../services/api';
 import { NumberInput } from '../NumberInput';
 import type {
@@ -85,17 +86,8 @@ export function SalaryManagementTab({
     [ratesData]
   );
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-pulse">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="h-44 rounded-3xl bg-border/20 dark:bg-night-surface border border-border/40 dark:border-night-border"
-          />
-        ))}
-      </div>
-    );
+  if (loading && !salaryData) {
+    return <SalaryManagementSkeleton />;
   }
 
   if (!salaryData) {
@@ -161,7 +153,12 @@ export function SalaryManagementTab({
     .filter((dept) => dept.employees.length > 0 || !searchStaff.trim());
 
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className={`flex flex-col gap-6 relative transition-opacity duration-200 ${loading ? 'opacity-80' : 'opacity-100'}`}
+    >
+      {loading && (
+        <div className="absolute -top-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-gold to-transparent animate-pulse z-20 rounded-full" />
+      )}
       {/* Top Metrics Banner & Batch CTA */}
       <div className="p-6 rounded-3xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full md:w-auto">

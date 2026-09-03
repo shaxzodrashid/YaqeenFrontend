@@ -1,12 +1,7 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React from 'react';
 import {
   Truck,
-  TrainFront,
-  Plane,
-  Ship,
   Boxes,
-  Package,
   MapPin,
   ArrowRight,
   Globe2,
@@ -26,6 +21,7 @@ import type {
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
 import { useTranslation } from '../../context/LanguageContext';
+import { getTransportVisuals } from '../../utils/transportColors';
 
 interface LogisticsOperationsHubProps {
   cargoDist: DashboardCargoDistributionResponse | null;
@@ -35,227 +31,8 @@ interface LogisticsOperationsHubProps {
   currency?: string;
 }
 
-const TRANSPORT_VISUALS: Record<string, { icon: React.ReactNode; bar: string; chip: string }> = {
-  AUTO: {
-    icon: <Truck className="size-4" />,
-    bar: 'from-blue-500 to-cyan-400',
-    chip: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  },
-  RAILWAY: {
-    icon: <TrainFront className="size-4" />,
-    bar: 'from-amber-500 to-orange-400',
-    chip: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  },
-  AIR: {
-    icon: <Plane className="size-4" />,
-    bar: 'from-violet-500 to-fuchsia-400',
-    chip: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-  },
-  SEA: {
-    icon: <Ship className="size-4" />,
-    bar: 'from-teal-500 to-emerald-400',
-    chip: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
-  },
-  OTHER: {
-    icon: <Package className="size-4" />,
-    bar: 'from-slate-400 to-slate-300',
-    chip: 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
-  },
-};
-
-/** Solid hex colors for pie slices — mirrors TRANSPORT_VISUALS gradients */
-const TRANSPORT_PIE_COLORS: Record<string, string> = {
-  AUTO: '#3b82f6',
-  RAILWAY: '#f59e0b',
-  AIR: '#8b5cf6',
-  SEA: '#14b8a6',
-  OTHER: '#94a3b8',
-};
-
-/** Solid hex colors for status pie slices — mirrors statusColor() */
-function statusHex(category: string): string {
-  switch (category) {
-    case 'Arrived':
-      return '#10b981';
-    case 'On the way':
-      return '#06b6d4';
-    case 'Waiting':
-      return '#f59e0b';
-    case 'Station':
-      return '#ec4899';
-    case 'On the border':
-      return '#8b5cf6';
-    default:
-      return '#f97316';
-  }
-}
-
-interface PieSliceData {
-  key: string;
-  label: string;
-  value: number;
-  percentage: number;
-  color: string;
-}
-
-function polarPoint(cx: number, cy: number, r: number, angleDeg: number): [number, number] {
-  const rad = ((angleDeg - 90) * Math.PI) / 180;
-  return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
-}
-
-function pieSlicePath(
-  cx: number,
-  cy: number,
-  rOuter: number,
-  rInner: number,
-  startAngle: number,
-  endAngle: number
-): string {
-  const [x1, y1] = polarPoint(cx, cy, rOuter, startAngle);
-  const [x2, y2] = polarPoint(cx, cy, rOuter, endAngle);
-  const [x3, y3] = polarPoint(cx, cy, rInner, endAngle);
-  const [x4, y4] = polarPoint(cx, cy, rInner, startAngle);
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-  return [
-    `M ${x1.toFixed(2)} ${y1.toFixed(2)}`,
-    `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`,
-    `L ${x3.toFixed(2)} ${y3.toFixed(2)}`,
-    `A ${rInner} ${rInner} 0 ${largeArc} 0 ${x4.toFixed(2)} ${y4.toFixed(2)}`,
-    'Z',
-  ].join(' ');
-}
-
-/**
- * Big premium pie chart — chunky wedges with subtle angular gaps,
- * hover-expanding slices, a frosted-glass center KPI badge and a
- * minimal dot · label · % legend. Pure SVG, no external chart lib.
- */
-function PremiumPieChart({ slices, size = 216 }: { slices: PieSliceData[]; size?: number }) {
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-
-  const total = slices.reduce((acc, s) => acc + s.value, 0) || 1;
-  const activeSlice = slices.find((s) => s.key === hoveredKey) ?? null;
-
-  let cursor = 0;
-  const gapDeg = slices.length > 1 ? 2 : 0;
-  const arcs = slices.map((s) => {
-    const sweep = (Math.max(s.value, 0) / total) * 360;
-    const start = cursor + gapDeg / 2;
-    const end = Math.max(cursor + sweep - gapDeg / 2, start + 0.5);
-    cursor += sweep;
-    const midRad = (((start + end) / 2 - 90) * Math.PI) / 180;
-    return {
-      ...s,
-      start,
-      end,
-      dx: Math.cos(midRad) * 5,
-      dy: Math.sin(midRad) * 5,
-    };
-  });
-
-  const isFullCircle = arcs.length === 1;
-
-  return (
-    <div className="flex flex-col items-center gap-3 select-none">
-      <motion.div
-        className="relative"
-        style={{ width: size, height: size }}
-        initial={{ opacity: 0, scale: 0.88 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-      >
-        <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
-          {isFullCircle ? (
-            <circle
-              cx="100"
-              cy="100"
-              r={(92 + 36) / 2}
-              fill={arcs[0].color}
-              stroke="none"
-              className="transition-opacity duration-300"
-              opacity={hoveredKey && hoveredKey !== arcs[0].key ? 0.4 : 1}
-            />
-          ) : (
-            arcs.map((a) => (
-              <path
-                key={a.key}
-                d={pieSlicePath(100, 100, 92, 36, a.start, a.end)}
-                fill={a.color}
-                onMouseEnter={() => setHoveredKey(a.key)}
-                onMouseLeave={() => setHoveredKey(null)}
-                className="cursor-pointer"
-                style={{
-                  transform:
-                    hoveredKey === a.key
-                      ? `translate(${a.dx}px, ${a.dy}px)`
-                      : 'translate(0px, 0px)',
-                  opacity: hoveredKey && hoveredKey !== a.key ? 0.35 : 1,
-                  filter:
-                    hoveredKey === a.key ? 'drop-shadow(0 4px 10px rgba(0,0,0,0.28))' : 'none',
-                  transition:
-                    'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease, filter 300ms ease',
-                }}
-              />
-            ))
-          )}
-        </svg>
-
-        {/* Frosted-glass center KPI badge */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="rounded-full bg-surface/85 dark:bg-night-surface/85 backdrop-blur-md border border-border/50 dark:border-night-border/50 shadow-xs flex flex-col items-center justify-center text-center px-2"
-            style={{ width: 76, height: 76 }}
-          >
-            {activeSlice ? (
-              <>
-                <span className="text-lg font-black leading-none text-brand-gold tabular-nums">
-                  {activeSlice.percentage}%
-                </span>
-                <span className="mt-1 max-w-[62px] truncate text-[8px] font-bold uppercase tracking-wider text-muted dark:text-night-muted">
-                  {activeSlice.label}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-xl font-black leading-none text-foreground dark:text-night-text tabular-nums">
-                  {total.toLocaleString()}
-                </span>
-                <span className="mt-1 text-[8px] font-bold uppercase tracking-wider text-muted dark:text-night-muted">
-                  <T k="ovTotal" />
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Minimal legend — dot · label · % only */}
-      <div className="flex flex-wrap justify-center gap-x-3.5 gap-y-1.5 max-w-full">
-        {arcs.map((a) => (
-          <button
-            key={a.key}
-            type="button"
-            onMouseEnter={() => setHoveredKey(a.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-            title={`${a.label}: ${a.value}`}
-            className={`inline-flex items-center gap-1.5 text-[10px] font-bold cursor-pointer transition-opacity duration-200 ${
-              hoveredKey && hoveredKey !== a.key ? 'opacity-40' : 'opacity-100'
-            }`}
-          >
-            <span
-              className="size-2 rounded-full shrink-0 shadow-xs"
-              style={{ backgroundColor: a.color }}
-            />
-            <span className="text-muted dark:text-night-muted">{a.label}</span>
-            <span className="text-foreground dark:text-night-text tabular-nums">
-              {a.percentage}%
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { PremiumDonutChart } from './PremiumDonutChart';
+import { statusHex } from './ExecutiveOverviewDiagrams';
 
 /** Semi-circular SVG gauge for on-time delivery rate */
 function OnTimeGauge({ percentage }: { percentage: number }) {
@@ -379,14 +156,9 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
               <Truck className="size-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-night-text">
-                  <T k="ovLogisticsHubTitle" />
-                </h3>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
-                  <T k="ovLiveErpBadge" />
-                </span>
-              </div>
+              <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-night-text">
+                <T k="ovLogisticsHubTitle" />
+              </h3>
               <p className="text-xs text-muted dark:text-night-muted mt-0.5">
                 <T k="ovLogisticsHubSubtitle" />
               </p>
@@ -579,7 +351,7 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
                 </span>
                 <div className="space-y-2.5">
                   {transportDist.map((tItem) => {
-                    const v = TRANSPORT_VISUALS[tItem.type] || TRANSPORT_VISUALS.OTHER;
+                    const v = getTransportVisuals(tItem.type, tItem.name);
                     const widthPct = Math.max(
                       6,
                       Math.round((tItem.totalSales / maxTransportSales) * 100)
@@ -587,33 +359,37 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
                     return (
                       <div
                         key={tItem.type}
-                        className="group min-w-0 p-2 rounded-xl bg-surface dark:bg-night-surface border border-border/30 shadow-2xs"
+                        className={`group min-w-0 p-3 rounded-xl border transition-all duration-200 shadow-2xs ${v.cardBg} ${v.cardBorder}`}
                       >
-                        <div className="flex items-center justify-between gap-3 mb-1.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className={`p-1.5 rounded-lg shrink-0 ${v.chip}`}>{v.icon}</div>
-                            <span className="text-xs font-bold text-foreground dark:text-night-text truncate">
-                              {getModalityName(tItem.type, tItem.name)}
-                            </span>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-border/30 text-muted shrink-0">
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`p-2 rounded-xl shrink-0 ${v.chip}`}>{v.icon}</div>
+                            <div className="flex flex-col min-w-0">
+                              <span className={`text-xs font-bold truncate ${v.textColor}`}>
+                                {getModalityName(tItem.type, tItem.name)}
+                              </span>
+                              <span className="text-[10px] text-muted truncate">
+                                {tItem.percentage}% {t('ovMultimodalShare').toLowerCase()}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${v.badgeBg}`}
+                            >
                               {t('ovShipmentsCount', { count: tItem.count })}
                             </span>
                           </div>
                           <div className="text-right shrink-0">
-                            <span className="text-xs font-extrabold text-foreground dark:text-night-text block leading-tight">
+                            <span className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text block leading-tight">
                               {formatMoney(tItem.totalSales, currency)}
                             </span>
                             {tItem.totalMargin !== undefined && (
                               <span className="text-[10px] text-emerald-500 font-bold">
-                                {t('ovMarginWithPct', {
-                                  amount: formatMoney(tItem.totalMargin, currency),
-                                  pct: tItem.percentage,
-                                })}
+                                +{formatMoney(tItem.totalMargin, currency)}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="h-2 w-full rounded-full bg-border/20 dark:bg-night-border/40 overflow-hidden">
+                        <div className={`h-2.5 w-full rounded-full overflow-hidden ${v.trackBg}`}>
                           <div
                             className={`h-full rounded-full bg-gradient-to-r ${v.bar} transition-all duration-700 group-hover:brightness-110`}
                             style={{ width: `${widthPct}%` }}
@@ -692,14 +468,14 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
 
               {transportDist.length > 0 ? (
                 <div className="py-2">
-                  <PremiumPieChart
+                  <PremiumDonutChart
                     size={200}
                     slices={transportDist.map((t) => ({
                       key: t.type,
                       label: getModalityName(t.type, t.name),
                       value: t.count,
                       percentage: t.percentage,
-                      color: TRANSPORT_PIE_COLORS[t.type] || TRANSPORT_PIE_COLORS.OTHER,
+                      color: getTransportVisuals(t.type, t.name).hexColor,
                     }))}
                   />
                 </div>
@@ -856,7 +632,7 @@ export const LogisticsOperationsHub: React.FC<LogisticsOperationsHubProps> = Rea
 
               {statusDist.length > 0 ? (
                 <div className="py-2">
-                  <PremiumPieChart
+                  <PremiumDonutChart
                     size={200}
                     slices={statusDist.map((s) => ({
                       key: s.category,

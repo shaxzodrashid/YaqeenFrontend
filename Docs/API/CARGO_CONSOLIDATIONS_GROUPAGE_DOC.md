@@ -80,9 +80,15 @@ erDiagram
 | `tashkent_arrival_date`               | `DATE`          | `NULLABLE`                                            | Tashkent destination arrival date (`YYYY-MM-DD`, detail view)                    |
 | `estimated_arrival_date`              | `DATE`          | `NULLABLE`                                            | Expected arrival date (`YYYY-MM-DD`)                                             |
 | `arrived_date`                        | `DATE`          | `NULLABLE`, Indexed                                   | Actual arrival date (`YYYY-MM-DD`)                                               |
-| `total_carrier_cost`                  | `DECIMAL(14,2)` | `NOT NULL`, Default: `0.00`                           | Full carrier cost paid for the whole truck/container                             |
-| `carrier_cost_currency`               | `VARCHAR(10)`   | `NOT NULL`, Default: `'USD'`                          | Currency for carrier cost (`USD`, `UZS`, `RUB`, `RMB`)                           |
-| `carrier_cost_usd_rate`               | `DECIMAL(14,4)` | `NULLABLE`                                            | Rate snapshot used to convert carrier cost to USD                                |
+| `total_carrier_cost`                  | `DECIMAL(14,2)` | `NOT NULL`, Default: `0.00`                           | Full carrier cost paid for the whole truck/container (alias to agent)            |
+| `agent`                               | `DECIMAL(14,2)` | `NOT NULL`, Default: `0.00`                           | Agent line-haul / carrier expense amount                                         |
+| `agent_currency`                      | `VARCHAR(10)`   | `NOT NULL`, Default: `'USD'`                          | Agent currency (`USD`, `UZS`, `RUB`, `RMB`)                                      |
+| `customs_clearance_of_goods`          | `DECIMAL(14,2)` | `NOT NULL`, Default: `0.00`                           | Customs clearance of goods (Tomojnya / Таможня) expense amount                   |
+| `customs_clearance_of_goods_currency` | `VARCHAR(10)`   | `NOT NULL`, Default: `'USD'`                          | Customs clearance currency (`USD`, `UZS`, `RUB`, `RMB`)                          |
+| `cct`                                 | `DECIMAL(14,2)` | `NOT NULL`, Default: `0.00`                           | CCT / Certificate (Sertifikat / Сертификат) expense amount                       |
+| `cct_currency`                        | `VARCHAR(10)`   | `NOT NULL`, Default: `'USD'`                          | CCT / Certificate currency (`USD`, `UZS`, `RUB`, `RMB`)                          |
+| `carrier_cost_currency`               | `VARCHAR(10)`   | `NOT NULL`, Default: `'USD'`                          | Fallback currency for truck costs (`USD`, `UZS`, `RUB`, `RMB`)                   |
+| `carrier_cost_usd_rate`               | `DECIMAL(14,4)` | `NULLABLE`                                            | Rate snapshot used to convert carrier costs to USD                               |
 | `status`                              | `VARCHAR(50)`   | `NOT NULL`, Default: `'Waiting'`, Indexed             | Status: `Waiting`, `Station`, `On the way`, `On the border`, `Reload`, `Arrived` |
 | `description`                         | `TEXT`          | `NULLABLE`                                            | Optional notes or customs documentation details                                  |
 | `created_by_user_id`                  | `UUID`          | `NULLABLE`, `REFERENCES users(id) ON DELETE SET NULL` | Creator user account                                                             |
@@ -107,11 +113,21 @@ $$\text{Assigned Weight} = \sum_{i=1}^N r_i.\text{weight}$$
 $$\text{Remaining Volume} = \max\left(0, C.\text{max\_volume\_capacity} - \text{Assigned Volume}\right)$$
 $$\text{Volume Utilization \%} = \left(\frac{\text{Assigned Volume}}{C.\text{max\_volume\_capacity}}\right) \times 100$$
 
-### 2. Consolidated Profitability
+### 2. Consolidated Profitability (Income & Outcome)
 
-$$\text{Total Cargos Sell (USD)} = \sum_{i=1}^N r_i.\text{sell\_price\_usd}$$
-$$\text{Total Cargos Purchase (USD)} = \sum_{i=1}^N r_i.\text{purchase\_price\_usd}$$
-$$\text{Consolidated Net Margin (USD)} = \text{Total Cargos Sell (USD)} - \text{Total Cargos Purchase (USD)} - C.\text{carrier\_cost\_usd}$$
+Consolidations do not have an individual purchase price; instead, the consolidation's income is the sum of its attached LTL cargos' income (`sell_price` + `turnkey_price` + `speed_up`).
+
+$$\text{Consolidation Income (USD)} = \sum_{i=1}^N r_i.\text{total\_income\_usd}$$
+
+Consolidation Outcomes are the sum of its 3 individual operational expenses:
+
+$$\text{Total Consolidation Expenses (USD)} = \text{agent} + \text{customs\_clearance\_of\_goods (Tomojnya)} + \text{cct (Certificate)}$$
+
+Each individual attached LTL cargo also tracks its direct outcomes paid by the company:
+
+$$\text{Cargo Outcome (USD)} = r_i.\text{purchase\_price} + r_i.\text{additional\_expense} + r_i.\text{internal\_logistics\_cost}$$
+
+$$\text{Consolidated Net Margin (USD)} = \text{Consolidation Income (USD)} - \text{Total Consolidation Expenses (USD)}$$
 
 ---
 
@@ -155,7 +171,7 @@ Permissions are managed dynamically in the Role & Permissions matrix under the `
 
 ### 5.1. List Consolidations (`GET /api/v1/consolidations`)
 
-Returns a paginated list of all consolidations, complete with their capacity utilization, financials, and the full array of assigned cargo records for each vehicle.
+Returns a paginated list of all consolidations, complete with their capacity utilization and financials. Assigned cargo registrations are omitted for performance and provided in the single details endpoint.
 
 #### Query Parameters
 
@@ -185,10 +201,10 @@ Returns a paginated list of all consolidations, complete with their capacity uti
     "limit": 10,
     "offset": 0,
     "consolidated_net_margin": {
-      "USD": -1600.0,
-      "UZS": -20560000.0,
-      "RUB": -141793.1,
-      "RMB": -11327.82
+      "USD": 500.0,
+      "UZS": 6425000.0,
+      "RUB": 44310.34,
+      "RMB": 3539.94
     }
   },
   "data": [
@@ -219,58 +235,40 @@ Returns a paginated list of all consolidations, complete with their capacity uti
         "total_cargos_count": 2
       },
       "financials": {
+        "income": 4800.0,
+        "income_usd": 4800.0,
+        "total_income_usd": 4800.0,
         "total_sell_usd": 4800.0,
-        "total_purchase_usd": 2900.0,
-        "carrier_cost": {
-          "amount": 3500.0,
-          "currency": "USD",
-          "amount_usd": 3500.0
+        "outcome": 4000.0,
+        "outcome_usd": 4000.0,
+        "total_outcome_usd": 4000.0,
+        "total_purchase_usd": 0.0,
+        "expenses": {
+          "agent": {
+            "amount": 3500.0,
+            "currency": "USD",
+            "amount_usd": 3500.0
+          },
+          "customs_clearance_of_goods": {
+            "amount": 400.0,
+            "currency": "USD",
+            "amount_usd": 400.0
+          },
+          "cct": {
+            "amount": 100.0,
+            "currency": "USD",
+            "amount_usd": 100.0
+          },
+          "total_usd": 4000.0
         },
         "consolidated_net_margin": {
-          "amount": -1600.0,
+          "amount": 800.0,
           "currency": "USD"
-        }
+        },
+        "net_margin_usd": 800.0,
+        "net_profit_usd": 800.0
       },
       "description": "Chemicals & Textile groupage batch",
-      "cargos": [
-        {
-          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          "cargo_type": "LTL",
-          "cargo": "Chemical Products",
-          "volume": 5.5,
-          "weight": 1200.0,
-          "container_type": null,
-          "container_truck_id": "01A777AA",
-          "agent_name": "Baytur Agent",
-          "client": {
-            "id": "b1b2b3b4-1111-2222-3333-444455556666",
-            "name": "AIGUL LLC"
-          },
-          "employee": {
-            "id": "e1e2e3e4-1111-2222-3333-444455556666",
-            "name": "Farhod"
-          },
-          "purchase_price": {
-            "amount": 900.0,
-            "currency": "USD",
-            "amount_usd": 900.0
-          },
-          "sell_price": {
-            "amount": 1600.0,
-            "currency": "USD",
-            "amount_usd": 1600.0
-          },
-          "net_yield_usd": 700.0,
-          "status": "Waiting",
-          "loaded_date": null,
-          "arrived_date": null,
-          "confirmed_date": "2026-08-20",
-          "purchase_date": "2026-08-20",
-          "sell_date": "2026-08-20",
-          "created_at": "2026-08-21T10:00:00.000Z",
-          "updated_at": "2026-08-21T10:00:00.000Z"
-        }
-      ],
       "created_at": "2026-08-21T10:15:00.000Z",
       "updated_at": "2026-08-21T10:15:00.000Z"
     }
@@ -292,13 +290,16 @@ Retrieves full operational and financial details of a specific consolidation (id
   "consolidation_code": "CNS-202608-0001",
   "container_truck_id": "01A777AA",
   "container_type": "86m3",
-  "status": "Loading",
+  "status": "Waiting",
   "carrier_name": "Baytur Turkish",
   "carrier_phone": "+998901234567",
   "origin_place": "Istanbul",
   "destination_place": "Tashkent",
+  "load_date": null,
   "loaded_date": null,
   "departure_date": "2026-08-25",
+  "border_arrival_date": null,
+  "tashkent_arrival_date": null,
   "estimated_arrival_date": "2026-09-02",
   "arrived_date": null,
   "capacity": {
@@ -313,17 +314,38 @@ Retrieves full operational and financial details of a specific consolidation (id
     "total_cargos_count": 2
   },
   "financials": {
+    "income": 4800.0,
+    "income_usd": 4800.0,
+    "total_income_usd": 4800.0,
     "total_sell_usd": 4800.0,
-    "total_purchase_usd": 2900.0,
-    "carrier_cost": {
-      "amount": 3500.0,
-      "currency": "USD",
-      "amount_usd": 3500.0
+    "outcome": 4000.0,
+    "outcome_usd": 4000.0,
+    "total_outcome_usd": 4000.0,
+    "total_purchase_usd": 0.0,
+    "expenses": {
+      "agent": {
+        "amount": 3500.0,
+        "currency": "USD",
+        "amount_usd": 3500.0
+      },
+      "customs_clearance_of_goods": {
+        "amount": 400.0,
+        "currency": "USD",
+        "amount_usd": 400.0
+      },
+      "cct": {
+        "amount": 100.0,
+        "currency": "USD",
+        "amount_usd": 100.0
+      },
+      "total_usd": 4000.0
     },
     "consolidated_net_margin": {
-      "amount": -1600.0,
+      "amount": 800.0,
       "currency": "USD"
-    }
+    },
+    "net_margin_usd": 800.0,
+    "net_profit_usd": 800.0
   },
   "description": "Chemicals & Textile groupage batch",
   "cargos": [
@@ -432,17 +454,38 @@ Retrieves full operational and financial details of a specific consolidation (id
     "total_cargos_count": 2
   },
   "financials": {
+    "income": 4800.0,
+    "income_usd": 4800.0,
+    "total_income_usd": 4800.0,
     "total_sell_usd": 4800.0,
-    "total_purchase_usd": 2900.0,
-    "carrier_cost": {
-      "amount": 3500.0,
-      "currency": "USD",
-      "amount_usd": 3500.0
+    "outcome": 4000.0,
+    "outcome_usd": 4000.0,
+    "total_outcome_usd": 4000.0,
+    "total_purchase_usd": 0.0,
+    "expenses": {
+      "agent": {
+        "amount": 3500.0,
+        "currency": "USD",
+        "amount_usd": 3500.0
+      },
+      "customs_clearance_of_goods": {
+        "amount": 400.0,
+        "currency": "USD",
+        "amount_usd": 400.0
+      },
+      "cct": {
+        "amount": 100.0,
+        "currency": "USD",
+        "amount_usd": 100.0
+      },
+      "total_usd": 4000.0
     },
     "consolidated_net_margin": {
-      "amount": -1600.0,
+      "amount": 800.0,
       "currency": "USD"
-    }
+    },
+    "net_margin_usd": 800.0,
+    "net_profit_usd": 800.0
   },
   "description": "Chemicals & Textile groupage batch",
   "cargos": [
@@ -570,24 +613,28 @@ Safely detaches cargos from the truck (sets `consolidation_id = NULL`):
 
 ## 6. Integration in Cargo Registrations (`/api/cargo-registrations`)
 
-The Cargo Registrations module natively integrates with Consolidations in both creation and retrieval flows.
+The Cargo Registrations module natively integrates with Consolidations:
+
+- **LTL Cargo (`cargo_type === 'LTL'`):** Strictly requires linking to a consolidation (either an existing `consolidation_id` or an inline `new_consolidation`). The operational fields (`transport_types`, `container_truck_id`, `agent_name`, origin & destination locations, `loaded_date`, `arrived_date`, `status`, `purchase_price = 0`, and `purchase_currency`) are directly inherited and synced from the assigned consolidation vehicle.
+- **FTL Cargo (`cargo_type === 'FTL'`):** Operates as an independent container/truck charter where direct inputs (`container_type`, `container_truck_id`, `agent_name`, `purchase_price`, `purchase_currency`, origin/destination, dates, etc.) are provided directly on the cargo record.
 
 ### 6.1. Creating a Cargo Registration with Consolidation Link
 
-You have **3 options** when creating a cargo registration:
+You have **2 primary workflows** for creating an LTL cargo registration:
 
-#### Option A: Link Existing Truck (User picks an active truck from dropdown)
+#### Option A: Link Existing Consolidation Truck (User picks an active truck from dropdown)
+
+When creating an LTL cargo, you only supply the commercial load details (`volume`, `weight`, `load_code`, `is_turnkey`, `cargo`, `sell_price`, `sell_currency`, `client_id`, `employee_id`) and the selected `consolidation_id`.
 
 ```json
 {
   "cargo_type": "LTL",
   "volume": 5.5,
   "weight": 800.0,
-  "consolidation_id": "e3b0c442-98fc-1c14-9afb-4c8996fb9242", // Selected truck ID
-  "agent_name": "Baytur Agent",
+  "load_code": "LC-1024",
+  "is_turnkey": false,
+  "consolidation_id": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
   "cargo": "Chemicals",
-  "purchase_price": 900,
-  "purchase_currency": "USD",
   "sell_price": 1300,
   "sell_currency": "USD",
   "client_id": "b1b2b3b4-1111-2222-3333-444455556666",
@@ -595,29 +642,38 @@ You have **3 options** when creating a cargo registration:
 }
 ```
 
-_(Note: `container_truck_id` and `container_type` are automatically inherited from the consolidation truck!)_
+> [!NOTE]
+> `container_truck_id`, `agent_name` (carrier name), `transport_types`, `origin_city`, `destination_city`, `loaded_date`, `arrived_date`, `status`, `purchase_price = 0.00`, and `purchase_currency` are **automatically inherited** from the consolidation truck!
 
 #### Option B: Inline Creation (User clicks "+ Create New Truck" inside the modal)
+
+If the truck trip does not exist yet, you can create the consolidation inline with full operational specs:
 
 ```json
 {
   "cargo_type": "LTL",
   "volume": 8.0,
   "weight": 1100.0,
+  "load_code": "LC-2048",
+  "is_turnkey": true,
   "new_consolidation": {
     "container_truck_id": "01B888BB",
     "container_type": "120m3",
+    "transport_types": ["auto"],
     "max_volume_capacity": 120.0,
     "max_weight_capacity": 24000.0,
     "carrier_name": "Silk Road Express",
+    "carrier_phone": "+998901234567",
     "origin_place": "Guangzhou",
     "destination_place": "Tashkent",
-    "departure_date": "2026-08-28"
+    "load_date": "2026-08-28",
+    "departure_date": "2026-08-28",
+    "estimated_arrival_date": "2026-09-05",
+    "total_carrier_cost": 4500,
+    "carrier_cost_currency": "USD",
+    "status": "Waiting"
   },
-  "agent_name": "Silk Agent",
   "cargo": "Fabrics",
-  "purchase_price": 1200,
-  "purchase_currency": "USD",
   "sell_price": 1900,
   "sell_currency": "USD",
   "client_id": "b1b2b3b4-1111-2222-3333-444455556666"
@@ -625,24 +681,6 @@ _(Note: `container_truck_id` and `container_type` are automatically inherited fr
 ```
 
 _(The backend creates the consolidation truck and links this cargo in a single atomic transaction!)_
-
-#### Option C: Standalone / Legacy Flow
-
-```json
-{
-  "cargo_type": "LTL",
-  "volume": 3.0,
-  "weight": 400.0,
-  "container_truck_id": "01C999CC",
-  "agent_name": "Express",
-  "cargo": "Samples",
-  "purchase_price": 400,
-  "purchase_currency": "USD",
-  "sell_price": 600,
-  "sell_currency": "USD",
-  "client_id": "b1b2b3b4-1111-2222-3333-444455556666"
-}
-```
 
 ### 6.2. Querying Cargo Registrations with Consolidation Filter
 

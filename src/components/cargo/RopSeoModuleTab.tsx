@@ -68,7 +68,7 @@ export function RopSeoModuleTab() {
                 {t('tabRopKpi')}
               </h2>
               <p className="text-xs text-neutral-300 mt-0.5">
-                Head of Department (ROP) multi-tier KPI aggregation engine
+                {t('ropSubtitle') || 'Head of Department (ROP) multi-tier KPI aggregation engine'}
               </p>
             </div>
           </div>
@@ -83,7 +83,7 @@ export function RopSeoModuleTab() {
               }`}
             >
               <BookOpen className="size-4" />
-              <span>Manager Career System Poster</span>
+              <span>{t('managerCareerPoster') || 'Manager Career System Poster'}</span>
               {showCareerSystem ? (
                 <ChevronUp className="size-4" />
               ) : (
@@ -124,7 +124,7 @@ export function RopSeoModuleTab() {
                 {t('tabSeoKpi')}
               </h2>
               <p className="text-xs text-neutral-300 mt-0.5">
-                10% Pure Net Profit KPI Calculator for SEO Managers
+                {t('seoSubtitle') || '10% Pure Net Profit KPI Calculator for SEO Managers'}
               </p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function RopSeoModuleTab() {
           <div className="lg:col-span-5 p-6 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Calculator className="size-4 text-brand-gold" />
-              SEO Net Profit Input
+              {t('seoNetProfitInput') || 'SEO Net Profit Input'}
             </h3>
 
             <div>
@@ -158,10 +158,11 @@ export function RopSeoModuleTab() {
 
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border text-xs space-y-1">
               <span className="text-muted-foreground font-medium block">
-                SEO Commission Policy:
+                {t('seoCommissionPolicy') || 'SEO Commission Policy:'}
               </span>
               <p className="text-muted-foreground">
-                SEO managers receive a fixed <strong>10% rate</strong> on pure net company profit.
+                {t('seoPolicyDesc') ||
+                  'SEO managers receive a fixed 10% rate on pure net company profit.'}
               </p>
             </div>
           </div>
@@ -172,9 +173,11 @@ export function RopSeoModuleTab() {
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div>
                   <span className="text-xs uppercase tracking-wider text-brand-gold font-bold">
-                    Calculated SEO KPI
+                    {t('calculatedSeoKpi') || 'Calculated SEO KPI'}
                   </span>
-                  <p className="text-xs text-neutral-300 mt-0.5">Fixed 10% Share</p>
+                  <p className="text-xs text-neutral-300 mt-0.5">
+                    {t('fixed10Share') || 'Fixed 10% Share'}
+                  </p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
                   <DollarSign className="size-6" />

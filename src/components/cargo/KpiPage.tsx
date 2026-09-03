@@ -1,37 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calculator, Truck, Crown, Target, Award, Boxes } from 'lucide-react';
+import { BarChart3, Calculator, Crown, Award, Target } from 'lucide-react';
 import { T } from '../T';
-import { usePermissions } from '../../context/PermissionsContext';
 import { LtlCalcTab } from './LtlCalcTab';
 import { RopSeoModuleTab } from './RopSeoModuleTab';
 import { EmployeePlansTab } from './EmployeePlansTab';
-import { ContainerTrackingTab } from './ContainerTrackingTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
-import { CargoConsolidationsTab } from './CargoConsolidationsTab';
 
-export type CargoTabId =
-  'container-tracking' | 'consolidations' | 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans';
+export type KpiTabId = 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans';
 
-export function CargoKpiPage() {
-  const { canRead } = usePermissions();
-  const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
+export function KpiPage() {
+  const [activeTab, setActiveTab] = useState<KpiTabId>('ltl-calc');
 
-  const tabs: { id: CargoTabId; labelKey: string; icon: React.ReactNode }[] = [
-    {
-      id: 'container-tracking',
-      labelKey: 'tabContainerTracking',
-      icon: <Truck className="size-4" />,
-    },
-    ...(canRead('cargo_consolidations')
-      ? [
-          {
-            id: 'consolidations' as CargoTabId,
-            labelKey: 'tabConsolidations',
-            icon: <Boxes className="size-4" />,
-          },
-        ]
-      : []),
+  const tabs: { id: KpiTabId; labelKey: string; icon: React.ReactNode }[] = [
     { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
     { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
     { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
@@ -40,14 +21,6 @@ export function CargoKpiPage() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'container-tracking':
-        return <ContainerTrackingTab />;
-      case 'consolidations':
-        return canRead('cargo_consolidations') ? (
-          <CargoConsolidationsTab />
-        ) : (
-          <ContainerTrackingTab />
-        );
       case 'ltl-calc':
         return <LtlCalcTab />;
       case 'rop-seo':
@@ -57,7 +30,7 @@ export function CargoKpiPage() {
       case 'plans':
         return <EmployeePlansTab />;
       default:
-        return <ContainerTrackingTab />;
+        return <LtlCalcTab />;
     }
   };
 
@@ -67,11 +40,11 @@ export function CargoKpiPage() {
       <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-brand-navy to-brand-royal text-brand-gold border border-brand-gold/30 shadow-sm shrink-0">
-            <Package className="size-5 sm:size-6" />
+            <BarChart3 className="size-5 sm:size-6" />
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-              <T k="navCargoKpi" />
+              <T k="navKpi" />
             </h1>
           </div>
         </div>
@@ -94,7 +67,7 @@ export function CargoKpiPage() {
               >
                 {isActive && (
                   <motion.div
-                    layoutId="active-cargo-tab-bg"
+                    layoutId="active-kpi-tab-bg"
                     className="absolute inset-0 bg-brand-gold/20 dark:bg-brand-gold/15 rounded-xl border border-brand-gold/40 shadow-sm"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />

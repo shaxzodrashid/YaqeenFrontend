@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import '@heroui/styles';
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, .dark, .dark *));
+
 @theme {
   --color-brand-royal: #0f2d5c;
   --color-brand-royal-hover: #173e77;
@@ -15,6 +17,7 @@
 
   /* Soft Night palette (dark theme foundations) */
   --color-night-canvas: #12161f;
+  --color-night-bg: #12161f;
   --color-night-surface: #1a2030;
   --color-night-elevated: #222a3c;
   --color-night-field: #161c28;

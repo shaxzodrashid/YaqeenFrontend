@@ -359,8 +359,8 @@ _Example Payload:_
       "message": "Phone number is not registered in the Telegram bot.",
       "error": "BadRequestException",
       "location": "telegram_not_registered",
-      "telegram_bot_username": "yaqeen_test_bot",
-      "telegram_bot_url": "https://t.me/yaqeen_test_bot?start=reg_998901234567"
+      "telegram_bot_username": "YaqeenOtpBot",
+      "telegram_bot_url": "https://t.me/YaqeenOtpBot?start=reg_998901234567"
     }
     ```
 - **400 Bad Request (`location: "account_not_found"`)**
@@ -390,8 +390,8 @@ Check if a phone number has been linked/registered in the Telegram OTP Bot, and 
 {
   "registered": true,
   "phone_number": "998901234567",
-  "telegram_bot_username": "yaqeen_test_bot",
-  "telegram_bot_url": "https://t.me/yaqeen_test_bot?start=reg_998901234567"
+  "telegram_bot_username": "YaqeenOtpBot",
+  "telegram_bot_url": "https://t.me/YaqeenOtpBot?start=reg_998901234567"
 }
 ```
 

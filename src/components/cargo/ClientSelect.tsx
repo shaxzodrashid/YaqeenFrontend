@@ -228,7 +228,7 @@ export function ClientSelect({
               type="button"
               onClick={handleClear}
               className="p-1 hover:text-foreground rounded-full hover:bg-muted/80 transition-colors"
-              title="Clear selection"
+              title={t('clearSelection') || 'Clear selection'}
             >
               <X className="size-3.5" />
             </button>
@@ -295,11 +295,11 @@ export function ClientSelect({
               {loading ? (
                 <div className="py-6 flex items-center justify-center gap-2 text-muted-foreground text-xs font-medium">
                   <Loader2 className="size-4 animate-spin text-brand-gold" />
-                  <span>Loading clients...</span>
+                  <span>{t('loadingClients') || 'Loading clients...'}</span>
                 </div>
               ) : clients.length === 0 ? (
                 <div className="py-6 text-center text-muted-foreground text-xs font-medium">
-                  No clients found
+                  {t('noClientsFound') || 'No clients found'}
                 </div>
               ) : (
                 clients.map((c) => {

@@ -4,6 +4,8 @@ import {
   cargoRegistrationsApi,
   convertPriceToUsdAndUzs,
   INITIAL_DEMO_RECORDS,
+  getDemoCargoRegistrations,
+  saveDemoCargoRegistrations,
 } from './cargoRegistrations.service';
 import { demoClientsDb } from './clients.service';
 import { demoEmployeesDb } from './employees.service';
@@ -56,6 +58,19 @@ export interface ConsolidationCapacity {
   total_cargos_count: number;
 }
 
+export interface ConsolidationExpenseItem {
+  amount: number;
+  currency: CurrencyType;
+  amount_usd: number;
+}
+
+export interface ConsolidationExpenses {
+  agent: ConsolidationExpenseItem;
+  customs_clearance_of_goods: ConsolidationExpenseItem;
+  cct: ConsolidationExpenseItem;
+  total_usd: number;
+}
+
 export interface ConsolidationNetMarginCurrencies {
   USD: number;
   UZS: number;
@@ -64,23 +79,27 @@ export interface ConsolidationNetMarginCurrencies {
 }
 
 export interface ConsolidationFinancials {
+  income?: number;
+  income_usd?: number;
+  total_income_usd?: number;
   total_sell_usd: number;
+  outcome?: number;
+  outcome_usd?: number;
+  total_outcome_usd?: number;
   total_purchase_usd: number;
-  carrier_cost: {
-    amount?: number;
-    currency: CurrencyType;
-    amount_usd: number;
-  };
+  expenses?: ConsolidationExpenses;
+  carrier_cost?: ConsolidationExpenseItem;
   consolidated_net_margin: {
     amount: number;
     currency: CurrencyType;
   };
   consolidated_net_margin_usd?: number;
+  net_margin_usd?: number;
+  net_profit_usd?: number;
   total_purchase_cost_usd?: number;
   total_sell_revenue_usd?: number;
   gross_margin_usd?: number;
   total_carrier_cost_usd?: number;
-  net_margin_usd?: number;
   margin_percent?: number;
 }
 
@@ -95,11 +114,14 @@ export function getConsolidatedNetMargin(financials?: ConsolidationFinancials | 
   if (typeof financials.consolidated_net_margin === 'number') {
     return financials.consolidated_net_margin;
   }
-  if (typeof financials.consolidated_net_margin_usd === 'number') {
-    return financials.consolidated_net_margin_usd;
+  if (typeof financials.net_profit_usd === 'number') {
+    return financials.net_profit_usd;
   }
   if (typeof financials.net_margin_usd === 'number') {
     return financials.net_margin_usd;
+  }
+  if (typeof financials.consolidated_net_margin_usd === 'number') {
+    return financials.consolidated_net_margin_usd;
   }
   return 0;
 }
@@ -118,18 +140,74 @@ export function getConsolidatedNetMarginCurrency(
 }
 
 export function getCarrierCostAmount(financials?: ConsolidationFinancials | null): number {
-  if (!financials?.carrier_cost) return 0;
-  return Number(financials.carrier_cost.amount ?? financials.carrier_cost.amount_usd) || 0;
+  if (!financials) return 0;
+  if (financials.expenses?.agent) {
+    return Number(financials.expenses.agent.amount ?? financials.expenses.agent.amount_usd) || 0;
+  }
+  if (financials.carrier_cost) {
+    return Number(financials.carrier_cost.amount ?? financials.carrier_cost.amount_usd) || 0;
+  }
+  return 0;
 }
 
 export function getCarrierCostCurrency(financials?: ConsolidationFinancials | null): CurrencyType {
-  if (!financials?.carrier_cost) return 'USD';
-  return financials.carrier_cost.currency || 'USD';
+  if (!financials) return 'USD';
+  if (financials.expenses?.agent?.currency) {
+    return financials.expenses.agent.currency;
+  }
+  if (financials.carrier_cost?.currency) {
+    return financials.carrier_cost.currency;
+  }
+  return 'USD';
 }
 
 export function getCarrierCostUsd(financials?: ConsolidationFinancials | null): number {
-  if (!financials?.carrier_cost) return 0;
-  return Number(financials.carrier_cost.amount_usd ?? financials.carrier_cost.amount) || 0;
+  if (!financials) return 0;
+  if (financials.expenses?.agent) {
+    return Number(financials.expenses.agent.amount_usd ?? financials.expenses.agent.amount) || 0;
+  }
+  if (financials.carrier_cost) {
+    return Number(financials.carrier_cost.amount_usd ?? financials.carrier_cost.amount) || 0;
+  }
+  return 0;
+}
+
+export function getTotalConsolidationExpensesUsd(
+  financials?: ConsolidationFinancials | null
+): number {
+  if (!financials) return 0;
+  if (financials.expenses?.total_usd !== undefined) {
+    return Number(financials.expenses.total_usd) || 0;
+  }
+  if (financials.total_outcome_usd !== undefined) {
+    return Number(financials.total_outcome_usd) || 0;
+  }
+  if (financials.outcome_usd !== undefined) {
+    return Number(financials.outcome_usd) || 0;
+  }
+  if (financials.outcome !== undefined) {
+    return Number(financials.outcome) || 0;
+  }
+  return getCarrierCostUsd(financials);
+}
+
+export function getTotalConsolidationIncomeUsd(
+  financials?: ConsolidationFinancials | null
+): number {
+  if (!financials) return 0;
+  if (financials.total_income_usd !== undefined) {
+    return Number(financials.total_income_usd) || 0;
+  }
+  if (financials.income_usd !== undefined) {
+    return Number(financials.income_usd) || 0;
+  }
+  if (financials.income !== undefined) {
+    return Number(financials.income) || 0;
+  }
+  if (financials.total_sell_usd !== undefined) {
+    return Number(financials.total_sell_usd) || 0;
+  }
+  return 0;
 }
 
 export interface ConsolidationCargoItem {
@@ -213,13 +291,19 @@ export interface ConsolidationListItem {
   tashkent_arrival_date?: string | null;
   estimated_arrival_date?: string | null;
   arrived_date?: string | null;
+  agent?: number;
+  agent_currency?: CurrencyType;
+  customs_clearance_of_goods?: number;
+  customs_clearance_of_goods_currency?: CurrencyType;
+  cct?: number;
+  cct_currency?: CurrencyType;
   total_carrier_cost: number;
   carrier_cost_currency: CurrencyType;
   carrier_cost_usd_rate?: number | null;
   capacity: ConsolidationCapacity;
   financials: ConsolidationFinancials;
   description?: string | null;
-  cargos: ConsolidationCargoItem[];
+  cargos?: ConsolidationCargoItem[];
   created_at: string;
   updated_at: string;
 }
@@ -276,6 +360,12 @@ export interface CreateConsolidationDto {
   tashkent_arrival_date?: string;
   estimated_arrival_date?: string;
   arrived_date?: string;
+  agent?: number;
+  agent_currency?: CurrencyType;
+  customs_clearance_of_goods?: number;
+  customs_clearance_of_goods_currency?: CurrencyType;
+  cct?: number;
+  cct_currency?: CurrencyType;
   total_carrier_cost?: number;
   carrier_cost_currency?: CurrencyType;
   carrier_cost_usd_rate?: number;
@@ -340,6 +430,7 @@ interface InternalConsolidationRecord {
   consolidation_code: string;
   container_truck_id: string;
   container_type: string | null;
+  transport_types?: TransportType[] | null;
   max_volume_capacity: number;
   max_weight_capacity: number;
   carrier_name: string | null;
@@ -363,6 +454,12 @@ interface InternalConsolidationRecord {
   tashkent_arrival_date?: string | null;
   estimated_arrival_date: string | null;
   arrived_date: string | null;
+  agent?: number;
+  agent_currency?: CurrencyType;
+  customs_clearance_of_goods?: number;
+  customs_clearance_of_goods_currency?: CurrencyType;
+  cct?: number;
+  cct_currency?: CurrencyType;
   total_carrier_cost: number;
   carrier_cost_currency: CurrencyType;
   carrier_cost_usd_rate: number | null;
@@ -379,10 +476,11 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     consolidation_code: 'CNS-202608-0001',
     container_truck_id: '01A777AA',
     container_type: '86m3',
+    transport_types: ['auto'],
     max_volume_capacity: 86.0,
     max_weight_capacity: 22000.0,
-    carrier_name: 'Baytur Express Lojistik',
-    carrier_phone: '+90 532 111 2233',
+    carrier_name: 'Baytur Turkish',
+    carrier_phone: '+998901234567',
     origin_place: 'Istanbul',
     origin_country: 'Turkey',
     origin_country_code: 'TR',
@@ -395,30 +493,37 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     destination_geoname_id: 1512569,
     destination_lat: 41.26465,
     destination_lng: 69.21627,
-    load_date: '2026-08-18',
-    loaded_date: '2026-08-18',
-    departure_date: '2026-08-20',
-    border_arrival_date: '2026-08-26',
-    tashkent_arrival_date: '2026-08-29',
-    estimated_arrival_date: '2026-08-29',
+    load_date: null,
+    loaded_date: null,
+    departure_date: '2026-08-25',
+    border_arrival_date: null,
+    tashkent_arrival_date: null,
+    estimated_arrival_date: '2026-09-02',
     arrived_date: null,
-    total_carrier_cost: 3800,
+    agent: 3500.0,
+    agent_currency: 'USD',
+    customs_clearance_of_goods: 400.0,
+    customs_clearance_of_goods_currency: 'USD',
+    cct: 100.0,
+    cct_currency: 'USD',
+    total_carrier_cost: 3500,
     carrier_cost_currency: 'USD',
     carrier_cost_usd_rate: 1,
-    status: 'On the way',
-    description: 'Chemicals, spare parts & fabrics consolidated batch',
+    status: 'Waiting',
+    description: 'Chemicals & Textile groupage batch',
     cargo_registration_ids: [
       'e4f1a239-20c1-4d33-91ab-b19c670f5e12',
       'd4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
     ],
-    created_at: '2026-08-16T09:00:00.000Z',
-    updated_at: '2026-08-20T11:30:00.000Z',
+    created_at: '2026-08-21T10:15:00.000Z',
+    updated_at: '2026-08-21T10:15:00.000Z',
   },
   {
     id: 'cns-demo-002',
     consolidation_code: 'CNS-202608-0002',
     container_truck_id: '01B888BB',
     container_type: '120m3',
+    transport_types: ['auto'],
     max_volume_capacity: 120.0,
     max_weight_capacity: 25000.0,
     carrier_name: 'Silk Road Trans Cargo',
@@ -435,11 +540,20 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     destination_geoname_id: 1512569,
     destination_lat: 41.26465,
     destination_lng: 69.21627,
+    load_date: null,
     loaded_date: null,
     departure_date: '2026-08-26',
+    border_arrival_date: null,
+    tashkent_arrival_date: null,
     estimated_arrival_date: '2026-09-05',
     arrived_date: null,
-    total_carrier_cost: 5200,
+    agent: 4500.0,
+    agent_currency: 'USD',
+    customs_clearance_of_goods: 500.0,
+    customs_clearance_of_goods_currency: 'USD',
+    cct: 120.0,
+    cct_currency: 'USD',
+    total_carrier_cost: 4500,
     carrier_cost_currency: 'USD',
     carrier_cost_usd_rate: 1,
     status: 'Waiting',
@@ -453,6 +567,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     consolidation_code: 'CNS-202608-0003',
     container_truck_id: 'TRK-9021',
     container_type: '40HQ',
+    transport_types: ['railway', 'auto'],
     max_volume_capacity: 76.0,
     max_weight_capacity: 26000.0,
     carrier_name: 'Eurasia Overland',
@@ -469,11 +584,20 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     destination_geoname_id: 1216265,
     destination_lat: 39.65417,
     destination_lng: 66.95972,
+    load_date: '2026-08-10',
     loaded_date: '2026-08-10',
     departure_date: '2026-08-12',
+    border_arrival_date: '2026-08-18',
+    tashkent_arrival_date: null,
     estimated_arrival_date: '2026-08-22',
     arrived_date: null,
-    total_carrier_cost: 4100,
+    agent: 3600.0,
+    agent_currency: 'USD',
+    customs_clearance_of_goods: 350.0,
+    customs_clearance_of_goods_currency: 'USD',
+    cct: 90.0,
+    cct_currency: 'USD',
+    total_carrier_cost: 3600,
     carrier_cost_currency: 'USD',
     carrier_cost_usd_rate: 1,
     status: 'On the border',
@@ -487,6 +611,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     consolidation_code: 'CNS-202607-0012',
     container_truck_id: '01C999CC',
     container_type: '96m3',
+    transport_types: ['auto'],
     max_volume_capacity: 96.0,
     max_weight_capacity: 21000.0,
     carrier_name: 'Albatros Trans Asia',
@@ -503,11 +628,20 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     destination_geoname_id: 1512569,
     destination_lat: 41.26465,
     destination_lng: 69.21627,
+    load_date: '2026-07-20',
     loaded_date: '2026-07-20',
     departure_date: '2026-07-22',
+    border_arrival_date: '2026-07-28',
+    tashkent_arrival_date: '2026-08-01',
     estimated_arrival_date: '2026-08-01',
     arrived_date: '2026-08-02',
-    total_carrier_cost: 4600,
+    agent: 4100.0,
+    agent_currency: 'USD',
+    customs_clearance_of_goods: 450.0,
+    customs_clearance_of_goods_currency: 'USD',
+    cct: 100.0,
+    cct_currency: 'USD',
+    total_carrier_cost: 4100,
     carrier_cost_currency: 'USD',
     carrier_cost_usd_rate: 1,
     status: 'Arrived',
@@ -520,7 +654,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
 
 function getStoredConsolidations(): InternalConsolidationRecord[] {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('yaqeen_cargo_consolidations_db');
       if (raw) return JSON.parse(raw);
     }
@@ -532,7 +666,7 @@ function getStoredConsolidations(): InternalConsolidationRecord[] {
 
 function saveStoredConsolidations(records: InternalConsolidationRecord[]) {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem('yaqeen_cargo_consolidations_db', JSON.stringify(records));
     }
   } catch {
@@ -542,10 +676,14 @@ function saveStoredConsolidations(records: InternalConsolidationRecord[]) {
 
 let demoConsolidations = getStoredConsolidations();
 
-// Helper to retrieve live cargo registrations from localStorage or memory
+// Helper to retrieve live cargo registrations from shared store, localStorage or memory
 function getLiveCargoRegistrations(): any[] {
+  if (typeof getDemoCargoRegistrations === 'function') {
+    const list = getDemoCargoRegistrations();
+    if (list && list.length > 0) return list;
+  }
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('yaqeen_cargo_registrations_db');
       if (raw) return JSON.parse(raw);
     }
@@ -556,8 +694,11 @@ function getLiveCargoRegistrations(): any[] {
 }
 
 function saveLiveCargoRegistrations(records: any[]) {
+  if (typeof saveDemoCargoRegistrations === 'function') {
+    saveDemoCargoRegistrations(records);
+  }
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem('yaqeen_cargo_registrations_db', JSON.stringify(records));
     }
   } catch {
@@ -566,7 +707,10 @@ function saveLiveCargoRegistrations(records: any[]) {
 }
 
 // Convert internal record to full response object with capacity and financials
-function buildConsolidationResponse(record: InternalConsolidationRecord): ConsolidationListItem {
+function buildConsolidationResponse(
+  record: InternalConsolidationRecord,
+  isList: boolean = false
+): ConsolidationListItem {
   const allCargos = getLiveCargoRegistrations();
   const assignedCargoRecords = allCargos.filter((c) =>
     record.cargo_registration_ids.includes(c.id)
@@ -601,7 +745,22 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
     totalSellUsd += sellConv.amount_usd;
     totalPurchaseUsd += purConv.amount_usd;
 
-    const netYield = Math.max(0, sellConv.amount_usd - purConv.amount_usd);
+    const addExpAmt = Number(c.additional_expense) || 0;
+    const addExpCurr = c.additional_expense_currency || 'USD';
+    const addExpConv =
+      addExpAmt > 0
+        ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, c.purchase_date, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+    const intLogAmt = Number(c.internal_logistics_cost) || 0;
+    const intLogCurr = c.internal_logistics_currency || 'USD';
+    const intLogConv =
+      intLogAmt > 0
+        ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, c.purchase_date, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+    const cargoTotalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+    const netYield = Math.round((sellConv.amount_usd - cargoTotalOutcomeUsd) * 100) / 100;
 
     const client = demoClientsDb.find((cl) => cl.id === c.client_id);
     const emp = demoEmployeesDb.get(c.employee_id);
@@ -663,14 +822,48 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
   const volUtilPct = maxVol > 0 ? (assignedVol / maxVol) * 100 : 0;
   const wtUtilPct = maxWt > 0 ? (assignedWeight / maxWt) * 100 : 0;
 
-  const carrierCostConv = convertPriceToUsdAndUzs(
-    record.total_carrier_cost,
-    record.carrier_cost_currency || 'USD',
+  // Convert all 5 expenses
+  const agentAmt =
+    record.agent !== undefined ? Number(record.agent) : Number(record.total_carrier_cost) || 0;
+  const agentCurr = record.agent_currency || record.carrier_cost_currency || 'USD';
+  const agentConv = convertPriceToUsdAndUzs(
+    agentAmt,
+    agentCurr,
     record.departure_date,
     record.carrier_cost_usd_rate
   );
 
-  const netMarginUsd = totalSellUsd - totalPurchaseUsd - carrierCostConv.amount_usd;
+  const customsAmt = Number(record.customs_clearance_of_goods) || 0;
+  const customsCurr = record.customs_clearance_of_goods_currency || 'USD';
+  const customsConv = convertPriceToUsdAndUzs(customsAmt, customsCurr, record.departure_date);
+
+  const cctAmt = Number(record.cct) || 0;
+  const cctCurr = record.cct_currency || 'USD';
+  const cctConv = convertPriceToUsdAndUzs(cctAmt, cctCurr, record.departure_date);
+
+  const totalExpensesUsd =
+    Math.round((agentConv.amount_usd + customsConv.amount_usd + cctConv.amount_usd) * 100) / 100;
+  const totalIncomeUsd = Math.round(totalSellUsd * 100) / 100;
+  const netMarginUsd = Math.round((totalIncomeUsd - totalExpensesUsd) * 100) / 100;
+
+  const expensesObj: ConsolidationExpenses = {
+    agent: {
+      amount: Math.round(agentAmt * 100) / 100,
+      currency: agentCurr,
+      amount_usd: Math.round(agentConv.amount_usd * 100) / 100,
+    },
+    customs_clearance_of_goods: {
+      amount: Math.round(customsAmt * 100) / 100,
+      currency: customsCurr,
+      amount_usd: Math.round(customsConv.amount_usd * 100) / 100,
+    },
+    cct: {
+      amount: Math.round(cctAmt * 100) / 100,
+      currency: cctCurr,
+      amount_usd: Math.round(cctConv.amount_usd * 100) / 100,
+    },
+    total_usd: totalExpensesUsd,
+  };
 
   const origDetail: LocationDetail | null = record.origin_place
     ? {
@@ -732,11 +925,12 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
         }
       : null;
 
-  return {
+  const item: ConsolidationListItem = {
     id: record.id,
     consolidation_code: record.consolidation_code,
     container_truck_id: record.container_truck_id,
     container_type: record.container_type,
+    transport_types: record.transport_types || ['auto'],
     status: record.status,
     carrier_name: record.carrier_name,
     carrier_phone: record.carrier_phone,
@@ -755,15 +949,21 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
     origin: origDetail,
     destination: destDetail,
     route: routeInfo,
-    load_date: (record as any).load_date || record.loaded_date || null,
-    loaded_date: record.loaded_date || (record as any).load_date || null,
+    load_date: record.load_date || record.loaded_date || null,
+    loaded_date: record.loaded_date || record.load_date || null,
     departure_date: record.departure_date,
-    border_arrival_date: (record as any).border_arrival_date || null,
-    tashkent_arrival_date: (record as any).tashkent_arrival_date || null,
+    border_arrival_date: record.border_arrival_date || null,
+    tashkent_arrival_date: record.tashkent_arrival_date || null,
     estimated_arrival_date: record.estimated_arrival_date,
     arrived_date: record.arrived_date,
-    total_carrier_cost: record.total_carrier_cost,
-    carrier_cost_currency: record.carrier_cost_currency,
+    agent: agentAmt,
+    agent_currency: agentCurr,
+    customs_clearance_of_goods: customsAmt,
+    customs_clearance_of_goods_currency: customsCurr,
+    cct: cctAmt,
+    cct_currency: cctCurr,
+    total_carrier_cost: agentAmt,
+    carrier_cost_currency: agentCurr,
     carrier_cost_usd_rate: record.carrier_cost_usd_rate,
     capacity: {
       max_volume_m3: Math.round(maxVol * 100) / 100,
@@ -774,34 +974,43 @@ function buildConsolidationResponse(record: InternalConsolidationRecord): Consol
       assigned_weight_kg: Math.round(assignedWeight * 100) / 100,
       remaining_weight_kg: Math.round(remainingWt * 100) / 100,
       weight_utilization_percent: Math.round(wtUtilPct * 100) / 100,
-      total_cargos_count: cargosList.length,
+      total_cargos_count: assignedCargoRecords.length,
     },
     financials: {
-      total_sell_usd: Math.round(totalSellUsd * 100) / 100,
-      total_purchase_usd: Math.round(totalPurchaseUsd * 100) / 100,
-      carrier_cost: {
-        amount: Math.round(record.total_carrier_cost * 100) / 100,
-        currency: record.carrier_cost_currency || 'USD',
-        amount_usd: Math.round(carrierCostConv.amount_usd * 100) / 100,
-      },
+      income: totalIncomeUsd,
+      income_usd: totalIncomeUsd,
+      total_income_usd: totalIncomeUsd,
+      total_sell_usd: totalIncomeUsd,
+      outcome: totalExpensesUsd,
+      outcome_usd: totalExpensesUsd,
+      total_outcome_usd: totalExpensesUsd,
+      total_purchase_usd: 0,
+      expenses: expensesObj,
+      carrier_cost: expensesObj.agent,
       consolidated_net_margin: {
-        amount: Math.round(netMarginUsd * 100) / 100,
+        amount: netMarginUsd,
         currency: 'USD',
       },
-      consolidated_net_margin_usd: Math.round(netMarginUsd * 100) / 100,
-      total_purchase_cost_usd: Math.round(totalPurchaseUsd * 100) / 100,
-      total_sell_revenue_usd: Math.round(totalSellUsd * 100) / 100,
-      gross_margin_usd: Math.round((totalSellUsd - totalPurchaseUsd) * 100) / 100,
-      total_carrier_cost_usd: Math.round(carrierCostConv.amount_usd * 100) / 100,
-      net_margin_usd: Math.round(netMarginUsd * 100) / 100,
+      consolidated_net_margin_usd: netMarginUsd,
+      net_margin_usd: netMarginUsd,
+      net_profit_usd: netMarginUsd,
+      total_purchase_cost_usd: 0,
+      total_sell_revenue_usd: totalIncomeUsd,
+      gross_margin_usd: totalIncomeUsd,
+      total_carrier_cost_usd: expensesObj.agent.amount_usd,
       margin_percent:
-        totalSellUsd > 0 ? Math.round((netMarginUsd / totalSellUsd) * 10000) / 100 : 0,
+        totalIncomeUsd > 0 ? Math.round((netMarginUsd / totalIncomeUsd) * 10000) / 100 : 0,
     },
     description: record.description,
-    cargos: cargosList,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };
+
+  if (!isList) {
+    item.cargos = cargosList;
+  }
+
+  return item;
 }
 
 // ---------------------------------------------------------------------------
@@ -976,9 +1185,49 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const currentRec = demoConsolidations[recIndex];
+    const agentAmt =
+      body?.agent !== undefined
+        ? Number(body.agent)
+        : body?.total_carrier_cost !== undefined
+          ? Number(body.total_carrier_cost)
+          : (currentRec.agent ?? currentRec.total_carrier_cost);
+    const agentCurr =
+      body?.agent_currency ||
+      body?.carrier_cost_currency ||
+      currentRec.agent_currency ||
+      currentRec.carrier_cost_currency ||
+      'USD';
+
+    const loadedDateVal =
+      body?.loaded_date !== undefined
+        ? body.loaded_date
+        : body?.load_date !== undefined
+          ? body.load_date
+          : currentRec.loaded_date;
+    const loadDateVal =
+      body?.load_date !== undefined
+        ? body.load_date
+        : body?.loaded_date !== undefined
+          ? body.loaded_date
+          : currentRec.load_date;
+
     const updated: InternalConsolidationRecord = {
       ...currentRec,
       ...body,
+      agent: agentAmt,
+      agent_currency: agentCurr,
+      total_carrier_cost: agentAmt,
+      carrier_cost_currency: agentCurr,
+      load_date: loadDateVal,
+      loaded_date: loadedDateVal,
+      border_arrival_date:
+        body?.border_arrival_date !== undefined
+          ? body.border_arrival_date
+          : currentRec.border_arrival_date,
+      tashkent_arrival_date:
+        body?.tashkent_arrival_date !== undefined
+          ? body.tashkent_arrival_date
+          : currentRec.tashkent_arrival_date,
       updated_at: new Date().toISOString(),
     };
 
@@ -996,7 +1245,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             changed = true;
           }
           if (body.sync_dates_to_cargos) {
-            if (body.loaded_date !== undefined) c.loaded_date = body.loaded_date;
+            const lDate = body.loaded_date !== undefined ? body.loaded_date : body.load_date;
+            if (lDate !== undefined) c.loaded_date = lDate;
             if (body.arrived_date !== undefined) c.arrived_date = body.arrived_date;
             changed = true;
           }
@@ -1044,11 +1294,19 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       body?.consolidation_code ||
       `CNS-${todayStr.slice(0, 7).replace('-', '')}-${String(count).padStart(4, '0')}`;
 
+    const agentAmt =
+      body.agent !== undefined ? Number(body.agent) : Number(body.total_carrier_cost) || 0;
+    const agentCurr = body.agent_currency || body.carrier_cost_currency || 'USD';
+
     const newRecord: InternalConsolidationRecord = {
       id: `cns-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       consolidation_code: autoCode,
       container_truck_id: body.container_truck_id,
       container_type: body.container_type || '86m3',
+      transport_types:
+        Array.isArray(body.transport_types) && body.transport_types.length > 0
+          ? body.transport_types
+          : ['auto'],
       max_volume_capacity: Number(body.max_volume_capacity) || 86.0,
       max_weight_capacity: Number(body.max_weight_capacity) || 22000.0,
       carrier_name: body.carrier_name || null,
@@ -1073,8 +1331,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       tashkent_arrival_date: body.tashkent_arrival_date || null,
       estimated_arrival_date: body.estimated_arrival_date || null,
       arrived_date: body.arrived_date || null,
-      total_carrier_cost: Number(body.total_carrier_cost) || 0,
-      carrier_cost_currency: body.carrier_cost_currency || 'USD',
+      agent: agentAmt,
+      agent_currency: agentCurr,
+      customs_clearance_of_goods: Number(body.customs_clearance_of_goods) || 0,
+      customs_clearance_of_goods_currency: body.customs_clearance_of_goods_currency || 'USD',
+      cct: Number(body.cct) || 0,
+      cct_currency: body.cct_currency || 'USD',
+      total_carrier_cost: agentAmt,
+      carrier_cost_currency: agentCurr,
       carrier_cost_usd_rate: body.carrier_cost_usd_rate || 1,
       status: body.status || 'Waiting',
       description: body.description || null,
@@ -1101,7 +1365,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       if (changed) saveLiveCargoRegistrations(allCargos);
     }
 
-    return { handled: true, result: buildConsolidationResponse(newRecord) };
+    return { handled: true, result: buildConsolidationResponse(newRecord, false) };
   }
 
   // 8. GET /consolidations (Paginated List)
@@ -1211,7 +1475,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
     const total = filtered.length;
     const paginated = filtered.slice(offset, offset + limit);
-    const dataList = paginated.map(buildConsolidationResponse);
+    const dataList = paginated.map((rec) => buildConsolidationResponse(rec, true));
 
     // Compute meta metrics for the banner
     let totalCapVol = 0;
@@ -1220,7 +1484,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     let activeCount = 0;
 
     demoConsolidations.forEach((rec) => {
-      const full = buildConsolidationResponse(rec);
+      const full = buildConsolidationResponse(rec, true);
       totalCapVol += full.capacity.max_volume_m3;
       totalAssignedVol += full.capacity.assigned_volume_m3;
       totalMargin += getConsolidatedNetMargin(full.financials);
@@ -1457,6 +1721,24 @@ export const cargoConsolidationsApi = {
         c.sell_custom_rate || c.sell_usd_rate,
         c.usd_rmb_rate
       );
+      const addExpAmt = Number(c.additional_expense) || 0;
+      const addExpCurr = c.additional_expense_currency || 'USD';
+      const addExpConv =
+        addExpAmt > 0
+          ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, c.purchase_date, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const intLogAmt = Number(c.internal_logistics_cost) || 0;
+      const intLogCurr = c.internal_logistics_currency || 'USD';
+      const intLogConv =
+        intLogAmt > 0
+          ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, c.purchase_date, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const cargoTotalOutcomeUsd =
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+      const netYield = Math.round((sellConv.amount_usd - cargoTotalOutcomeUsd) * 100) / 100;
+
       const client = demoClientsDb.find((cl) => cl.id === c.client_id);
       const emp = demoEmployeesDb.get(c.employee_id);
 
@@ -1498,7 +1780,7 @@ export const cargoConsolidationsApi = {
           currency: c.sell_currency,
           amount_usd: sellConv.amount_usd,
         },
-        net_yield_usd: Math.max(0, sellConv.amount_usd - purConv.amount_usd),
+        net_yield_usd: netYield,
         status: c.status,
         loaded_date: c.loaded_date,
         arrived_date: c.arrived_date,

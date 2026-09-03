@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronDown, Check, X, User, Loader2 } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { employeesApi } from '../../services/employees.service';
 import type { Employee } from '../../services/employees.service';
 
@@ -16,12 +17,16 @@ export interface EmployeeSelectProps {
 export function EmployeeSelect({
   value,
   onChange,
-  label = 'Select Employee',
-  placeholder = 'Search employee by name or phone...',
+  label,
+  placeholder,
   required = false,
   disabled = false,
   className = '',
 }: EmployeeSelectProps) {
+  const { t } = useTranslation();
+  const displayLabel = label ?? (t('colEmployee') || 'Select Employee');
+  const displayPlaceholder =
+    placeholder ?? (t('searchEmployeePlaceholder') || 'Search employee by name or phone...');
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -138,9 +143,9 @@ export function EmployeeSelect({
       className={`relative w-full ${isOpen ? 'z-[60]' : 'z-auto'} ${className}`}
       ref={dropdownRef}
     >
-      {label && (
+      {displayLabel && (
         <label className="block text-xs font-medium text-muted-foreground mb-1">
-          {label} {required && <span className="text-rose-500">*</span>}
+          {displayLabel} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
 
@@ -179,13 +184,14 @@ export function EmployeeSelect({
                   {selectedEmployee.department_display_name ||
                     selectedEmployee.department_name ||
                     selectedEmployee.phone ||
+                    t('colEmployee') ||
                     'Employee'}
                 </span>
               </div>
             </>
           ) : (
             <span className="text-muted-foreground text-xs font-medium truncate">
-              {placeholder}
+              {displayPlaceholder}
             </span>
           )}
         </div>
@@ -196,7 +202,7 @@ export function EmployeeSelect({
               type="button"
               onClick={handleClear}
               className="p-1 hover:text-foreground rounded-full hover:bg-muted/80 transition-colors"
-              title="Clear selection"
+              title={t('clearSelection') || 'Clear selection'}
             >
               <X className="size-3.5" />
             </button>
@@ -231,7 +237,7 @@ export function EmployeeSelect({
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, phone, dept..."
+                placeholder={displayPlaceholder}
                 className="w-full pl-9 pr-3 py-2 text-xs font-medium rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
               />
               {loading && (
@@ -245,12 +251,12 @@ export function EmployeeSelect({
             {loading && employees.length === 0 ? (
               <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                 <Loader2 className="size-4 animate-spin text-brand-gold" />
-                <span>Searching employees backend...</span>
+                <span>{t('loadingEmployees') || 'Searching employees backend...'}</span>
               </div>
             ) : employees.length === 0 ? (
               <div className="p-4 text-center text-xs text-muted-foreground">
                 <User className="size-6 mx-auto mb-1 opacity-40" />
-                No employees found matching "{searchQuery}"
+                {t('noEmployeesFound') || 'No employees found'}
               </div>
             ) : (
               employees.map((emp) => {

@@ -3,7 +3,6 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Package,
   Boxes,
   Percent,
   ShoppingCart,
@@ -32,11 +31,11 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
 
     if (loading) {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
+          {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="h-32 rounded-2xl bg-surface/60 dark:bg-night-surface/60 border border-border/40 dark:border-night-border animate-pulse p-4"
+              className="h-28 rounded-2xl bg-surface/60 dark:bg-night-surface/60 border border-border/40 dark:border-night-border animate-pulse p-4"
             />
           ))}
         </div>
@@ -45,7 +44,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
 
     if (!summary) return null;
 
-    const currency = summary.currency || 'UZS';
+    const currency = summary.currency || 'USD';
 
     // Extract values based on selected Spec Mode (Actuals vs Monthly vs Yearly)
     const hasMonthly = Boolean(summary.monthly);
@@ -56,7 +55,6 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
     let activeMargin = summary.totalMargin;
     let activeMarginPct = summary.marginPercentage;
     let activeOrders = summary.totalOrders;
-    let activeAov = summary.averageOrderValue;
     let activeSalesGrowth = summary.salesGrowthVsPriorPeriod;
     let activeMarginGrowth = summary.marginGrowthVsPriorPeriod;
 
@@ -68,7 +66,6 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         summary.monthly.marginPercentage ??
         (activeSales > 0 ? Number(((activeMargin / activeSales) * 100).toFixed(2)) : 0);
       activeOrders = summary.monthly.orderCount;
-      activeAov = activeOrders > 0 ? Number((activeSales / activeOrders).toFixed(2)) : 0;
       activeSalesGrowth = summary.monthly.revenueGrowthRate ?? null;
       activeMarginGrowth = summary.monthly.netProfitGrowthRate ?? null;
     } else if (specMode === 'yearly' && summary.yearly) {
@@ -79,7 +76,6 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         summary.yearly.marginPercentage ??
         (activeSales > 0 ? Number(((activeMargin / activeSales) * 100).toFixed(2)) : 0);
       activeOrders = summary.yearly.orderCount;
-      activeAov = activeOrders > 0 ? Number((activeSales / activeOrders).toFixed(2)) : 0;
       activeSalesGrowth = summary.yearly.revenueGrowthRate ?? null;
       activeMarginGrowth = summary.yearly.netProfitGrowthRate ?? null;
     }
@@ -91,7 +87,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
       key: string;
       titleKey: TranslationKey;
       value: string;
-      subtitle: React.ReactNode;
+      subtitle: string;
       icon: React.ReactNode;
       iconBg: string;
       badge: React.ReactNode;
@@ -100,17 +96,13 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         key: 'revenue',
         titleKey: 'ovKpiTotalRevenue',
         value: formatMoney(activeSales, currency),
-        subtitle: (
-          <span className="truncate">
-            <T k="ovSubTotalRegisteredOrders" replacements={{ count: activeOrders }} />
-          </span>
-        ),
+        subtitle: `${activeOrders} ${t('ovOrdersCount', { count: activeOrders }).split(' ')[1] || 'orders'}`,
         icon: <DollarSign className="size-4.5" />,
         iconBg: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/15',
         badge:
           activeSalesGrowth !== null ? (
             <span
-              className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                 isSalesPositive
                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                   : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
@@ -129,17 +121,13 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         key: 'margin',
         titleKey: 'ovKpiNetMargin',
         value: formatMoney(activeMargin, currency),
-        subtitle: (
-          <span className="truncate">
-            <T k="ovSubMarginYield" replacements={{ pct: activeMarginPct }} />
-          </span>
-        ),
+        subtitle: `${t('ovMarginYield')}: ${activeMarginPct}%`,
         icon: <Percent className="size-4.5" />,
         iconBg: 'bg-brand-gold/15 text-brand-gold',
         badge:
           activeMarginGrowth !== null ? (
             <span
-              className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                 isMarginPositive
                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                   : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
@@ -153,8 +141,8 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
               {isMarginPositive ? `+${activeMarginGrowth}%` : `${activeMarginGrowth}%`}
             </span>
           ) : (
-            <span className="text-[10px] font-bold text-brand-gold px-1.5 py-0.5 rounded-full bg-brand-gold/10">
-              {activeMarginPct}% {t('ovYieldSuffix')}
+            <span className="text-[10px] font-bold text-brand-gold px-2 py-0.5 rounded-full bg-brand-gold/10">
+              {activeMarginPct}%
             </span>
           ),
       },
@@ -162,79 +150,32 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
         key: 'cogs',
         titleKey: 'ovKpiCarrierCost',
         value: formatMoney(activeCost, currency),
-        subtitle: (
-          <span className="truncate">
-            <T k="ovSubCogsCost" />
-          </span>
-        ),
+        subtitle: `${activeSales > 0 ? Math.round((activeCost / activeSales) * 100) : 0}% ${t('ovOfRevenueSuffix')}`,
         icon: <Receipt className="size-4.5" />,
         iconBg: 'bg-purple-500/10 text-purple-500 dark:bg-purple-500/15',
-        badge: (
-          <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-full">
-            {activeSales > 0 ? Math.round((activeCost / activeSales) * 100) : 0}%{' '}
-            {t('ovOfRevenueSuffix')}
-          </span>
-        ),
+        badge: null,
       },
       {
         key: 'orders',
         titleKey: 'ovKpiTotalOrders',
         value: String(activeOrders),
-        subtitle: (
-          <span className="truncate">
-            <T
-              k="ovSubCompletedPending"
-              replacements={{
-                completed: summary.completedOrders,
-                waiting: summary.waitingOrders,
-              }}
-            />
-          </span>
-        ),
+        subtitle: `${summary.completedOrders} ${t('statusArrived').toLowerCase()}`,
         icon: <ShoppingCart className="size-4.5" />,
         iconBg: 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/15',
         badge: (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            {t('ovFtlShort')}: {summary.ftlOrderCount} | {t('ovLtlShort')}: {summary.ltlOrderCount}
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            FTL {summary.ftlOrderCount} • LTL {summary.ltlOrderCount}
           </span>
         ),
-      },
-      {
-        key: 'aov',
-        titleKey: 'ovKpiAov',
-        value: formatMoney(activeAov, currency),
-        subtitle: (
-          <span className="truncate">
-            <T k="ovSubMeanRevenue" />
-          </span>
-        ),
-        icon: <Package className="size-4.5" />,
-        iconBg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/15',
-        badge: null,
       },
       {
         key: 'volume',
         titleKey: 'ovKpiVolumeWeight',
         value: `${summary.totalVolume} m³`,
-        subtitle: (
-          <span className="truncate">
-            <T
-              k="ovSubTotalWeight"
-              replacements={{
-                weight: summary.totalWeight.toLocaleString(
-                  locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US'
-                ),
-              }}
-            />
-          </span>
-        ),
+        subtitle: `${(summary.totalWeight / 1000).toFixed(1)} t (${summary.totalWeight.toLocaleString(locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US')} kg)`,
         icon: <Boxes className="size-4.5" />,
         iconBg: 'bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/15',
-        badge: (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-            {(summary.totalWeight / 1000).toFixed(1)} t
-          </span>
-        ),
+        badge: null,
       },
     ];
 
@@ -313,12 +254,12 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
           </div>
         )}
 
-        {/* Dense Responsive 6-Card Executive Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        {/* Clean Responsive 5-Card Executive Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
           {cards.map((card) => (
             <div
               key={card.key}
-              className="p-3.5 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border hover:border-brand-gold/40 dark:hover:border-brand-gold/40 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between min-w-0"
+              className="p-4 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border hover:border-brand-gold/40 dark:hover:border-brand-gold/40 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between min-w-0"
             >
               <div className="flex items-center justify-between gap-1.5">
                 <div className={`p-2 rounded-xl ${card.iconBg} shrink-0`}>{card.icon}</div>
@@ -330,12 +271,12 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = React.memo(
                   <T k={card.titleKey} />
                 </span>
                 <span
-                  className="text-base sm:text-lg font-black text-foreground dark:text-night-text tracking-tight mt-0.5 truncate"
+                  className="text-lg sm:text-xl font-black text-foreground dark:text-night-text tracking-tight mt-0.5 truncate"
                   title={card.value}
                 >
                   {card.value}
                 </span>
-                <div className="text-[10px] text-muted dark:text-night-muted mt-1 leading-tight truncate">
+                <div className="text-[11px] text-muted dark:text-night-muted mt-1 leading-tight truncate">
                   {card.subtitle}
                 </div>
               </div>

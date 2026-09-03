@@ -1,14 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  TrendingUp,
-  TrendingDown,
-  RefreshCw,
-  ArrowRightLeft,
-  Coins,
-  X,
-  Loader2,
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowRightLeft, Coins, X, Loader2 } from 'lucide-react';
 import { api, formatMoney } from '../../services/api';
 import type {
   ExchangeRatesResponse,
@@ -20,17 +12,32 @@ import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { T } from '../T';
 
+const CAROUSEL_INTERVAL_MS = 15_000; // 15 seconds
+
+type CarouselCurrency = { code: string; colorClass: string };
+
+const CURRENCIES: CarouselCurrency[] = [
+  { code: 'USD', colorClass: 'text-blue-600 dark:text-blue-400' },
+  { code: 'RUB', colorClass: 'text-purple-600 dark:text-purple-400' },
+  { code: 'RMB', colorClass: 'text-red-600 dark:text-red-400' },
+];
+
 interface CbuRatesWidgetProps {
+  /** When true, renders as a minimal inline carousel indicator */
   compact?: boolean;
 }
 
-export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
+export function CbuRatesWidget({ compact: _compact = false }: CbuRatesWidgetProps = {}) {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
-  const { canRead, canUpdate } = usePermissions();
+  const { canRead } = usePermissions();
   const [ratesData, setRatesData] = useState<ExchangeRatesResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [syncing, setSyncing] = useState<boolean>(false);
+
+  // Carousel state
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState(1); // 1 = forward
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Converter Modal state
   const [isConverterOpen, setIsConverterOpen] = useState<boolean>(false);
@@ -56,30 +63,17 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
     fetchRates();
   }, [fetchRates]);
 
-  const handleSyncRates = async () => {
-    setSyncing(true);
-    try {
-      const res = await api.currency.syncRates();
-      if (res?.rates) {
-        setRatesData((prev) =>
-          prev
-            ? { ...prev, rates: res.rates }
-            : {
-                provider: 'Central Bank of Uzbekistan (CBU)',
-                base_currency: 'UZS',
-                supported_currencies: ['UZS', 'USD', 'RUB', 'RMB', 'CNY'],
-                rates: res.rates,
-              }
-        );
-      }
-      showNotification(t('cbuNotifSyncSuccess'), 'success');
-      fetchRates();
-    } catch (err: any) {
-      showNotification(err?.message || t('cbuNotifSyncFailed'), 'error');
-    } finally {
-      setSyncing(false);
-    }
-  };
+  // Auto-rotate carousel
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setDirection(1);
+      setActiveIndex((prev) => (prev + 1) % CURRENCIES.length);
+    }, CAROUSEL_INTERVAL_MS);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const handleConvert = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -106,186 +100,112 @@ export function CbuRatesWidget({ compact = false }: CbuRatesWidgetProps) {
 
   if (!canRead('currency')) return null;
 
-  const usdRate = ratesData?.rates?.USD;
-  const rubRate = ratesData?.rates?.RUB;
-  const rmbRate = ratesData?.rates?.RMB || ratesData?.rates?.CNY;
+  const getRateForCode = (code: string) => {
+    if (!ratesData?.rates) return undefined;
+    if (code === 'RMB') return ratesData.rates.RMB || ratesData.rates.CNY;
+    return ratesData.rates[code as keyof typeof ratesData.rates];
+  };
 
-  if (compact) {
-    return (
-      <div className="flex items-center gap-2 text-xs">
-        <button
-          onClick={() => setIsConverterOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border hover:border-brand-gold/40 transition-colors cursor-pointer"
-          title={t('cbuOpenConverterTooltip')}
-        >
-          <Coins className="size-3.5 text-brand-gold" />
-          <div className="flex items-center gap-2 font-medium">
-            <span className="text-foreground dark:text-night-text">
-              1 USD ={' '}
-              <span className="font-semibold text-brand-gold">
-                {usdRate ? `${usdRate.rate.toLocaleString()} UZS` : '...'}
-              </span>
-            </span>
-            <span className="text-muted dark:text-night-muted">|</span>
-            <span className="text-foreground dark:text-night-text">
-              1 RUB ={' '}
-              <span className="font-semibold text-brand-gold">
-                {rubRate ? `${rubRate.rate.toLocaleString()} UZS` : '...'}
-              </span>
-            </span>
-            <span className="text-muted dark:text-night-muted">|</span>
-            <span className="text-foreground dark:text-night-text">
-              1 RMB ={' '}
-              <span className="font-semibold text-brand-gold">
-                {rmbRate ? `${rmbRate.rate.toLocaleString()} UZS` : '...'}
-              </span>
-            </span>
-          </div>
-        </button>
+  const activeCurrency = CURRENCIES[activeIndex];
+  const activeRate = getRateForCode(activeCurrency.code);
 
-        {canUpdate('currency') && (
-          <button
-            onClick={handleSyncRates}
-            disabled={syncing}
-            className="p-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer disabled:opacity-50"
-            title={t('cbuForceSyncTooltip')}
-          >
-            <RefreshCw className={`size-3.5 ${syncing ? 'animate-spin' : ''}`} />
-          </button>
-        )}
+  // Slide animation variants
+  const slideVariants = {
+    enter: (dir: number) => ({
+      y: dir > 0 ? 16 : -16,
+      opacity: 0,
+    }),
+    center: {
+      y: 0,
+      opacity: 1,
+    },
+    exit: (dir: number) => ({
+      y: dir > 0 ? -16 : 16,
+      opacity: 0,
+    }),
+  };
 
-        {/* Modal render */}
-        {renderConverterModal()}
-      </div>
-    );
-  }
+  // Dot navigation handler
+  const goToSlide = (index: number) => {
+    setDirection(index > activeIndex ? 1 : -1);
+    setActiveIndex(index);
+    // Reset the interval on manual navigation
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setDirection(1);
+      setActiveIndex((prev) => (prev + 1) % CURRENCIES.length);
+    }, CAROUSEL_INTERVAL_MS);
+  };
 
   return (
-    <div className="p-4 rounded-2xl bg-surface/90 dark:bg-night-surface/90 border border-border/70 dark:border-night-border shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-      {/* CBU Rates Overview */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-            <Coins className="size-4.5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-foreground dark:text-night-text">
-                <T k="cbuLiveRates" />
+    <>
+      <button
+        onClick={() => setIsConverterOpen(true)}
+        className="group flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border hover:border-brand-gold/40 transition-all cursor-pointer shadow-2xs"
+        title={t('cbuOpenConverterTooltip')}
+      >
+        <Coins className="size-3.5 text-brand-gold shrink-0" />
+
+        {/* Animated carousel slide */}
+        <div className="relative overflow-hidden h-5 min-w-[140px] flex items-center">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={activeIndex}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="absolute inset-0 flex items-center gap-2 text-xs font-medium whitespace-nowrap"
+            >
+              <span className={`font-bold ${activeCurrency.colorClass}`}>
+                {activeCurrency.code}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                <T k="cbuOfficialBadge" />
+              <span className="font-bold text-foreground dark:text-night-text">
+                {loading ? '...' : activeRate ? `${activeRate.rate.toLocaleString()} UZS` : 'N/A'}
               </span>
-            </div>
-            <p className="text-[11px] text-muted dark:text-night-muted">
-              {ratesData?.rates?.USD?.date
-                ? t('cbuUpdatedDate', { date: ratesData.rates.USD.date })
-                : t('cbuBankName')}
-            </p>
-          </div>
+              {activeRate && activeRate.diff !== 0 && (
+                <span
+                  className={`flex items-center text-[10px] font-semibold ${
+                    activeRate.diff > 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  {activeRate.diff > 0 ? (
+                    <TrendingUp className="size-3 mr-0.5" />
+                  ) : (
+                    <TrendingDown className="size-3 mr-0.5" />
+                  )}
+                  {activeRate.diff > 0 ? `+${activeRate.diff}` : activeRate.diff}
+                </span>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        {/* Currency Rates Cards */}
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* USD Card */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-background/50 dark:bg-night-field/50 border border-border/50 dark:border-night-border text-xs">
-            <span className="font-bold text-blue-600 dark:text-blue-400">USD</span>
-            <span className="font-bold text-foreground dark:text-night-text">
-              {loading ? '...' : usdRate ? `${usdRate.rate.toLocaleString()} UZS` : 'N/A'}
-            </span>
-            {usdRate && usdRate.diff !== 0 && (
-              <span
-                className={`flex items-center text-[10px] font-semibold ${
-                  usdRate.diff > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {usdRate.diff > 0 ? (
-                  <TrendingUp className="size-3 mr-0.5" />
-                ) : (
-                  <TrendingDown className="size-3 mr-0.5" />
-                )}
-                {usdRate.diff > 0 ? `+${usdRate.diff}` : usdRate.diff}
-              </span>
-            )}
-          </div>
-
-          {/* RUB Card */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-background/50 dark:bg-night-field/50 border border-border/50 dark:border-night-border text-xs">
-            <span className="font-bold text-purple-600 dark:text-purple-400">RUB</span>
-            <span className="font-bold text-foreground dark:text-night-text">
-              {loading ? '...' : rubRate ? `${rubRate.rate.toLocaleString()} UZS` : 'N/A'}
-            </span>
-            {rubRate && rubRate.diff !== 0 && (
-              <span
-                className={`flex items-center text-[10px] font-semibold ${
-                  rubRate.diff > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {rubRate.diff > 0 ? (
-                  <TrendingUp className="size-3 mr-0.5" />
-                ) : (
-                  <TrendingDown className="size-3 mr-0.5" />
-                )}
-                {rubRate.diff > 0 ? `+${rubRate.diff}` : rubRate.diff}
-              </span>
-            )}
-          </div>
-
-          {/* RMB Card */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-background/50 dark:bg-night-field/50 border border-border/50 dark:border-night-border text-xs">
-            <span className="font-bold text-red-600 dark:text-red-400">RMB</span>
-            <span className="font-bold text-foreground dark:text-night-text">
-              {loading ? '...' : rmbRate ? `${rmbRate.rate.toLocaleString()} UZS` : 'N/A'}
-            </span>
-            {rmbRate && rmbRate.diff !== 0 && (
-              <span
-                className={`flex items-center text-[10px] font-semibold ${
-                  rmbRate.diff > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {rmbRate.diff > 0 ? (
-                  <TrendingUp className="size-3 mr-0.5" />
-                ) : (
-                  <TrendingDown className="size-3 mr-0.5" />
-                )}
-                {rmbRate.diff > 0 ? `+${rmbRate.diff}` : rmbRate.diff}
-              </span>
-            )}
-          </div>
+        {/* Dot indicators */}
+        <div className="flex items-center gap-1 ml-1">
+          {CURRENCIES.map((_, idx) => (
+            <span
+              key={idx}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToSlide(idx);
+              }}
+              className={`block rounded-full transition-all duration-300 cursor-pointer ${
+                idx === activeIndex
+                  ? 'w-3.5 h-1.5 bg-brand-gold'
+                  : 'w-1.5 h-1.5 bg-muted/40 dark:bg-night-muted/40 group-hover:bg-muted/70'
+              }`}
+            />
+          ))}
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2 self-end sm:self-center">
-        <button
-          onClick={() => setIsConverterOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-gold/10 text-brand-gold border border-brand-gold/30 hover:bg-brand-gold/20 font-semibold text-xs transition-colors cursor-pointer"
-        >
-          <ArrowRightLeft className="size-3.5" />
-          <span>{t('cbuBtnConvert')}</span>
-        </button>
-
-        {canUpdate('currency') && (
-          <button
-            onClick={handleSyncRates}
-            disabled={syncing}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface dark:bg-night-surface border border-border/70 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text font-medium text-xs transition-colors cursor-pointer disabled:opacity-50"
-            title={t('cbuForceSyncTooltip')}
-          >
-            <RefreshCw className={`size-3.5 ${syncing ? 'animate-spin' : ''}`} />
-            <span>{syncing ? t('cbuBtnSyncing') : t('cbuBtnSync')}</span>
-          </button>
-        )}
-      </div>
+      </button>
 
       {renderConverterModal()}
-    </div>
+    </>
   );
 
   function renderConverterModal() {

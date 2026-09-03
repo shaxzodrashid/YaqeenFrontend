@@ -42,7 +42,9 @@ export function PlansDepartmentAnalytics({
     return (
       <div className="p-16 text-center text-muted-foreground bg-surface rounded-2xl border border-border">
         <RefreshCw className="size-8 animate-spin mx-auto mb-3 text-brand-gold" />
-        <p className="text-xs font-semibold">Loading organizational plan analytics...</p>
+        <p className="text-xs font-semibold">
+          {t('loadingOrgAnalytics') || 'Loading organizational plan analytics...'}
+        </p>
       </div>
     );
   }
@@ -51,7 +53,9 @@ export function PlansDepartmentAnalytics({
     return (
       <div className="p-12 rounded-2xl bg-surface border border-border text-center text-muted-foreground">
         <Layers className="size-10 mx-auto mb-2 text-muted-foreground/40" />
-        <p className="text-xs">No organizational data available for {month}.</p>
+        <p className="text-xs">
+          {t('noOrgData') || 'No organizational data available for'} {month}.
+        </p>
       </div>
     );
   }
@@ -90,7 +94,9 @@ export function PlansDepartmentAnalytics({
               <span className="text-xs text-brand-gold font-bold block">
                 {summary.total_cargos_registered}
               </span>
-              <span className="text-[10px] text-neutral-400">Total Cargos</span>
+              <span className="text-[10px] text-neutral-400">
+                {t('planTotalCargos') || 'Total Cargos'}
+              </span>
             </div>
           </div>
 
@@ -115,7 +121,7 @@ export function PlansDepartmentAnalytics({
               {t('planLtlVolume')}
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-              {ltl_statistics.completion_percentage}% Done
+              {ltl_statistics.completion_percentage}% {t('done') || 'Done'}
             </span>
           </div>
 
@@ -125,7 +131,7 @@ export function PlansDepartmentAnalytics({
                 {ltl_statistics.total_actual_volume.toLocaleString()} m³
               </span>
               <span className="text-xs text-muted-foreground block mt-0.5">
-                Target: {ltl_statistics.total_target_volume.toLocaleString()} m³
+                {t('target') || 'Target'}: {ltl_statistics.total_target_volume.toLocaleString()} m³
               </span>
             </div>
             <div className="text-right">
@@ -159,7 +165,7 @@ export function PlansDepartmentAnalytics({
               {t('planFtlFinancial')} ({ftl_statistics.currency})
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
-              {ftl_statistics.completion_percentage}% Done
+              {ftl_statistics.completion_percentage}% {t('done') || 'Done'}
             </span>
           </div>
 
@@ -169,7 +175,8 @@ export function PlansDepartmentAnalytics({
                 {formatMoney(ftl_statistics.total_actual_amount, ftl_statistics.currency)}
               </span>
               <span className="text-xs text-muted-foreground block mt-0.5">
-                Target: {formatMoney(ftl_statistics.total_target_amount, ftl_statistics.currency)}
+                {t('target') || 'Target'}:{' '}
+                {formatMoney(ftl_statistics.total_target_amount, ftl_statistics.currency)}
               </span>
             </div>
             <div className="text-right">

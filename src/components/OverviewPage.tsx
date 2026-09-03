@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, LayoutDashboard, Truck, Trophy } from 'lucide-react';
 import { useTranslation, type Locale } from '../context/LanguageContext';
 import { api } from '../services/api';
+
 import type {
   Employee,
   Client,
@@ -18,25 +19,38 @@ import type {
 } from '../services/api';
 import type { PageId } from './Sidebar';
 import { T } from './T';
-import { DashboardFilters } from './dashboard/DashboardFilters';
+import { DashboardFilters, getThisMonthDateRange } from './dashboard/DashboardFilters';
 import { DashboardKpiCards } from './dashboard/DashboardKpiCards';
 import { SalesProgressChart } from './dashboard/SalesProgressChart';
 import { LogisticsOperationsHub } from './dashboard/LogisticsOperationsHub';
 import { StakeholderFinancialHub } from './dashboard/StakeholderFinancialHub';
+import {
+  TransportModalityMixDiagram,
+  CargoStatusPipelineDiagram,
+  DeliverySpeedometerDiagram,
+  TradeCorridorsVisualDiagram,
+  WorkingCapitalFlowDiagram,
+  CommercialLeadersVisualDiagram,
+} from './dashboard/ExecutiveOverviewDiagrams';
 
 interface OverviewPageProps {
   isAdmin?: boolean;
   onNavigate?: (page: PageId) => void;
 }
 
+type OverviewTab = 'executive' | 'logistics' | 'commercial';
+
 export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: OverviewPageProps) {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<OverviewTab>('executive');
 
   const dateLocaleMap: Record<Locale, string> = {
     uz: 'uz-UZ',
     ru: 'ru-RU',
     en: 'en-US',
   };
+
+  const defaultRange = getThisMonthDateRange();
 
   // Filter State
   const [filters, setFilters] = useState<DashboardFilterParams>({
@@ -46,6 +60,8 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: Ove
     status: '',
     employee_id: '',
     client_id: '',
+    start_date: defaultRange.start_date,
+    end_date: defaultRange.end_date,
   });
 
   // API Data State
@@ -125,6 +141,7 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: Ove
   };
 
   const handleResetFilters = () => {
+    const tm = getThisMonthDateRange();
     setFilters({
       period: '1M',
       currency: 'USD',
@@ -132,10 +149,15 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: Ove
       status: '',
       employee_id: '',
       client_id: '',
-      start_date: undefined,
-      end_date: undefined,
+      start_date: tm.start_date,
+      end_date: tm.end_date,
     });
   };
+
+  const currency = summaryData?.currency || salesProgressData?.meta?.currency || 'USD';
+  const topRoutes = routeData?.topRoutes || [];
+  const topManagers = topPerformersData?.topManagers || [];
+  const transportDist = cargoDistData?.transportTypeDistribution || [];
 
   return (
     <motion.div
@@ -147,22 +169,16 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: Ove
       {/* 1. Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl md:text-3xl font-extrabold font-serif text-foreground dark:text-night-text tracking-tight">
-              <T k="ovDashboardTitle" />
-            </h1>
-            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <T k="ovLiveErpBadge" />
-            </span>
-          </div>
+          <h1 className="text-2xl md:text-3xl font-extrabold font-serif text-foreground dark:text-night-text tracking-tight">
+            <T k="ovDashboardTitle" />
+          </h1>
           <p className="text-xs md:text-sm text-muted dark:text-night-muted mt-1">
             <T k="ovDashboardSubtitle" />
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border text-muted transition-colors duration-200">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border text-muted transition-colors duration-200 shadow-2xs">
             <Calendar className="size-3.5 text-brand-gold" />
             <span>
               {new Date().toLocaleDateString(dateLocaleMap[locale] || 'uz-UZ', {
@@ -188,36 +204,142 @@ export function OverviewPage({ isAdmin: _isAdmin, onNavigate: _onNavigate }: Ove
         />
       </div>
 
-      {/* 3. Executive KPI Cards Grid with Multi-Spec Run-Rate Switcher */}
+      {/* 3. Executive KPI Cards Grid */}
       <div>
         <DashboardKpiCards summary={summaryData} loading={loading} />
       </div>
 
-      {/* 4. Financial Trajectory & Run-Rate Analytics Hub */}
-      <div>
-        <SalesProgressChart data={salesProgressData} summary={summaryData} loading={loading} />
+      {/* 4. Executive View Segmented Tab Switcher */}
+      <div className="flex items-center gap-2 p-1 rounded-2xl bg-surface dark:bg-night-surface border border-border/60 dark:border-night-border/70 w-full sm:w-fit shadow-xs">
+        <button
+          type="button"
+          onClick={() => setActiveTab('executive')}
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
+            activeTab === 'executive'
+              ? 'bg-brand-gold text-neutral-950 shadow-xs'
+              : 'text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text hover:bg-border/20 dark:hover:bg-night-border/40'
+          }`}
+        >
+          <LayoutDashboard className="size-4" />
+          <span>{t('ovTabExecutiveSummary')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('logistics')}
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
+            activeTab === 'logistics'
+              ? 'bg-brand-gold text-neutral-950 shadow-xs'
+              : 'text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text hover:bg-border/20 dark:hover:bg-night-border/40'
+          }`}
+        >
+          <Truck className="size-4" />
+          <span>{t('ovTabLogistics')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('commercial')}
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
+            activeTab === 'commercial'
+              ? 'bg-brand-gold text-neutral-950 shadow-xs'
+              : 'text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text hover:bg-border/20 dark:hover:bg-night-border/40'
+          }`}
+        >
+          <Trophy className="size-4" />
+          <span>{t('ovTabCommercial')}</span>
+        </button>
       </div>
 
-      {/* 5. Consolidated Logistics & Fleet Operations Hub (Corridors + Modalities + Delivery Speed + Status Pipeline) */}
-      <div>
-        <LogisticsOperationsHub
-          cargoDist={cargoDistData}
-          routeData={routeData}
-          deliveryData={deliveryData}
-          loading={loading}
-          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
-        />
-      </div>
+      {/* 5. Dynamic Tab Content View */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'executive' && (
+          <motion.div
+            key="tab-executive"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-col gap-6 w-full"
+          >
+            {/* 1. Hero Financial Trajectory Chart */}
+            <SalesProgressChart data={salesProgressData} summary={summaryData} loading={loading} />
 
-      {/* 6. Consolidated Stakeholder & Financial Hub (Top Managers + Top Clients + Receivables/Payables Debt Ledger) */}
-      <div>
-        <StakeholderFinancialHub
-          topPerformers={topPerformersData}
-          debtSummary={debtData}
-          loading={loading}
-          currency={summaryData?.currency || salesProgressData?.meta?.currency || 'USD'}
-        />
-      </div>
+            {/* 2. Visual Operational Diagrams Cockpit (3 Columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <TransportModalityMixDiagram
+                data={transportDist}
+                currency={currency}
+                onNavigateLogistics={() => setActiveTab('logistics')}
+              />
+              <CargoStatusPipelineDiagram
+                statusDist={cargoDistData?.statusDistribution || []}
+                statusBreakdown={deliveryData?.statusBreakdown}
+                onNavigateLogistics={() => setActiveTab('logistics')}
+              />
+              <DeliverySpeedometerDiagram
+                deliveryData={deliveryData}
+                onNavigateLogistics={() => setActiveTab('logistics')}
+              />
+            </div>
+
+            {/* 3. Geographic Flow, Working Capital & Commercial Leaders (3 Columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <TradeCorridorsVisualDiagram
+                topRoutes={topRoutes}
+                currency={currency}
+                onNavigateLogistics={() => setActiveTab('logistics')}
+              />
+              <WorkingCapitalFlowDiagram
+                debtData={debtData}
+                currency={currency}
+                onNavigateCommercial={() => setActiveTab('commercial')}
+              />
+              <CommercialLeadersVisualDiagram
+                topManagers={topManagers}
+                topClients={topPerformersData?.topClients || []}
+                currency={currency}
+                onNavigateCommercial={() => setActiveTab('commercial')}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'logistics' && (
+          <motion.div
+            key="tab-logistics"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+          >
+            <LogisticsOperationsHub
+              cargoDist={cargoDistData}
+              routeData={routeData}
+              deliveryData={deliveryData}
+              loading={loading}
+              currency={currency}
+            />
+          </motion.div>
+        )}
+
+        {activeTab === 'commercial' && (
+          <motion.div
+            key="tab-commercial"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+          >
+            <StakeholderFinancialHub
+              topPerformers={topPerformersData}
+              debtSummary={debtData}
+              loading={loading}
+              currency={currency}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

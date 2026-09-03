@@ -1,4 +1,5 @@
-export type DashboardPeriod = '1D' | '5D' | '1M' | '6M' | 'YTD' | '1Y' | '5Y' | 'MAX' | 'CUSTOM';
+export type DashboardPeriod =
+  '1D' | '5D' | '1M' | '30D' | '6M' | 'YTD' | '1Y' | '5Y' | 'MAX' | 'CUSTOM' | 'THIS_MONTH';
 
 export type DashboardGranularity = 'hour' | 'day' | 'week' | 'month' | 'year';
 

@@ -49,13 +49,14 @@ export function LtlCalcTab() {
             <div>
               <h2 className="text-xl font-bold tracking-tight text-white">{t('tabLtlCalc')}</h2>
               <p className="text-xs text-neutral-300 mt-1">
-                Density-based automated LTL tariff & price evaluation system
+                {t('ltlCalcSubtitle') ||
+                  'Density-based automated LTL tariff & price evaluation system'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-xs text-neutral-200">
             <Sparkles className="size-4 text-brand-gold" />
-            <span>Formula: Density (D) = Weight (kg) / Volume (m³)</span>
+            <span>{t('densityFormula') || 'Formula: Density (D) = Weight (kg) / Volume (m³)'}</span>
           </div>
         </div>
       </div>
@@ -71,10 +72,10 @@ export function LtlCalcTab() {
           <div className="flex items-center justify-between border-b border-border pb-3">
             <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Box className="size-5 text-brand-gold" />
-              Cargo Dimensions
+              {t('cargoDimensions') || 'Cargo Dimensions'}
             </h3>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold">
-              Live Input
+              {t('liveInput') || 'Live Input'}
             </span>
           </div>
 
@@ -117,14 +118,14 @@ export function LtlCalcTab() {
           {/* Quick preset buttons */}
           <div>
             <span className="text-xs text-muted-foreground mb-2 block font-medium">
-              Quick Presets
+              {t('quickPresets') || 'Quick Presets'}
             </span>
             <div className="flex flex-wrap gap-2">
               {[
-                { label: 'Small Box', v: '0.5', w: '40' },
-                { label: 'Standard Pallet', v: '1.2', w: '250' },
-                { label: 'Heavy Cargo', v: '1.5', w: '1200' },
-                { label: 'Bulk Cargo', v: '15.0', w: '1200' },
+                { label: t('presetSmallBox') || 'Small Box', v: '0.5', w: '40' },
+                { label: t('presetStandardPallet') || 'Standard Pallet', v: '1.2', w: '250' },
+                { label: t('presetHeavyCargo') || 'Heavy Cargo', v: '1.5', w: '1200' },
+                { label: t('presetBulkCargo') || 'Bulk Cargo', v: '15.0', w: '1200' },
               ].map((preset) => (
                 <button
                   key={preset.label}
@@ -155,7 +156,9 @@ export function LtlCalcTab() {
                 <span className="text-xs uppercase tracking-wider text-brand-gold font-bold">
                   {t('cargoTotalPrice')}
                 </span>
-                <p className="text-xs text-neutral-300 mt-0.5">Calculated Tariff Result</p>
+                <p className="text-xs text-neutral-300 mt-0.5">
+                  {t('calculatedTariffResult') || 'Calculated Tariff Result'}
+                </p>
               </div>
               <div className="p-2.5 rounded-xl bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
                 <DollarSign className="size-6" />
@@ -176,9 +179,12 @@ export function LtlCalcTab() {
               <div className="mt-3 flex items-center gap-2 text-xs text-neutral-300">
                 <CheckCircle className="size-4 text-emerald-400" />
                 <span>
-                  Basis: <strong className="text-white uppercase">{calcResult.basis}</strong> (
-                  {calcResult.basis === 'vazn' ? 'Weight-based' : 'Volume-based'}) @ $
-                  {calcResult.rate} {calcResult.unit}
+                  {t('calcBasis') || 'Basis'}:{' '}
+                  <strong className="text-white uppercase">{calcResult.basis}</strong> (
+                  {calcResult.basis === 'vazn'
+                    ? t('weightBased') || 'Weight-based'
+                    : t('volumeBased') || 'Volume-based'}
+                  ) @ ${calcResult.rate} {calcResult.unit}
                 </span>
               </div>
             </div>
@@ -199,7 +205,9 @@ export function LtlCalcTab() {
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[11px] text-neutral-400 block">Tariff Unit</span>
+                <span className="text-[11px] text-neutral-400 block">
+                  {t('tariffUnit') || 'Tariff Unit'}
+                </span>
                 <span className="text-xs font-bold text-white mt-1 block truncate">
                   {calcResult.unit}
                 </span>
@@ -220,12 +228,14 @@ export function LtlCalcTab() {
           <div className="flex items-center gap-2">
             <Scale className="size-5 text-brand-gold" />
             <h3 className="text-base font-bold text-foreground">
-              Density Bracket Tariff Rules Schedule
+              {t('densityRulesSchedule') || 'Density Bracket Tariff Rules Schedule'}
             </h3>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Info className="size-3.5" />
-            <span>Active tier highlighted based on current cargo density</span>
+            <span>
+              {t('activeTierHint') || 'Active tier highlighted based on current cargo density'}
+            </span>
           </div>
         </div>
 
@@ -233,12 +243,14 @@ export function LtlCalcTab() {
           <table className="w-full text-left text-xs">
             <thead className="bg-muted/60 text-muted-foreground font-semibold border-b border-border uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3">Density Bracket Condition</th>
-                <th className="px-4 py-3">Calculation Basis</th>
-                <th className="px-4 py-3">Applied Rate</th>
-                <th className="px-4 py-3">Tariff Unit</th>
-                <th className="px-4 py-3">Formula</th>
-                <th className="px-4 py-3 text-right">Status</th>
+                <th className="px-4 py-3">
+                  {t('colDensityBracket') || 'Density Bracket Condition'}
+                </th>
+                <th className="px-4 py-3">{t('colCalculationBasis') || 'Calculation Basis'}</th>
+                <th className="px-4 py-3">{t('colAppliedRate') || 'Applied Rate'}</th>
+                <th className="px-4 py-3">{t('tariffUnit') || 'Tariff Unit'}</th>
+                <th className="px-4 py-3">{t('colFormula') || 'Formula'}</th>
+                <th className="px-4 py-3 text-right">{t('colStatus') || 'Status'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -267,7 +279,11 @@ export function LtlCalcTab() {
                             : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                         }`}
                       >
-                        {tier.basis} ({tier.basis === 'vazn' ? 'Weight' : 'Volume'})
+                        {tier.basis} (
+                        {tier.basis === 'vazn'
+                          ? t('weightBased') || 'Weight'
+                          : t('volumeBased') || 'Volume'}
+                        )
                       </span>
                     </td>
                     <td className="px-4 py-3 font-bold">${tier.rate}</td>
@@ -278,7 +294,7 @@ export function LtlCalcTab() {
                     <td className="px-4 py-3 text-right">
                       {isActive ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-gold text-brand-navy shadow-sm">
-                          <CheckCircle className="size-3" /> Active Tier
+                          <CheckCircle className="size-3" /> {t('activeTier') || 'Active Tier'}
                         </span>
                       ) : (
                         <span className="text-muted-foreground/60">—</span>

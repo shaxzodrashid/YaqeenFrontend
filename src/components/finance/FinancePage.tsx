@@ -1,53 +1,39 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  DollarSign,
-  PieChart,
-  Users,
-  RefreshCw,
-  Plus,
-  Calendar as CalendarIcon,
-  TrendingUp,
-  Coins,
-  ChevronLeft,
-  ChevronRight,
-  X,
-} from 'lucide-react';
+import { DollarSign, RefreshCw, Plus, Coins, Truck, Warehouse, ArrowLeft } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { FinanceSummaryTab } from './FinanceSummaryTab';
 import { ExpenseLedgerTab } from './ExpenseLedgerTab';
-import { SalaryManagementTab } from './SalaryManagementTab';
 import { ExpenseModal } from './ExpenseModal';
-import { BatchSalaryModal } from './BatchSalaryModal';
 import { CbuRatesWidget } from '../currency/CbuRatesWidget';
+import { DateRangePicker, getCurrentMonthRange } from '../DateRangePicker';
 import { T } from '../T';
 import { api } from '../../services/api';
 import type {
   FinanceSummaryResponse,
-  FixedSalariesResponse,
   Expense,
   SupportedCurrency,
   ExpenseCategory,
+  ExpenseSection,
 } from '../../services/api';
 
-type FinanceTabId = 'summary' | 'expenses' | 'salaries';
+/** "overview" = Summary & Analytics dashboard, "ledger" = Expense Ledger drill-down */
+type FinanceView = 'overview' | 'ledger';
 
 export function FinancePage() {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canCreate } = usePermissions();
 
-  const [activeTab, setActiveTab] = useState<FinanceTabId>('summary');
+  const [activeView, setActiveView] = useState<FinanceView>('overview');
+  const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
+  const [activeSection, setActiveSection] = useState<ExpenseSection>('ftl');
 
   // Period / Date Range state
-  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
-  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
-  const [activePreset, setActivePreset] = useState<string>('this_month');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
-  const [isCustomDateOpen, setIsCustomDateOpen] = useState<boolean>(false);
+  const [startDate, setStartDate] = useState<string>(() => getCurrentMonthRange().startDate);
+  const [endDate, setEndDate] = useState<string>(() => getCurrentMonthRange().endDate);
 
   const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency>('USD');
 
@@ -58,82 +44,27 @@ export function FinancePage() {
   const [summaryData, setSummaryData] = useState<FinanceSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(true);
 
-  const [salariesData, setSalariesData] = useState<FixedSalariesResponse | null>(null);
-  const [salariesLoading, setSalariesLoading] = useState<boolean>(true);
-
   // Modals state
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
-  const [isBatchSalaryModalOpen, setIsBatchSalaryModalOpen] = useState(false);
+  const [defaultModalSection, setDefaultModalSection] = useState<ExpenseSection>('ftl');
 
-  // Formatted period string for standard month queries
-  const periodString = useMemo(() => {
-    const m = String(currentMonth).padStart(2, '0');
-    return `${currentYear}-${m}`;
-  }, [currentYear, currentMonth]);
+  // Reset to default month range
+  const handleResetToCurrentMonth = () => {
+    const { startDate: s, endDate: e } = getCurrentMonthRange();
+    setStartDate(s);
+    setEndDate(e);
+  };
 
   // Compute active query parameters for summary API
   const summaryQueryParams = useMemo(() => {
-    if (activePreset === 'custom') {
-      return {
-        start_date: customStartDate || undefined,
-        end_date: customEndDate || undefined,
-        currency: selectedCurrency,
-      };
-    }
-    if (activePreset === 'prev_month') {
-      const d = new Date(currentYear, currentMonth - 2, 1);
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return { period: ym, currency: selectedCurrency };
-    }
-    if (activePreset === 'q1') {
-      return {
-        start_date: `${currentYear}-01-01`,
-        end_date: `${currentYear}-03-31`,
-        currency: selectedCurrency,
-      };
-    }
-    if (activePreset === 'q2') {
-      return {
-        start_date: `${currentYear}-04-01`,
-        end_date: `${currentYear}-06-30`,
-        currency: selectedCurrency,
-      };
-    }
-    if (activePreset === 'q3') {
-      return {
-        start_date: `${currentYear}-07-01`,
-        end_date: `${currentYear}-09-30`,
-        currency: selectedCurrency,
-      };
-    }
-    if (activePreset === 'q4') {
-      return {
-        start_date: `${currentYear}-10-01`,
-        end_date: `${currentYear}-12-31`,
-        currency: selectedCurrency,
-      };
-    }
-    if (activePreset === 'ytd') {
-      const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      return {
-        start_date: `${now.getFullYear()}-01-01`,
-        end_date: today,
-        currency: selectedCurrency,
-      };
-    }
-    // Default: this_month using period
-    return { period: periodString, currency: selectedCurrency };
-  }, [
-    activePreset,
-    periodString,
-    currentYear,
-    currentMonth,
-    customStartDate,
-    customEndDate,
-    selectedCurrency,
-  ]);
+    return {
+      currency: selectedCurrency,
+      section: activeSection,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined,
+    };
+  }, [selectedCurrency, activeSection, startDate, endDate]);
 
   // Fetch Summary
   const fetchSummary = useCallback(async () => {
@@ -148,123 +79,103 @@ export function FinancePage() {
     }
   }, [summaryQueryParams, showNotification, t]);
 
-  // Fetch Salaries
-  const fetchSalaries = useCallback(async () => {
-    setSalariesLoading(true);
-    try {
-      const res = await api.finance.getFixedSalaries();
-      setSalariesData(res);
-    } catch (err: any) {
-      showNotification(err?.message || t('finErrSalaries'), 'error');
-    } finally {
-      setSalariesLoading(false);
-    }
-  }, [showNotification, t]);
-
   useEffect(() => {
     fetchSummary();
   }, [fetchSummary]);
 
-  useEffect(() => {
-    fetchSalaries();
-  }, [fetchSalaries]);
-
   const handleRefreshAll = () => {
     fetchSummary();
-    fetchSalaries();
   };
 
-  // Month navigation step
-  const handleStepMonth = (direction: 'prev' | 'next') => {
-    setActivePreset('this_month');
-    if (direction === 'prev') {
-      if (currentMonth === 1) {
-        setCurrentMonth(12);
-        setCurrentYear((y) => y - 1);
-      } else {
-        setCurrentMonth((m) => m - 1);
-      }
-    } else {
-      if (currentMonth === 12) {
-        setCurrentMonth(1);
-        setCurrentYear((y) => y + 1);
-      } else {
-        setCurrentMonth((m) => m + 1);
-      }
-    }
-  };
-
-  const handleOpenAddExpense = () => {
+  const handleOpenAddExpense = (section?: ExpenseSection) => {
     setExpenseToEdit(null);
+    setDefaultModalSection(section || activeSection);
     setIsExpenseModalOpen(true);
   };
 
   const handleOpenEditExpense = (expense: Expense) => {
     setExpenseToEdit(expense);
+    setDefaultModalSection(expense.section || activeSection);
     setIsExpenseModalOpen(true);
   };
 
-  // Deep-link from summary category card
-  const handleExploreCategoryInLedger = (category: ExpenseCategory) => {
+  // ── Drill-down Navigation ──────────────────────────────────────
+
+  /** Navigate from a summary category card → Expense Ledger filtered by category */
+  const handleDrillDownToCategory = (category: ExpenseCategory, section?: ExpenseSection) => {
     setLedgerCategoryFilter(category);
-    setActiveTab('expenses');
+    if (section) setActiveSection(section);
+    setSlideDirection(1); // slide right (drill-in)
+    setActiveView('ledger');
   };
 
-  const tabItems: { id: FinanceTabId; labelKey: string; defaultLabel: string; icon: any }[] = [
-    {
-      id: 'summary',
-      labelKey: 'finTabSummary',
-      defaultLabel: 'Summary & Analytics',
-      icon: TrendingUp,
-    },
-    {
-      id: 'expenses',
-      labelKey: 'finTabExpenses',
-      defaultLabel: 'Operational Expenses',
-      icon: PieChart,
-    },
-    { id: 'salaries', labelKey: 'finTabSalaries', defaultLabel: 'Fixed Salaries', icon: Users },
-  ];
+  /** Navigate to the full Expense Ledger (no category pre-filter) */
+  const handleViewAllExpenses = () => {
+    setLedgerCategoryFilter('');
+    setSlideDirection(1);
+    setActiveView('ledger');
+  };
 
-  const presets: { id: string; labelKey: string }[] = [
-    { id: 'this_month', labelKey: 'finPeriodThisMonth' },
-    { id: 'prev_month', labelKey: 'finPeriodPrevMonth' },
-    { id: 'q1', labelKey: 'finPeriodQ1' },
-    { id: 'q2', labelKey: 'finPeriodQ2' },
-    { id: 'q3', labelKey: 'finPeriodQ3' },
-    { id: 'q4', labelKey: 'finPeriodQ4' },
-    { id: 'ytd', labelKey: 'finPeriodYtd' },
-  ];
+  /** Navigate back from Expense Ledger → Summary Overview */
+  const handleBackToOverview = () => {
+    setSlideDirection(-1); // slide left (back)
+    setActiveView('overview');
+  };
 
   return (
     <div className="flex flex-col gap-6 pb-12">
-      {/* Top Header & Controls */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 rounded-2xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 shadow-2xs">
-              <DollarSign className="size-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-serif font-extrabold text-foreground dark:text-night-text">
-                  <T k="finTitle" />
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-                  ERP Intelligence
-                </span>
-              </div>
-              <p className="text-xs text-muted dark:text-night-muted mt-0.5">
-                <T k="finSubtitle" />
-              </p>
-            </div>
+      {/* Row 1 — Title on the left, Currency Carousel Indicator on the right */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 shadow-2xs">
+            <DollarSign className="size-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-serif font-extrabold text-foreground dark:text-night-text">
+              <T k="finTitle" />
+            </h1>
+            <p className="text-xs text-muted dark:text-night-muted mt-0.5">
+              <T k="finSubtitle" />
+            </p>
           </div>
         </div>
 
+        {/* Currency Exchange Rate Carousel Indicator (click opens converter modal) */}
+        <CbuRatesWidget />
+      </div>
+
+      {/* Row 2 — FTL/LTL switcher + Action Controls in one line */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Section Switcher Toggle (FTL vs LTL) */}
+        <div className="flex items-center p-1 rounded-2xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border shadow-2xs shrink-0">
+          <button
+            onClick={() => setActiveSection('ftl')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeSection === 'ftl'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-muted hover:text-foreground dark:hover:text-night-text'
+            }`}
+          >
+            <Truck className="size-4" />
+            <span>FTL</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('ltl')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeSection === 'ltl'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-muted hover:text-foreground dark:hover:text-night-text'
+            }`}
+          >
+            <Warehouse className="size-4" />
+            <span>LTL</span>
+          </button>
+        </div>
+
         {/* Action Controls Toolbar */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Currency Normalization Selector */}
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border text-xs shadow-2xs">
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+          {/* Currency Selector */}
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border text-xs shadow-2xs shrink-0">
             <Coins className="size-4 text-brand-gold shrink-0" />
             <select
               value={selectedCurrency}
@@ -278,125 +189,24 @@ export function FinancePage() {
             </select>
           </div>
 
-          {/* Month Step Stepper */}
-          <div className="flex items-center rounded-2xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border p-1 shadow-2xs">
-            <button
-              onClick={() => handleStepMonth('prev')}
-              className="p-1.5 rounded-xl hover:bg-border/30 text-muted hover:text-foreground transition-colors cursor-pointer"
-              title={t('finPeriodStepPrev')}
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <span className="px-2.5 font-bold font-mono text-xs text-foreground dark:text-night-text">
-              {periodString}
-            </span>
-            <button
-              onClick={() => handleStepMonth('next')}
-              className="p-1.5 rounded-xl hover:bg-border/30 text-muted hover:text-foreground transition-colors cursor-pointer"
-              title={t('finPeriodStepNext')}
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-
-          {/* Custom Date Range Popover Button */}
-          <div className="relative">
-            <button
-              onClick={() => setIsCustomDateOpen(!isCustomDateOpen)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer shadow-2xs ${
-                activePreset === 'custom'
-                  ? 'bg-brand-gold/15 text-brand-gold border-brand-gold/40'
-                  : 'bg-surface dark:bg-night-surface border-border/80 dark:border-night-border text-muted hover:text-foreground'
-              }`}
-            >
-              <CalendarIcon className="size-4 text-brand-gold" />
-              <span>
-                {activePreset === 'custom' && customStartDate && customEndDate
-                  ? `${customStartDate} – ${customEndDate}`
-                  : t('finPeriodCustom')}
-              </span>
-            </button>
-
-            {/* Custom Date Range Popover Box */}
-            <AnimatePresence>
-              {isCustomDateOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 p-4 w-72 rounded-3xl bg-surface dark:bg-night-surface border border-border dark:border-night-border shadow-2xl z-30 flex flex-col gap-3"
-                >
-                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                    <span className="text-xs font-bold text-foreground dark:text-night-text">
-                      <T k="finSelectCustomRange" />
-                    </span>
-                    <button
-                      onClick={() => setIsCustomDateOpen(false)}
-                      className="text-muted hover:text-foreground p-1 rounded-lg"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase text-muted">
-                      <T k="finStartDate" />
-                    </label>
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="px-3 py-1.5 bg-field-background dark:bg-night-field border border-border/80 rounded-xl text-xs"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold uppercase text-muted">
-                      <T k="finEndDate" />
-                    </label>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="px-3 py-1.5 bg-field-background dark:bg-night-field border border-border/80 rounded-xl text-xs"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-                    <button
-                      onClick={() => {
-                        setActivePreset('this_month');
-                        setCustomStartDate('');
-                        setCustomEndDate('');
-                        setIsCustomDateOpen(false);
-                      }}
-                      className="px-3 py-1.5 text-xs text-muted hover:text-foreground font-semibold"
-                    >
-                      <T k="finResetPeriod" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (customStartDate && customEndDate) {
-                          setActivePreset('custom');
-                          setIsCustomDateOpen(false);
-                        }
-                      }}
-                      disabled={!customStartDate || !customEndDate}
-                      className="px-4 py-1.5 rounded-xl bg-accent text-accent-foreground font-bold text-xs shadow-sm disabled:opacity-40"
-                    >
-                      <T k="finApplyDateRange" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Unified General Date Range Picker */}
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(start, end) => {
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            onClear={handleResetToCurrentMonth}
+            variant="button"
+            align="right"
+            className="shrink-0"
+          />
 
           {/* Refresh Button */}
           <button
             onClick={handleRefreshAll}
-            className="p-2.5 rounded-2xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer shadow-2xs"
+            className="p-2.5 rounded-2xl bg-surface dark:bg-night-surface border border-border/80 dark:border-night-border text-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer shadow-2xs shrink-0"
             title={t('finRefreshTooltip')}
           >
             <RefreshCw className={`size-4 ${summaryLoading ? 'animate-spin' : ''}`} />
@@ -405,8 +215,8 @@ export function FinancePage() {
           {/* Log Expense CTA */}
           {canCreate('finance') && (
             <button
-              onClick={handleOpenAddExpense}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-accent dark:bg-[#5B8FD4] text-accent-foreground dark:text-[#0B1528] font-extrabold text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
+              onClick={() => handleOpenAddExpense()}
+              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl bg-accent dark:bg-[#5B8FD4] text-accent-foreground dark:text-[#0B1528] font-extrabold text-xs shadow-md hover:opacity-90 transition-all cursor-pointer shrink-0 whitespace-nowrap"
             >
               <Plus className="size-4" />
               <span>
@@ -417,95 +227,62 @@ export function FinancePage() {
         </div>
       </div>
 
-      {/* Quick Period Filter Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {presets.map((p) => {
-          const isSelected = activePreset === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setActivePreset(p.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-                isSelected
-                  ? 'bg-brand-gold/15 text-brand-gold border border-brand-gold/40 shadow-xs'
-                  : 'bg-surface dark:bg-night-surface text-muted border border-border/60 hover:text-foreground dark:hover:text-night-text'
-              }`}
-            >
-              <T k={p.labelKey} />
-            </button>
-          );
-        })}
-      </div>
-
-      {/* CBU Rates Widget */}
-      <CbuRatesWidget />
-
-      {/* Animated Tab Bar Navigation */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-surface/80 dark:bg-night-surface/80 border border-border/60 dark:border-night-border backdrop-blur-md self-start">
-        {tabItems.map((item) => {
-          const isActive = activeTab === item.id;
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                isActive
-                  ? 'text-brand-gold dark:text-brand-gold'
-                  : 'text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text'
-              }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="active-finance-tab-pill"
-                  className="absolute inset-0 bg-brand-gold/15 border border-brand-gold/30 rounded-xl shadow-2xs"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <Icon className="size-4 relative z-10" />
-              <span className="relative z-10">
-                <T k={item.labelKey} />
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Main Sub-View Content */}
-      <AnimatePresence mode="wait">
+      {/* Contextual Drill-Down Content */}
+      <AnimatePresence mode="wait" custom={slideDirection}>
         <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
+          key={activeView}
+          custom={slideDirection}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          variants={{
+            enter: (dir: number) => ({
+              x: dir > 0 ? 30 : -30,
+              opacity: 0,
+            }),
+            center: {
+              x: 0,
+              opacity: 1,
+            },
+            exit: (dir: number) => ({
+              x: dir > 0 ? -30 : 30,
+              opacity: 0,
+            }),
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          style={{ willChange: 'transform, opacity' }}
         >
-          {activeTab === 'summary' && (
+          {activeView === 'overview' && (
             <FinanceSummaryTab
               summaryData={summaryData}
               loading={summaryLoading}
-              onSelectCategoryFilter={handleExploreCategoryInLedger}
+              activeSection={activeSection}
+              onSelectCategoryFilter={handleDrillDownToCategory}
+              onViewAllExpenses={handleViewAllExpenses}
             />
           )}
 
-          {activeTab === 'expenses' && (
-            <ExpenseLedgerTab
-              onOpenAddModal={handleOpenAddExpense}
-              onOpenEditModal={handleOpenEditExpense}
-              selectedCurrency={selectedCurrency}
-              initialCategoryFilter={ledgerCategoryFilter}
-            />
-          )}
+          {activeView === 'ledger' && (
+            <div className="flex flex-col gap-5">
+              {/* ← Back to Overview breadcrumb */}
+              <button
+                onClick={handleBackToOverview}
+                className="flex items-center gap-2 text-sm font-bold text-muted dark:text-night-muted hover:text-foreground dark:hover:text-night-text transition-colors cursor-pointer self-start group"
+              >
+                <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
+                <T k="finBackToOverview" />
+              </button>
 
-          {activeTab === 'salaries' && (
-            <SalaryManagementTab
-              salaryData={salariesData}
-              loading={salariesLoading}
-              onRefresh={fetchSalaries}
-              onOpenBatchModal={() => setIsBatchSalaryModalOpen(true)}
-              selectedCurrency={selectedCurrency}
-            />
+              <ExpenseLedgerTab
+                onOpenAddModal={handleOpenAddExpense}
+                onOpenEditModal={handleOpenEditExpense}
+                selectedCurrency={selectedCurrency}
+                initialCategoryFilter={ledgerCategoryFilter}
+                activeSection={activeSection}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            </div>
           )}
         </motion.div>
       </AnimatePresence>
@@ -516,14 +293,8 @@ export function FinancePage() {
         onClose={() => setIsExpenseModalOpen(false)}
         onSuccess={handleRefreshAll}
         expenseToEdit={expenseToEdit}
+        defaultSection={defaultModalSection}
         defaultCurrency={selectedCurrency}
-      />
-
-      <BatchSalaryModal
-        isOpen={isBatchSalaryModalOpen}
-        onClose={() => setIsBatchSalaryModalOpen(false)}
-        onSuccess={handleRefreshAll}
-        initialData={salariesData}
       />
     </div>
   );

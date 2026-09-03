@@ -95,9 +95,9 @@ export function formatBaseUrl(raw?: string): string {
 }
 
 const envBaseUrl =
-  (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined) ||
-  (import.meta.env.BACKEND_BASE_URL as string | undefined) ||
-  (import.meta.env.VITE_API_BASE_URL as string | undefined);
+  (import.meta.env?.VITE_BACKEND_BASE_URL as string | undefined) ||
+  (import.meta.env?.BACKEND_BASE_URL as string | undefined) ||
+  (import.meta.env?.VITE_API_BASE_URL as string | undefined);
 
 export const BASE_URL = formatBaseUrl(envBaseUrl);
 
@@ -145,11 +145,16 @@ export function setDemoMode(_active: boolean) {
 
 // In-memory token store / LocalStorage sync helpers
 export const tokenStore = {
-  getAccessToken: (): string | null =>
-    localStorage.getItem('yaqeen_access_token') || localStorage.getItem('accessToken'),
-  getRefreshToken: (): string | null =>
-    localStorage.getItem('yaqeen_refresh_token') || localStorage.getItem('refreshToken'),
+  getAccessToken: (): string | null => {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem('yaqeen_access_token') || localStorage.getItem('accessToken');
+  },
+  getRefreshToken: (): string | null => {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem('yaqeen_refresh_token') || localStorage.getItem('refreshToken');
+  },
   getUser: (): AuthUser | null => {
+    if (typeof localStorage === 'undefined') return null;
     const raw = localStorage.getItem('yaqeen_user') || localStorage.getItem('user');
     if (!raw) return null;
     try {
@@ -159,6 +164,7 @@ export const tokenStore = {
     }
   },
   save: (accessToken: string, refreshToken: string, user?: AuthUser) => {
+    if (typeof localStorage === 'undefined') return;
     localStorage.setItem('yaqeen_access_token', accessToken);
     localStorage.setItem('yaqeen_refresh_token', refreshToken);
     localStorage.setItem('accessToken', accessToken);
@@ -169,6 +175,7 @@ export const tokenStore = {
     }
   },
   clear: () => {
+    if (typeof localStorage === 'undefined') return;
     localStorage.removeItem('yaqeen_access_token');
     localStorage.removeItem('yaqeen_refresh_token');
     localStorage.removeItem('yaqeen_user');

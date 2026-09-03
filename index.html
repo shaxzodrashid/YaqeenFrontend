@@ -11,6 +11,21 @@
       rel="stylesheet"
     />
     <title>Yaqeen</title>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('yaqeen-theme');
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.classList.add(theme);
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

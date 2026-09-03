@@ -14,7 +14,7 @@ import {
   Ship,
   Package,
 } from 'lucide-react';
-import { CONTAINER_TYPES, TRANSPORT_TYPES, TRANSPORT_TYPE_LABELS } from '../../services/api';
+import { CONTAINER_TYPES, TRANSPORT_TYPES, getTransportTypeLabel } from '../../services/api';
 import type { CargoRegistrationStatus, CargoType, TransportType } from '../../services/api';
 import { ClientSelect } from './ClientSelect';
 import { EmployeeSelect } from './EmployeeSelect';
@@ -144,10 +144,13 @@ const TRANSPORT_ICONS: Record<TransportType, ReactNode> = {
 };
 
 // Calculate total active filter rules
-export function getActiveCargoFilterCount(state: CargoFilterState): number {
+export function getActiveCargoFilterCount(
+  state: CargoFilterState,
+  hideCargoType: boolean = false
+): number {
   let count = 0;
   if (state.status) count++;
-  if (state.cargo_type) count++;
+  if (!hideCargoType && state.cargo_type) count++;
   if (state.container_type) count++;
   if (state.transport_types && state.transport_types.length > 0) count++;
   if (state.client_id) count++;
@@ -347,6 +350,7 @@ export interface CargoFilterModalProps {
   filters: CargoFilterState;
   onApplyFilters: (newFilters: CargoFilterState) => void;
   onResetFilters: () => void;
+  hideCargoType?: boolean;
 }
 
 export function CargoFilterModal({
@@ -355,6 +359,7 @@ export function CargoFilterModal({
   filters: currentFilters,
   onApplyFilters,
   onResetFilters,
+  hideCargoType = false,
 }: CargoFilterModalProps) {
   const { t } = useTranslation();
   const [localFilters, setLocalFilters] = useState<CargoFilterState>(currentFilters);
@@ -389,7 +394,7 @@ export function CargoFilterModal({
   const update = (patch: Partial<CargoFilterState>) =>
     setLocalFilters((prev) => ({ ...prev, ...patch }));
 
-  const activeCount = getActiveCargoFilterCount(localFilters);
+  const activeCount = getActiveCargoFilterCount(localFilters, hideCargoType);
 
   // Date conditions currently visible (explicitly added OR already filled)
   const visibleDateConditions = useMemo(
@@ -460,7 +465,7 @@ export function CargoFilterModal({
         clear: () => update({ status: '' }),
       });
     }
-    if (f.cargo_type) {
+    if (!hideCargoType && f.cargo_type) {
       chips.push({
         id: 'cargo_type',
         label: f.cargo_type,
@@ -477,7 +482,7 @@ export function CargoFilterModal({
     if (f.transport_types && f.transport_types.length > 0) {
       chips.push({
         id: 'transport_types',
-        label: f.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt]).join(' · '),
+        label: f.transport_types.map((tt) => getTransportTypeLabel(tt, t)).join(' · '),
         clear: () => update({ transport_types: [] }),
       });
     }
@@ -558,7 +563,7 @@ export function CargoFilterModal({
   if (localFilters.container_type) cargoSummaryParts.push(localFilters.container_type);
   if (localFilters.transport_types && localFilters.transport_types.length > 0) {
     cargoSummaryParts.push(
-      localFilters.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt]).join(' · ')
+      localFilters.transport_types.map((tt) => getTransportTypeLabel(tt, t)).join(' · ')
     );
   }
   const cargoSummary = cargoSummaryParts.join(' · ');
@@ -644,30 +649,32 @@ export function CargoFilterModal({
                 </div>
 
                 {/* Cargo Type segmented control */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-muted-foreground mb-1.5">
-                    {t('cargoTypeLabel')}
-                  </label>
-                  <div className="flex p-0.5 rounded-xl bg-muted/40 border border-border h-[38px]">
-                    {CARGO_TYPE_OPTIONS.map((typeOpt) => {
-                      const isSelected = localFilters.cargo_type === typeOpt.value;
-                      return (
-                        <button
-                          key={typeOpt.value}
-                          type="button"
-                          onClick={() => update({ cargo_type: typeOpt.value as CargoType | '' })}
-                          className={`flex-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-surface text-brand-gold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          {typeOpt.label}
-                        </button>
-                      );
-                    })}
+                {!hideCargoType && (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted-foreground mb-1.5">
+                      {t('cargoTypeLabel')}
+                    </label>
+                    <div className="flex p-0.5 rounded-xl bg-muted/40 border border-border h-[38px]">
+                      {CARGO_TYPE_OPTIONS.map((typeOpt) => {
+                        const isSelected = localFilters.cargo_type === typeOpt.value;
+                        return (
+                          <button
+                            key={typeOpt.value}
+                            type="button"
+                            onClick={() => update({ cargo_type: typeOpt.value as CargoType | '' })}
+                            className={`flex-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-surface text-brand-gold shadow-xs'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            {typeOpt.value === '' ? t('statusAll') : typeOpt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Client */}
                 <ClientSelect
@@ -740,7 +747,7 @@ export function CargoFilterModal({
                               }`}
                             >
                               {TRANSPORT_ICONS[tt]}
-                              <span>{TRANSPORT_TYPE_LABELS[tt]}</span>
+                              <span>{getTransportTypeLabel(tt, t)}</span>
                             </button>
                           );
                         })}

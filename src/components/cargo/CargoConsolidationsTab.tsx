@@ -7,7 +7,7 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Kanban,
-  BarChart3,
+  RotateCcw,
   X,
   Boxes,
   MapPin,
@@ -25,6 +25,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
+import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import {
@@ -44,11 +45,30 @@ import type {
 } from '../../services/cargoConsolidations.service';
 import { formatMoney } from '../../services/api';
 import { ConsolidationModal } from './ConsolidationModal';
-import { ConsolidationDetailsDrawer } from './ConsolidationDetailsDrawer';
+import { ConsolidationDetailsModal } from './ConsolidationDetailsModal';
 import { AssignCargosModal } from './AssignCargosModal';
+import { CargoRegistrationModal } from './CargoRegistrationModal';
 import { DeletionApprovalModal } from '../ui/DeletionApprovalModal';
+import { Select } from '../Select';
+import type { SelectOption } from '../Select';
 
-export type ConsolidationViewMode = 'grid' | 'table' | 'kanban' | 'analytics';
+export type ConsolidationViewMode = 'grid' | 'table' | 'kanban';
+
+function formatDateDisplay(dateStr?: string | null, localeCode: string = 'en'): string {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const loc = localeCode === 'uz' ? 'uz-UZ' : localeCode === 'ru' ? 'ru-RU' : 'en-US';
+    return d.toLocaleDateString(loc, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; border: string }> = {
   Waiting: {
@@ -84,7 +104,7 @@ const STATUS_BADGES: Record<ConsolidationStatus, { bg: string; text: string; bor
 };
 
 export function CargoConsolidationsTab() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
   const { canCreate, canUpdate, canDelete, canAssignCargo } = usePermissions();
 
@@ -103,20 +123,50 @@ export function CargoConsolidationsTab() {
 
   const [data, setData] = useState<ConsolidationPaginatedResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const totalPages = Math.ceil((data?.meta?.total || 0) / limit) || 1;
 
   // Modals & Drawers
+  const [activeConsolidationForNewCargo, setActiveConsolidationForNewCargo] =
+    useState<ConsolidationListItem | null>(null);
+  const [isNewCargoModalOpen, setIsNewCargoModalOpen] = useState<boolean>(false);
+
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<ConsolidationListItem | null>(null);
   const [selectedDetails, setSelectedDetails] = useState<ConsolidationListItem | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
   const [assigningConsolidation, setAssigningConsolidation] =
     useState<ConsolidationListItem | null>(null);
 
   // Expandable rows in table view
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [loadingRowDetails, setLoadingRowDetails] = useState<Set<string>>(new Set());
 
   // Deletion approval
   const [pendingDelete, setPendingDelete] = useState<ConsolidationListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  // Cargo editing from drawer
+  const [editingCargoId, setEditingCargoId] = useState<string | null>(null);
+  const [editingCargoConsolidation, setEditingCargoConsolidation] =
+    useState<ConsolidationListItem | null>(null);
+
+  // Fetch full details from API before showing the drawer
+  const fetchAndShowDetails = useCallback(
+    async (consolidationId: string) => {
+      setIsLoadingDetails(true);
+      setSelectedDetails(null);
+      try {
+        const details = await cargoConsolidationsApi.get(consolidationId);
+        setSelectedDetails(details);
+      } catch (err: any) {
+        showNotification(err?.message || 'Failed to load consolidation details', 'error');
+        setSelectedDetails(null);
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    },
+    [showNotification]
+  );
 
   // Load consolidations
   const loadConsolidations = useCallback(async () => {
@@ -213,8 +263,38 @@ export function CargoConsolidationsTab() {
   const toggleRowExpand = (id: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        const currentItem = data?.data.find((c) => c.id === id);
+        if (currentItem && (!currentItem.cargos || currentItem.cargos.length === 0)) {
+          setLoadingRowDetails((rPrev) => new Set(rPrev).add(id));
+          cargoConsolidationsApi
+            .get(id)
+            .then((fresh) => {
+              if (fresh && fresh.cargos) {
+                setData((dPrev) => {
+                  if (!dPrev) return dPrev;
+                  return {
+                    ...dPrev,
+                    data: dPrev.data.map((item) =>
+                      item.id === id ? { ...item, cargos: fresh.cargos } : item
+                    ),
+                  };
+                });
+              }
+            })
+            .catch(() => {})
+            .finally(() => {
+              setLoadingRowDetails((rPrev) => {
+                const rNext = new Set(rPrev);
+                rNext.delete(id);
+                return rNext;
+              });
+            });
+        }
+      }
       return next;
     });
   };
@@ -308,24 +388,57 @@ export function CargoConsolidationsTab() {
     };
   }, [data]);
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'Arrived':
-        return t('statusArrived') || status;
-      case 'On the way':
-        return t('statusOnTheWay') || status;
-      case 'On the border':
-        return t('statusOnTheBorder') || status;
-      case 'Station':
-        return t('statusStation') || status;
-      case 'Reload':
-        return t('statusReload') || status;
-      case 'Waiting':
-        return t('statusWaiting') || status;
-      default:
-        return status;
-    }
-  };
+  const getStatusLabel = useCallback(
+    (status: string) => {
+      switch (status) {
+        case 'Arrived':
+          return t('statusArrived') || status;
+        case 'On the way':
+          return t('statusOnTheWay') || status;
+        case 'On the border':
+          return t('statusOnTheBorder') || status;
+        case 'Station':
+          return t('statusStation') || status;
+        case 'Reload':
+          return t('statusReload') || status;
+        case 'Waiting':
+          return t('statusWaiting') || status;
+        default:
+          return status;
+      }
+    },
+    [t]
+  );
+
+  const statusOptions: SelectOption[] = useMemo(
+    () => [
+      {
+        value: 'all',
+        label: t('statusAll') || 'All',
+        icon: <span className="size-2 rounded-full bg-muted-foreground/60 shrink-0" />,
+      },
+      ...CONSOLIDATION_STATUSES.map((st) => {
+        const dotColor =
+          st === 'Waiting'
+            ? 'bg-yellow-500'
+            : st === 'Station'
+              ? 'bg-cyan-500'
+              : st === 'On the way'
+                ? 'bg-blue-500'
+                : st === 'On the border'
+                  ? 'bg-amber-500'
+                  : st === 'Reload'
+                    ? 'bg-purple-500'
+                    : 'bg-emerald-500';
+        return {
+          value: st,
+          label: getStatusLabel(st),
+          icon: <span className={`size-2 rounded-full ${dotColor} shrink-0`} />,
+        };
+      }),
+    ],
+    [t, getStatusLabel]
+  );
 
   return (
     <div className="space-y-6 min-w-0 max-w-full">
@@ -352,7 +465,7 @@ export function CargoConsolidationsTab() {
             onClick={loadConsolidations}
             disabled={loading}
             className="p-2.5 rounded-xl border border-border bg-surface hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-            title="Refresh list"
+            title={t('refreshTooltip') || 'Refresh list'}
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -376,7 +489,7 @@ export function CargoConsolidationsTab() {
         <div className="p-5 rounded-3xl bg-surface border border-border/80 hover:border-border shadow-sm transition-all flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {t('consolidationTitle') || 'Consolidations & Trips'}
+              {t('statsActiveTrips') || 'Consolidations & Trips'}
             </span>
             <div className="p-2.5 rounded-2xl bg-brand-navy/10 dark:bg-brand-gold/10 text-brand-navy dark:text-brand-gold border border-brand-navy/20 dark:border-brand-gold/20">
               <Truck className="size-4 sm:size-5" />
@@ -388,13 +501,13 @@ export function CargoConsolidationsTab() {
                 {stats.totalConsolidations}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                {stats.activeCount} active
+                {stats.activeCount} {t('kpiActiveShipments') ? '' : 'active'}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-              <span>Fleet In-Transit Operations</span>
+              <span>{t('statsActiveTripsSub') || 'Fleet In-Transit Operations'}</span>
               <span className="font-medium text-foreground">
-                {Math.max(0, stats.totalConsolidations - stats.activeCount)} completed
+                {Math.max(0, stats.totalConsolidations - stats.activeCount)} {t('statusArrived')}
               </span>
             </div>
           </div>
@@ -429,7 +542,7 @@ export function CargoConsolidationsTab() {
                       : 'bg-brand-royal/15 text-brand-royal dark:text-blue-400 border-brand-royal/30'
                 }`}
               >
-                {stats.volumeUtilPercent}% fill
+                {stats.volumeUtilPercent}%
               </span>
             </div>
 
@@ -448,9 +561,9 @@ export function CargoConsolidationsTab() {
             </div>
 
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
-              <span>Available Space:</span>
+              <span>{t('freeSpace') || 'Available Space'}:</span>
               <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                {stats.remainingM3} m³ free
+                {stats.remainingM3} {t('m3Free') || 'm³ free'}
               </span>
             </div>
           </div>
@@ -490,7 +603,7 @@ export function CargoConsolidationsTab() {
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-              <span>Estimated UZS:</span>
+              <span>UZS:</span>
               <span className="font-mono font-medium text-foreground">
                 {stats.multiCurrencies?.UZS !== undefined
                   ? formatMoney(stats.multiCurrencies.UZS, 'UZS')
@@ -501,21 +614,24 @@ export function CargoConsolidationsTab() {
         </div>
       </div>
 
-      {/* Filter & View Switcher Bar */}
-      <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      {/* Minimalistic Filter & View Controls Bar */}
+      <div className="p-3 sm:p-3.5 rounded-2xl bg-surface border border-border shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
-              placeholder="Search truck plate, consolidation code, carrier, route..."
+              placeholder={
+                t('searchConsolidationsPlaceholder') ||
+                'Search truck plate, consolidation code, carrier, route...'
+              }
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-muted/30 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted/30 hover:bg-muted/50 focus:bg-background border border-border focus:border-brand-gold/60 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 transition-all"
             />
             {search && (
               <button
@@ -525,117 +641,117 @@ export function CargoConsolidationsTab() {
                   setPage(1);
                 }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                title="Clear search"
+                title={t('clearSearch') || 'Clear search'}
               >
                 <X className="size-3.5" />
               </button>
             )}
           </div>
 
-          {/* View Mode Switcher */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/40 border border-border self-start lg:self-auto">
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'grid'
-                  ? 'bg-surface text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Cards Grid View"
-            >
-              <LayoutGrid className="size-4" />
-              <span className="hidden sm:inline">Cards</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'table'
-                  ? 'bg-surface text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Table View"
-            >
-              <TableIcon className="size-4" />
-              <span className="hidden sm:inline">Table</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('kanban')}
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'kanban'
-                  ? 'bg-surface text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Kanban Board"
-            >
-              <Kanban className="size-4" />
-              <span className="hidden sm:inline">Kanban</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('analytics')}
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'analytics'
-                  ? 'bg-surface text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Fleet Analytics"
-            >
-              <BarChart3 className="size-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </button>
-          </div>
-        </div>
+          {/* Right Controls: Tracking Status Dropdown & View Mode Switchers */}
+          <div className="flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-between sm:justify-end">
+            {/* Tracking Status Dropdown */}
+            <Select
+              size="sm"
+              value={statusFilter}
+              onChange={(val) => {
+                setStatusFilter(val || 'all');
+                setPage(1);
+              }}
+              options={statusOptions}
+              allowClear={statusFilter !== 'all'}
+              fullWidth={false}
+              className="w-40 sm:w-44"
+              triggerClassName="!rounded-xl border-border bg-muted/20 hover:bg-muted/40"
+              aria-label={t('colStatus') || 'Tracking status'}
+            />
 
-        {/* Status Filter Horizontal Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            type="button"
-            onClick={() => {
-              setStatusFilter('all');
-              setPage(1);
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer select-none ${
-              statusFilter === 'all'
-                ? 'bg-brand-navy dark:bg-brand-gold text-white dark:text-brand-navy border-transparent shadow-sm'
-                : 'bg-surface text-muted-foreground hover:text-foreground border-border/70 hover:border-border'
-            }`}
-          >
-            All Statuses
-          </button>
-          {CONSOLIDATION_STATUSES.map((st) => {
-            const isSelected = statusFilter === st;
-            return (
+            {/* View Mode Switcher */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/40 border border-border shrink-0">
+              {/* Grid / Cards */}
+              <div className="relative group/view flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'grid'
+                      ? 'bg-surface text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'
+                  }`}
+                  title={t('viewGrid') || 'Cards'}
+                  aria-label={t('viewGrid') || 'Cards'}
+                >
+                  <LayoutGrid className="size-4" />
+                </button>
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-neutral-900 text-white dark:bg-neutral-800 dark:text-neutral-100 text-[11px] font-medium shadow-md opacity-0 group-hover/view:opacity-100 transition-all duration-150 whitespace-nowrap z-30"
+                >
+                  {t('viewGrid') || 'Cards'}
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="relative group/view flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`p-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'table'
+                      ? 'bg-surface text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'
+                  }`}
+                  title={t('viewTable') || 'Table'}
+                  aria-label={t('viewTable') || 'Table'}
+                >
+                  <TableIcon className="size-4" />
+                </button>
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-neutral-900 text-white dark:bg-neutral-800 dark:text-neutral-100 text-[11px] font-medium shadow-md opacity-0 group-hover/view:opacity-100 transition-all duration-150 whitespace-nowrap z-30"
+                >
+                  {t('viewTable') || 'Table'}
+                </div>
+              </div>
+
+              {/* Kanban */}
+              <div className="relative group/view flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('kanban')}
+                  className={`p-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'kanban'
+                      ? 'bg-surface text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'
+                  }`}
+                  title={t('viewKanban') || 'Kanban'}
+                  aria-label={t('viewKanban') || 'Kanban'}
+                >
+                  <Kanban className="size-4" />
+                </button>
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-neutral-900 text-white dark:bg-neutral-800 dark:text-neutral-100 text-[11px] font-medium shadow-md opacity-0 group-hover/view:opacity-100 transition-all duration-150 whitespace-nowrap z-30"
+                >
+                  {t('viewKanban') || 'Kanban'}
+                </div>
+              </div>
+            </div>
+
+            {/* Reset active filters button */}
+            {hasActiveFilters && (
               <button
-                key={st}
                 type="button"
-                onClick={() => {
-                  setStatusFilter(st);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer select-none ${
-                  isSelected
-                    ? 'bg-brand-navy dark:bg-brand-gold text-white dark:text-brand-navy border-transparent shadow-sm'
-                    : 'bg-surface text-muted-foreground hover:text-foreground border-border/70 hover:border-border'
-                }`}
+                onClick={handleResetFilters}
+                className="p-2 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors flex items-center gap-1 cursor-pointer shrink-0 border border-border/60"
+                title={t('clearFilters') || 'Reset'}
+                aria-label={t('clearFilters') || 'Reset'}
               >
-                {getStatusLabel(st)}
+                <RotateCcw className="size-3.5" />
+                <span className="hidden sm:inline">{t('clearFilters') || 'Reset'}</span>
               </button>
-            );
-          })}
-
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer shrink-0 ml-auto"
-            >
-              <X className="size-3.5" />
-              <span>Reset</span>
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -643,14 +759,19 @@ export function CargoConsolidationsTab() {
       {loading ? (
         <div className="py-24 text-center p-8 rounded-3xl bg-surface border border-border flex flex-col items-center gap-3">
           <RefreshCw className="size-8 animate-spin text-brand-gold" />
-          <span className="text-sm font-bold text-foreground">Loading consolidation trips...</span>
+          <span className="text-sm font-bold text-foreground">
+            {t('loadingConsolidationDetails') || 'Loading consolidation trips...'}
+          </span>
         </div>
       ) : !data || data.data.length === 0 ? (
         <div className="py-24 text-center p-8 rounded-3xl bg-surface border border-border flex flex-col items-center gap-3">
           <Truck className="size-12 opacity-30 text-muted-foreground" />
-          <span className="text-base font-bold text-foreground">{t('noConsolidationsFound')}</span>
+          <span className="text-base font-bold text-foreground">
+            {t('noConsolidationTrips') || 'No consolidation trips found'}
+          </span>
           <span className="text-xs text-muted-foreground max-w-md">
-            {t('noConsolidationsDesc')}
+            {t('noConsolidationTripsDesc') ||
+              'Try changing your filters or click "New Consolidation" to create a trip.'}
           </span>
           {canCreate('cargo_consolidations') && (
             <button
@@ -658,7 +779,7 @@ export function CargoConsolidationsTab() {
               onClick={handleOpenCreate}
               className="mt-2 px-4 py-2 rounded-xl bg-brand-gold/20 text-brand-navy dark:text-brand-gold font-bold text-xs hover:bg-brand-gold/30 transition-all cursor-pointer"
             >
-              + Create New Consolidation Trip
+              + {t('newConsolidationBtn')}
             </button>
           )}
         </div>
@@ -674,7 +795,7 @@ export function CargoConsolidationsTab() {
             return (
               <div
                 key={c.id}
-                onClick={() => setSelectedDetails(c)}
+                onClick={() => fetchAndShowDetails(c.id)}
                 className="group relative p-5 rounded-3xl bg-surface border border-border/80 hover:border-brand-gold/50 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4"
               >
                 {/* Top Card Info */}
@@ -703,7 +824,7 @@ export function CargoConsolidationsTab() {
                     <span className="text-foreground">{c.destination_place || 'Destination'}</span>
                     {c.departure_date && (
                       <span className="text-[11px] text-muted-foreground ml-auto font-normal">
-                        Dep: {c.departure_date}
+                        {formatDateDisplay(c.departure_date, locale)}
                       </span>
                     )}
                   </div>
@@ -711,7 +832,7 @@ export function CargoConsolidationsTab() {
                   {/* Volume Utilization Bar */}
                   <div className="space-y-1.5 p-3 rounded-2xl bg-muted/20 border border-border/60">
                     <div className="flex justify-between text-xs">
-                      <span className="font-bold text-foreground">Capacity (m³)</span>
+                      <span className="font-bold text-foreground">{t('volumeCapacity')}</span>
                       <span className="font-mono font-extrabold text-foreground">
                         {c.capacity.assigned_volume_m3} / {c.capacity.max_volume_m3} m³ (
                         {c.capacity.volume_utilization_percent}%)
@@ -732,24 +853,88 @@ export function CargoConsolidationsTab() {
                       />
                     </div>
                     <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
-                      <span>{c.capacity.remaining_volume_m3} m³ free</span>
+                      <span>
+                        {c.capacity.remaining_volume_m3} {t('m3Free') || 'm³ free'}
+                      </span>
                       <span>
                         {c.capacity.assigned_weight_kg.toLocaleString()} /{' '}
                         {c.capacity.max_weight_kg.toLocaleString()} kg
                       </span>
                     </div>
                   </div>
+
+                  {/* Milestone Dates & Operational Expenses Strip */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-1 text-muted-foreground">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(c.loaded_date || c.load_date) && (
+                        <span className="px-1.5 py-0.5 rounded bg-muted/40 border border-border/50">
+                          {t('loadDate') || 'Load'}:{' '}
+                          {formatDateDisplay(c.loaded_date || c.load_date, locale)}
+                        </span>
+                      )}
+                      {c.border_arrival_date && (
+                        <span className="px-1.5 py-0.5 rounded bg-muted/40 border border-border/50">
+                          {t('borderArrival') || 'Border'}:{' '}
+                          {formatDateDisplay(c.border_arrival_date, locale)}
+                        </span>
+                      )}
+                      {c.tashkent_arrival_date && (
+                        <span className="px-1.5 py-0.5 rounded bg-muted/40 border border-border/50">
+                          {t('tashkentArrival') || 'Tashkent'}:{' '}
+                          {formatDateDisplay(c.tashkent_arrival_date, locale)}
+                        </span>
+                      )}
+                    </div>
+                    {((c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0) ||
+                      (c.cct && c.cct > 0)) && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground ml-auto">
+                        {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
+                          <span title={t('expenseCustoms') || 'Customs'}>
+                            Cust:{' '}
+                            {formatMoney(
+                              c.customs_clearance_of_goods,
+                              c.customs_clearance_of_goods_currency || 'USD'
+                            )}
+                          </span>
+                        )}
+                        {c.cct && c.cct > 0 && (
+                          <span title={t('expenseCct') || 'CCT'}>
+                            CCT: {formatMoney(c.cct, c.cct_currency || 'USD')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bottom Card Footer */}
                 <div className="pt-2 border-t border-border/70 flex items-center justify-between gap-3 text-xs">
-                  {/* Attached packages preview & quick pack */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                  {/* Attached packages preview & quick actions */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-muted-foreground mr-1">
                       <Boxes className="size-4 text-brand-gold shrink-0" />
-                      <span className="font-bold text-foreground font-mono">{c.cargos.length}</span>
-                      <span className="text-[11px]">cargos</span>
+                      <span className="font-bold text-foreground font-mono">
+                        {c.cargos?.length ?? c.capacity?.total_cargos_count ?? 0}
+                      </span>
+                      <span className="text-[11px]">{t('cargosAttachedCount', { count: '' })}</span>
                     </div>
+                    {canCreate('cargo_registrations') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveConsolidationForNewCargo(c);
+                          setIsNewCargoModalOpen(true);
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        title={
+                          t('btnAddCargo') || 'Add new LTL cargo directly into this consolidation'
+                        }
+                      >
+                        <Plus className="size-3" />
+                        <span>{t('btnAddCargo') || 'Add Cargo'}</span>
+                      </button>
+                    )}
                     {canAssignCargo() && (
                       <button
                         type="button"
@@ -758,17 +943,19 @@ export function CargoConsolidationsTab() {
                           setAssigningConsolidation(c);
                         }}
                         className="px-2 py-0.5 rounded-lg bg-brand-gold/15 hover:bg-brand-gold/25 text-brand-navy dark:text-brand-gold text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
-                        title="Pack cargos into truck"
+                        title={t('btnPackCargos') || 'Pack existing unassigned cargos'}
                       >
-                        <Plus className="size-3" />
-                        <span>Pack</span>
+                        <Boxes className="size-3" />
+                        <span>{t('btnPackCargos') || 'Pack'}</span>
                       </button>
                     )}
                   </div>
 
                   {/* Net margin */}
                   <div className="text-right">
-                    <span className="text-[10px] text-muted-foreground block">Net Margin</span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {t('netMargin') || 'Net Margin'}
+                    </span>
                     <span
                       className={`font-mono text-xs font-extrabold flex items-center gap-1 ${
                         isPositive
@@ -797,42 +984,60 @@ export function CargoConsolidationsTab() {
                     className="py-3 px-4 cursor-pointer hover:text-foreground"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span>Vehicle / Code</span>
+                      <span>
+                        <T k="colTripCode" />
+                      </span>
                       <ArrowUpDown className="size-3" />
                     </div>
                   </th>
-                  <th className="py-3 px-4">Route (Origin → Dest)</th>
+                  <th className="py-3 px-4">
+                    <T k="colRoute" />
+                  </th>
                   <th
                     onClick={() => handleSort('departure_date')}
                     className="py-3 px-4 cursor-pointer hover:text-foreground"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span>Departure</span>
+                      <span>
+                        <T k="colDeparture" />
+                      </span>
                       <ArrowUpDown className="size-3" />
                     </div>
                   </th>
-                  <th className="py-3 px-4">Volume (m³)</th>
-                  <th className="py-3 px-4">Weight (kg)</th>
+                  <th className="py-3 px-4">
+                    <T k="colVolume" />
+                  </th>
+                  <th className="py-3 px-4">
+                    <T k="colWeight" />
+                  </th>
                   <th
                     onClick={() => handleSort('total_carrier_cost')}
                     className="py-3 px-4 cursor-pointer hover:text-foreground"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span>Carrier Cost</span>
+                      <span>
+                        <T k="colCarrierCost" />
+                      </span>
                       <ArrowUpDown className="size-3" />
                     </div>
                   </th>
-                  <th className="py-3 px-4">Net Margin</th>
+                  <th className="py-3 px-4">
+                    <T k="colNetMargin" />
+                  </th>
                   <th
                     onClick={() => handleSort('status')}
                     className="py-3 px-4 cursor-pointer hover:text-foreground"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span>Status</span>
+                      <span>
+                        <T k="colStatus" />
+                      </span>
                       <ArrowUpDown className="size-3" />
                     </div>
                   </th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4 text-right">
+                    <T k="colActions" />
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -851,7 +1056,7 @@ export function CargoConsolidationsTab() {
                       <tr
                         key={c.id}
                         className="hover:bg-muted/20 transition-colors h-14 cursor-pointer"
-                        onClick={() => setSelectedDetails(c)}
+                        onClick={() => fetchAndShowDetails(c.id)}
                       >
                         <td
                           className="py-3 px-3 text-center"
@@ -888,7 +1093,36 @@ export function CargoConsolidationsTab() {
                         </td>
 
                         <td className="py-3 px-4 font-mono text-muted-foreground">
-                          {c.departure_date || '—'}
+                          <div className="font-bold text-foreground">
+                            {formatDateDisplay(c.departure_date, locale)}
+                          </div>
+                          {(c.loaded_date || c.load_date) && (
+                            <div
+                              className="text-[10px] text-muted-foreground truncate"
+                              title={`${t('loadDate') || 'Load Date'}: ${formatDateDisplay(c.loaded_date || c.load_date, locale)}`}
+                            >
+                              {t('loadDate') || 'Load'}:{' '}
+                              {formatDateDisplay(c.loaded_date || c.load_date, locale)}
+                            </div>
+                          )}
+                          {c.border_arrival_date && (
+                            <div
+                              className="text-[10px] text-muted-foreground truncate"
+                              title={`${t('borderArrival') || 'Border'}: ${formatDateDisplay(c.border_arrival_date, locale)}`}
+                            >
+                              {t('borderArrival') || 'Border'}:{' '}
+                              {formatDateDisplay(c.border_arrival_date, locale)}
+                            </div>
+                          )}
+                          {c.tashkent_arrival_date && (
+                            <div
+                              className="text-[10px] text-muted-foreground truncate"
+                              title={`${t('tashkentArrival') || 'Tashkent'}: ${formatDateDisplay(c.tashkent_arrival_date, locale)}`}
+                            >
+                              {t('tashkentArrival') || 'Tashkent'}:{' '}
+                              {formatDateDisplay(c.tashkent_arrival_date, locale)}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-4">
@@ -915,7 +1149,33 @@ export function CargoConsolidationsTab() {
                         </td>
 
                         <td className="py-3 px-4 font-mono text-foreground font-bold">
-                          {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
+                          <div>
+                            {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
+                          </div>
+                          {((c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0) ||
+                            (c.cct && c.cct > 0)) && (
+                            <div className="text-[10px] font-normal text-muted-foreground flex flex-col gap-0.5 mt-0.5">
+                              {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
+                                <span
+                                  title={`${t('expenseCustoms') || 'Customs'}: ${formatMoney(c.customs_clearance_of_goods, c.customs_clearance_of_goods_currency || 'USD')}`}
+                                >
+                                  {t('expenseCustoms') || 'Cust'}:{' '}
+                                  {formatMoney(
+                                    c.customs_clearance_of_goods,
+                                    c.customs_clearance_of_goods_currency || 'USD'
+                                  )}
+                                </span>
+                              )}
+                              {c.cct && c.cct > 0 && (
+                                <span
+                                  title={`${t('expenseCct') || 'CCT'}: ${formatMoney(c.cct, c.cct_currency || 'USD')}`}
+                                >
+                                  {t('expenseCct') || 'CCT'}:{' '}
+                                  {formatMoney(c.cct, c.cct_currency || 'USD')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 font-mono font-bold">
@@ -940,22 +1200,35 @@ export function CargoConsolidationsTab() {
 
                         <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
+                            {canCreate('cargo_registrations') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveConsolidationForNewCargo(c);
+                                  setIsNewCargoModalOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                                title={t('btnAddCargo') || 'Add LTL Cargo to this trip'}
+                              >
+                                <Plus className="size-4" />
+                              </button>
+                            )}
                             {canAssignCargo() && (
                               <button
                                 type="button"
                                 onClick={() => setAssigningConsolidation(c)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-gold hover:bg-brand-gold/10 transition-colors"
-                                title="Pack cargos"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-gold hover:bg-brand-gold/10 transition-colors cursor-pointer"
+                                title={t('btnPackCargos') || 'Pack existing cargos'}
                               >
-                                <Plus className="size-4" />
+                                <Boxes className="size-4" />
                               </button>
                             )}
                             {canUpdate('cargo_consolidations') && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenEdit(c)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                                title="Edit trip"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                                title={t('btnEditTrip') || 'Edit trip'}
                               >
                                 <Edit2 className="size-4" />
                               </button>
@@ -964,8 +1237,8 @@ export function CargoConsolidationsTab() {
                               <button
                                 type="button"
                                 onClick={() => handleDelete(c.id)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                                title="Delete trip"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                title={t('btnDeleteTrip') || 'Delete trip'}
                               >
                                 <Trash2 className="size-4" />
                               </button>
@@ -982,23 +1255,52 @@ export function CargoConsolidationsTab() {
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                                   <Package className="size-4 text-brand-gold" />
-                                  <span>Attached Client Packages ({c.cargos.length})</span>
+                                  <span>
+                                    {t('attachedClientCargos', {
+                                      count:
+                                        c.cargos?.length ?? c.capacity?.total_cargos_count ?? 0,
+                                    })}
+                                  </span>
                                 </span>
-                                {canAssignCargo() && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setAssigningConsolidation(c)}
-                                    className="px-2.5 py-1 rounded-lg bg-brand-gold/20 text-brand-navy dark:text-brand-gold text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1"
-                                  >
-                                    <Plus className="size-3" />
-                                    <span>Pack More</span>
-                                  </button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {canCreate('cargo_registrations') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveConsolidationForNewCargo(c);
+                                        setIsNewCargoModalOpen(true);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Plus className="size-3" />
+                                      <span>{t('btnAddCargo') || 'Add Cargo'}</span>
+                                    </button>
+                                  )}
+                                  {canAssignCargo() && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setAssigningConsolidation(c)}
+                                      className="px-2.5 py-1 rounded-lg bg-brand-gold/20 text-brand-navy dark:text-brand-gold text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Boxes className="size-3" />
+                                      <span>{t('btnPackCargos') || 'Pack More'}</span>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
-                              {c.cargos.length === 0 ? (
+                              {loadingRowDetails.has(c.id) ? (
+                                <div className="py-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                                  <RefreshCw className="size-3.5 animate-spin text-brand-gold" />
+                                  <span>
+                                    {t('loadingConsolidationDetails') ||
+                                      'Loading assigned cargos...'}
+                                  </span>
+                                </div>
+                              ) : !c.cargos || c.cargos.length === 0 ? (
                                 <p className="text-xs text-muted-foreground italic">
-                                  No client cargos packed in this truck yet.
+                                  {t('noClientCargosAttached') ||
+                                    'No client cargos packed in this truck yet.'}
                                 </p>
                               ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
@@ -1024,7 +1326,7 @@ export function CargoConsolidationsTab() {
                                           )}
                                         </div>
                                         <span className="text-[11px] text-muted-foreground block truncate">
-                                          {cargo.client?.name || 'Client'}
+                                          {cargo.client?.name || t('clientLabel') || 'Client'}
                                         </span>
                                       </div>
                                       <div className="text-right shrink-0 ml-2">
@@ -1058,7 +1360,7 @@ export function CargoConsolidationsTab() {
             </table>
           </div>
         </div>
-      ) : viewMode === 'kanban' ? (
+      ) : (
         /* 3. Kanban Status Pipeline View */
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
           {CONSOLIDATION_STATUSES.map((st) => {
@@ -1088,7 +1390,7 @@ export function CargoConsolidationsTab() {
                 <div className="overflow-y-auto flex-1 space-y-2.5 pr-1">
                   {columnItems.length === 0 ? (
                     <div className="py-8 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-2xl">
-                      No trips in {getStatusLabel(st)}
+                      {t('noConsolidationTrips')}
                     </div>
                   ) : (
                     columnItems.map((c) => {
@@ -1097,7 +1399,7 @@ export function CargoConsolidationsTab() {
                       return (
                         <div
                           key={c.id}
-                          onClick={() => setSelectedDetails(c)}
+                          onClick={() => fetchAndShowDetails(c.id)}
                           className="p-3.5 rounded-2xl bg-muted/20 border border-border/80 hover:border-brand-gold/60 shadow-sm hover:shadow transition-all cursor-pointer space-y-2"
                         >
                           <div className="flex items-center justify-between">
@@ -1136,103 +1438,17 @@ export function CargoConsolidationsTab() {
             );
           })}
         </div>
-      ) : (
-        /* 4. Fleet Analytics View */
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Volume vs Weight Utilization Breakdown */}
-            <div className="p-5 rounded-3xl bg-surface border border-border shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Boxes className="size-4 text-brand-gold" />
-                <span>Volume & Weight Capacity Density</span>
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Compares overall cargo volume (m³) against vehicle structural weight payload (kg).
-              </p>
-
-              <div className="space-y-4 pt-2">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span>Assigned Volume vs Fleet Capacity</span>
-                    <span className="font-mono">
-                      {stats.totalAssignedM3} / {stats.totalCapacityM3} m³ (
-                      {stats.volumeUtilPercent}%)
-                    </span>
-                  </div>
-                  <div className="h-3 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-brand-royal rounded-full transition-all"
-                      style={{ width: `${Math.min(100, stats.volumeUtilPercent)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-muted/20 border border-border/60 space-y-2">
-                  <span className="text-xs font-bold text-foreground block">
-                    Fleet Efficiency Tip
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    Vehicles currently average <strong>{stats.volumeUtilPercent}%</strong> volume
-                    fill. Combining high-density metal cargos with low-density textile loads
-                    optimizes trip margins.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Financial Margin Overview */}
-            <div className="p-5 rounded-3xl bg-surface border border-border shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <DollarSign className="size-4 text-emerald-500" />
-                <span>Trip Financial Margins</span>
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Aggregate commercial revenue from all client cargos vs total carrier truck freight.
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/60">
-                  <span className="text-[11px] text-muted-foreground block font-bold">
-                    Active Net Margin
-                  </span>
-                  <span
-                    className={`text-xl font-extrabold font-mono ${
-                      stats.totalNetMarginUsd >= 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }`}
-                  >
-                    {formatMoney(stats.totalNetMarginUsd, stats.netMarginCurrency)}
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/60">
-                  <span className="text-[11px] text-muted-foreground block font-bold">
-                    Loaded LTL Cargos
-                  </span>
-                  <span className="text-xl font-extrabold font-mono text-foreground">
-                    {stats.totalAttachedCargos} packages
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Pagination Footer */}
       {!loading && data && data.meta.total > 0 && (viewMode === 'grid' || viewMode === 'table') && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-border shadow-sm text-xs">
           <span className="text-muted-foreground font-semibold">
-            Showing{' '}
-            <span className="font-bold text-foreground font-mono">
-              {(data.meta.offset ?? (page - 1) * limit) + 1}
-            </span>{' '}
-            to{' '}
-            <span className="font-bold text-foreground font-mono">
-              {Math.min((data.meta.offset ?? (page - 1) * limit) + limit, data.meta.total)}
-            </span>{' '}
-            of <span className="font-bold text-foreground font-mono">{data.meta.total}</span>{' '}
-            consolidations
+            {t('showingPage', {
+              page,
+              totalPages,
+              total: data.meta.total,
+            })}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -1245,14 +1461,16 @@ export function CargoConsolidationsTab() {
               <span>{t('pagPrev') || 'Previous'}</span>
             </button>
             <span className="font-bold text-foreground px-2 font-mono">
-              Page {page} of {Math.ceil(data.meta.total / limit) || 1}
+              {page} / {totalPages}
             </span>
             <button
               type="button"
               disabled={
-                (data.meta.offset ?? (page - 1) * limit) + limit >= data.meta.total || loading
+                page >= totalPages ||
+                (data.meta.offset ?? (page - 1) * limit) + limit >= data.meta.total ||
+                loading
               }
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               className="px-3 py-1.5 rounded-xl border border-border bg-surface hover:bg-muted/60 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1 cursor-pointer"
             >
               <span>{t('pagNext') || 'Next'}</span>
@@ -1261,6 +1479,59 @@ export function CargoConsolidationsTab() {
           </div>
         </div>
       )}
+
+      {/* LTL Cargo Registration Inside Consolidation Modal */}
+      <CargoRegistrationModal
+        isOpen={isNewCargoModalOpen}
+        onClose={() => {
+          setIsNewCargoModalOpen(false);
+          setActiveConsolidationForNewCargo(null);
+        }}
+        onSuccess={async () => {
+          await loadConsolidations();
+          if (activeConsolidationForNewCargo) {
+            try {
+              const updated = await cargoConsolidationsApi.get(activeConsolidationForNewCargo.id);
+              setSelectedDetails(updated);
+            } catch {
+              // fallback
+            }
+          }
+        }}
+        initialCargoType="LTL"
+        lockCargoType="LTL"
+        initialConsolidationId={activeConsolidationForNewCargo?.id || null}
+        initialContainerTruckId={activeConsolidationForNewCargo?.container_truck_id || null}
+        lockConsolidation={true}
+      />
+
+      {/* Edit Cargo from Consolidation Drawer */}
+      <CargoRegistrationModal
+        isOpen={!!editingCargoId}
+        onClose={() => {
+          setEditingCargoId(null);
+          setEditingCargoConsolidation(null);
+        }}
+        onSuccess={async () => {
+          setEditingCargoId(null);
+          setEditingCargoConsolidation(null);
+          await loadConsolidations();
+          if (editingCargoConsolidation) {
+            try {
+              const updated = await cargoConsolidationsApi.get(editingCargoConsolidation.id);
+              setSelectedDetails(updated);
+            } catch {
+              // fallback — drawer stays with previous data
+            }
+          }
+        }}
+        editingId={editingCargoId}
+        initialCargoType="LTL"
+        lockCargoType="LTL"
+        initialConsolidationId={editingCargoConsolidation?.id || null}
+        initialContainerTruckId={editingCargoConsolidation?.container_truck_id || null}
+        lockConsolidation={true}
+      />
 
       {/* Consolidation Create & Edit Modal */}
       <ConsolidationModal
@@ -1272,11 +1543,15 @@ export function CargoConsolidationsTab() {
         editingItem={editingItem}
       />
 
-      {/* Consolidation Deep-Dive Drawer */}
-      <ConsolidationDetailsDrawer
-        isOpen={!!selectedDetails}
-        onClose={() => setSelectedDetails(null)}
+      {/* Consolidation Deep-Dive Details Modal */}
+      <ConsolidationDetailsModal
+        isOpen={!!selectedDetails || isLoadingDetails}
+        onClose={() => {
+          setSelectedDetails(null);
+          setIsLoadingDetails(false);
+        }}
         consolidation={selectedDetails}
+        isLoadingDetails={isLoadingDetails}
         onEdit={(item) => {
           setSelectedDetails(null);
           handleOpenEdit(item);
@@ -1284,6 +1559,14 @@ export function CargoConsolidationsTab() {
         onDelete={handleDelete}
         onAssignCargos={(item) => {
           setAssigningConsolidation(item);
+        }}
+        onAddLtlCargo={(item) => {
+          setActiveConsolidationForNewCargo(item);
+          setIsNewCargoModalOpen(true);
+        }}
+        onEditCargo={(cargoId, consolidation) => {
+          setEditingCargoId(cargoId);
+          setEditingCargoConsolidation(consolidation);
         }}
         onUpdate={(updated) => {
           setSelectedDetails(updated);
@@ -1296,6 +1579,10 @@ export function CargoConsolidationsTab() {
         isOpen={!!assigningConsolidation}
         onClose={() => setAssigningConsolidation(null)}
         consolidation={assigningConsolidation}
+        onRegisterNewLtlCargo={(item) => {
+          setActiveConsolidationForNewCargo(item);
+          setIsNewCargoModalOpen(true);
+        }}
         onSuccess={(updated) => {
           if (updated?.id && selectedDetails?.id === updated.id) {
             setSelectedDetails(updated);

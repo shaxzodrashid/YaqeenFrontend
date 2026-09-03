@@ -204,59 +204,6 @@ export const SalesProgressChart: React.FC<SalesProgressChartProps> = React.memo(
           </div>
         </div>
 
-        {/* Metric Summary Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 p-3.5 rounded-xl bg-background/60 dark:bg-night-bg/60 border border-border/40 dark:border-night-border/40">
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              <T k="ovSummaryTotalRevenue" />
-            </span>
-            <p
-              className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text truncate"
-              title={formatMoney(summary.totalSales, currency)}
-            >
-              {formatMoney(summary.totalSales, currency)}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              <T k="ovSummaryNetMargin" />
-            </span>
-            <p
-              className="text-xs sm:text-sm font-extrabold text-emerald-500 truncate"
-              title={`${formatMoney(summary.totalMargin, currency)} (${summary.marginPercentage}%)`}
-            >
-              {formatMoney(summary.totalMargin, currency)}{' '}
-              <span className="text-[10px] text-muted">({summary.marginPercentage}%)</span>
-            </p>
-          </div>
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              <T k="ovSummaryShipmentVolume" />
-            </span>
-            <p className="text-xs sm:text-sm font-extrabold text-foreground dark:text-night-text truncate">
-              {t('ovSummaryOrdersCount', { count: summary.totalOrders })}{' '}
-              <span className="text-[10px] text-muted">
-                ({t('ovSummaryDoneCount', { completed: summary.completedOrders })})
-              </span>
-            </p>
-          </div>
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase text-muted block truncate">
-              <T k="ovSummarySalesGrowth" />
-            </span>
-            <p
-              className={`text-xs sm:text-sm font-extrabold flex items-center gap-1 ${
-                (summary.growthRateSales ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
-              }`}
-            >
-              <TrendingUp className="size-3.5" />
-              {summary.growthRateSales !== null
-                ? `${summary.growthRateSales}%`
-                : t('ovNotAvailable')}
-            </p>
-          </div>
-        </div>
-
         {/* Financial Trajectory Chart */}
         <div className="relative w-full overflow-hidden">
           <svg

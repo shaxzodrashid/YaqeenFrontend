@@ -1,26 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calculator, Truck, Crown, Target, Award, Boxes } from 'lucide-react';
+import { Package, Truck, Boxes } from 'lucide-react';
 import { T } from '../T';
 import { usePermissions } from '../../context/PermissionsContext';
-import { LtlCalcTab } from './LtlCalcTab';
-import { RopSeoModuleTab } from './RopSeoModuleTab';
-import { EmployeePlansTab } from './EmployeePlansTab';
 import { ContainerTrackingTab } from './ContainerTrackingTab';
-import { SalesManagerKpiTab } from './SalesManagerKpiTab';
 import { CargoConsolidationsTab } from './CargoConsolidationsTab';
 
-export type CargoTabId =
-  'container-tracking' | 'consolidations' | 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans';
+export type CargoTabId = 'container-tracking' | 'consolidations';
 
-export function CargoKpiPage() {
+export function CargoPage() {
   const { canRead } = usePermissions();
   const [activeTab, setActiveTab] = useState<CargoTabId>('container-tracking');
 
   const tabs: { id: CargoTabId; labelKey: string; icon: React.ReactNode }[] = [
     {
       id: 'container-tracking',
-      labelKey: 'tabContainerTracking',
+      labelKey: 'tabFtl',
       icon: <Truck className="size-4" />,
     },
     ...(canRead('cargo_consolidations')
@@ -32,10 +27,6 @@ export function CargoKpiPage() {
           },
         ]
       : []),
-    { id: 'ltl-calc', labelKey: 'tabLtlCalc', icon: <Calculator className="size-4" /> },
-    { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
-    { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
-    { id: 'plans', labelKey: 'tabPlans', icon: <Target className="size-4" /> },
   ];
 
   const renderTabContent = () => {
@@ -48,14 +39,6 @@ export function CargoKpiPage() {
         ) : (
           <ContainerTrackingTab />
         );
-      case 'ltl-calc':
-        return <LtlCalcTab />;
-      case 'rop-seo':
-        return <RopSeoModuleTab />;
-      case 'sales-manager':
-        return <SalesManagerKpiTab />;
-      case 'plans':
-        return <EmployeePlansTab />;
       default:
         return <ContainerTrackingTab />;
     }
@@ -71,7 +54,7 @@ export function CargoKpiPage() {
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-              <T k="navCargoKpi" />
+              <T k="navCargo" />
             </h1>
           </div>
         </div>

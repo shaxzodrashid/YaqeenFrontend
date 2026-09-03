@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Truck, ChevronDown, Search, Plus, X, RefreshCw } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { cargoConsolidationsApi } from '../../services/cargoConsolidations.service';
 import type { ConsolidationActiveDropdownItem } from '../../services/cargoConsolidations.service';
 
@@ -23,6 +24,7 @@ export function ConsolidationSelect({
   className = '',
   disabled = false,
 }: ConsolidationSelectProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>('');
   const [items, setItems] = useState<ConsolidationActiveDropdownItem[]>([]);
@@ -90,7 +92,7 @@ export function ConsolidationSelect({
                 {selectedItem.consolidation_code}
               </span>
               <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                ({selectedItem.remaining_volume} m³ free)
+                ({selectedItem.remaining_volume} m³ {t('free') || 'free'})
               </span>
               {selectedItem.origin_place && selectedItem.destination_place && (
                 <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">
@@ -100,7 +102,7 @@ export function ConsolidationSelect({
             </div>
           ) : (
             <span className="text-xs text-muted-foreground">
-              Select Consolidation Truck / Trip...
+              {t('selectConsolidationPlaceholder') || 'Select Consolidation Truck / Trip...'}
             </span>
           )}
         </div>
@@ -136,7 +138,10 @@ export function ConsolidationSelect({
               <input
                 type="text"
                 autoFocus
-                placeholder="Search active trucks by plate, code, route..."
+                placeholder={
+                  t('searchActiveTrucksPlaceholder') ||
+                  'Search active trucks by plate, code, route...'
+                }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-surface border border-border text-xs focus:outline-none focus:ring-1 focus:ring-brand-gold/60"
@@ -149,11 +154,11 @@ export function ConsolidationSelect({
             {loading ? (
               <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                 <RefreshCw className="size-3.5 animate-spin text-brand-gold" />
-                <span>Loading active vehicles...</span>
+                <span>{t('loadingActiveVehicles') || 'Loading active vehicles...'}</span>
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="p-4 text-center text-xs text-muted-foreground">
-                No active consolidation trucks found
+                {t('noActiveConsolidationFound') || 'No active consolidation trucks found'}
               </div>
             ) : (
               filteredItems.map((item) => {
@@ -214,7 +219,7 @@ export function ConsolidationSelect({
                               : 'text-red-500'
                         }`}
                       >
-                        {item.remaining_volume} m³ free
+                        {item.remaining_volume} m³ {t('free') || 'free'}
                       </span>
                       <span className="text-[10px] text-muted-foreground block">
                         ({item.assigned_volume}/{item.max_volume_capacity} m³)
@@ -238,7 +243,7 @@ export function ConsolidationSelect({
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-brand-navy/10 dark:bg-brand-gold/10 hover:bg-brand-navy/20 dark:hover:bg-brand-gold/20 text-brand-navy dark:text-brand-gold text-xs font-bold transition-colors cursor-pointer"
               >
                 <Plus className="size-3.5" />
-                <span>+ Register New Truck / Trip</span>
+                <span>{t('registerNewConsolidation') || '+ Register New Truck / Trip'}</span>
               </button>
             </div>
           )}
