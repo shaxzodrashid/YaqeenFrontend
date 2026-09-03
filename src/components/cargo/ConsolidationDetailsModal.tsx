@@ -21,6 +21,7 @@ import {
   Shield,
   Repeat,
   FileText,
+  Receipt,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -32,6 +33,8 @@ import {
   getCarrierCostAmount,
   getCarrierCostCurrency,
   getCarrierCostUsd,
+  getTotalConsolidationExpensesUsd,
+  getTotalConsolidationIncomeUsd,
 } from '../../services/cargoConsolidations.service';
 import type {
   ConsolidationListItem,
@@ -98,9 +101,35 @@ const STATUS_CONFIG: Record<
   },
 };
 
-function formatDate(dateStr?: string | null): string {
+function formatDateDisplay(dateStr?: string | null, localeCode: string = 'en'): string {
   if (!dateStr || !dateStr.trim()) return '—';
-  return dateStr.slice(0, 10);
+  try {
+    const cleanStr = dateStr.slice(0, 10);
+    const parts = cleanStr.split('-');
+    let dateObj: Date;
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      dateObj = new Date(year, month, day);
+    } else {
+      dateObj = new Date(dateStr);
+    }
+    if (isNaN(dateObj.getTime())) return cleanStr;
+    const localeMap: Record<string, string> = {
+      uz: 'uz-UZ',
+      ru: 'ru-RU',
+      en: 'en-US',
+    };
+    const targetLocale = localeMap[localeCode] || 'en-US';
+    return dateObj.toLocaleDateString(targetLocale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return dateStr.slice(0, 10);
+  }
 }
 
 export interface ConsolidationDetailsModalProps {
@@ -128,7 +157,7 @@ export function ConsolidationDetailsModal({
   onEditCargo,
   onUpdate,
 }: ConsolidationDetailsModalProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { showNotification } = useNotification();
   const { canUpdate, canDelete, canAssignCargo } = usePermissions();
 
@@ -298,8 +327,8 @@ export function ConsolidationDetailsModal({
                   )}
                 </div>
                 <p className="text-xs text-neutral-300 truncate mt-0.5">
-                  {t('consolidationTitle') || 'Consolidation Trip'} • Created{' '}
-                  {formatDate(consolidation.created_at)}
+                  {t('consolidationTitle') || 'Consolidation Trip'} • {t('colCreatedAt')}{' '}
+                  {formatDateDisplay(consolidation.created_at, locale)}
                 </p>
               </div>
             </div>
@@ -310,7 +339,7 @@ export function ConsolidationDetailsModal({
                   type="button"
                   onClick={() => onEdit(consolidation)}
                   className="p-2 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                  title="Edit consolidation"
+                  title={t('btnEditRegistration') || 'Edit consolidation'}
                 >
                   <Edit2 className="size-4" />
                 </button>
@@ -320,7 +349,7 @@ export function ConsolidationDetailsModal({
                   type="button"
                   onClick={() => onDelete(consolidation.id)}
                   className="p-2 rounded-xl text-neutral-300 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer"
-                  title="Delete consolidation"
+                  title={t('btnDeleteRegistration') || 'Delete consolidation'}
                 >
                   <Trash2 className="size-4" />
                 </button>
@@ -340,7 +369,9 @@ export function ConsolidationDetailsModal({
             {/* Status Lifecycle Stepper Strip */}
             <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/70 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground">Lifecycle Status</span>
+                <span className="text-xs font-bold text-foreground">
+                  {t('colStatus') || 'Lifecycle Status'}
+                </span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border uppercase tracking-wider ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
                 >
@@ -368,7 +399,11 @@ export function ConsolidationDetailsModal({
                               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 cursor-pointer'
                               : 'bg-surface text-muted-foreground hover:text-foreground border-border/60 hover:border-border cursor-pointer'
                       }`}
-                      title={isCurrent ? 'Current status' : `Set status to ${st}`}
+                      title={
+                        isCurrent
+                          ? getStatusLabel(st)
+                          : `${t('setTripStatus')} ${getStatusLabel(st)}`
+                      }
                     >
                       {getStatusLabel(st)}
                     </button>
@@ -384,7 +419,7 @@ export function ConsolidationDetailsModal({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                     <MapPin className="size-4 text-brand-royal shrink-0" />
-                    <span>Route & Dates</span>
+                    <span>{t('routeAndDates') || 'Route & Dates'}</span>
                   </div>
                   {consolidation.route?.google_maps_dir_url && (
                     <a
@@ -393,7 +428,7 @@ export function ConsolidationDetailsModal({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-navy dark:text-brand-gold hover:underline"
                     >
-                      <span>Directions</span>
+                      <span>{t('openDirections') || 'Directions'}</span>
                       <ExternalLink className="size-3" />
                     </a>
                   )}
@@ -408,7 +443,7 @@ export function ConsolidationDetailsModal({
                           consolidation.origin_country_code || consolidation.origin?.country_code
                         )}
                       </span>
-                      <span>{consolidation.origin_place || 'Origin'}</span>
+                      <span>{consolidation.origin_place || t('originLabel') || 'Origin'}</span>
                     </span>
                     <ArrowRight className="size-3.5 text-brand-gold shrink-0" />
                     <span className="font-bold text-xs text-foreground flex items-center gap-1 truncate">
@@ -418,35 +453,64 @@ export function ConsolidationDetailsModal({
                             consolidation.destination?.country_code
                         )}
                       </span>
-                      <span>{consolidation.destination_place || 'Destination'}</span>
+                      <span>
+                        {consolidation.destination_place || t('destinationLabel') || 'Destination'}
+                      </span>
                     </span>
                   </div>
                 </div>
 
                 {/* Milestone Dates Grid */}
-                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
                   <div className="p-2 rounded-xl bg-surface border border-border/60">
                     <span className="text-[10px] text-muted-foreground block truncate">
-                      Departure
+                      {t('colDeparture') || 'Departure'}
                     </span>
                     <span className="font-bold text-foreground truncate block">
-                      {formatDate(consolidation.departure_date)}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-surface border border-border/60">
-                    <span className="text-[10px] text-muted-foreground block truncate">Loaded</span>
-                    <span className="font-bold text-foreground truncate block">
-                      {formatDate(consolidation.loaded_date || consolidation.load_date)}
+                      {formatDateDisplay(consolidation.departure_date, locale)}
                     </span>
                   </div>
                   <div className="p-2 rounded-xl bg-surface border border-border/60">
                     <span className="text-[10px] text-muted-foreground block truncate">
-                      {consolidation.arrived_date ? 'Arrived' : 'Est. Arrival'}
+                      {t('colLoaded') || 'Loaded'}
                     </span>
                     <span className="font-bold text-foreground truncate block">
-                      {formatDate(
-                        consolidation.arrived_date || consolidation.estimated_arrival_date
+                      {formatDateDisplay(
+                        consolidation.loaded_date || consolidation.load_date,
+                        locale
                       )}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-surface border border-border/60">
+                    <span className="text-[10px] text-muted-foreground block truncate">
+                      {t('borderArrivalDate') || 'Border Arrival'}
+                    </span>
+                    <span className="font-bold text-foreground truncate block">
+                      {formatDateDisplay(consolidation.border_arrival_date, locale)}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-surface border border-border/60">
+                    <span className="text-[10px] text-muted-foreground block truncate">
+                      {t('tashkentArrivalDate') || 'Tashkent Arrival'}
+                    </span>
+                    <span className="font-bold text-foreground truncate block">
+                      {formatDateDisplay(consolidation.tashkent_arrival_date, locale)}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-surface border border-border/60">
+                    <span className="text-[10px] text-muted-foreground block truncate">
+                      {t('estimatedArrival') || 'Est. Arrival'}
+                    </span>
+                    <span className="font-bold text-foreground truncate block">
+                      {formatDateDisplay(consolidation.estimated_arrival_date, locale)}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-surface border border-border/60">
+                    <span className="text-[10px] text-muted-foreground block truncate">
+                      {t('colArrived') || 'Actual Arrival'}
+                    </span>
+                    <span className="font-bold text-foreground truncate block">
+                      {formatDateDisplay(consolidation.arrived_date, locale)}
                     </span>
                   </div>
                 </div>
@@ -457,17 +521,19 @@ export function ConsolidationDetailsModal({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                     <Boxes className="size-4 text-brand-gold shrink-0" />
-                    <span>Capacity Utilization</span>
+                    <span>{t('capacityUtilization') || 'Capacity Utilization'}</span>
                   </div>
                   <span className="text-xs font-bold text-muted-foreground font-mono">
-                    {totalCargos} pkg(s)
+                    {totalCargos} {t('colCargosCount') || 'pkg(s)'}
                   </span>
                 </div>
 
                 {/* Volume Progress */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="font-bold text-muted-foreground">Volume</span>
+                    <span className="font-bold text-muted-foreground">
+                      {t('volumeLabel') || 'Volume'}
+                    </span>
                     <span className="font-mono font-bold text-foreground">
                       {consolidation.capacity?.assigned_volume_m3 ?? 0} /{' '}
                       {consolidation.capacity?.max_volume_m3 ?? 86} m³{' '}
@@ -487,14 +553,16 @@ export function ConsolidationDetailsModal({
                     />
                   </div>
                   <div className="text-[10px] text-muted-foreground font-mono text-right">
-                    {consolidation.capacity?.remaining_volume_m3 ?? 0} m³ free
+                    {consolidation.capacity?.remaining_volume_m3 ?? 0} m³ {t('free') || 'free'}
                   </div>
                 </div>
 
                 {/* Weight Progress */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="font-bold text-muted-foreground">Weight</span>
+                    <span className="font-bold text-muted-foreground">
+                      {t('weightLabel') || 'Weight'}
+                    </span>
                     <span className="font-mono font-bold text-foreground">
                       {(consolidation.capacity?.assigned_weight_kg ?? 0).toLocaleString()} /{' '}
                       {(consolidation.capacity?.max_weight_kg ?? 22000).toLocaleString()} kg{' '}
@@ -510,72 +578,144 @@ export function ConsolidationDetailsModal({
                     />
                   </div>
                   <div className="text-[10px] text-muted-foreground font-mono text-right">
-                    {(consolidation.capacity?.remaining_weight_kg ?? 0).toLocaleString()} kg payload
-                    free
+                    {(consolidation.capacity?.remaining_weight_kg ?? 0).toLocaleString()} kg{' '}
+                    {t('free') || 'payload free'}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Financial Summary & Driver Card */}
-            <div className="p-4 rounded-2xl bg-muted/20 border border-border/70 space-y-3">
-              <div className="flex items-center justify-between">
+            {/* Financial Summary & Operational Expenses Breakdown Card */}
+            <div className="p-4 rounded-2xl bg-muted/20 border border-border/70 space-y-3.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                   <DollarSign className="size-4 text-emerald-500 shrink-0" />
-                  <span>Financials & Carrier</span>
+                  <span>
+                    {t('financialBreakdownTitle') || 'Financial Breakdown & Operational Expenses'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-mono text-xs font-extrabold">
-                  <span className="text-muted-foreground">Net Margin:</span>
+                  <span className="text-muted-foreground">{t('netMargin') || 'Net Margin'}:</span>
                   <span
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-lg ${
+                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg ${
                       isNetMarginPositive
                         ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                         : 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30'
                     }`}
                   >
                     {isNetMarginPositive ? (
-                      <TrendingUp className="size-3" />
+                      <TrendingUp className="size-3.5" />
                     ) : (
-                      <TrendingDown className="size-3" />
+                      <TrendingDown className="size-3.5" />
                     )}
                     {formatMoney(netMargin, netMarginCurrency)}
                   </span>
                 </div>
               </div>
 
+              {/* Main Financial Totals & Carrier */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                 <div className="p-2.5 rounded-xl bg-surface border border-border/60">
-                  <span className="text-[10px] text-muted-foreground block">Client Income</span>
+                  <span className="text-[10px] text-muted-foreground block">
+                    {t('totalClientSell') || 'Client Income (Sell)'}
+                  </span>
                   <span className="font-mono text-xs font-extrabold text-foreground">
-                    {formatMoney(consolidation.financials?.total_sell_usd ?? 0, 'USD')}
+                    {formatMoney(getTotalConsolidationIncomeUsd(consolidation.financials), 'USD')}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-surface border border-border/60">
                   <span className="text-[10px] text-muted-foreground block">
-                    Truck Freight Cost
+                    {t('totalExpenses') || 'Total Operational Outlay'}
                   </span>
                   <span className="font-mono text-xs font-extrabold text-foreground">
-                    {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
+                    {formatMoney(getTotalConsolidationExpensesUsd(consolidation.financials), 'USD')}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-surface border border-border/60 flex items-center justify-between">
                   <div className="min-w-0 pr-1">
                     <span className="text-[10px] text-muted-foreground block truncate">
-                      Carrier
+                      {t('colCarrier') || 'Carrier'}
                     </span>
                     <span className="font-bold text-xs text-foreground block truncate">
-                      {consolidation.carrier_name || 'Not assigned'}
+                      {consolidation.carrier_name || t('notAssigned') || 'Not assigned'}
                     </span>
                   </div>
                   {consolidation.carrier_phone && (
                     <a
                       href={`tel:${consolidation.carrier_phone}`}
                       className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors shrink-0"
-                      title={`Call ${consolidation.carrier_phone}`}
+                      title={`${t('call')} ${consolidation.carrier_phone}`}
                     >
                       <Phone className="size-3.5" />
                     </a>
                   )}
+                </div>
+              </div>
+
+              {/* 3 Expense Categories Detail */}
+              <div className="space-y-2 pt-1 border-t border-border/50">
+                <span className="text-[11px] font-bold text-foreground block">
+                  {t('operationalCostBreakdown') || 'Expense Line Items (3 categories)'}
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  {/* 1. Agent */}
+                  <div className="p-2 rounded-xl bg-surface/80 border border-border/50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Truck className="size-3.5 text-brand-navy dark:text-brand-gold shrink-0" />
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">
+                        {t('agentFreightTitle') || 'Agent / Line-haul'}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-foreground shrink-0 ml-1">
+                      {formatMoney(
+                        consolidation.financials?.expenses?.agent?.amount ??
+                          consolidation.agent ??
+                          carrierCostAmount ??
+                          carrierCostUsd,
+                        consolidation.financials?.expenses?.agent?.currency ??
+                          consolidation.agent_currency ??
+                          carrierCostCurrency
+                      )}
+                    </span>
+                  </div>
+
+                  {/* 2. Customs Clearance */}
+                  <div className="p-2 rounded-xl bg-surface/80 border border-border/50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Shield className="size-3.5 text-emerald-500 shrink-0" />
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">
+                        {t('customsClearanceTitle') || 'Customs Clearance'}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-foreground shrink-0 ml-1">
+                      {formatMoney(
+                        consolidation.financials?.expenses?.customs_clearance_of_goods?.amount ??
+                          consolidation.customs_clearance_of_goods ??
+                          0,
+                        consolidation.financials?.expenses?.customs_clearance_of_goods?.currency ??
+                          consolidation.customs_clearance_of_goods_currency ??
+                          'USD'
+                      )}
+                    </span>
+                  </div>
+
+                  {/* 3. CCT */}
+                  <div className="p-2 rounded-xl bg-surface/80 border border-border/50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Receipt className="size-3.5 text-purple-500 shrink-0" />
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">
+                        {t('cctCertTitle') || 'CCT / Certificate'}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-foreground shrink-0 ml-1">
+                      {formatMoney(
+                        consolidation.financials?.expenses?.cct?.amount ?? consolidation.cct ?? 0,
+                        consolidation.financials?.expenses?.cct?.currency ??
+                          consolidation.cct_currency ??
+                          'USD'
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -593,7 +733,10 @@ export function ConsolidationDetailsModal({
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                   <Package className="size-4 text-brand-gold shrink-0" />
-                  <span>Attached Client Cargos ({(consolidation.cargos || []).length})</span>
+                  <span>
+                    {t('attachedCargos') || 'Attached Client Cargos'} (
+                    {(consolidation.cargos || []).length})
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {onAddLtlCargo && (
@@ -613,7 +756,7 @@ export function ConsolidationDetailsModal({
                       className="px-2.5 py-1 rounded-xl bg-brand-gold/20 text-brand-navy dark:text-brand-gold border border-brand-gold/40 text-xs font-bold hover:bg-brand-gold/30 transition-all flex items-center gap-1 cursor-pointer"
                     >
                       <Boxes className="size-3.5" />
-                      <span>Pack Cargos</span>
+                      <span>{t('packCargosBtn') || 'Pack Cargos'}</span>
                     </button>
                   )}
                 </div>
@@ -624,10 +767,11 @@ export function ConsolidationDetailsModal({
                   <Package className="size-6 mx-auto opacity-40 text-brand-gold" />
                   <div>
                     <p className="text-xs font-bold text-foreground">
-                      No client cargos attached yet
+                      {t('noAttachedCargos') || 'No client cargos attached yet'}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Attach existing unassigned cargos or register a new LTL load directly.
+                      {t('attachCargosTip') ||
+                        'Attach existing unassigned cargos or register a new LTL load directly.'}
                     </p>
                   </div>
                 </div>
@@ -653,13 +797,21 @@ export function ConsolidationDetailsModal({
                           )}
                           {cargo.is_turnkey && (
                             <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                              Turnkey
+                              {t('turnkeyBadge') || 'Turnkey'}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
-                          {cargo.client?.name && <span>Client: {cargo.client.name}</span>}
-                          {cargo.employee?.name && <span>Sales: {cargo.employee.name}</span>}
+                          {cargo.client?.name && (
+                            <span>
+                              {t('colClient')}: {cargo.client.name}
+                            </span>
+                          )}
+                          {cargo.employee?.name && (
+                            <span>
+                              {t('colEmployee')}: {cargo.employee.name}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -689,7 +841,7 @@ export function ConsolidationDetailsModal({
                               onEditCargo(cargo.id, consolidation);
                             }}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-royal hover:bg-brand-royal/10 transition-colors cursor-pointer"
-                            title="Edit cargo"
+                            title={t('btnEditRegistration') || 'Edit cargo'}
                           >
                             <Edit2 className="size-3.5" />
                           </button>
@@ -700,7 +852,7 @@ export function ConsolidationDetailsModal({
                             disabled={removingCargoId === cargo.id}
                             onClick={() => handleRequestDeleteCargo(cargo.id, cargo.cargo)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
-                            title="Delete cargo"
+                            title={t('btnDeleteRegistration') || 'Delete cargo'}
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -740,14 +892,16 @@ export function ConsolidationDetailsModal({
                 </div>
               </div>
               <span className="px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-[11px] font-bold">
-                Permanent
+                {t('permanent') || 'Permanent'}
               </span>
             </div>
           ) : undefined
         }
         consequences={[
-          'This cargo registration will be permanently deleted from the system',
-          'Consolidation capacity and financials will be recalculated',
+          t('deleteModalWarningLine1') ||
+            'This cargo registration will be permanently deleted from the system',
+          t('deleteConsolidationConsequence2') ||
+            'Consolidation capacity and financials will be recalculated',
         ]}
       />
     </AnimatePresence>

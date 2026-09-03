@@ -19,9 +19,11 @@ import {
   HeartHandshake,
   Lightbulb,
 } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
 
 export function SalesCareerSystemVisual() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'all' | 'levels' | 'rules' | 'formula'>('all');
 
   return (
@@ -37,14 +39,14 @@ export function SalesCareerSystemVisual() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-xs font-bold tracking-wide">
               <Sparkles className="size-3.5 text-brand-gold" />
-              <span>Career & Performance Framework</span>
+              <span>{t('careerPerformanceFramework') || 'Career & Performance Framework'}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               <T k="smkTitle" />
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              A transparent, supportive, and result-oriented growth roadmap designed to reward
-              success, encourage mentorship, and boost your monthly earnings.
+              {t('smkCareerVisualSubtitle') ||
+                'A transparent, supportive, and result-oriented growth roadmap designed to reward success, encourage mentorship, and boost your monthly earnings.'}
             </p>
           </div>
 
@@ -57,7 +59,7 @@ export function SalesCareerSystemVisual() {
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              All Overview
+              {t('allOverview') || 'All Overview'}
             </button>
             <button
               onClick={() => setActiveTab('levels')}
@@ -67,7 +69,7 @@ export function SalesCareerSystemVisual() {
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              Career Levels
+              {t('careerLevels') || 'Career Levels'}
             </button>
             <button
               onClick={() => setActiveTab('rules')}
@@ -77,7 +79,7 @@ export function SalesCareerSystemVisual() {
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              Rules & Support
+              {t('rulesSupport') || 'Rules & Support'}
             </button>
             <button
               onClick={() => setActiveTab('formula')}
@@ -87,7 +89,7 @@ export function SalesCareerSystemVisual() {
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              Formula
+              {t('formula') || 'Formula'}
             </button>
           </div>
         </div>

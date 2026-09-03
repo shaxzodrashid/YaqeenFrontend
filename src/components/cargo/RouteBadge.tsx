@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { locationsApi, getCountryFlag } from '../../services/locations.service';
 import type { LocationDetail, RouteInfo } from '../../types/locations';
 
@@ -36,6 +37,7 @@ export const RouteBadge: React.FC<RouteBadgeProps> = ({
   className = '',
   showMapButton = true,
 }) => {
+  const { t } = useTranslation();
   const originName =
     originCity ||
     (typeof origin === 'string'
@@ -113,7 +115,7 @@ export const RouteBadge: React.FC<RouteBadgeProps> = ({
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
           className="p-1 rounded-md text-muted-foreground hover:text-brand-gold hover:bg-brand-gold/10 transition-colors shrink-0 opacity-70 group-hover:opacity-100"
-          title="Open Route in Google Maps"
+          title={t('openInGoogleMaps') || 'Open Route in Google Maps'}
         >
           <MapPin className="size-3" />
         </a>

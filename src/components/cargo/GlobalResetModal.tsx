@@ -88,12 +88,12 @@ export function GlobalResetModal({ isOpen, onClose, onConfirm }: GlobalResetModa
                 {resetting ? (
                   <>
                     <RefreshCw className="size-4 animate-spin" />
-                    Resetting...
+                    <span>{t('resetting') || 'Resetting...'}</span>
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="size-4" />
-                    Confirm Global Reset
+                    <span>{t('confirmGlobalReset') || 'Confirm Global Reset'}</span>
                   </>
                 )}
               </button>

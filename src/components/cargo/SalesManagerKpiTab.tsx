@@ -256,7 +256,7 @@ export function SalesManagerKpiTab() {
               }`}
             >
               <Crown className="size-4" />
-              <span>Career Rules System</span>
+              <span>{t('careerRulesSystem') || 'Career Rules System'}</span>
               {showVisualPoster ? (
                 <ChevronUp className="size-4" />
               ) : (
@@ -301,7 +301,7 @@ export function SalesManagerKpiTab() {
               }`}
             >
               <Award className="size-3.5" />
-              <span>Evaluations & Career Rankings</span>
+              <span>{t('evaluationsRankingsTab') || 'Evaluations & Career Rankings'}</span>
             </button>
 
             <button
@@ -313,14 +313,16 @@ export function SalesManagerKpiTab() {
               }`}
             >
               <Truck className="size-3.5" />
-              <span>Assigned Cargos Monitoring & KPI</span>
+              <span>{t('cargosMonitoringTab') || 'Assigned Cargos Monitoring & KPI'}</span>
             </button>
           </div>
 
           {activeSubTab === 'evaluations' && (
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-300 font-semibold">Month:</span>
+                <span className="text-xs text-neutral-300 font-semibold">
+                  {t('colMonth') || 'Month'}:
+                </span>
                 <input
                   type="month"
                   value={month}
@@ -330,7 +332,9 @@ export function SalesManagerKpiTab() {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-300 font-semibold">Status:</span>
+                <span className="text-xs text-neutral-300 font-semibold">
+                  {t('colStatus') || 'Status'}:
+                </span>
                 <Select
                   size="sm"
                   value={selectedStatus}
@@ -374,7 +378,7 @@ export function SalesManagerKpiTab() {
                 onClick={loadEvaluations}
                 disabled={loading}
                 className="p-2 rounded-xl border border-white/20 hover:bg-white/10 text-white transition-all cursor-pointer ml-auto"
-                title="Refresh list"
+                title={t('refreshPlans') || 'Refresh list'}
               >
                 <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
               </button>
@@ -420,8 +424,10 @@ export function SalesManagerKpiTab() {
                 <table className="w-full text-left">
                   <thead className="bg-muted/50 text-muted-foreground font-bold border-b border-border">
                     <tr>
-                      <th className="px-3 py-2">Monthly Sales Range</th>
-                      <th className="px-3 py-2 text-right">Bonus Rate (%)</th>
+                      <th className="px-3 py-2">
+                        {t('monthlySalesRange') || 'Monthly Sales Range'}
+                      </th>
+                      <th className="px-3 py-2 text-right">{t('bonusRate') || 'Bonus Rate (%)'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -448,11 +454,11 @@ export function SalesManagerKpiTab() {
                 <table className="w-full text-left">
                   <thead className="bg-muted/50 text-muted-foreground font-bold border-b border-border">
                     <tr>
-                      <th className="px-3 py-2">Level</th>
-                      <th className="px-3 py-2">Salary ($)</th>
-                      <th className="px-3 py-2">Target Range ($)</th>
-                      <th className="px-3 py-2">SR Check (Min / Target)</th>
-                      <th className="px-3 py-2">Mentees</th>
+                      <th className="px-3 py-2">{t('colLevel') || 'Level'}</th>
+                      <th className="px-3 py-2">{t('colSalary') || 'Salary ($)'}</th>
+                      <th className="px-3 py-2">{t('colTargetRange') || 'Target Range ($)'}</th>
+                      <th className="px-3 py-2">{t('colSrCheck') || 'SR Check (Min / Target)'}</th>
+                      <th className="px-3 py-2">{t('colMentees') || 'Mentees'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border font-medium">
@@ -486,7 +492,7 @@ export function SalesManagerKpiTab() {
             <div className="p-12 text-center rounded-2xl bg-surface dark:bg-surface border border-border shadow-sm space-y-3">
               <Award className="size-12 text-muted-foreground mx-auto opacity-50" />
               <h3 className="text-base font-bold text-foreground">
-                No Sales Manager Evaluations Found
+                {t('noSmkEvaluationsFound') || 'No Sales Manager Evaluations Found'}
               </h3>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 Click <strong>"Calculate Evaluations"</strong> above to compute monthly sales,

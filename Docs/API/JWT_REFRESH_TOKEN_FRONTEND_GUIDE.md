@@ -173,7 +173,9 @@ const processQueue = (error: any, token: string | null = null) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
     // Check if error is 401 and request was not already retried
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
@@ -211,10 +213,10 @@ apiClient.interceptors.response.use(
 
       try {
         // Call refresh endpoint
-        const response = await axios.post<{ accessToken: string; refreshToken: string }>(
-          `${API_BASE_URL}/auth/refresh`,
-          { refreshToken }
-        );
+        const response = await axios.post<{
+          accessToken: string;
+          refreshToken: string;
+        }>(`${API_BASE_URL}/auth/refresh`, { refreshToken });
 
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
 

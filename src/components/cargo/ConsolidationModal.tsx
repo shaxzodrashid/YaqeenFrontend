@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -16,6 +16,8 @@ import {
   Ship,
   Package,
   Loader2,
+  Receipt,
+  Calculator,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -24,7 +26,11 @@ import {
   cargoConsolidationsApi,
   CONSOLIDATION_CONTAINER_TYPES,
 } from '../../services/cargoConsolidations.service';
-import { TRANSPORT_TYPES, TRANSPORT_TYPE_LABELS } from '../../services/cargoRegistrations.service';
+import {
+  TRANSPORT_TYPES,
+  getTransportTypeLabel,
+  convertPriceToUsdAndUzs,
+} from '../../services/cargoRegistrations.service';
 import type {
   ConsolidationStatus,
   ConsolidationListItem,
@@ -156,7 +162,16 @@ function extractCarrierCost(item: any): { amount: string; currency: CurrencyType
   let amt: number | string | undefined = undefined;
   let curr: CurrencyType = 'USD';
 
-  if (item.carrier_cost && typeof item.carrier_cost === 'object') {
+  if (item.agent !== undefined && item.agent !== null) {
+    amt = item.agent;
+    curr = item.agent_currency || curr;
+  } else if (item.expenses?.agent) {
+    amt = item.expenses.agent.amount ?? item.expenses.agent.amount_usd;
+    curr = item.expenses.agent.currency || curr;
+  } else if (item.financials?.expenses?.agent) {
+    amt = item.financials.expenses.agent.amount ?? item.financials.expenses.agent.amount_usd;
+    curr = item.financials.expenses.agent.currency || curr;
+  } else if (item.carrier_cost && typeof item.carrier_cost === 'object') {
     amt = item.carrier_cost.amount ?? item.carrier_cost.amount_usd;
     curr = item.carrier_cost.currency || curr;
   } else if (item.financials?.carrier_cost && typeof item.financials.carrier_cost === 'object') {
@@ -166,8 +181,6 @@ function extractCarrierCost(item: any): { amount: string; currency: CurrencyType
     amt = item.total_carrier_cost;
   } else if (typeof item.carrier_cost === 'number') {
     amt = item.carrier_cost;
-  } else if (item.agent !== undefined && item.agent !== null) {
-    amt = item.agent;
   }
 
   if (item.carrier_cost_currency) {
@@ -219,8 +232,17 @@ export function ConsolidationModal({
   const [borderArrivalDate, setBorderArrivalDate] = useState<string>('');
   const [tashkentArrivalDate, setTashkentArrivalDate] = useState<string>('');
   const [arrivedDate, setArrivedDate] = useState<string>('');
-  const [carrierCostStr, setCarrierCostStr] = useState<string>('');
-  const [carrierCostCurrency, setCarrierCostCurrency] = useState<CurrencyType>('USD');
+
+  // 3 Operational expenses
+  const [agentStr, setAgentStr] = useState<string>('');
+  const [agentCurrency, setAgentCurrency] = useState<CurrencyType>('USD');
+
+  const [customsClearanceStr, setCustomsClearanceStr] = useState<string>('');
+  const [customsClearanceCurrency, setCustomsClearanceCurrency] = useState<CurrencyType>('USD');
+
+  const [cctStr, setCctStr] = useState<string>('');
+  const [cctCurrency, setCctCurrency] = useState<CurrencyType>('USD');
+
   const [status, setStatus] = useState<ConsolidationStatus>('Waiting');
   const [description, setDescription] = useState<string>('');
   const [transportTypes, setTransportTypes] = useState<TransportType[]>(['auto']);
@@ -232,6 +254,27 @@ export function ConsolidationModal({
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [loadingEditDetails, setLoadingEditDetails] = useState<boolean>(false);
+
+  // Calculate live USD sum of all 3 expenses
+  const calculatedExpensesTotalUsd = useMemo(() => {
+    const aAmt = parseFloat(agentStr) || 0;
+    const ccAmt = parseFloat(customsClearanceStr) || 0;
+    const cctAmt = parseFloat(cctStr) || 0;
+
+    const aConv = convertPriceToUsdAndUzs(aAmt, agentCurrency, departureDate);
+    const ccConv = convertPriceToUsdAndUzs(ccAmt, customsClearanceCurrency, departureDate);
+    const cctConv = convertPriceToUsdAndUzs(cctAmt, cctCurrency, departureDate);
+
+    return Math.round((aConv.amount_usd + ccConv.amount_usd + cctConv.amount_usd) * 100) / 100;
+  }, [
+    agentStr,
+    agentCurrency,
+    customsClearanceStr,
+    customsClearanceCurrency,
+    cctStr,
+    cctCurrency,
+    departureDate,
+  ]);
 
   // Populate form from any consolidation object
   const populateForm = useCallback((data: any) => {
@@ -279,9 +322,40 @@ export function ConsolidationModal({
     setTashkentArrivalDate(extractDate(data.tashkent_arrival_date));
     setArrivedDate(extractDate(data.arrived_date));
 
+    // 1. Agent / Carrier Cost
     const costObj = extractCarrierCost(data);
-    setCarrierCostStr(costObj.amount);
-    setCarrierCostCurrency(costObj.currency);
+    setAgentStr(costObj.amount);
+    setAgentCurrency(costObj.currency);
+
+    // 2. Customs Clearance of Goods
+    if (data.customs_clearance_of_goods !== undefined && data.customs_clearance_of_goods !== null) {
+      setCustomsClearanceStr(String(data.customs_clearance_of_goods));
+      setCustomsClearanceCurrency(data.customs_clearance_of_goods_currency || 'USD');
+    } else if (data.financials?.expenses?.customs_clearance_of_goods) {
+      const cc = data.financials.expenses.customs_clearance_of_goods;
+      setCustomsClearanceStr(
+        cc.amount !== undefined ? String(cc.amount) : String(cc.amount_usd || '')
+      );
+      setCustomsClearanceCurrency(cc.currency || 'USD');
+    } else {
+      setCustomsClearanceStr('');
+      setCustomsClearanceCurrency('USD');
+    }
+
+    // 3. CCT
+    if (data.cct !== undefined && data.cct !== null) {
+      setCctStr(String(data.cct));
+      setCctCurrency(data.cct_currency || 'USD');
+    } else if (data.financials?.expenses?.cct) {
+      const cctExp = data.financials.expenses.cct;
+      setCctStr(
+        cctExp.amount !== undefined ? String(cctExp.amount) : String(cctExp.amount_usd || '')
+      );
+      setCctCurrency(cctExp.currency || 'USD');
+    } else {
+      setCctStr('');
+      setCctCurrency('USD');
+    }
 
     setStatus(data.status || 'Waiting');
     setDescription(data.description || data.notes || '');
@@ -346,8 +420,12 @@ export function ConsolidationModal({
       setBorderArrivalDate('');
       setTashkentArrivalDate('');
       setArrivedDate('');
-      setCarrierCostStr('');
-      setCarrierCostCurrency('USD');
+      setAgentStr('');
+      setAgentCurrency('USD');
+      setCustomsClearanceStr('');
+      setCustomsClearanceCurrency('USD');
+      setCctStr('');
+      setCctCurrency('USD');
       setStatus('Waiting');
       setDescription('');
       setTransportTypes(['auto']);
@@ -395,7 +473,9 @@ export function ConsolidationModal({
 
     const maxVol = parseFloat(maxVolumeStr) || 0;
     const maxWt = parseFloat(maxWeightStr) || 0;
-    const cost = parseFloat(carrierCostStr) || 0;
+    const agentAmt = parseFloat(agentStr) || 0;
+    const customsClearanceAmt = parseFloat(customsClearanceStr) || 0;
+    const cctAmt = parseFloat(cctStr) || 0;
 
     if (maxVol <= 0) {
       showNotification('Maximum volume capacity must be greater than 0 m³', 'warning');
@@ -422,8 +502,14 @@ export function ConsolidationModal({
           loaded_date: loadedDate || undefined,
           load_date: loadedDate || undefined,
           arrived_date: arrivedDate || undefined,
-          total_carrier_cost: cost,
-          carrier_cost_currency: carrierCostCurrency,
+          agent: agentAmt,
+          agent_currency: agentCurrency,
+          customs_clearance_of_goods: customsClearanceAmt,
+          customs_clearance_of_goods_currency: customsClearanceCurrency,
+          cct: cctAmt,
+          cct_currency: cctCurrency,
+          total_carrier_cost: agentAmt,
+          carrier_cost_currency: agentCurrency,
           status,
           description: description.trim() || undefined,
           sync_status_to_cargos: syncStatusToCargos,
@@ -454,8 +540,14 @@ export function ConsolidationModal({
           loaded_date: loadedDate || undefined,
           load_date: loadedDate || undefined,
           arrived_date: arrivedDate || undefined,
-          total_carrier_cost: cost,
-          carrier_cost_currency: carrierCostCurrency,
+          agent: agentAmt,
+          agent_currency: agentCurrency,
+          customs_clearance_of_goods: customsClearanceAmt,
+          customs_clearance_of_goods_currency: customsClearanceCurrency,
+          cct: cctAmt,
+          cct_currency: cctCurrency,
+          total_carrier_cost: agentAmt,
+          carrier_cost_currency: agentCurrency,
           status,
           description: description.trim() || undefined,
           transport_types: transportTypes.length > 0 ? transportTypes : undefined,
@@ -513,14 +605,16 @@ export function ConsolidationModal({
                   {loadingEditDetails && (
                     <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-normal">
                       <Loader2 className="size-3 animate-spin text-brand-gold" />
-                      <span>Syncing...</span>
+                      <span>{t('syncing') || 'Syncing...'}</span>
                     </span>
                   )}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   {isEditing
-                    ? 'Update trip details, truck capacity, carrier freight cost and schedule'
-                    : 'Register a new consolidated vehicle trip for multi-client LTL groupage'}
+                    ? t('modalConsolidationEditSubtitle') ||
+                      'Update trip details, truck capacity, carrier freight cost and schedule'
+                    : t('modalConsolidationCreateSubtitle') ||
+                      'Register a new consolidated vehicle trip for multi-client LTL groupage'}
                 </p>
               </div>
             </div>
@@ -566,10 +660,10 @@ export function ConsolidationModal({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                   <Truck className="size-4 text-brand-gold" />
-                  <span>Vehicle & Capacity Specifications</span>
+                  <span>{t('vehicleSpecs') || 'Vehicle & Capacity Specifications'}</span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">
-                  Presets auto-fill volume & payload
+                  {t('presetsAutoFill') || 'Presets auto-fill volume & payload'}
                 </span>
               </div>
 
@@ -608,12 +702,14 @@ export function ConsolidationModal({
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
                     {t('consolidationCode') || 'Consolidation Code'}{' '}
-                    <span className="text-muted-foreground font-normal">(Optional)</span>
+                    <span className="text-muted-foreground font-normal">
+                      ({t('optional') || 'Optional'})
+                    </span>
                   </label>
                   <input
                     type="text"
                     disabled={isEditing}
-                    placeholder="Auto-generated if empty"
+                    placeholder={t('autoGeneratedCode') || 'Auto-generated if empty'}
                     value={consolidationCode}
                     onChange={(e) => setConsolidationCode(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 disabled:opacity-60"
@@ -624,9 +720,9 @@ export function ConsolidationModal({
               {/* Transport Types */}
               <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 space-y-1.5">
                 <label className="block text-[11px] font-bold text-foreground">
-                  Transport Types
+                  {t('transportTypesLabel') || 'Transport Types'}
                   <span className="ml-1.5 text-[10px] font-medium text-muted-foreground normal-case">
-                    (multi-select)
+                    ({t('multiSelect') || 'multi-select'})
                   </span>
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -648,7 +744,7 @@ export function ConsolidationModal({
                         }`}
                       >
                         {TRANSPORT_TYPE_ICONS[tt]}
-                        <span>{TRANSPORT_TYPE_LABELS[tt]}</span>
+                        <span>{getTransportTypeLabel(tt, t)}</span>
                       </button>
                     );
                   })}
@@ -703,7 +799,7 @@ export function ConsolidationModal({
                 <div>
                   <CitySelect
                     label={t('originCity') || 'Origin City'}
-                    placeholder="Search origin logistics hub..."
+                    placeholder={t('searchOriginHub') || 'Search origin logistics hub...'}
                     value={originPlace}
                     onChange={(city, customText) =>
                       setOriginPlace(city ? city.name : customText || '')
@@ -714,7 +810,7 @@ export function ConsolidationModal({
                 <div>
                   <CitySelect
                     label={t('destinationCity') || 'Destination City'}
-                    placeholder="Search destination logistics hub..."
+                    placeholder={t('searchDestHub') || 'Search destination logistics hub...'}
                     value={destinationPlace}
                     onChange={(city, customText) =>
                       setDestinationPlace(city ? city.name : customText || '')
@@ -798,13 +894,28 @@ export function ConsolidationModal({
               </div>
             </div>
 
-            {/* Section 3: Carrier & Freight Costs */}
+            {/* Section 3: Carrier & 5 Operational Expenses */}
             <div className="p-4 rounded-2xl bg-muted/20 border border-border/70 space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                <DollarSign className="size-4 text-emerald-500" />
-                <span>Carrier Contact & Freight Costs</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                  <DollarSign className="size-4 text-emerald-500" />
+                  <span>
+                    {t('carrierAndOperationalExpenses') || 'Carrier & Operational Expenses'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                  <Calculator className="size-3.5" />
+                  <span>
+                    {t('totalExpenses') || 'Total Expenses'}: $
+                    {calculatedExpensesTotalUsd.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
               </div>
 
+              {/* Carrier Contact Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-foreground mb-1">
@@ -830,43 +941,117 @@ export function ConsolidationModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
-                <div>
-                  <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('carrierCost') || 'Total Carrier Freight Cost'}
-                  </label>
-                  <NumberInput
-                    size="sm"
-                    placeholder="e.g. 3 800"
-                    value={carrierCostStr}
-                    onValueChange={(_num, raw) => setCarrierCostStr(raw)}
-                    allowDecimals={true}
-                    decimalScale={2}
-                    min={0}
-                    prefix={
-                      carrierCostCurrency === 'USD'
-                        ? '$'
-                        : carrierCostCurrency === 'RUB'
-                          ? '₽'
-                          : carrierCostCurrency === 'RMB'
-                            ? '¥'
-                            : undefined
-                    }
-                    suffix={carrierCostCurrency === 'UZS' ? "so'm" : undefined}
-                  />
+              {/* 3 Operational Expense Inputs */}
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  {t('operationalCostBreakdown') || 'Operational Cost Breakdown (3 categories)'}
+                </p>
+
+                {/* 1. Agent / Line-haul */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 rounded-xl bg-surface/60 border border-border/50">
+                  <div className="sm:col-span-5 flex items-center gap-2">
+                    <Truck className="size-4 text-brand-navy dark:text-brand-gold shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-foreground block">
+                        {t('agentFreightTitle') || 'Agent / Carrier Freight'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {t('agentFreightSubtitle') || 'Line-haul freight cost'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <NumberInput
+                      size="sm"
+                      placeholder="0.00"
+                      value={agentStr}
+                      onValueChange={(_num, raw) => setAgentStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0}
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <Select
+                      value={agentCurrency}
+                      onChange={(val) => setAgentCurrency((val as CurrencyType) || 'USD')}
+                      allowClear={false}
+                      aria-label="Agent Currency"
+                      options={CURRENCY_SELECT_OPTIONS}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-foreground mb-1">
-                    {t('carrierCostCurrency') || 'Cost Currency'}
-                  </label>
-                  <Select
-                    value={carrierCostCurrency}
-                    onChange={(val) => setCarrierCostCurrency((val as CurrencyType) || 'USD')}
-                    allowClear={false}
-                    aria-label={t('carrierCostCurrency')}
-                    options={CURRENCY_SELECT_OPTIONS}
-                  />
+                {/* 2. Customs Clearance of Goods */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 rounded-xl bg-surface/60 border border-border/50">
+                  <div className="sm:col-span-5 flex items-center gap-2">
+                    <Shield className="size-4 text-emerald-500 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-foreground block">
+                        {t('customsClearanceTitle') || 'Customs Clearance'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {t('customsClearanceSubtitle') || 'Declaration & terminal fees'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <NumberInput
+                      size="sm"
+                      placeholder="0.00"
+                      value={customsClearanceStr}
+                      onValueChange={(_num, raw) => setCustomsClearanceStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0}
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <Select
+                      value={customsClearanceCurrency}
+                      onChange={(val) =>
+                        setCustomsClearanceCurrency((val as CurrencyType) || 'USD')
+                      }
+                      allowClear={false}
+                      aria-label="Customs Clearance Currency"
+                      options={CURRENCY_SELECT_OPTIONS}
+                    />
+                  </div>
+                </div>
+
+                {/* 3. CCT */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 rounded-xl bg-surface/60 border border-border/50">
+                  <div className="sm:col-span-5 flex items-center gap-2">
+                    <Receipt className="size-4 text-purple-500 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-foreground block">
+                        {t('cctCertTitle') || 'CCT / Certificate'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {t('cctCertSubtitle') || 'Cargo container terminal & cert'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <NumberInput
+                      size="sm"
+                      placeholder="0.00"
+                      value={cctStr}
+                      onValueChange={(_num, raw) => setCctStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={2}
+                      min={0}
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <Select
+                      value={cctCurrency}
+                      onChange={(val) => setCctCurrency((val as CurrencyType) || 'USD')}
+                      allowClear={false}
+                      aria-label="CCT Currency"
+                      options={CURRENCY_SELECT_OPTIONS}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -874,11 +1059,14 @@ export function ConsolidationModal({
             {/* Section 4: Notes / Remarks */}
             <div>
               <label className="block text-xs font-bold text-foreground mb-1">
-                Notes / Customs Documentation
+                {t('lblNotes') || 'Notes / Customs Documentation'}
               </label>
               <textarea
                 rows={2}
-                placeholder="Optional trip notes, border clearance instructions or remarks..."
+                placeholder={
+                  t('notesPlaceholder') ||
+                  'Optional trip notes, border clearance instructions or remarks...'
+                }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50 resize-none"
@@ -890,7 +1078,7 @@ export function ConsolidationModal({
               <div className="p-3.5 rounded-2xl bg-brand-gold/10 border border-brand-gold/30 space-y-2">
                 <div className="text-xs font-bold text-brand-navy dark:text-brand-gold flex items-center gap-1.5">
                   <Sparkles className="size-4 text-brand-gold" />
-                  <span>Cascade Sync Options to Attached Cargos</span>
+                  <span>{t('cascadeSyncTitle') || 'Cascade Sync Options to Attached Cargos'}</span>
                 </div>
                 <div className="space-y-1.5 text-xs text-foreground">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -918,7 +1106,10 @@ export function ConsolidationModal({
                       onChange={(e) => setSyncTransportTypesToCargos(e.target.checked)}
                       className="rounded border-border text-brand-navy focus:ring-brand-gold"
                     />
-                    <span>Sync transport types to attached child cargos</span>
+                    <span>
+                      {t('syncTransportTypesToCargos') ||
+                        'Sync transport types to attached child cargos'}
+                    </span>
                   </label>
                 </div>
               </div>
@@ -933,7 +1124,7 @@ export function ConsolidationModal({
               disabled={submitting}
               className="px-4 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
             >
-              Cancel
+              {t('actionCancel') || 'Cancel'}
             </button>
             <button
               type="button"
@@ -944,12 +1135,16 @@ export function ConsolidationModal({
               {submitting ? (
                 <>
                   <RefreshCw className="size-4 animate-spin" />
-                  <span>Saving...</span>
+                  <span>{t('saving') || 'Saving...'}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="size-4 text-brand-gold" />
-                  <span>{isEditing ? 'Save Changes' : 'Create Consolidation Trip'}</span>
+                  <span>
+                    {isEditing
+                      ? t('saveChanges') || 'Save Changes'
+                      : t('createConsolidationTrip') || 'Create Consolidation Trip'}
+                  </span>
                 </>
               )}
             </button>

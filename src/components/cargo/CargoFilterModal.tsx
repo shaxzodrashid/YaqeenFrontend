@@ -14,7 +14,7 @@ import {
   Ship,
   Package,
 } from 'lucide-react';
-import { CONTAINER_TYPES, TRANSPORT_TYPES, TRANSPORT_TYPE_LABELS } from '../../services/api';
+import { CONTAINER_TYPES, TRANSPORT_TYPES, getTransportTypeLabel } from '../../services/api';
 import type { CargoRegistrationStatus, CargoType, TransportType } from '../../services/api';
 import { ClientSelect } from './ClientSelect';
 import { EmployeeSelect } from './EmployeeSelect';
@@ -482,7 +482,7 @@ export function CargoFilterModal({
     if (f.transport_types && f.transport_types.length > 0) {
       chips.push({
         id: 'transport_types',
-        label: f.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt]).join(' · '),
+        label: f.transport_types.map((tt) => getTransportTypeLabel(tt, t)).join(' · '),
         clear: () => update({ transport_types: [] }),
       });
     }
@@ -563,7 +563,7 @@ export function CargoFilterModal({
   if (localFilters.container_type) cargoSummaryParts.push(localFilters.container_type);
   if (localFilters.transport_types && localFilters.transport_types.length > 0) {
     cargoSummaryParts.push(
-      localFilters.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt]).join(' · ')
+      localFilters.transport_types.map((tt) => getTransportTypeLabel(tt, t)).join(' · ')
     );
   }
   const cargoSummary = cargoSummaryParts.join(' · ');
@@ -668,7 +668,7 @@ export function CargoFilterModal({
                                 : 'text-muted-foreground hover:text-foreground'
                             }`}
                           >
-                            {typeOpt.label}
+                            {typeOpt.value === '' ? t('statusAll') : typeOpt.label}
                           </button>
                         );
                       })}
@@ -747,7 +747,7 @@ export function CargoFilterModal({
                               }`}
                             >
                               {TRANSPORT_ICONS[tt]}
-                              <span>{TRANSPORT_TYPE_LABELS[tt]}</span>
+                              <span>{getTransportTypeLabel(tt, t)}</span>
                             </button>
                           );
                         })}

@@ -188,6 +188,7 @@ export {
   CONTAINER_TYPES,
   TRANSPORT_TYPES,
   TRANSPORT_TYPE_LABELS,
+  getTransportTypeLabel,
   CARGO_STATUSES,
   convertPriceToUsdAndUzs,
 } from './cargoRegistrations.service';
@@ -196,6 +197,8 @@ export type {
   ConsolidationStatus,
   ConsolidationContainerType,
   ConsolidationCapacity,
+  ConsolidationExpenseItem,
+  ConsolidationExpenses,
   ConsolidationFinancials,
   ConsolidationCargoItem,
   ConsolidationListItem,
@@ -210,6 +213,13 @@ export {
   CONSOLIDATION_STATUSES,
   CONSOLIDATION_CONTAINER_TYPES,
   cargoConsolidationsApi,
+  getConsolidatedNetMargin,
+  getConsolidatedNetMarginCurrency,
+  getCarrierCostAmount,
+  getCarrierCostCurrency,
+  getCarrierCostUsd,
+  getTotalConsolidationExpensesUsd,
+  getTotalConsolidationIncomeUsd,
 } from './cargoConsolidations.service';
 
 // Re-export core HTTP & Token helpers

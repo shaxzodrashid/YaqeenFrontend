@@ -48,6 +48,23 @@ export const TRANSPORT_TYPE_LABELS: Record<TransportType, string> = {
   other: 'Other',
 };
 
+export function getTransportTypeLabel(type: TransportType, t: (k: string) => string): string {
+  switch (type) {
+    case 'auto':
+      return t('transportAuto') || 'Auto';
+    case 'railway':
+      return t('transportRailway') || 'Railway';
+    case 'air':
+      return t('transportAir') || 'Air';
+    case 'sea':
+      return t('transportSea') || 'Sea';
+    case 'other':
+      return t('transportOther') || 'Other';
+    default:
+      return type;
+  }
+}
+
 export const CARGO_STATUSES = [
   'Waiting',
   'Station',

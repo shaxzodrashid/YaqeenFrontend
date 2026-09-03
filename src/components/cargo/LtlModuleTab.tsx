@@ -139,7 +139,8 @@ export function LtlModuleTab() {
             {t('tabLtlKpi')}
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Groupage LTL cargo tracking, volume tier multiplier calculation & KPI finalization
+            {t('ltlSubtitle') ||
+              'Groupage LTL cargo tracking, volume tier multiplier calculation & KPI finalization'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -147,7 +148,7 @@ export function LtlModuleTab() {
             onClick={loadLtlData}
             disabled={loading}
             className="p-2.5 rounded-xl border border-border hover:bg-muted text-foreground transition-all cursor-pointer"
-            title="Refresh Data"
+            title={t('refreshData') || 'Refresh Data'}
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -163,8 +164,9 @@ export function LtlModuleTab() {
       {/* Read-Only Notice Banner */}
       <div className="p-3 px-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center justify-between gap-3">
         <span>
-          <strong>Read-Only View:</strong> Cargo registrations are registered exclusively in the{' '}
-          <strong>Cargo Transactions</strong> tab.
+          <strong>{t('readOnly') || 'Read-Only'}:</strong>{' '}
+          {t('ltlReadOnlyNotice') ||
+            'Cargo registrations are registered exclusively in the Cargo Transactions tab.'}
         </span>
       </div>
 
@@ -173,10 +175,10 @@ export function LtlModuleTab() {
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-foreground flex items-center gap-1.5">
             <Percent className="size-4 text-brand-gold" />
-            Volume Coefficient Scale (Volume_coeff)
+            {t('volumeCoeffScale') || 'Volume Coefficient Scale (Volume_coeff)'}
           </span>
           <span className="text-muted-foreground text-[11px]">
-            Final LTL KPI = Total Base KPI × Volume_coeff
+            {t('finalLtlKpiFormula') || 'Final LTL KPI = Total Base KPI × Volume_coeff'}
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -198,14 +200,19 @@ export function LtlModuleTab() {
       {loading ? (
         <div className="p-12 text-center text-muted-foreground">
           <RefreshCw className="size-6 animate-spin mx-auto mb-2 text-brand-gold" />
-          <p className="text-xs">Loading LTL items and calculating coefficients...</p>
+          <p className="text-xs">
+            {t('loadingLtlData') || 'Loading LTL items and calculating coefficients...'}
+          </p>
         </div>
       ) : !data || data.employees.length === 0 ? (
         <div className="p-12 rounded-2xl bg-surface border border-border text-center text-muted-foreground">
           <Layers className="size-10 mx-auto mb-3 text-muted-foreground/40" />
-          <h4 className="text-sm font-bold text-foreground">No LTL Cargo Items</h4>
+          <h4 className="text-sm font-bold text-foreground">
+            {t('noLtlCargoItems') || 'No LTL Cargo Items'}
+          </h4>
           <p className="text-xs mt-1">
-            Add your first LTL cargo item to see employee volume coefficients and KPI results.
+            {t('noLtlEntriesDesc') ||
+              'Add your first LTL cargo item to see employee volume coefficients and KPI results.'}
           </p>
         </div>
       ) : (
@@ -273,7 +280,8 @@ export function LtlModuleTab() {
                       <th className="px-4 py-3">{t('cargoWeight')}</th>
                       <th className="px-4 py-3">{t('cargoDensity')}</th>
                       <th className="px-4 py-3">{t('ltlBaseRate')}</th>
-                      <th className="px-4 py-3 text-right">Status</th>
+                      <th className="px-4 py-3">{t('ltlBaseKpi')}</th>
+                      <th className="px-4 py-3 text-right">{t('colStatus') || 'Status'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -304,7 +312,7 @@ export function LtlModuleTab() {
                         <td className="px-4 py-3 font-bold text-foreground">${item.base_kpi}</td>
                         <td className="px-4 py-3 text-right">
                           <span className="text-[10px] font-bold text-muted-foreground px-2 py-0.5 rounded bg-muted">
-                            Read-Only
+                            {t('readOnly') || 'Read-Only'}
                           </span>
                         </td>
                       </tr>
@@ -338,7 +346,7 @@ export function LtlModuleTab() {
               <div className="p-5 bg-gradient-to-r from-brand-navy to-brand-royal text-white border-b border-brand-gold/20 flex items-center justify-between">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Package className="size-5 text-brand-gold" />
-                  {editingItem ? 'Edit Cargo Item' : t('btnAddCargo')}
+                  {editingItem ? t('editCargoItem') || 'Edit Cargo Item' : t('btnAddCargo')}
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}

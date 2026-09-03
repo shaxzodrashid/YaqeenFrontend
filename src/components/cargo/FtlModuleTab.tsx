@@ -151,7 +151,7 @@ export function FtlModuleTab() {
           <div>
             <h2 className="text-xl font-bold text-foreground">{t('tabFtlKpi')}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Full Truck Load (FTL) fura profit multiplier & KPI tracking
+              {t('ftlSubtitle') || 'Full Truck Load (FTL) fura profit multiplier & KPI tracking'}
             </p>
           </div>
         </div>
@@ -160,7 +160,7 @@ export function FtlModuleTab() {
           {/* Month Input */}
           <div className="flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-xl text-xs">
             <Calendar className="size-4 text-brand-gold" />
-            <span className="text-muted-foreground font-medium">Month:</span>
+            <span className="text-muted-foreground font-medium">{t('colMonth') || 'Month'}:</span>
             <input
               type="month"
               value={month}
@@ -182,8 +182,9 @@ export function FtlModuleTab() {
       {/* Read-Only Notice Banner */}
       <div className="p-3 px-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-600 dark:text-indigo-400 font-medium flex items-center justify-between gap-3">
         <span>
-          <strong>Read-Only View:</strong> FTL cargo registrations are registered exclusively in the{' '}
-          <strong>Cargo Transactions</strong> tab.
+          <strong>{t('readOnly') || 'Read-Only'}:</strong>{' '}
+          {t('ftlReadOnlyNotice') ||
+            'FTL cargo registrations are registered exclusively in the Cargo Transactions tab.'}
         </span>
       </div>
 
@@ -199,7 +200,7 @@ export function FtlModuleTab() {
                 {t('ftlTruckCount')}
               </span>
               <h4 className="text-2xl font-black text-foreground mt-0.5">
-                {data.total_trucks} Fura
+                {data.total_trucks} {t('furaUnit') || 'Fura'}
               </h4>
             </div>
           </div>
@@ -210,7 +211,7 @@ export function FtlModuleTab() {
             </div>
             <div>
               <span className="text-xs text-muted-foreground font-medium">
-                Total Monthly Profit
+                {t('totalMonthlyProfit') || 'Total Monthly Profit'}
               </span>
               <h4 className="text-2xl font-black text-foreground mt-0.5">
                 ${(data.total_profit ?? 0).toLocaleString()}
@@ -223,7 +224,9 @@ export function FtlModuleTab() {
               <Sparkles className="size-6" />
             </div>
             <div>
-              <span className="text-xs text-neutral-300 font-medium">Total FTL KPI</span>
+              <span className="text-xs text-neutral-300 font-medium">
+                {t('totalFtlKpi') || 'Total FTL KPI'}
+              </span>
               <h4 className="text-2xl font-black text-brand-gold mt-0.5">
                 ${(data.total_ftl_kpi ?? 0).toLocaleString()}
               </h4>
@@ -235,7 +238,7 @@ export function FtlModuleTab() {
       {/* Monthly Rate Tiers Reference */}
       <div className="p-4 rounded-xl bg-muted/40 border border-border text-xs">
         <span className="font-bold text-foreground mb-2 block">
-          Monthly Profit Tiers (Monthly_rate)
+          {t('monthlyProfitTiers') || 'Monthly Profit Tiers (Monthly_rate)'}
         </span>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {MONTHLY_RATE_TIERS.map((tier, idx) => (
@@ -254,13 +257,17 @@ export function FtlModuleTab() {
       {loading ? (
         <div className="p-12 text-center text-muted-foreground">
           <RefreshCw className="size-6 animate-spin mx-auto mb-2 text-brand-gold" />
-          <p className="text-xs">Loading FTL manager data...</p>
+          <p className="text-xs">{t('loadingFtlManagerData') || 'Loading FTL manager data...'}</p>
         </div>
       ) : !data || !data.managers || data.managers.length === 0 ? (
         <div className="p-12 rounded-2xl bg-surface border border-border text-center text-muted-foreground">
           <Layers className="size-10 mx-auto mb-3 text-muted-foreground/40" />
-          <h4 className="text-sm font-bold text-foreground">No FTL Fura Entries for {month}</h4>
-          <p className="text-xs mt-1">Click "Add FTL Truck" to create truck shipment records.</p>
+          <h4 className="text-sm font-bold text-foreground">
+            {t('noFtlFuraEntries') || 'No FTL Fura Entries'} ({month})
+          </h4>
+          <p className="text-xs mt-1">
+            {t('noFtlEntriesDesc') || 'No records found for this period.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -277,13 +284,14 @@ export function FtlModuleTab() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold px-2 py-0.5 rounded bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
-                      Manager
+                      {t('colManager') || 'Manager'}
                     </span>
                     <h3 className="text-base font-bold text-white">{mgr.manager_name}</h3>
                   </div>
                   <p className="text-xs text-neutral-300 mt-1">
-                    {mgr.truck_count} Truck{mgr.truck_count !== 1 ? 's' : ''} • Agent Total: $
-                    {(mgr.total_agent_price ?? 0).toLocaleString()} • Sell Total: $
+                    {mgr.truck_count} {t('furaUnit') || 'Truck'}
+                    {mgr.truck_count !== 1 ? 's' : ''} • {t('colAgent')}: $
+                    {(mgr.total_agent_price ?? 0).toLocaleString()} • {t('colSell')}: $
                     {(mgr.total_sell_price ?? 0).toLocaleString()}
                   </p>
                 </div>
@@ -322,11 +330,11 @@ export function FtlModuleTab() {
                       <th className="px-4 py-3">{t('ftlAgentPrice')}</th>
                       <th className="px-4 py-3">{t('ftlSellPrice')}</th>
                       <th className="px-4 py-3">{t('ftlProfit')}</th>
-                      <th className="px-4 py-3">Days (Plan / Actual)</th>
+                      <th className="px-4 py-3">{t('daysPlanActual') || 'Days (Plan / Actual)'}</th>
                       <th className="px-4 py-3">{t('ftlTimeMultiplier')}</th>
                       <th className="px-4 py-3">{t('ftlKpiAmount')}</th>
                       <th className="px-4 py-3">{t('ftlKpiStatus')}</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
+                      <th className="px-4 py-3 text-right">{t('colActions') || 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -390,19 +398,19 @@ export function FtlModuleTab() {
                             {item.kpi_received ? (
                               <>
                                 <CheckCircle2 className="size-3.5" />
-                                Paid
+                                <span>{t('statusPaid') || 'Paid'}</span>
                               </>
                             ) : (
                               <>
                                 <XCircle className="size-3.5" />
-                                Pending
+                                <span>{t('statusPending') || 'Pending'}</span>
                               </>
                             )}
                           </button>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <span className="text-[10px] font-bold text-muted-foreground px-2 py-0.5 rounded bg-muted">
-                            Read-Only
+                            {t('readOnly') || 'Read-Only'}
                           </span>
                         </td>
                       </tr>

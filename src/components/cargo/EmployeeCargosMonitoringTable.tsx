@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { EmployeeSelect } from './EmployeeSelect';
@@ -44,6 +45,7 @@ export function EmployeeCargosMonitoringTable({
   initialEmployeeId = '',
   initialMonth = '2026-08',
 }: EmployeeCargosMonitoringTableProps) {
+  const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { canUpdate } = usePermissions();
 
@@ -194,14 +196,14 @@ export function EmployeeCargosMonitoringTable({
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1.5 shadow-2xs">
             <CheckCircle2 className="size-3.5" />
-            To'landi (Paid)
+            {t('statusPaid') || "To'landi"}
           </span>
         );
       case 'waiting':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1.5 shadow-2xs">
             <Clock className="size-3.5" />
-            Kutilmoqda {days ? `(${days}d)` : ''}
+            {t('statusWaiting') || 'Kutilmoqda'} {days ? `(${days}d)` : ''}
           </span>
         );
       case 'unpaid':
@@ -209,7 +211,7 @@ export function EmployeeCargosMonitoringTable({
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 inline-flex items-center gap-1.5 shadow-2xs">
             <AlertTriangle className="size-3.5" />
-            Klient bermadi
+            {t('statusUnpaid') || 'Klient bermadi'}
           </span>
         );
     }
@@ -227,7 +229,7 @@ export function EmployeeCargosMonitoringTable({
             <div className="p-5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-xs space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-muted-foreground uppercase tracking-wider">
-                  Total Cargos & Status
+                  {t('totalCargosStatus') || 'Total Cargos & Status'}
                 </span>
                 <span className="p-2 rounded-xl bg-blue-500/15 text-blue-500 border border-blue-500/30">
                   <Truck className="size-4" />
@@ -236,19 +238,21 @@ export function EmployeeCargosMonitoringTable({
               <div>
                 <div className="text-2xl font-black text-foreground">
                   {meta.total_cargos}{' '}
-                  <span className="text-xs font-semibold text-muted-foreground">shipments</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {t('shipments') || 'shipments'}
+                  </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-border text-[11px]">
                   <span className="text-emerald-500 font-bold">
-                    ✓ {meta.paid_cargos_count} paid
+                    ✓ {meta.paid_cargos_count} {t('statusPaid') || 'paid'}
                   </span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-amber-500 font-bold">
-                    ⏳ {meta.waiting_cargos_count} waiting
+                    ⏳ {meta.waiting_cargos_count} {t('statusWaiting') || 'waiting'}
                   </span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-rose-500 font-bold">
-                    ✕ {meta.unpaid_cargos_count} unpaid
+                    ✕ {meta.unpaid_cargos_count} {t('statusUnpaid') || 'unpaid'}
                   </span>
                 </div>
               </div>
@@ -258,7 +262,7 @@ export function EmployeeCargosMonitoringTable({
             <div className="p-5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-xs space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-muted-foreground uppercase tracking-wider">
-                  Total Net Margin (Profit)
+                  {t('netMargin') || 'Total Net Margin (Profit)'}
                 </span>
                 <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
                   <TrendingUp className="size-4" />
@@ -270,7 +274,8 @@ export function EmployeeCargosMonitoringTable({
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-border text-[11px] text-muted-foreground">
                   <span>
-                    Avg Check: <strong className="text-foreground">${meta.average_check}</strong>
+                    {t('avgCheck') || 'Avg Check'}:{' '}
+                    <strong className="text-foreground">${meta.average_check}</strong>
                   </span>
                   <span
                     className={`font-bold px-2 py-0.5 rounded ${
@@ -289,7 +294,7 @@ export function EmployeeCargosMonitoringTable({
             <div className="p-5 rounded-2xl bg-surface dark:bg-surface border border-border shadow-xs space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-muted-foreground uppercase tracking-wider">
-                  Current KPI Rate & Potential
+                  {t('currentKpiRatePotential') || 'Current KPI Rate & Potential'}
                 </span>
                 <span className="p-2 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
                   <DollarSign className="size-4" />
@@ -303,8 +308,12 @@ export function EmployeeCargosMonitoringTable({
                   </span>
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-border text-[11px] text-muted-foreground">
-                  <span>Buy: ${meta.total_buy_price?.toLocaleString()}</span>
-                  <span>Sell: ${meta.total_sell_price?.toLocaleString()}</span>
+                  <span>
+                    {t('colBuyPrice') || 'Buy'}: ${meta.total_buy_price?.toLocaleString()}
+                  </span>
+                  <span>
+                    {t('colSell') || 'Sell'}: ${meta.total_sell_price?.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -313,7 +322,7 @@ export function EmployeeCargosMonitoringTable({
             <div className="p-5 rounded-2xl bg-gradient-to-br from-brand-navy/15 via-brand-royal/10 to-brand-navy/15 border border-brand-gold/40 shadow-xs space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-brand-gold uppercase tracking-wider">
-                  Real Company KPI Expense
+                  {t('realKpiExpense') || 'Real Company KPI Expense'}
                 </span>
                 <span className="p-2 rounded-xl bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
                   <ShieldCheck className="size-4" />
@@ -324,7 +333,9 @@ export function EmployeeCargosMonitoringTable({
                   ${meta.real_kpi_expense?.toLocaleString()}
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-gold/30 text-[11px]">
-                  <span className="text-muted-foreground">Realized Total:</span>
+                  <span className="text-muted-foreground">
+                    {t('realizedTotal') || 'Realized Total'}:
+                  </span>
                   <strong className="text-foreground font-black text-sm">
                     ${meta.total_earnings_realized?.toLocaleString()}
                   </strong>
@@ -339,12 +350,11 @@ export function EmployeeCargosMonitoringTable({
               <Info className="size-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
                 <strong className="font-bold text-amber-600 dark:text-amber-400 block sm:inline">
-                  Real Financial Expense Rule:
+                  {t('realExpenseRule') || 'Real Financial Expense Rule:'}
                 </strong>{' '}
                 <span className="text-muted-foreground">
-                  Unpaid and waiting cargos <strong>are NOT registered to company expense</strong>{' '}
-                  for KPI payout. Employees only realize and receive their KPI payout for{' '}
-                  <strong>paid cargos</strong> (${meta.real_kpi_expense?.toLocaleString()}).
+                  {t('realExpenseRuleDesc') ||
+                    'Unpaid and waiting cargos are NOT registered to company expense for KPI payout. Employees only realize and receive their KPI payout for paid cargos.'}
                 </span>
               </div>
             </div>
@@ -355,7 +365,7 @@ export function EmployeeCargosMonitoringTable({
                 className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-navy to-brand-royal text-white text-xs font-bold border border-brand-gold/30 shadow-xs hover:brightness-110 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
               >
                 <FileCheck className="size-3.5 text-brand-gold" />
-                <span>Bulk Confirm Month KPI</span>
+                <span>{t('btnBulkConfirmKpi') || 'Bulk Confirm Month KPI'}</span>
               </button>
             )}
           </div>
@@ -370,7 +380,9 @@ export function EmployeeCargosMonitoringTable({
           <div className="flex flex-wrap items-center gap-3">
             {/* Month Picker */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground">Month:</span>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {t('colMonth') || 'Month'}:
+              </span>
               <input
                 type="month"
                 value={month}
@@ -390,7 +402,7 @@ export function EmployeeCargosMonitoringTable({
                   setEmployeeId(val);
                   setPage(1);
                 }}
-                placeholder="All Sales Managers"
+                placeholder={t('allSalesManagers') || 'All Sales Managers'}
               />
             </div>
 
@@ -410,12 +422,12 @@ export function EmployeeCargosMonitoringTable({
                   }`}
                 >
                   {st === 'all'
-                    ? 'All Statuses'
+                    ? t('statusAll') || 'All Statuses'
                     : st === 'paid'
-                      ? "To'landi"
+                      ? t('statusPaid') || "To'landi"
                       : st === 'waiting'
-                        ? 'Kutilmoqda'
-                        : 'Klient bermadi'}
+                        ? t('statusWaiting') || 'Kutilmoqda'
+                        : t('statusUnpaid') || 'Klient bermadi'}
                 </button>
               ))}
             </div>
@@ -432,7 +444,7 @@ export function EmployeeCargosMonitoringTable({
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search truck, client, cargo..."
+                placeholder={t('searchCargosPlaceholder') || 'Search truck, client, cargo...'}
                 className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:border-brand-gold"
               />
             </div>
@@ -442,7 +454,7 @@ export function EmployeeCargosMonitoringTable({
               onClick={loadCargos}
               disabled={loading}
               className="p-2 rounded-xl border border-border hover:bg-muted/40 text-foreground transition-all cursor-pointer"
-              title="Refresh"
+              title={t('refreshPlans') || 'Refresh'}
             >
               <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -460,13 +472,13 @@ export function EmployeeCargosMonitoringTable({
             >
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-1 rounded-lg bg-brand-gold/15 text-brand-gold border border-brand-gold/30 text-xs font-black">
-                  {selectedIds.length} cargos selected
+                  {selectedIds.length} {t('cargosSelected') || 'cargos selected'}
                 </span>
                 <button
                   onClick={() => setSelectedIds([])}
                   className="text-xs text-muted-foreground hover:text-foreground underline cursor-pointer"
                 >
-                  Deselect all
+                  {t('deselectAll') || 'Deselect all'}
                 </button>
               </div>
 
@@ -477,14 +489,14 @@ export function EmployeeCargosMonitoringTable({
                     className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-brand-navy to-brand-royal text-white border border-brand-gold/30 shadow-xs hover:brightness-110 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Layers className="size-3.5 text-brand-gold" />
-                    <span>Change Payment Status</span>
+                    <span>{t('changePaymentStatus') || 'Change Payment Status'}</span>
                   </button>
 
                   <button
                     onClick={() => handleBulkPaymentStatus('paid')}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all cursor-pointer"
                   >
-                    Mark as Paid
+                    {t('markAsPaid') || 'Mark as Paid'}
                   </button>
                 </div>
               )}
@@ -510,18 +522,22 @@ export function EmployeeCargosMonitoringTable({
                   />
                 </th>
                 <th className="py-3 px-3 text-center w-12">#</th>
-                <th className="py-3 px-3">Truck / Container</th>
-                <th className="py-3 px-3">Client & Contact</th>
-                <th className="py-3 px-3">Cargo Details</th>
-                <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3 text-right">Buy Price</th>
-                <th className="py-3 px-3 text-right">Sell Price</th>
-                <th className="py-3 px-3 text-right">Profit</th>
+                <th className="py-3 px-3">{t('colTruckContainer') || 'Truck / Container'}</th>
+                <th className="py-3 px-3">
+                  {t('colClient') || 'Client'} & {t('colContact') || 'Contact'}
+                </th>
+                <th className="py-3 px-3">
+                  {t('colCargo') || 'Cargo'} {t('details') || 'Details'}
+                </th>
+                <th className="py-3 px-3">{t('colDate') || 'Date'}</th>
+                <th className="py-3 px-3 text-right">{t('colBuyPrice') || 'Buy Price'}</th>
+                <th className="py-3 px-3 text-right">{t('colSell') || 'Sell Price'}</th>
+                <th className="py-3 px-3 text-right">{t('colProfit') || 'Profit'}</th>
                 <th className="py-3 px-3 text-center">KPI %</th>
-                <th className="py-3 px-3 text-right">Cargo Bonus</th>
-                <th className="py-3 px-3 text-center">Payment Status</th>
-                <th className="py-3 px-3 text-center">KPI Received</th>
-                <th className="py-3 px-3 text-center w-16">Actions</th>
+                <th className="py-3 px-3 text-right">{t('cargoBonus') || 'Cargo Bonus'}</th>
+                <th className="py-3 px-3 text-center">{t('paymentStatus') || 'Payment Status'}</th>
+                <th className="py-3 px-3 text-center">{t('kpiReceived') || 'KPI Received'}</th>
+                <th className="py-3 px-3 text-center w-16">{t('colActions') || 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -529,16 +545,21 @@ export function EmployeeCargosMonitoringTable({
                 <tr>
                   <td colSpan={14} className="py-12 text-center text-muted-foreground">
                     <RefreshCw className="size-6 animate-spin mx-auto text-brand-gold mb-2" />
-                    <span>Loading assigned cargos monitoring...</span>
+                    <span>
+                      {t('loadingAssignedCargos') || 'Loading assigned cargos monitoring...'}
+                    </span>
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan={14} className="py-12 text-center text-muted-foreground">
                     <Truck className="size-8 mx-auto opacity-40 mb-2" />
-                    <p className="font-semibold text-foreground">No cargos found for this filter</p>
+                    <p className="font-semibold text-foreground">
+                      {t('noCargosFoundFilter') || 'No cargos found for this filter'}
+                    </p>
                     <p className="text-[11px] mt-0.5">
-                      Try adjusting month, status, or search keywords.
+                      {t('noCargosFoundFilterDesc') ||
+                        'Try adjusting month, status, or search keywords.'}
                     </p>
                   </td>
                 </tr>
@@ -666,7 +687,7 @@ export function EmployeeCargosMonitoringTable({
                             title="KPI bonus received and confirmed"
                           >
                             <CheckCircle2 className="size-3.5" />
-                            Confirmed
+                            {t('confirmed') || 'Confirmed'}
                           </button>
                         ) : (
                           <button
@@ -677,7 +698,7 @@ export function EmployeeCargosMonitoringTable({
                             title="Click to confirm receipt"
                           >
                             <Clock className="size-3.5" />
-                            Pending
+                            {t('pending') || 'Pending'}
                           </button>
                         )}
                       </td>
@@ -705,13 +726,14 @@ export function EmployeeCargosMonitoringTable({
         {/* Table Pagination Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-t border-border text-xs text-muted-foreground">
           <div>
-            Showing <strong className="text-foreground">{items.length}</strong> of{' '}
-            <strong className="text-foreground">{totalCount}</strong> cargos
+            {t('showing') || 'Showing'} <strong className="text-foreground">{items.length}</strong>{' '}
+            {t('of')} <strong className="text-foreground">{totalCount}</strong>{' '}
+            {t('pagItems') || 'cargos'}
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <span>Per page:</span>
+              <span>{t('perPage') || 'Per page'}:</span>
               <select
                 value={limit}
                 onChange={(e) => {

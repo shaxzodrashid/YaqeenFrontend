@@ -45,16 +45,61 @@ The endpoint returns a unified JSON payload supporting both flat fields (for bac
   "user_status": "Open",
   "role_id": "e38a293c-8291-4e78-9b88-518293746ab1",
   "permissions": {
-    "clients": { "create": false, "read": true, "update": true, "delete": false },
-    "employees": { "create": false, "read": true, "update": false, "delete": false },
-    "departments": { "create": false, "read": true, "update": false, "delete": false },
-    "cargo_kpi": { "create": false, "read": true, "update": false, "delete": false },
-    "finance": { "create": false, "read": false, "update": false, "delete": false },
-    "commercial_offers": { "create": true, "read": true, "update": false, "delete": false },
+    "clients": {
+      "create": false,
+      "read": true,
+      "update": true,
+      "delete": false
+    },
+    "employees": {
+      "create": false,
+      "read": true,
+      "update": false,
+      "delete": false
+    },
+    "departments": {
+      "create": false,
+      "read": true,
+      "update": false,
+      "delete": false
+    },
+    "cargo_kpi": {
+      "create": false,
+      "read": true,
+      "update": false,
+      "delete": false
+    },
+    "finance": {
+      "create": false,
+      "read": false,
+      "update": false,
+      "delete": false
+    },
+    "commercial_offers": {
+      "create": true,
+      "read": true,
+      "update": false,
+      "delete": false
+    },
     "tasks": { "create": true, "read": true, "update": true, "delete": false },
-    "currency": { "create": false, "read": true, "update": false, "delete": false },
-    "attachments": { "create": true, "read": true, "update": false, "delete": false },
-    "roles": { "create": false, "read": false, "update": false, "delete": false }
+    "currency": {
+      "create": false,
+      "read": true,
+      "update": false,
+      "delete": false
+    },
+    "attachments": {
+      "create": true,
+      "read": true,
+      "update": false,
+      "delete": false
+    },
+    "roles": {
+      "create": false,
+      "read": false,
+      "update": false,
+      "delete": false
+    }
   },
   "user": {
     "id": "d36cd0fe-bf3b-448d-964c-5b214eef86e4",
@@ -71,29 +116,129 @@ The endpoint returns a unified JSON payload supporting both flat fields (for bac
       "description": "Standard operational user access",
       "is_system": true,
       "permissions": {
-        "clients": { "create": false, "read": true, "update": true, "delete": false },
-        "employees": { "create": false, "read": true, "update": false, "delete": false },
-        "departments": { "create": false, "read": true, "update": false, "delete": false },
-        "cargo_kpi": { "create": false, "read": true, "update": false, "delete": false },
-        "finance": { "create": false, "read": false, "update": false, "delete": false },
-        "commercial_offers": { "create": true, "read": true, "update": false, "delete": false },
-        "tasks": { "create": true, "read": true, "update": true, "delete": false },
-        "currency": { "create": false, "read": true, "update": false, "delete": false },
-        "attachments": { "create": true, "read": true, "update": false, "delete": false },
-        "roles": { "create": false, "read": false, "update": false, "delete": false }
+        "clients": {
+          "create": false,
+          "read": true,
+          "update": true,
+          "delete": false
+        },
+        "employees": {
+          "create": false,
+          "read": true,
+          "update": false,
+          "delete": false
+        },
+        "departments": {
+          "create": false,
+          "read": true,
+          "update": false,
+          "delete": false
+        },
+        "cargo_kpi": {
+          "create": false,
+          "read": true,
+          "update": false,
+          "delete": false
+        },
+        "finance": {
+          "create": false,
+          "read": false,
+          "update": false,
+          "delete": false
+        },
+        "commercial_offers": {
+          "create": true,
+          "read": true,
+          "update": false,
+          "delete": false
+        },
+        "tasks": {
+          "create": true,
+          "read": true,
+          "update": true,
+          "delete": false
+        },
+        "currency": {
+          "create": false,
+          "read": true,
+          "update": false,
+          "delete": false
+        },
+        "attachments": {
+          "create": true,
+          "read": true,
+          "update": false,
+          "delete": false
+        },
+        "roles": {
+          "create": false,
+          "read": false,
+          "update": false,
+          "delete": false
+        }
       }
     },
     "permissions": {
-      "clients": { "create": false, "read": true, "update": true, "delete": false },
-      "employees": { "create": false, "read": true, "update": false, "delete": false },
-      "departments": { "create": false, "read": true, "update": false, "delete": false },
-      "cargo_kpi": { "create": false, "read": true, "update": false, "delete": false },
-      "finance": { "create": false, "read": false, "update": false, "delete": false },
-      "commercial_offers": { "create": true, "read": true, "update": false, "delete": false },
-      "tasks": { "create": true, "read": true, "update": true, "delete": false },
-      "currency": { "create": false, "read": true, "update": false, "delete": false },
-      "attachments": { "create": true, "read": true, "update": false, "delete": false },
-      "roles": { "create": false, "read": false, "update": false, "delete": false }
+      "clients": {
+        "create": false,
+        "read": true,
+        "update": true,
+        "delete": false
+      },
+      "employees": {
+        "create": false,
+        "read": true,
+        "update": false,
+        "delete": false
+      },
+      "departments": {
+        "create": false,
+        "read": true,
+        "update": false,
+        "delete": false
+      },
+      "cargo_kpi": {
+        "create": false,
+        "read": true,
+        "update": false,
+        "delete": false
+      },
+      "finance": {
+        "create": false,
+        "read": false,
+        "update": false,
+        "delete": false
+      },
+      "commercial_offers": {
+        "create": true,
+        "read": true,
+        "update": false,
+        "delete": false
+      },
+      "tasks": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": false
+      },
+      "currency": {
+        "create": false,
+        "read": true,
+        "update": false,
+        "delete": false
+      },
+      "attachments": {
+        "create": true,
+        "read": true,
+        "update": false,
+        "delete": false
+      },
+      "roles": {
+        "create": false,
+        "read": false,
+        "update": false,
+        "delete": false
+      }
     }
   },
   "employee": {
@@ -180,6 +325,7 @@ Controls access to client catalog, company records, contact numbers, and client 
 - **`read`**: View client directory and individual client profiles (`GET /clients`, `GET /clients/:id`).
 - **`update`**: Modify existing client information or client status (`PUT /clients/:id`).
 - **`delete`**: Remove or soft-archive client records (`DELETE /clients/:id`).
+- **`can_work_with_all_clients`**: When enabled, the account can view, search, and manage all clients across the company; when disabled, visibility and access are strictly scoped to clients assigned to the linked employee profile.
 
 #### 2. `employees` (Employee Management)
 

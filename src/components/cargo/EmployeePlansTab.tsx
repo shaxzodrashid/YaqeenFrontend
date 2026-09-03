@@ -589,12 +589,12 @@ export function EmployeePlansTab() {
             <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
               {t('tabPlans')}
               <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-gold/15 text-brand-gold border border-brand-gold/30">
-                Dual Direction (LTL m³ + FTL $)
+                {t('dualDirectionBadge') || 'Dual Direction (LTL m³ + FTL $)'}
               </span>
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Live progress derived from cargo registrations, volume targets & sales revenue
-              leaderboard
+              {t('plansSubtitle') ||
+                'Live progress derived from cargo registrations, volume targets & sales revenue leaderboard'}
             </p>
           </div>
         </div>
@@ -609,7 +609,7 @@ export function EmployeePlansTab() {
                   ? 'bg-surface text-brand-gold shadow-xs border border-border'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Leaderboard & Podium View"
+              title={t('viewLeaderboard') || 'Leaderboard & Podium View'}
             >
               <Trophy className="size-3.5" />
               <span>{t('viewLeaderboard') || 'Leaderboard'}</span>
@@ -621,7 +621,7 @@ export function EmployeePlansTab() {
                   ? 'bg-surface text-brand-gold shadow-xs border border-border'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Table View"
+              title={t('viewTable') || 'Table View'}
             >
               <TableIcon className="size-3.5" />
               <span>{t('viewTable') || 'Table'}</span>
@@ -633,7 +633,7 @@ export function EmployeePlansTab() {
                   ? 'bg-surface text-brand-gold shadow-xs border border-border'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Department Analytics"
+              title={t('viewAnalytics') || 'Department Analytics'}
             >
               <BarChart3 className="size-3.5" />
               <span>{t('viewAnalytics') || 'Analytics'}</span>
@@ -656,7 +656,7 @@ export function EmployeePlansTab() {
             onClick={loadPlans}
             disabled={loading}
             className="p-2.5 rounded-xl border border-border hover:bg-muted text-foreground transition-all cursor-pointer"
-            title="Refresh plans"
+            title={t('refreshPlans') || 'Refresh plans'}
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -685,18 +685,22 @@ export function EmployeePlansTab() {
             <div>
               <span className="text-[11px] text-brand-gold uppercase tracking-wider font-extrabold flex items-center gap-1.5">
                 <Trophy className="size-4" />
-                Organizational Sales & Volume Fulfillment ({month})
+                {t('orgSalesFulfillment') || 'Organizational Sales & Volume Fulfillment'} ({month})
               </span>
               <div className="flex flex-wrap items-baseline gap-4 mt-2">
                 <div>
-                  <span className="text-[10px] text-neutral-300 block">LTL Volume Fact/Plan</span>
+                  <span className="text-[10px] text-neutral-300 block">
+                    {t('ltlVolumeFactPlan') || 'LTL Volume Fact/Plan'}
+                  </span>
                   <strong className="text-xl font-black text-brand-gold">
                     {totalLtlActual.toLocaleString()} / {totalLtlTarget.toLocaleString()} m³
                   </strong>
                 </div>
                 <div className="h-8 w-px bg-white/10 hidden sm:block" />
                 <div>
-                  <span className="text-[10px] text-neutral-300 block">FTL Sales Fact/Plan</span>
+                  <span className="text-[10px] text-neutral-300 block">
+                    {t('ftlSalesFactPlan') || 'FTL Sales Fact/Plan'}
+                  </span>
                   <strong className="text-xl font-black text-emerald-400">
                     {formatMoney(totalFtlActual, 'USD')} / {formatMoney(totalFtlTarget, 'USD')}
                   </strong>
@@ -772,7 +776,7 @@ export function EmployeePlansTab() {
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
               <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1 shrink-0">
                 <Filter className="size-3 text-brand-gold" />
-                Status:
+                {t('colStatus') || 'Status'}:
               </span>
               {(['all', 'completed', 'in_progress', 'behind'] as const).map((st) => (
                 <button
@@ -818,7 +822,9 @@ export function EmployeePlansTab() {
           {loading ? (
             <div className="p-16 text-center text-muted-foreground bg-surface rounded-2xl border border-border">
               <RefreshCw className="size-8 animate-spin mx-auto mb-3 text-brand-gold" />
-              <p className="text-xs font-semibold">Loading employee sales plans...</p>
+              <p className="text-xs font-semibold">
+                {t('loadingPlans') || 'Loading employee sales plans...'}
+              </p>
             </div>
           ) : sortedPlans.length === 0 ? (
             <div className="p-16 rounded-3xl bg-surface border border-border text-center text-muted-foreground space-y-3">
@@ -846,14 +852,16 @@ export function EmployeePlansTab() {
                 <thead className="bg-muted/60 text-muted-foreground font-bold border-b border-border">
                   <tr>
                     <th className="py-3.5 px-4 w-12 text-center">#</th>
-                    <th className="py-3.5 px-4">Employee</th>
-                    <th className="py-3.5 px-4">Department</th>
-                    <th className="py-3.5 px-4">LTL Volume (m³)</th>
-                    <th className="py-3.5 px-4">FTL Sales ({sortedPlans[0]?.currency || 'USD'})</th>
-                    <th className="py-3.5 px-4 text-center">Cargos</th>
-                    <th className="py-3.5 px-4 text-center">Completion %</th>
-                    <th className="py-3.5 px-4 text-center">Status</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+                    <th className="py-3.5 px-4">{t('colEmployee') || 'Employee'}</th>
+                    <th className="py-3.5 px-4">{t('colDepartment') || 'Department'}</th>
+                    <th className="py-3.5 px-4">LTL {t('cargoVolume')} (m³)</th>
+                    <th className="py-3.5 px-4">
+                      FTL {t('colSell')} ({sortedPlans[0]?.currency || 'USD'})
+                    </th>
+                    <th className="py-3.5 px-4 text-center">{t('planTotalCargos') || 'Cargos'}</th>
+                    <th className="py-3.5 px-4 text-center">{t('planOverallCompletion')} %</th>
+                    <th className="py-3.5 px-4 text-center">{t('colStatus') || 'Status'}</th>
+                    <th className="py-3.5 px-4 text-right">{t('colActions') || 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border font-medium">

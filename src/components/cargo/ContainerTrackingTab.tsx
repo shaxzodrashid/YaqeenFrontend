@@ -11,7 +11,6 @@ import {
   Clock,
   MapPin,
   UserCheck,
-  FileSpreadsheet,
   Search,
   Filter,
   LayoutGrid,
@@ -19,7 +18,6 @@ import {
   ChevronRight,
   ChevronLeft,
   AlertCircle,
-  Layers,
   Coins,
   ArrowUpDown,
   Shield,
@@ -60,7 +58,7 @@ import {
   getActiveCargoFilterCount,
 } from './CargoFilterModal';
 import type { CargoFilterState } from './CargoFilterModal';
-import { TRANSPORT_TYPE_LABELS } from '../../services/api';
+import { getTransportTypeLabel } from '../../services/api';
 
 export type ViewMode = 'grid' | 'kanban';
 
@@ -191,7 +189,6 @@ export function ContainerTrackingTab() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC' | undefined>(undefined);
-  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
 
   // Multi-select batch operations
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -485,7 +482,8 @@ export function ContainerTrackingTab() {
         selectedIds.map((id) => cargoRegistrationsApi.update(id, { status: newStatus as any }))
       );
       showNotification(
-        `Updated ${selectedIds.length} container(s) to ${getStatusLabel(newStatus)}`,
+        t('bulkStatusUpdated', { count: selectedIds.length }) ||
+          `Updated ${selectedIds.length} container(s) to ${getStatusLabel(newStatus)}`,
         'success'
       );
       setSelectedIds([]);
@@ -506,7 +504,7 @@ export function ContainerTrackingTab() {
     try {
       await Promise.all(selectedIds.map((id) => cargoRegistrationsApi.delete(id)));
       showNotification(
-        t('successBatchDeleted', { count: selectedIds.length }) ||
+        t('bulkDeletedSuccess', { count: selectedIds.length }) ||
           `Deleted ${selectedIds.length} container(s)`,
         'success'
       );
@@ -518,65 +516,6 @@ export function ContainerTrackingTab() {
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  // Export to CSV
-  const handleExportCSV = () => {
-    const listToExport = regData?.data || [];
-    if (listToExport.length === 0) return;
-
-    const headers = [
-      t('colContainerNo') || 'Container ID',
-      t('colClient') || 'Client',
-      t('colCargo') || 'Cargo',
-      t('containerTypeLabel') || 'Container Type',
-      t('originCityLabel') || 'Origin',
-      t('destinationCityLabel') || 'Destination',
-      t('colConfirmed') || 'Confirmed Date',
-      t('colLoaded') || 'Loaded Date',
-      t('colArrived') || 'Arrived Date',
-      t('colRmbRate') || 'RMB Rate',
-      t('colAgentName') || 'Agent',
-      t('colBuyPrice') || 'Buy Cost',
-      'Currency',
-      t('colSellPrice') || 'Sell Price',
-      t('colNetYield') || 'Net Profit ($)',
-      t('colStatus') || 'Status',
-    ];
-
-    const rows = listToExport.map((s) => [
-      `"${s.container_truck_id || ''}"`,
-      `"${s.client_full_name || s.client?.company_name || ''}"`,
-      `"${s.cargo || ''}"`,
-      `"${s.container_type || ''}"`,
-      `"${s.origin_city || ''}"`,
-      `"${s.destination_city || ''}"`,
-      `"${s.confirmed_date || ''}"`,
-      `"${s.loaded_date || ''}"`,
-      `"${s.arrived_date || ''}"`,
-      s.usd_rmb_rate || 7.25,
-      `"${s.agent_name || ''}"`,
-      s.purchase_price?.amount || 0,
-      s.purchase_price?.currency || 'RMB',
-      s.sell_price?.amount || 0,
-      s.net_yield?.amount_usd ?? s.net_yield?.amount ?? 0,
-      `"${s.status}"`,
-    ]);
-
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `Yaqeen_Container_Shipments_${new Date().toISOString().split('T')[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showNotification('Shipments exported to CSV file', 'success');
   };
 
   const items = regData?.data || [];
@@ -718,18 +657,6 @@ export function ContainerTrackingTab() {
               <span>{t('filterBtn')}</span>
             </button>
           )}
-
-          {/* Export CSV */}
-          <button
-            onClick={handleExportCSV}
-            className="px-3 py-2 rounded-xl text-xs font-bold border border-border hover:bg-muted text-foreground transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-            title={t('exportCsv') || 'Export CSV'}
-          >
-            <FileSpreadsheet className="size-3.5 text-emerald-500 shrink-0" />
-            <span>
-              <T k="exportCsv" />
-            </span>
-          </button>
 
           {/* Refresh */}
           <button
@@ -956,20 +883,6 @@ export function ContainerTrackingTab() {
               <span>{getStatusLabel(opt.key)}</span>
             </button>
           ))}
-
-          {/* Density Toggle (Grid Mode - Desktop only) */}
-          {viewMode === 'grid' && (
-            <button
-              onClick={() =>
-                setDensity((prev) => (prev === 'comfortable' ? 'compact' : 'comfortable'))
-              }
-              className="hidden lg:flex ml-2 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-border hover:bg-muted text-muted-foreground items-center gap-1 cursor-pointer shrink-0"
-              title={t('titleToggleRowDensity') || 'Toggle Row Density'}
-            >
-              <Layers className="size-3.5" />
-              <span className="capitalize">{density}</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -1023,7 +936,7 @@ export function ContainerTrackingTab() {
 
           {filters.status && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-gold/15 text-brand-gold border border-brand-gold/30 font-semibold text-[11px]">
-              {t('statusSectionTitle') || 'Status'}: {filters.status}
+              {t('statusSectionTitle') || 'Status'}: {getStatusLabel(filters.status)}
               <button
                 onClick={() => handleRemoveFilterTag('status')}
                 className="hover:text-foreground cursor-pointer"
@@ -1048,7 +961,7 @@ export function ContainerTrackingTab() {
           {filters.transport_types && filters.transport_types.length > 0 && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 font-semibold text-[11px]">
               {t('transportTypesLabel') || 'Transport'}:{' '}
-              {filters.transport_types.map((tt) => TRANSPORT_TYPE_LABELS[tt] || tt).join(', ')}
+              {filters.transport_types.map((tt) => getTransportTypeLabel(tt, t)).join(', ')}
               <button
                 onClick={() => handleRemoveFilterTag('transport_types')}
                 className="hover:text-foreground cursor-pointer"
@@ -1410,7 +1323,7 @@ export function ContainerTrackingTab() {
                                   {shp.is_turnkey && (
                                     <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-0.5">
                                       <ShieldCheck className="size-2.5" />
-                                      <span>Turnkey</span>
+                                      <span>{t('turnkeyBadge') || 'Turnkey'}</span>
                                     </span>
                                   )}
                                   {shp.transport_types && shp.transport_types.length > 0 && (
@@ -1419,7 +1332,7 @@ export function ContainerTrackingTab() {
                                         <span
                                           key={tt}
                                           className="p-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                                          title={tt}
+                                          title={getTransportTypeLabel(tt, t)}
                                         >
                                           {TRANSPORT_TYPE_ICONS[tt] || (
                                             <Truck className="size-2.5" />
@@ -1457,7 +1370,7 @@ export function ContainerTrackingTab() {
                                 className="text-xs font-bold text-foreground truncate"
                                 title={shp.cargo}
                               >
-                                {shp.cargo || 'General Cargo'}
+                                {shp.cargo || t('generalContainer') || 'General Cargo'}
                               </p>
                               {(shp.volume || shp.weight) && (
                                 <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1.5 truncate">
@@ -1649,7 +1562,7 @@ export function ContainerTrackingTab() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between p-3 rounded-2xl bg-surface border border-border shadow-xs text-xs">
               <span className="text-muted-foreground font-medium">
-                {t('showingPage', { page, total: totalPages }) ||
+                {t('showingPage', { page, totalPages, total: meta?.total || 0 }) ||
                   `Page ${page} of ${totalPages} (${meta?.total || 0} total)`}
               </span>
               <div className="flex items-center gap-1.5">
@@ -1769,7 +1682,7 @@ export function ContainerTrackingTab() {
                     {t('deleteModalStatus')}
                   </div>
                   <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted/50 border-border/60">
-                    {pendingSingleDelete.status || '—'}
+                    {pendingSingleDelete.status ? getStatusLabel(pendingSingleDelete.status) : '—'}
                   </span>
                 </div>
               </div>

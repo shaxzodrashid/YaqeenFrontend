@@ -20,7 +20,7 @@ import {
 import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useNotification } from '../../context/NotificationContext';
-import { formatMoney, getCountryFlag } from '../../services/api';
+import { formatMoney, getCountryFlag, getTransportTypeLabel } from '../../services/api';
 import type {
   CargoRegistrationDetail,
   CargoRegistrationListItem,
@@ -91,7 +91,7 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
   const handleCopy = (text: string, label?: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(text);
-    showNotification(`${label || text} copied to clipboard`, 'success');
+    showNotification(t('copiedToClipboard') || `${label || text} copied to clipboard`, 'success');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -212,7 +212,7 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                     {containerId}
                   </h3>
                   <button
-                    onClick={() => handleCopy(containerId, 'Container ID')}
+                    onClick={() => handleCopy(containerId, t('colContainerNo') || 'Container ID')}
                     className="p-1 rounded-md bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition-colors cursor-pointer"
                     title={t('btnCopyId') || 'Copy Container ID'}
                   >
@@ -264,7 +264,7 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                       <span
                         key={tt}
                         className="p-1 rounded-md bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
-                        title={tt}
+                        title={getTransportTypeLabel(tt, t)}
                       >
                         {TRANSPORT_TYPE_ICONS[tt] || <Truck className="size-3" />}
                       </span>
@@ -409,7 +409,7 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                       {t('containerTypeLabel')}:
                     </span>
                     <span className="font-semibold text-foreground">
-                      {item.container_type || 'General Container'}
+                      {item.container_type || t('generalContainer') || 'General Container'}
                     </span>
                   </div>
                 )}
@@ -420,6 +420,18 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                       {t('loadCode') || 'Load Code'}:
                     </span>
                     <span className="font-mono font-bold text-foreground">{item.load_code}</span>
+                  </div>
+                )}
+
+                {item.container_truck_id && (
+                  <div className="flex justify-between py-1 border-t border-border/40 pt-1.5">
+                    <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                      <Truck className="size-3.5 text-brand-navy dark:text-brand-gold shrink-0" />
+                      {t('containerTruckIdLabel') || 'Truck / Container'}:
+                    </span>
+                    <span className="font-mono font-bold text-brand-navy dark:text-brand-gold">
+                      {item.container_truck_id}
+                    </span>
                   </div>
                 )}
               </div>
@@ -609,7 +621,7 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                   title={t('btnEditRegistration') || 'Edit Registration'}
                 >
                   <Edit2 className="size-3.5" />
-                  <span>{t('btnEditRegistration') || 'Edit'}</span>
+                  <span>{t('actionEdit') || 'Edit'}</span>
                 </button>
               )}
             </div>

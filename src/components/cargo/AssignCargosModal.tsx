@@ -137,7 +137,10 @@ export function AssignCargosModal({
   const handleAssign = async () => {
     if (!consolidation || selectedCargoIds.length === 0) return;
     if (!canAssignCargo()) {
-      showNotification('Permission denied: cannot assign cargos', 'error');
+      showNotification(
+        t('noPermissionAssign') || 'Permission denied: cannot assign cargos',
+        'error'
+      );
       return;
     }
 
@@ -154,7 +157,10 @@ export function AssignCargosModal({
       onSuccess(updated as ConsolidationListItem);
       onClose();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to assign cargos', 'error');
+      showNotification(
+        err?.message || t('errorAssigningCargos') || 'Failed to assign cargos',
+        'error'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -227,7 +233,7 @@ export function AssignCargosModal({
                 }`}
               >
                 <span className="text-[11px] text-muted-foreground block font-bold flex items-center justify-between">
-                  <span>Selected Volume</span>
+                  <span>{t('selectedVolume')}</span>
                   {isVolExceeded && <AlertTriangle className="size-3 text-red-500" />}
                 </span>
                 <span className="font-mono text-sm font-extrabold">
@@ -243,7 +249,7 @@ export function AssignCargosModal({
                 }`}
               >
                 <span className="text-[11px] text-muted-foreground block font-bold flex items-center justify-between">
-                  <span>Selected Weight</span>
+                  <span>{t('selectedWeight')}</span>
                   {isWeightExceeded && <AlertTriangle className="size-3 text-amber-500" />}
                 </span>
                 <span className="font-mono text-sm font-extrabold">
@@ -256,8 +262,8 @@ export function AssignCargosModal({
               <div className="mt-2.5 p-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
                 <AlertTriangle className="size-4 shrink-0" />
                 <span>
-                  Warning: Selected cargos volume (+{selectedMetrics.volume} m³) exceeds remaining
-                  space ({remainingVol} m³).
+                  {t('warnVolumeExceeded') ||
+                    'Warning: Selected cargos volume exceeds remaining space.'}
                 </span>
               </div>
             )}
@@ -269,7 +275,10 @@ export function AssignCargosModal({
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search unassigned packages by cargo, client, manager..."
+                placeholder={
+                  t('searchUnassignedPackages') ||
+                  'Search unassigned packages by cargo, client, manager...'
+                }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/40 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
@@ -295,14 +304,14 @@ export function AssignCargosModal({
                 className="px-3 py-2 rounded-xl border border-border bg-surface hover:bg-muted/60 text-xs font-bold text-foreground transition-all cursor-pointer"
               >
                 {selectedCargoIds.length === filteredCargos.length && filteredCargos.length > 0
-                  ? 'Deselect All'
-                  : 'Select All'}
+                  ? t('deselectAll') || 'Deselect All'
+                  : t('selectAll') || 'Select All'}
               </button>
               <button
                 type="button"
                 onClick={loadUnassigned}
                 className="p-2 rounded-xl border border-border bg-surface hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-                title="Refresh list"
+                title={t('refreshList') || 'Refresh list'}
               >
                 <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
               </button>
@@ -314,18 +323,20 @@ export function AssignCargosModal({
             {loading ? (
               <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
                 <RefreshCw className="size-6 animate-spin text-brand-gold" />
-                <span className="text-xs font-bold">Scanning unassigned LTL packages...</span>
+                <span className="text-xs font-bold">
+                  {t('scanningUnassigned') || 'Scanning unassigned LTL packages...'}
+                </span>
               </div>
             ) : filteredCargos.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-3">
                 <Package className="size-8 opacity-40 text-brand-gold" />
                 <div>
                   <span className="text-sm font-bold text-foreground block">
-                    No unassigned LTL packages available
+                    {t('noUnassignedPackages') || 'No unassigned LTL packages available'}
                   </span>
                   <span className="text-xs text-muted-foreground mt-0.5 block">
-                    All current LTL cargos are already attached to consolidation trips or none match
-                    your search.
+                    {t('noUnassignedPackagesDesc') ||
+                      'All current LTL cargos are already attached to consolidation trips or none match your search.'}
                   </span>
                 </div>
                 {onRegisterNewLtlCargo && consolidation && (
@@ -391,7 +402,7 @@ export function AssignCargosModal({
                               (cargo as any).client_full_name ||
                               (cargo as any).client_name) && (
                               <span className="truncate">
-                                Client:{' '}
+                                {t('colClient')}:{' '}
                                 {cargo.client?.name ||
                                   (cargo as any).client_full_name ||
                                   (cargo as any).client_name}
@@ -401,7 +412,7 @@ export function AssignCargosModal({
                               (cargo as any).employee_full_name ||
                               (cargo as any).employee_name) && (
                               <span className="truncate">
-                                Sales:{' '}
+                                {t('colEmployee')}:{' '}
                                 {cargo.employee?.name ||
                                   (cargo as any).employee_full_name ||
                                   (cargo as any).employee_name}
@@ -418,7 +429,7 @@ export function AssignCargosModal({
                             {cargo.volume || 0} m³ / {(cargo.weight || 0).toLocaleString()} kg
                           </div>
                           <div className="text-[11px] text-muted-foreground font-medium">
-                            Sell:{' '}
+                            {t('colSell')}:{' '}
                             {formatMoney(
                               cargo.sell_price?.amount ??
                                 cargo.sell_price?.amount_usd ??
@@ -438,9 +449,9 @@ export function AssignCargosModal({
           {/* Footer Actions */}
           <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-t border-border bg-surface/80 shrink-0">
             <div className="text-xs text-muted-foreground font-bold">
-              <span>Selected: </span>
+              <span>{t('selected') || 'Selected'}: </span>
               <span className="font-mono text-foreground font-extrabold">
-                {selectedCargoIds.length} package(s)
+                {selectedCargoIds.length} {t('colCargosCount') || 'package(s)'}
               </span>
             </div>
 
@@ -451,7 +462,7 @@ export function AssignCargosModal({
                 disabled={submitting}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
               >
-                Cancel
+                {t('actionCancel') || 'Cancel'}
               </button>
               <button
                 type="button"
@@ -462,12 +473,14 @@ export function AssignCargosModal({
                 {submitting ? (
                   <>
                     <RefreshCw className="size-4 animate-spin" />
-                    <span>Packing...</span>
+                    <span>{t('packing') || 'Packing...'}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="size-4 text-brand-gold" />
-                    <span>Pack into Truck ({selectedCargoIds.length})</span>
+                    <span>
+                      {t('packIntoTruck') || 'Pack into Truck'} ({selectedCargoIds.length})
+                    </span>
                   </>
                 )}
               </button>

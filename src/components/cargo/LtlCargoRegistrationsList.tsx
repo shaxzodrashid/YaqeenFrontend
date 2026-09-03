@@ -359,11 +359,11 @@ export function LtlCargoRegistrationsList({
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
               <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                 <CheckCircle2 className="size-3.5" />
-                {metrics.assignedCount} in trucks
+                {metrics.assignedCount} {t('inTrucks') || 'in trucks'}
               </span>
               <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
                 <AlertTriangle className="size-3.5" />
-                {metrics.unassignedCount} ready to pack
+                {metrics.unassignedCount} {t('readyToPack') || 'ready to pack'}
               </span>
             </div>
           </div>
@@ -389,9 +389,11 @@ export function LtlCargoRegistrationsList({
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-              <span>Packed: {metrics.assignedVol} m³</span>
+              <span>
+                {t('packed') || 'Packed'}: {metrics.assignedVol} m³
+              </span>
               <span className="font-semibold text-amber-600 dark:text-amber-400">
-                Free: {metrics.unassignedVol} m³
+                {t('free') || 'Free'}: {metrics.unassignedVol} m³
               </span>
             </div>
           </div>
@@ -414,9 +416,11 @@ export function LtlCargoRegistrationsList({
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-              <span>Gross Sales: {formatMoney(metrics.totalSellUsd, 'USD')}</span>
+              <span>
+                {t('grossSales') || 'Gross Sales'}: {formatMoney(metrics.totalSellUsd, 'USD')}
+              </span>
               <span className="font-medium text-foreground">
-                Margin:{' '}
+                {t('margin') || 'Margin'}:{' '}
                 {metrics.totalSellUsd > 0
                   ? Math.round((metrics.totalNetYieldUsd / metrics.totalSellUsd) * 100)
                   : 0}
@@ -434,7 +438,10 @@ export function LtlCargoRegistrationsList({
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by cargo, load code, client, manager, truck plate..."
+            placeholder={
+              t('searchLtlCargoPlaceholder') ||
+              'Search by cargo, load code, client, manager, truck plate...'
+            }
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -501,10 +508,10 @@ export function LtlCargoRegistrationsList({
             }}
             className="px-3 py-2 rounded-xl bg-surface border border-border text-xs font-bold text-foreground focus:outline-none cursor-pointer"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">{t('statusAll') || 'All Statuses'}</option>
             {STATUS_CONFIG.map((s) => (
               <option key={s.key} value={s.key}>
-                {s.key}
+                {t(s.key as any) || s.key}
               </option>
             ))}
           </select>
@@ -515,7 +522,7 @@ export function LtlCargoRegistrationsList({
             onClick={loadLtlCargos}
             disabled={loading}
             className="p-2 rounded-xl border border-border bg-surface hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all cursor-pointer shrink-0"
-            title="Refresh LTL list"
+            title={t('refreshList') || 'Refresh LTL list'}
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -545,7 +552,9 @@ export function LtlCargoRegistrationsList({
                   className="p-3.5 pl-5 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Cargo & Load Code</span>
+                    <span>
+                      {t('colCargo') || 'Cargo'} & {t('colLoadCode') || 'Load Code'}
+                    </span>
                     <ArrowUpDown className="size-3" />
                   </div>
                 </th>
@@ -575,7 +584,7 @@ export function LtlCargoRegistrationsList({
                   className="p-3.5 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Volume / Weight</span>
+                    <span>{t('volumeCapacity') || 'Volume / Weight'}</span>
                     <ArrowUpDown className="size-3" />
                   </div>
                 </th>
@@ -584,7 +593,7 @@ export function LtlCargoRegistrationsList({
                   className="p-3.5 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Buy Price</span>
+                    <span>{t('colBuyPrice') || 'Buy Price'}</span>
                     <ArrowUpDown className="size-3" />
                   </div>
                 </th>
@@ -593,7 +602,7 @@ export function LtlCargoRegistrationsList({
                   className="p-3.5 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Sell Price</span>
+                    <span>{t('colSell') || 'Sell Price'}</span>
                     <ArrowUpDown className="size-3" />
                   </div>
                 </th>
@@ -602,7 +611,7 @@ export function LtlCargoRegistrationsList({
                   className="p-3.5 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Net Margin</span>
+                    <span>{t('netMargin') || 'Net Margin'}</span>
                     <ArrowUpDown className="size-3" />
                   </div>
                 </th>
@@ -611,11 +620,11 @@ export function LtlCargoRegistrationsList({
                   className="p-3.5 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Status</span>
+                    <span>{t('colStatus') || 'Status'}</span>
                     <ArrowUpDown className="size-3" />
                   </div>
                 </th>
-                <th className="p-3.5 pr-5 text-right">Actions</th>
+                <th className="p-3.5 pr-5 text-right">{t('colActions') || 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -624,7 +633,9 @@ export function LtlCargoRegistrationsList({
                   <td colSpan={10} className="p-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <RefreshCw className="size-6 animate-spin text-amber-500" />
-                      <span className="font-bold text-xs">Loading LTL cargo records...</span>
+                      <span className="font-bold text-xs">
+                        {t('loadingLtlRecords') || 'Loading LTL cargo records...'}
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -633,10 +644,12 @@ export function LtlCargoRegistrationsList({
                   <td colSpan={10} className="p-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Package className="size-8 opacity-40" />
-                      <span className="font-bold text-sm text-foreground">No LTL Cargos Found</span>
+                      <span className="font-bold text-sm text-foreground">
+                        {t('noLtlCargosFound') || 'No LTL Cargos Found'}
+                      </span>
                       <span className="text-xs">
-                        Try adjusting search query, assignment filter, or register a new LTL cargo
-                        package.
+                        {t('noLtlCargosFoundDesc') ||
+                          'Try adjusting search query, assignment filter, or register a new LTL cargo package.'}
                       </span>
                     </div>
                   </td>
@@ -663,7 +676,7 @@ export function LtlCargoRegistrationsList({
                             )}
                             {isTurnkey && (
                               <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                                Turnkey
+                                {t('turnkeyBadge') || 'Turnkey'}
                               </span>
                             )}
                             {c.agent_name && (
@@ -688,7 +701,9 @@ export function LtlCargoRegistrationsList({
                                 }
                               }}
                               className="px-2.5 py-1 rounded-xl bg-brand-navy/10 dark:bg-brand-gold/10 border border-brand-navy/20 dark:border-brand-gold/30 hover:border-brand-gold text-foreground font-mono font-bold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer"
-                              title="Click to view consolidation trip"
+                              title={
+                                t('viewConsolidationTrip') || 'Click to view consolidation trip'
+                              }
                             >
                               <Truck className="size-3 text-brand-gold shrink-0" />
                               <span className="truncate max-w-[110px]">{c.container_truck_id}</span>
@@ -803,7 +818,7 @@ export function LtlCargoRegistrationsList({
                               type="button"
                               onClick={() => onEditLtl(c)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                              title="Edit LTL Cargo"
+                              title={t('btnEditRegistration') || 'Edit LTL Cargo'}
                             >
                               <Edit2 className="size-3.5" />
                             </button>
@@ -813,7 +828,7 @@ export function LtlCargoRegistrationsList({
                               type="button"
                               onClick={() => onDuplicateLtl(c)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-brand-gold hover:bg-brand-gold/10 transition-colors cursor-pointer"
-                              title="Duplicate LTL Cargo"
+                              title={t('duplicateRegistration') || 'Duplicate LTL Cargo'}
                             >
                               <Copy className="size-3.5" />
                             </button>
@@ -823,7 +838,7 @@ export function LtlCargoRegistrationsList({
                               type="button"
                               onClick={() => setDeletingCargo(c)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              title="Delete LTL Cargo"
+                              title={t('btnDeleteRegistration') || 'Delete LTL Cargo'}
                             >
                               <Trash2 className="size-3.5" />
                             </button>
@@ -841,10 +856,12 @@ export function LtlCargoRegistrationsList({
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-muted/10 text-xs">
-            <span className="text-muted-foreground">
-              Page <span className="font-bold text-foreground">{page}</span> of{' '}
-              <span className="font-bold text-foreground">{totalPages}</span> (
-              {data?.meta?.total || 0} items)
+            <span className="text-muted-foreground font-semibold">
+              {t('showingPage', {
+                page,
+                totalPages,
+                total: data?.meta?.total || 0,
+              })}
             </span>
             <div className="flex items-center gap-1.5">
               <button
@@ -904,9 +921,11 @@ export function LtlCargoRegistrationsList({
                 </span>
               </div>
               <div className="text-[11px] text-muted-foreground flex items-center gap-3">
-                <span>Client: {packingCargo.client?.name || packingCargo.client_full_name}</span>
                 <span>
-                  Sell:{' '}
+                  {t('colClient')}: {packingCargo.client?.name || packingCargo.client_full_name}
+                </span>
+                <span>
+                  {t('colSell')}:{' '}
                   {formatMoney(
                     packingCargo.sell_price?.amount ?? 0,
                     packingCargo.sell_price?.currency || 'USD'
@@ -918,17 +937,19 @@ export function LtlCargoRegistrationsList({
             {/* Consolidation Trip Selector */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-foreground">
-                Select Active Consolidation Truck:
+                {t('selectConsolidationTruckTitle') || 'Select Active Consolidation Truck:'}
               </label>
               {loadingTrips ? (
                 <div className="p-6 text-center text-muted-foreground text-xs flex items-center justify-center gap-2">
                   <RefreshCw className="size-4 animate-spin text-amber-500" />
-                  <span>Loading active consolidation trips...</span>
+                  <span>
+                    {t('loadingActiveConsolidations') || 'Loading active consolidation trips...'}
+                  </span>
                 </div>
               ) : activeTrips.length === 0 ? (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
-                  No active consolidation trips currently available. Please create a new
-                  consolidation trip first.
+                  {t('noActiveConsolidationsAvailable') ||
+                    'No active consolidation trips currently available. Please create a new consolidation trip first.'}
                 </div>
               ) : (
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -974,7 +995,7 @@ export function LtlCargoRegistrationsList({
                             {trip.assigned_volume} / {trip.max_volume_capacity} m³
                           </span>
                           <span className="text-[10px] text-muted-foreground block">
-                            Free: {trip.remaining_volume} m³
+                            {t('free') || 'Free'}: {trip.remaining_volume} m³
                           </span>
                         </div>
                       </div>
@@ -992,7 +1013,7 @@ export function LtlCargoRegistrationsList({
                 disabled={submittingPack}
                 className="px-4 py-2 rounded-xl text-xs font-bold border border-border text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                Cancel
+                {t('actionCancel') || 'Cancel'}
               </button>
               <button
                 type="button"
@@ -1003,12 +1024,12 @@ export function LtlCargoRegistrationsList({
                 {submittingPack ? (
                   <>
                     <RefreshCw className="size-4 animate-spin" />
-                    <span>Packing...</span>
+                    <span>{t('packing') || 'Packing...'}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="size-4" />
-                    <span>Confirm Packing</span>
+                    <span>{t('confirmPacking') || 'Confirm Packing'}</span>
                   </>
                 )}
               </button>
@@ -1052,7 +1073,7 @@ export function LtlCargoRegistrationsList({
                 disabled={submittingDetach}
                 className="px-4 py-2 rounded-xl text-xs font-bold border border-border text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                Cancel
+                {t('actionCancel') || 'Cancel'}
               </button>
               <button
                 type="button"
@@ -1063,10 +1084,10 @@ export function LtlCargoRegistrationsList({
                 {submittingDetach ? (
                   <>
                     <RefreshCw className="size-4 animate-spin" />
-                    <span>Detaching...</span>
+                    <span>{t('detaching') || 'Detaching...'}</span>
                   </>
                 ) : (
-                  <span>Yes, Detach</span>
+                  <span>{t('confirmDetach') || 'Yes, Detach'}</span>
                 )}
               </button>
             </div>
@@ -1097,9 +1118,11 @@ export function LtlCargoRegistrationsList({
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Client: {deletingCargo.client?.name || deletingCargo.client_full_name}</span>
                 <span>
-                  Sell:{' '}
+                  {t('colClient')}: {deletingCargo.client?.name || deletingCargo.client_full_name}
+                </span>
+                <span>
+                  {t('colSell')}:{' '}
                   {formatMoney(
                     deletingCargo.sell_price?.amount ?? 0,
                     deletingCargo.sell_price?.currency || 'USD'

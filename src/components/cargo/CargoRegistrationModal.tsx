@@ -28,12 +28,14 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
+import { T } from '../T';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import {
   cargoRegistrationsApi,
   CONTAINER_TYPES,
   TRANSPORT_TYPES,
+  getTransportTypeLabel,
   employeesApi,
   formatMoney,
   currencyApi,
@@ -625,7 +627,7 @@ export function CargoRegistrationModal({
     }
 
     if (!containerTruckId.trim()) {
-      showNotification('Container / Truck ID is required.', 'warning');
+      showNotification(t('truckPlateRequired') || 'Container / Truck ID is required.', 'warning');
       return;
     }
 
@@ -634,7 +636,11 @@ export function CargoRegistrationModal({
 
     if (cargoType === 'LTL') {
       if (vol <= 0 || wt <= 0) {
-        showNotification('Volume and weight must be greater than 0 for LTL cargo.', 'warning');
+        showNotification(
+          t('warnVolumeWeightRequired') ||
+            'Volume and weight must be greater than 0 for LTL cargo.',
+          'warning'
+        );
         return;
       }
     }
@@ -647,7 +653,10 @@ export function CargoRegistrationModal({
     const rate = parseFloat(usdRmbRateStr) || 0;
 
     if (isRmbRateRequired && rate <= 0) {
-      showNotification('USD -> RMB exchange rate is required.', 'warning');
+      showNotification(
+        t('warnRmbRateRequired') || 'USD -> RMB exchange rate is required.',
+        'warning'
+      );
       return;
     }
 
@@ -655,7 +664,7 @@ export function CargoRegistrationModal({
     const finalEmployeeId = canAssignEveryone && selectedEmpId ? selectedEmpId : myEmployeeId;
 
     if (!finalEmployeeId) {
-      showNotification('Employee assignment is required.', 'warning');
+      showNotification(t('warnSelectEmployee') || 'Employee assignment is required.', 'warning');
       return;
     }
 
@@ -711,7 +720,10 @@ export function CargoRegistrationModal({
 
       if (editingId) {
         await cargoRegistrationsApi.update(editingId, payload);
-        showNotification('Cargo registration updated successfully', 'success');
+        showNotification(
+          t('successCargoUpdated') || 'Cargo registration updated successfully',
+          'success'
+        );
       } else {
         payload.prevent_duplicate = true;
         payload.idempotency_key = `cr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -724,7 +736,10 @@ export function CargoRegistrationModal({
             // Already linked
           }
         }
-        showNotification('Cargo registration created successfully', 'success');
+        showNotification(
+          t('successCargoCreated') || 'Cargo registration created successfully',
+          'success'
+        );
       }
 
       onSuccess();
@@ -769,8 +784,10 @@ export function CargoRegistrationModal({
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   {editingId
-                    ? 'Update shipment specifications, route and multi-currency commercial terms'
-                    : 'Fill out shipment details, route corridor, and commercial pricing'}
+                    ? t('modalConsolidationEditSubtitle') ||
+                      'Update shipment specifications, route and multi-currency commercial terms'
+                    : t('modalConsolidationCreateSubtitle') ||
+                      'Fill out shipment details, route corridor, and commercial pricing'}
                 </p>
               </div>
             </div>
@@ -786,7 +803,9 @@ export function CargoRegistrationModal({
           {loadingDetails ? (
             <div className="py-24 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
               <RefreshCw className="size-8 animate-spin text-brand-gold" />
-              <p className="text-xs font-semibold">Loading shipment details...</p>
+              <p className="text-xs font-semibold">
+                {t('loadingConsolidationDetails') || 'Loading shipment details...'}
+              </p>
             </div>
           ) : (
             <form
@@ -797,7 +816,7 @@ export function CargoRegistrationModal({
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/60">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    1. Logistics Type & Stakeholders
+                    1. <T k="routeLogistics" />
                   </span>
 
                   {/* Mode Pill Switcher */}
@@ -808,7 +827,11 @@ export function CargoRegistrationModal({
                       ) : (
                         <Layers className="size-3.5" />
                       )}
-                      <span>{lockCargoType === 'LTL' ? 'LTL (Groupage)' : 'FTL (Full Truck)'}</span>
+                      <span>
+                        {lockCargoType === 'LTL'
+                          ? t('tabConsolidations') || 'LTL (Groupage)'
+                          : t('tabFtl') || 'FTL (Full Truck)'}
+                      </span>
                     </span>
                   ) : (
                     <div className="inline-flex p-1 rounded-xl bg-muted/40 border border-border">
@@ -822,7 +845,7 @@ export function CargoRegistrationModal({
                         }`}
                       >
                         <Box className="size-3.5" />
-                        <span>LTL Groupage</span>
+                        <span>{t('tabConsolidations') || 'LTL Groupage'}</span>
                       </button>
                       <button
                         type="button"
@@ -834,7 +857,7 @@ export function CargoRegistrationModal({
                         }`}
                       >
                         <Layers className="size-3.5" />
-                        <span>FTL Full Truck</span>
+                        <span>{t('tabFtl') || 'FTL Full Truck'}</span>
                       </button>
                     </div>
                   )}
@@ -851,21 +874,21 @@ export function CargoRegistrationModal({
                     <EmployeeSelect
                       value={selectedEmpId}
                       onChange={(eid) => setSelectedEmpId(eid)}
-                      label="Assigned Manager"
+                      label={t('assignedEmployeeLabel') || 'Assigned Manager'}
                       required
                     />
                   ) : (
                     <div>
                       <label className="block text-xs font-semibold text-foreground mb-1.5">
-                        Assigned Manager
+                        {t('assignedEmployeeLabel') || 'Assigned Manager'}
                       </label>
                       <div className="px-3 py-2.5 rounded-xl bg-muted/30 border border-border text-xs text-muted-foreground flex items-center justify-between">
                         <span className="font-semibold text-foreground flex items-center gap-2">
                           <UserCheck className="size-4 text-emerald-500" />
-                          <span>Auto-assigned to you</span>
+                          <span>{t('autoAssignedToYou') || 'Auto-assigned to you'}</span>
                         </span>
                         <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 font-bold text-[10px]">
-                          Active
+                          {t('statusActive') || 'Active'}
                         </span>
                       </div>
                     </div>
@@ -877,14 +900,15 @@ export function CargoRegistrationModal({
               <div className="space-y-4">
                 <div className="pb-2 border-b border-border/60">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    2. Shipment Identification & Route
+                    2. <T k="routeAndDates" />
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1.5">
-                      Truck / Container ID <span className="text-rose-500">*</span>
+                      {t('colContainerNo') || 'Truck / Container ID'}{' '}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -898,7 +922,8 @@ export function CargoRegistrationModal({
 
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1.5">
-                      Carrier / Agent Name <span className="text-rose-500">*</span>
+                      {t('colCarrier') || 'Carrier / Agent Name'}{' '}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -912,7 +937,8 @@ export function CargoRegistrationModal({
 
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1.5">
-                      Cargo Description <span className="text-rose-500">*</span>
+                      {t('deleteModalCargo') || 'Cargo Description'}{' '}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -929,7 +955,7 @@ export function CargoRegistrationModal({
                 {cargoType === 'LTL' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <NumberInput
-                      label="Volume (m³)"
+                      label={`${t('volumeLabel') || 'Volume'} (m³)`}
                       isRequired
                       suffix="m³"
                       placeholder="12.5"
@@ -941,7 +967,7 @@ export function CargoRegistrationModal({
                     />
 
                     <NumberInput
-                      label="Weight (kg)"
+                      label={`${t('weightLabel') || 'Weight'} (kg)`}
                       isRequired
                       suffix="kg"
                       placeholder="1 450"
@@ -956,7 +982,7 @@ export function CargoRegistrationModal({
                       <label className="block text-xs font-semibold text-foreground mb-1.5 flex items-center justify-between">
                         <span>{t('loadCode') || 'Load Code'}</span>
                         <span className="text-[10px] text-muted-foreground font-normal">
-                          (Optional)
+                          ({t('optional') || 'Optional'})
                         </span>
                       </label>
                       <input
@@ -971,7 +997,8 @@ export function CargoRegistrationModal({
                 ) : (
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1.5">
-                      Container Specification <span className="text-rose-500">*</span>
+                      {t('containerTypeLabel') || 'Container Specification'}{' '}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <Select
                       isRequired
@@ -989,7 +1016,10 @@ export function CargoRegistrationModal({
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground flex items-center gap-1.5">
                       <Truck className="size-3.5 text-brand-gold" />
-                      <span>Consolidation Truck Trip (Optional)</span>
+                      <span>
+                        {t('selectConsolidationTruckPlaceholder') ||
+                          'Consolidation Truck Trip (Optional)'}
+                      </span>
                     </label>
                     {lockConsolidation ? (
                       <div className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between text-xs">
@@ -997,7 +1027,7 @@ export function CargoRegistrationModal({
                           {containerTruckId || 'Consolidation Trip'}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          Locked to active consolidation
+                          {t('lockedToActiveConsolidation') || 'Locked to active consolidation'}
                         </span>
                       </div>
                     ) : (
@@ -1025,7 +1055,9 @@ export function CargoRegistrationModal({
 
                 {/* Multimodal Transport Selector */}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="text-xs font-semibold text-foreground mr-1">Transport:</span>
+                  <span className="text-xs font-semibold text-foreground mr-1">
+                    {t('transportTypesLabel') || 'Transport'}:
+                  </span>
                   {TRANSPORT_TYPES.map((tt) => {
                     const selected = transportTypes.includes(tt);
                     return (
@@ -1048,7 +1080,7 @@ export function CargoRegistrationModal({
                         }`}
                       >
                         {TRANSPORT_ICONS[tt]}
-                        <span className="capitalize">{tt}</span>
+                        <span>{getTransportTypeLabel(tt, t)}</span>
                       </button>
                     );
                   })}
@@ -1065,7 +1097,9 @@ export function CargoRegistrationModal({
                 <div className="pb-2 border-b border-border/60 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <DollarSign className="size-3.5 text-brand-gold" />
-                    <span>3. Commercials & Financials</span>
+                    <span>
+                      3. <T k="financialBreakdownTitle" />
+                    </span>
                   </span>
                   <span className="text-[11px] text-muted-foreground">Multi-Currency</span>
                 </div>
@@ -1075,7 +1109,8 @@ export function CargoRegistrationModal({
                   {/* Purchase Cost (Buy side) */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      Purchase Cost (Buy) <span className="text-rose-500">*</span>
+                      {t('fieldCarrierCostLabel') || 'Purchase Cost (Buy)'}{' '}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <div className="flex gap-2">
                       <div className="flex-1">
@@ -1103,7 +1138,8 @@ export function CargoRegistrationModal({
                   {/* Selling Charge (Sell side) */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      Selling Price (Client) <span className="text-rose-500">*</span>
+                      {t('fieldClientSellPriceLabel') || 'Selling Price (Client)'}{' '}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <div className="flex gap-2">
                       <div className="flex-1">
@@ -1135,9 +1171,11 @@ export function CargoRegistrationModal({
                     <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
                       <span className="flex items-center gap-1">
                         <PlusCircle className="size-3 text-rose-500" />
-                        <span>Additional Expense (Extra Cost)</span>
+                        <span>{t('fieldAuxiliaryFees') || 'Additional Expense (Extra Cost)'}</span>
                       </span>
-                      <span className="text-[10px] text-muted-foreground">(Optional)</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        ({t('optional') || 'Optional'})
+                      </span>
                     </label>
                     <div className="flex gap-2">
                       <div className="flex-1">
@@ -1196,7 +1234,7 @@ export function CargoRegistrationModal({
                       <div className="flex items-center gap-2">
                         <KeyRound className="size-4 text-indigo-500" />
                         <span className="text-xs font-bold text-foreground">
-                          Turnkey Delivery Service
+                          {t('lblTurnkeyService') || 'Turnkey Delivery Service'}
                         </span>
                       </div>
                       <div
@@ -1209,7 +1247,7 @@ export function CargoRegistrationModal({
                       <div className="flex gap-2 items-center mt-2">
                         <div className="flex-1">
                           <NumberInput
-                            placeholder="Turnkey Price"
+                            placeholder={t('turnkeyBadge') || 'Turnkey Price'}
                             value={turnkeyPriceStr}
                             onValueChange={(_num, raw) => setTurnkeyPriceStr(raw)}
                             allowDecimals={true}
@@ -1241,7 +1279,7 @@ export function CargoRegistrationModal({
                       <div className="flex items-center gap-2">
                         <Zap className="size-4 text-amber-500" />
                         <span className="text-xs font-bold text-foreground">
-                          Speed Up (Expedited Delivery)
+                          {t('lblSpeedUpService') || 'Speed Up (Expedited Delivery)'}
                         </span>
                       </div>
                       <div
@@ -1254,7 +1292,7 @@ export function CargoRegistrationModal({
                       <div className="flex gap-2 items-center mt-2">
                         <div className="flex-1">
                           <NumberInput
-                            placeholder="Speed Up Fee"
+                            placeholder={t('speedUpBadge') || 'Speed Up Fee'}
                             value={speedUpStr}
                             onValueChange={(_num, raw) => setSpeedUpStr(raw)}
                             allowDecimals={true}
@@ -1289,7 +1327,9 @@ export function CargoRegistrationModal({
                       )}
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground">Estimated Net Profit: </span>
+                      <span className="text-xs text-muted-foreground">
+                        {t('kpiCalculatedNetYield') || 'Estimated Net Profit'}:{' '}
+                      </span>
                       <span
                         className={`text-xs font-bold ${calculatedYield.netProfitUsd >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
                       >
@@ -1299,9 +1339,15 @@ export function CargoRegistrationModal({
                   </div>
 
                   <div className="flex items-center gap-3 text-xs text-muted-foreground font-semibold">
-                    <span>Income: {formatMoney(calculatedYield.totalIncomeUsd, 'USD')}</span>
+                    <span>
+                      {t('totalClientSell') || 'Income'}:{' '}
+                      {formatMoney(calculatedYield.totalIncomeUsd, 'USD')}
+                    </span>
                     <span>•</span>
-                    <span>Cost: {formatMoney(calculatedYield.totalOutcomeUsd, 'USD')}</span>
+                    <span>
+                      {t('carrierAndOperationalExpenses') || 'Cost'}:{' '}
+                      {formatMoney(calculatedYield.totalOutcomeUsd, 'USD')}
+                    </span>
                     <span>•</span>
                     <span
                       className={`font-bold ${calculatedYield.roiPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}
@@ -1316,7 +1362,7 @@ export function CargoRegistrationModal({
               <div className="space-y-4">
                 <div className="pb-2 border-b border-border/60">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    4. Status & Dates
+                    4. <T k="colSchedule" />
                   </span>
                 </div>
 
@@ -1347,7 +1393,7 @@ export function CargoRegistrationModal({
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Calendar className="size-3 text-amber-500" />
-                      <span>Confirmed Date</span>
+                      <span>{t('colConfirmed') || 'Confirmed Date'}</span>
                     </label>
                     <input
                       type="date"
@@ -1360,7 +1406,7 @@ export function CargoRegistrationModal({
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Calendar className="size-3 text-blue-500" />
-                      <span>Loaded Date</span>
+                      <span>{t('colLoaded') || 'Loaded Date'}</span>
                     </label>
                     <input
                       type="date"
@@ -1373,7 +1419,7 @@ export function CargoRegistrationModal({
                   <div>
                     <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Calendar className="size-3 text-emerald-500" />
-                      <span>Arrived Date</span>
+                      <span>{t('colArrived') || 'Arrived Date'}</span>
                     </label>
                     <input
                       type="date"
@@ -1390,7 +1436,10 @@ export function CargoRegistrationModal({
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Optional handling instructions, notes, or customs remarks..."
+                    placeholder={
+                      t('notesPlaceholder') ||
+                      'Optional handling instructions, notes, or customs remarks...'
+                    }
                     className="w-full px-3 py-2 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-medium focus:ring-2 focus:ring-focus/30 resize-none"
                   />
                 </div>
@@ -1403,7 +1452,7 @@ export function CargoRegistrationModal({
                   onClick={onClose}
                   className="px-5 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                 >
-                  Cancel
+                  {t('actionCancel') || 'Cancel'}
                 </button>
                 <button
                   type="submit"
@@ -1413,7 +1462,7 @@ export function CargoRegistrationModal({
                   {submitting ? (
                     <>
                       <RefreshCw className="size-4 animate-spin" />
-                      <span>Saving Shipment...</span>
+                      <span>{t('saving') || 'Saving Shipment...'}</span>
                     </>
                   ) : (
                     <span>
