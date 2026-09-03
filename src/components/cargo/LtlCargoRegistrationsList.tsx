@@ -778,10 +778,44 @@ export function LtlCargoRegistrationsList({
 
                       {/* Buy Price */}
                       <td className="p-3.5 font-mono text-[11px] text-muted-foreground">
-                        {formatMoney(
-                          c.purchase_price?.amount ?? 0,
-                          c.purchase_price?.currency || 'USD'
-                        )}
+                        <div>
+                          {formatMoney(
+                            c.purchase_price?.amount ?? 0,
+                            c.purchase_price?.currency || 'USD'
+                          )}
+                        </div>
+                        {c.internal_logistics_cost !== undefined &&
+                          c.internal_logistics_cost !== null &&
+                          c.internal_logistics_cost > 0 && (
+                            <div
+                              className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate flex items-center gap-0.5"
+                              title={`${t('internalLogisticsCost') || 'Internal Logistics'}: ${formatMoney(c.internal_logistics_cost, c.internal_logistics_currency || 'USD')}`}
+                            >
+                              <span>
+                                🚚 +
+                                {formatMoney(
+                                  c.internal_logistics_cost,
+                                  c.internal_logistics_currency || 'USD'
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        {c.additional_expense !== undefined &&
+                          c.additional_expense !== null &&
+                          c.additional_expense > 0 && (
+                            <div
+                              className="text-[10px] text-rose-500 font-semibold truncate flex items-center gap-0.5"
+                              title={`${t('fieldAuxiliaryFees') || 'Additional Expense'}: ${formatMoney(c.additional_expense, c.additional_expense_currency || 'USD')}`}
+                            >
+                              <span>
+                                +{' '}
+                                {formatMoney(
+                                  c.additional_expense,
+                                  c.additional_expense_currency || 'USD'
+                                )}
+                              </span>
+                            </div>
+                          )}
                       </td>
 
                       {/* Sell Price */}

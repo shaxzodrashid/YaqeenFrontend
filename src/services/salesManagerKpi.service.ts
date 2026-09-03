@@ -103,6 +103,37 @@ export function getSalesBonusRate(sales: number): number {
   return 0;
 }
 
+export interface EffectiveSalaryResult {
+  effectiveFixedSalary: number;
+  tierMaxSalary: number;
+  settledSalary: number;
+  isCapped: boolean;
+}
+
+/**
+ * Enforce the career tier salary ceiling rule for Sales Manager evaluations:
+ * Effective Fixed Salary = min(employees.fixed_salary, Tier Max Salary)
+ */
+export function getEffectiveFixedSalary(
+  settledSalary: number | string | undefined | null,
+  level: CareerLevel
+): EffectiveSalaryResult {
+  const tierMaxSalary = CAREER_LEVELS_MATRIX[level]?.fixedSalary ?? 300;
+  const hasValidValue =
+    settledSalary !== undefined &&
+    settledSalary !== null &&
+    String(settledSalary).trim() !== '' &&
+    !isNaN(Number(settledSalary));
+  const parsedSettled = hasValidValue ? Math.max(0, Number(settledSalary)) : tierMaxSalary;
+  const effectiveFixedSalary = Math.min(parsedSettled, tierMaxSalary);
+  return {
+    effectiveFixedSalary,
+    tierMaxSalary,
+    settledSalary: parsedSettled,
+    isCapped: parsedSettled > tierMaxSalary,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Simulated Demo Store for Sales Manager Evaluations
 // ---------------------------------------------------------------------------
@@ -110,7 +141,7 @@ export function getSalesBonusRate(sales: number): number {
 let demoEvaluationsDb: SalesManagerEvaluation[] = [
   {
     id: 'e6741b8a-3652-4c26-8db7-658b4b74a123',
-    employee_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d', // Jamshid Rahimov
+    employee_id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d', // Jamshid Rahimov (Senior, settled: $1200, tier max: $700 -> capped)
     employee_name: 'Jamshid Rahimov',
     employee_first_name: 'Jamshid',
     employee_last_name: 'Rahimov',
@@ -119,6 +150,9 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
     month: '2026-08',
     career_level: 'SENIOR',
     fixed_salary: '700.00',
+    settled_salary: '1200.00',
+    is_salary_capped: true,
+    tier_max_salary: 700,
     total_sales: '7200.00',
     deal_count: 16,
     average_check: '450.00',
@@ -144,7 +178,7 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
   },
   {
     id: 'f8821c9b-4763-5d37-9ec8-769c5c85b456',
-    employee_id: 'a2c3d4e5-f6a7-8901-bcde-f23456789012', // Alisher Sodikov
+    employee_id: 'a2c3d4e5-f6a7-8901-bcde-f23456789012', // Alisher Sodikov (Mid, settled: $450, tier max: $500 -> lower settled)
     employee_name: 'Alisher Sodikov',
     employee_first_name: 'Alisher',
     employee_last_name: 'Sodikov',
@@ -152,7 +186,10 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
     mentees_count: 0,
     month: '2026-08',
     career_level: 'MID',
-    fixed_salary: '500.00',
+    fixed_salary: '450.00',
+    settled_salary: '450.00',
+    is_salary_capped: false,
+    tier_max_salary: 500,
     total_sales: '3200.00',
     deal_count: 8,
     average_check: '400.00',
@@ -166,7 +203,7 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
     sales_bonus_amount: '320.00',
     kpi_bonus_amount: '0.00',
     additional_bonus_amount: '0.00',
-    total_earnings: '820.00',
+    total_earnings: '770.00',
     consecutive_successes: 0,
     consecutive_failures: 2,
     approval_status: 'DEMOTION_PENDING_REVIEW',
@@ -178,7 +215,7 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
   },
   {
     id: 'd4411a7c-2541-3b26-7da6-547a3a63a789',
-    employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890', // Madina Karimova
+    employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890', // Madina Karimova (Junior, settled: $250, tier max: $300 -> lower settled)
     employee_name: 'Madina Karimova',
     employee_first_name: 'Madina',
     employee_last_name: 'Karimova',
@@ -186,7 +223,10 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
     mentees_count: 0,
     month: '2026-08',
     career_level: 'JUNIOR',
-    fixed_salary: '300.00',
+    fixed_salary: '250.00',
+    settled_salary: '250.00',
+    is_salary_capped: false,
+    tier_max_salary: 300,
     total_sales: '2500.00',
     deal_count: 10,
     average_check: '250.00',
@@ -200,7 +240,7 @@ let demoEvaluationsDb: SalesManagerEvaluation[] = [
     sales_bonus_amount: '250.00',
     kpi_bonus_amount: '125.00',
     additional_bonus_amount: '50.00',
-    total_earnings: '725.00',
+    total_earnings: '675.00',
     consecutive_successes: 2,
     consecutive_failures: 0,
     approval_status: 'APPROVED',
@@ -433,9 +473,20 @@ function createDemoEvaluation(
   addBonus = 0,
   levelOverride?: CareerLevel | null
 ): SalesManagerEvaluation {
-  const defaultLevel: CareerLevel = (
-    emp.user_role === 'ROP' || emp.user_role === 'CEO' ? 'SENIOR' : 'JUNIOR'
-  ) as CareerLevel;
+  const existingEval = demoEvaluationsDb.find((e) => e.employee_id === emp.id);
+  const roleName = String(emp.role_name || '').toLowerCase();
+  const defaultLevel: CareerLevel =
+    existingEval?.career_level ||
+    (roleName.includes('expert')
+      ? 'EXPERT'
+      : roleName.includes('senior')
+        ? 'SENIOR'
+        : roleName.includes('mid')
+          ? 'MID'
+          : (emp.career_level as CareerLevel) ||
+            ((emp.user_role === 'ROP' || emp.user_role === 'CEO'
+              ? 'SENIOR'
+              : 'JUNIOR') as CareerLevel));
   const level: CareerLevel = levelOverride || defaultLevel;
   const spec = CAREER_LEVELS_MATRIX[level] || CAREER_LEVELS_MATRIX.JUNIOR;
   const mentees = level === 'SENIOR' ? 1 : level === 'EXPERT' ? 3 : 0;
@@ -452,7 +503,15 @@ function createDemoEvaluation(
   const bonusRate = getSalesBonusRate(totalSales);
   const salesBonus = Number(((totalSales * bonusRate) / 100).toFixed(2));
   const kpiBonus = isPlanAchieved ? Number((salesBonus * 0.25).toFixed(2)) : 0;
-  const totalEarnings = Number((spec.fixedSalary + salesBonus + kpiBonus + addBonus).toFixed(2));
+
+  const empSettled = emp.fixed_salary;
+  const { effectiveFixedSalary, isCapped, settledSalary } = getEffectiveFixedSalary(
+    empSettled,
+    level
+  );
+  const totalEarnings = Number(
+    (effectiveFixedSalary + salesBonus + kpiBonus + addBonus).toFixed(2)
+  );
 
   let status: EvaluationApprovalStatus = 'APPROVED';
   if (isPlanAchieved && !isSrAchieved && !isSrMinAchieved) {
@@ -471,7 +530,10 @@ function createDemoEvaluation(
     mentees_count: mentees,
     month,
     career_level: level,
-    fixed_salary: spec.fixedSalary.toFixed(2),
+    fixed_salary: effectiveFixedSalary.toFixed(2),
+    settled_salary: settledSalary.toFixed(2),
+    is_salary_capped: isCapped,
+    tier_max_salary: spec.fixedSalary,
     total_sales: totalSales.toFixed(2),
     deal_count: dealCount,
     average_check: avgCheck.toFixed(2),
@@ -528,12 +590,14 @@ registerDemoHandler((path, options) => {
     const calculated: SalesManagerEvaluation[] = [];
 
     for (const emp of employeesToCalc) {
+      const existingEval = demoEvaluationsDb.find((ev) => ev.employee_id === emp.id);
+      const targetLevel = levelOverride || existingEval?.career_level || null;
       // Remove previous evaluation if exists for month
       demoEvaluationsDb = demoEvaluationsDb.filter(
         (ev) => !(ev.employee_id === emp.id && ev.month === month)
       );
 
-      const newEv = createDemoEvaluation(emp, month, addBonus, levelOverride);
+      const newEv = createDemoEvaluation(emp, month, addBonus, targetLevel);
       demoEvaluationsDb.unshift(newEv);
       calculated.push(newEv);
     }
@@ -657,10 +721,32 @@ registerDemoHandler((path, options) => {
       const levels: CareerLevel[] = ['JUNIOR', 'MID', 'SENIOR', 'EXPERT'];
       const curIndex = levels.indexOf(currentEv.career_level);
       const newLevel = curIndex > 0 ? levels[curIndex - 1] : 'JUNIOR';
+      const spec = CAREER_LEVELS_MATRIX[newLevel] || CAREER_LEVELS_MATRIX.JUNIOR;
+      const emp = demoEmployeesDb.get(currentEv.employee_id);
+      const empSettled = currentEv.settled_salary ?? emp?.fixed_salary;
+      const { effectiveFixedSalary, isCapped, settledSalary } = getEffectiveFixedSalary(
+        empSettled,
+        newLevel
+      );
+      const salesBonus = Number(currentEv.sales_bonus_amount) || 0;
+      const kpiBonus = Number(currentEv.kpi_bonus_amount) || 0;
+      const addBonus = Number(currentEv.additional_bonus_amount) || 0;
+      const totalEarnings = Number(
+        (effectiveFixedSalary + salesBonus + kpiBonus + addBonus).toFixed(2)
+      );
 
       demoEvaluationsDb[index] = {
         ...currentEv,
         career_level: newLevel,
+        fixed_salary: effectiveFixedSalary.toFixed(2),
+        settled_salary: settledSalary.toFixed(2),
+        is_salary_capped: isCapped,
+        tier_max_salary: spec.fixedSalary,
+        total_earnings: totalEarnings.toFixed(2),
+        plan_target_min: spec.targetMin.toFixed(2),
+        plan_target_max: spec.targetMax.toFixed(2),
+        sr_check_min: spec.srCheckMin.toFixed(2),
+        sr_check_target: spec.srCheckTarget.toFixed(2),
         consecutive_failures: 0,
         approval_status: 'DEMOTION_APPROVED',
         reviewer_name: 'ROP / CEO Reviewer',
@@ -690,10 +776,36 @@ registerDemoHandler((path, options) => {
     // Update in demo evaluations DB
     demoEvaluationsDb = demoEvaluationsDb.map((ev) => {
       if (ev.employee_id === employeeId) {
+        const newLevel: CareerLevel =
+          resolveLevelOverride(body.career_level) || (ev.career_level as CareerLevel);
+        const newMentees = body.mentees_count !== undefined ? body.mentees_count : ev.mentees_count;
+        const spec = CAREER_LEVELS_MATRIX[newLevel] || CAREER_LEVELS_MATRIX.JUNIOR;
+        const emp = demoEmployeesDb.get(employeeId);
+        const empSettled = ev.settled_salary ?? emp?.fixed_salary;
+        const { effectiveFixedSalary, isCapped, settledSalary } = getEffectiveFixedSalary(
+          empSettled,
+          newLevel
+        );
+        const salesBonus = Number(ev.sales_bonus_amount) || 0;
+        const kpiBonus = Number(ev.kpi_bonus_amount) || 0;
+        const addBonus = Number(ev.additional_bonus_amount) || 0;
+        const totalEarnings = Number(
+          (effectiveFixedSalary + salesBonus + kpiBonus + addBonus).toFixed(2)
+        );
         return {
           ...ev,
-          career_level: body.career_level || ev.career_level,
-          mentees_count: body.mentees_count !== undefined ? body.mentees_count : ev.mentees_count,
+          career_level: newLevel,
+          mentees_count: newMentees,
+          fixed_salary: effectiveFixedSalary.toFixed(2),
+          settled_salary: settledSalary.toFixed(2),
+          is_salary_capped: isCapped,
+          tier_max_salary: spec.fixedSalary,
+          total_earnings: totalEarnings.toFixed(2),
+          plan_target_min: spec.targetMin.toFixed(2),
+          plan_target_max: spec.targetMax.toFixed(2),
+          sr_check_min: spec.srCheckMin.toFixed(2),
+          sr_check_target: spec.srCheckTarget.toFixed(2),
+          updated_at: new Date().toISOString(),
         };
       }
       return ev;
@@ -749,8 +861,17 @@ registerDemoHandler((path, options) => {
       ? `${currentEmp.first_name || ''} ${currentEmp.last_name || ''}`.trim()
       : 'Saidjon Menejer';
     const deptName = currentEmp?.department_name || 'Sales Department';
-    const level: CareerLevel = 'EXPERT';
-    const spec = CAREER_LEVELS_MATRIX[level];
+    const empEval = employee_id
+      ? demoEvaluationsDb.find((e) => e.employee_id === employee_id)
+      : null;
+    const level: CareerLevel =
+      empEval?.career_level ||
+      (currentEmp?.user_role === 'ROP' || currentEmp?.user_role === 'CEO'
+        ? 'SENIOR'
+        : currentEmp
+          ? 'MID'
+          : 'EXPERT');
+    const spec = CAREER_LEVELS_MATRIX[level] || CAREER_LEVELS_MATRIX.EXPERT;
 
     // Compute dynamic aggregates across all filtered items for this employee & month
     const allMatching = employee_id
@@ -778,7 +899,13 @@ registerDemoHandler((path, options) => {
     const totalPaidBonus = paidItems.reduce((s, c) => s + (c.cargo_bonus || 0), 0);
     const totalUnpaidBonus = unpaidItems.reduce((s, c) => s + (c.cargo_bonus || 0), 0);
     const realKpiExpense = totalPaidBonus;
-    const fixedSal = spec.fixedSalary;
+
+    const empSettled = currentEmp?.fixed_salary;
+    const { effectiveFixedSalary, isCapped, settledSalary } = getEffectiveFixedSalary(
+      empSettled,
+      level
+    );
+    const fixedSal = effectiveFixedSalary;
     const totalEarningsEst = fixedSal + totalPotentialBonus;
     const totalEarningsReal = fixedSal + realKpiExpense;
 
@@ -789,6 +916,9 @@ registerDemoHandler((path, options) => {
       career_level: level,
       month,
       fixed_salary: fixedSal,
+      settled_salary: settledSalary,
+      is_salary_capped: isCapped,
+      tier_max_salary: spec.fixedSalary,
       total_cargos: totalCargos,
       total_buy_price: totalBuyPrice,
       total_sell_price: totalSellPrice,

@@ -862,6 +862,49 @@ export function CargoConsolidationsTab() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Milestone Dates & Operational Expenses Strip */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-1 text-muted-foreground">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(c.loaded_date || c.load_date) && (
+                        <span className="px-1.5 py-0.5 rounded bg-muted/40 border border-border/50">
+                          {t('loadDate') || 'Load'}:{' '}
+                          {formatDateDisplay(c.loaded_date || c.load_date, locale)}
+                        </span>
+                      )}
+                      {c.border_arrival_date && (
+                        <span className="px-1.5 py-0.5 rounded bg-muted/40 border border-border/50">
+                          {t('borderArrival') || 'Border'}:{' '}
+                          {formatDateDisplay(c.border_arrival_date, locale)}
+                        </span>
+                      )}
+                      {c.tashkent_arrival_date && (
+                        <span className="px-1.5 py-0.5 rounded bg-muted/40 border border-border/50">
+                          {t('tashkentArrival') || 'Tashkent'}:{' '}
+                          {formatDateDisplay(c.tashkent_arrival_date, locale)}
+                        </span>
+                      )}
+                    </div>
+                    {((c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0) ||
+                      (c.cct && c.cct > 0)) && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground ml-auto">
+                        {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
+                          <span title={t('expenseCustoms') || 'Customs'}>
+                            Cust:{' '}
+                            {formatMoney(
+                              c.customs_clearance_of_goods,
+                              c.customs_clearance_of_goods_currency || 'USD'
+                            )}
+                          </span>
+                        )}
+                        {c.cct && c.cct > 0 && (
+                          <span title={t('expenseCct') || 'CCT'}>
+                            CCT: {formatMoney(c.cct, c.cct_currency || 'USD')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bottom Card Footer */}
@@ -1050,7 +1093,36 @@ export function CargoConsolidationsTab() {
                         </td>
 
                         <td className="py-3 px-4 font-mono text-muted-foreground">
-                          {formatDateDisplay(c.departure_date, locale)}
+                          <div className="font-bold text-foreground">
+                            {formatDateDisplay(c.departure_date, locale)}
+                          </div>
+                          {(c.loaded_date || c.load_date) && (
+                            <div
+                              className="text-[10px] text-muted-foreground truncate"
+                              title={`${t('loadDate') || 'Load Date'}: ${formatDateDisplay(c.loaded_date || c.load_date, locale)}`}
+                            >
+                              {t('loadDate') || 'Load'}:{' '}
+                              {formatDateDisplay(c.loaded_date || c.load_date, locale)}
+                            </div>
+                          )}
+                          {c.border_arrival_date && (
+                            <div
+                              className="text-[10px] text-muted-foreground truncate"
+                              title={`${t('borderArrival') || 'Border'}: ${formatDateDisplay(c.border_arrival_date, locale)}`}
+                            >
+                              {t('borderArrival') || 'Border'}:{' '}
+                              {formatDateDisplay(c.border_arrival_date, locale)}
+                            </div>
+                          )}
+                          {c.tashkent_arrival_date && (
+                            <div
+                              className="text-[10px] text-muted-foreground truncate"
+                              title={`${t('tashkentArrival') || 'Tashkent'}: ${formatDateDisplay(c.tashkent_arrival_date, locale)}`}
+                            >
+                              {t('tashkentArrival') || 'Tashkent'}:{' '}
+                              {formatDateDisplay(c.tashkent_arrival_date, locale)}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-4">
@@ -1077,7 +1149,33 @@ export function CargoConsolidationsTab() {
                         </td>
 
                         <td className="py-3 px-4 font-mono text-foreground font-bold">
-                          {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
+                          <div>
+                            {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
+                          </div>
+                          {((c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0) ||
+                            (c.cct && c.cct > 0)) && (
+                            <div className="text-[10px] font-normal text-muted-foreground flex flex-col gap-0.5 mt-0.5">
+                              {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
+                                <span
+                                  title={`${t('expenseCustoms') || 'Customs'}: ${formatMoney(c.customs_clearance_of_goods, c.customs_clearance_of_goods_currency || 'USD')}`}
+                                >
+                                  {t('expenseCustoms') || 'Cust'}:{' '}
+                                  {formatMoney(
+                                    c.customs_clearance_of_goods,
+                                    c.customs_clearance_of_goods_currency || 'USD'
+                                  )}
+                                </span>
+                              )}
+                              {c.cct && c.cct > 0 && (
+                                <span
+                                  title={`${t('expenseCct') || 'CCT'}: ${formatMoney(c.cct, c.cct_currency || 'USD')}`}
+                                >
+                                  {t('expenseCct') || 'CCT'}:{' '}
+                                  {formatMoney(c.cct, c.cct_currency || 'USD')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 font-mono font-bold">

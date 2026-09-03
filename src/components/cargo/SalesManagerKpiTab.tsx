@@ -698,10 +698,32 @@ export function SalesManagerKpiTab() {
                           Monthly Earnings Breakdown
                         </span>
                         <div className="space-y-1 text-xs">
-                          <div className="flex justify-between text-muted-foreground">
-                            <span>Fixed Salary:</span>
-                            <span className="font-semibold text-foreground">
+                          <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <span>{t('effectiveFixedSalary') || 'Fixed Salary'}:</span>
+                              {item.is_salary_capped && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 uppercase tracking-wider"
+                                  title={
+                                    t('salaryCeilingCapped', {
+                                      max: item.tier_max_salary || 1000,
+                                    }) || 'Capped at Tier Max'
+                                  }
+                                >
+                                  Capped
+                                </span>
+                              )}
+                            </span>
+                            <span className="font-semibold text-foreground font-mono">
                               ${item.fixed_salary}
+                              {item.is_salary_capped && item.settled_salary && (
+                                <span
+                                  className="text-[10px] text-muted-foreground line-through ml-1.5 font-normal"
+                                  title={`${t('settledSalary') || 'Settled Salary'}: $${item.settled_salary}`}
+                                >
+                                  ${item.settled_salary}
+                                </span>
+                              )}
                             </span>
                           </div>
                           <div className="flex justify-between text-muted-foreground">

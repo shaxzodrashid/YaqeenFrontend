@@ -333,12 +333,31 @@ export function EmployeeCargosMonitoringTable({
                   ${meta.real_kpi_expense?.toLocaleString()}
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-gold/30 text-[11px]">
-                  <span className="text-muted-foreground">
-                    {t('realizedTotal') || 'Realized Total'}:
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <span>
+                      {t('effectiveFixedSalary') || 'Fixed'}: ${meta.fixed_salary}
+                    </span>
+                    {meta.is_salary_capped && (
+                      <span
+                        className="px-1 py-0.2 rounded text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold uppercase"
+                        title={
+                          t('salaryCeilingCapped', {
+                            max: meta.tier_max_salary || 1000,
+                          }) || 'Capped at Tier Max'
+                        }
+                      >
+                        Capped
+                      </span>
+                    )}
                   </span>
-                  <strong className="text-foreground font-black text-sm">
-                    ${meta.total_earnings_realized?.toLocaleString()}
-                  </strong>
+                  <div className="text-right">
+                    <span className="text-muted-foreground mr-1">
+                      {t('realizedTotal') || 'Realized'}:
+                    </span>
+                    <strong className="text-foreground font-black text-sm">
+                      ${meta.total_earnings_realized?.toLocaleString()}
+                    </strong>
+                  </div>
                 </div>
               </div>
             </div>

@@ -213,9 +213,12 @@ export function CargoRegistrationModal({
   const [sellCurrency, setSellCurrency] = useState<CurrencyType>('USD');
   const [sellDate, setSellDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  // Auxiliary Financials: Additional Expense, Turnkey, Speed Up
+  // Auxiliary Financials: Additional Expense, Internal Logistics, Turnkey, Speed Up
   const [additionalExpenseStr, setAdditionalExpenseStr] = useState<string>('');
   const [additionalExpenseCurrency, setAdditionalExpenseCurrency] = useState<CurrencyType>('USD');
+
+  const [internalLogisticsCostStr, setInternalLogisticsCostStr] = useState<string>('');
+  const [internalLogisticsCurrency, setInternalLogisticsCurrency] = useState<CurrencyType>('USD');
 
   const [isTurnkey, setIsTurnkey] = useState<boolean>(false);
   const [turnkeyPriceStr, setTurnkeyPriceStr] = useState<string>('');
@@ -285,7 +288,10 @@ export function CargoRegistrationModal({
       sellCurrency === 'RMB' ||
       (isTurnkey && turnkeyCurrency === 'RMB') ||
       (isSpeedUp && speedUpCurrency === 'RMB') ||
-      additionalExpenseCurrency === 'RMB'
+      additionalExpenseCurrency === 'RMB' ||
+      (cargoType === 'LTL' &&
+        parseFloat(internalLogisticsCostStr) > 0 &&
+        internalLogisticsCurrency === 'RMB')
     );
   }, [
     purchaseCurrency,
@@ -295,6 +301,9 @@ export function CargoRegistrationModal({
     isSpeedUp,
     speedUpCurrency,
     additionalExpenseCurrency,
+    cargoType,
+    internalLogisticsCostStr,
+    internalLogisticsCurrency,
   ]);
 
   // Initialize or fetch details
@@ -345,6 +354,18 @@ export function CargoRegistrationModal({
               : ''
           );
           setAdditionalExpenseCurrency(detail.additional_expense_currency || 'USD');
+
+          if (detail.cargo_type === 'LTL') {
+            setInternalLogisticsCostStr(
+              detail.internal_logistics_cost && detail.internal_logistics_cost > 0
+                ? String(detail.internal_logistics_cost)
+                : ''
+            );
+            setInternalLogisticsCurrency(detail.internal_logistics_currency || 'USD');
+          } else {
+            setInternalLogisticsCostStr('');
+            setInternalLogisticsCurrency('USD');
+          }
 
           setIsTurnkey(Boolean(detail.is_turnkey));
           setTurnkeyPriceStr(
@@ -427,6 +448,18 @@ export function CargoRegistrationModal({
           );
           setAdditionalExpenseCurrency(detail.additional_expense_currency || 'USD');
 
+          if (detail.cargo_type === 'LTL') {
+            setInternalLogisticsCostStr(
+              detail.internal_logistics_cost && detail.internal_logistics_cost > 0
+                ? String(detail.internal_logistics_cost)
+                : ''
+            );
+            setInternalLogisticsCurrency(detail.internal_logistics_currency || 'USD');
+          } else {
+            setInternalLogisticsCostStr('');
+            setInternalLogisticsCurrency('USD');
+          }
+
           setIsTurnkey(Boolean(detail.is_turnkey));
           setTurnkeyPriceStr(
             detail.turnkey_price && detail.turnkey_price > 0 ? String(detail.turnkey_price) : ''
@@ -492,6 +525,8 @@ export function CargoRegistrationModal({
 
       setAdditionalExpenseStr('');
       setAdditionalExpenseCurrency('USD');
+      setInternalLogisticsCostStr('');
+      setInternalLogisticsCurrency('USD');
       setIsTurnkey(false);
       setTurnkeyPriceStr('');
       setTurnkeyCurrency('USD');
@@ -539,6 +574,7 @@ export function CargoRegistrationModal({
     const bp = parseFloat(purchasePriceStr) || 0;
     const sp = parseFloat(sellPriceStr) || 0;
     const addExp = parseFloat(additionalExpenseStr) || 0;
+    const intLog = cargoType === 'LTL' ? parseFloat(internalLogisticsCostStr) || 0 : 0;
     const turnkeyVal = isTurnkey ? parseFloat(turnkeyPriceStr) || 0 : 0;
     const speedUpVal = isSpeedUp ? parseFloat(speedUpStr) || 0 : 0;
     const rate = parseFloat(usdRmbRateStr) || 7.235;
@@ -560,6 +596,14 @@ export function CargoRegistrationModal({
     const addExpConv = convertPriceToUsdAndUzs(
       addExp,
       additionalExpenseCurrency,
+      purchaseDate,
+      null,
+      rate,
+      cbuRates
+    );
+    const intLogConv = convertPriceToUsdAndUzs(
+      intLog,
+      internalLogisticsCurrency,
       purchaseDate,
       null,
       rate,
@@ -588,7 +632,10 @@ export function CargoRegistrationModal({
       (turnkeyVal > 0 ? turnkeyConv.amount_usd : 0) +
       (speedUpVal > 0 ? speedUpConv.amount_usd : 0);
 
-    const totalOutcomeUsd = purConv.amount_usd + (addExp > 0 ? addExpConv.amount_usd : 0);
+    const totalOutcomeUsd =
+      purConv.amount_usd +
+      (addExp > 0 ? addExpConv.amount_usd : 0) +
+      (cargoType === 'LTL' && intLog > 0 ? intLogConv.amount_usd : 0);
 
     const netProfitUsd = totalIncomeUsd - totalOutcomeUsd;
     const roiPct = totalOutcomeUsd > 0 ? (netProfitUsd / totalOutcomeUsd) * 100 : 0;
@@ -600,6 +647,7 @@ export function CargoRegistrationModal({
       roiPct,
     };
   }, [
+    cargoType,
     purchasePriceStr,
     purchaseCurrency,
     purchaseDate,
@@ -608,6 +656,8 @@ export function CargoRegistrationModal({
     sellDate,
     additionalExpenseStr,
     additionalExpenseCurrency,
+    internalLogisticsCostStr,
+    internalLogisticsCurrency,
     isTurnkey,
     turnkeyPriceStr,
     turnkeyCurrency,
@@ -648,6 +698,7 @@ export function CargoRegistrationModal({
     const bp = parseFloat(purchasePriceStr) || 0;
     const sp = parseFloat(sellPriceStr) || 0;
     const addExp = parseFloat(additionalExpenseStr) || 0;
+    const intLog = cargoType === 'LTL' ? parseFloat(internalLogisticsCostStr) || 0 : 0;
     const turnkeyVal = isTurnkey ? parseFloat(turnkeyPriceStr) || 0 : 0;
     const speedUpVal = isSpeedUp ? parseFloat(speedUpStr) || 0 : 0;
     const rate = parseFloat(usdRmbRateStr) || 0;
@@ -702,6 +753,9 @@ export function CargoRegistrationModal({
         sell_date: sellDate || undefined,
         additional_expense: addExp,
         additional_expense_currency: additionalExpenseCurrency,
+        internal_logistics_cost: cargoType === 'LTL' && intLog > 0 ? intLog : undefined,
+        internal_logistics_currency:
+          cargoType === 'LTL' && intLog > 0 ? internalLogisticsCurrency : undefined,
         is_turnkey: isTurnkey,
         turnkey_price: isTurnkey ? turnkeyVal : 0,
         turnkey_currency: isTurnkey ? turnkeyCurrency : undefined,
@@ -1165,8 +1219,13 @@ export function CargoRegistrationModal({
                   </div>
                 </div>
 
-                {/* Additional Expense (Cost side) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Additional Expense & Internal Logistics Cost (Internal Logistics is LTL only) */}
+                <div
+                  className={
+                    cargoType === 'LTL' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : 'space-y-1.5'
+                  }
+                >
+                  {/* Additional Expense */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
                       <span className="flex items-center gap-1">
@@ -1202,24 +1261,64 @@ export function CargoRegistrationModal({
                     </div>
                   </div>
 
-                  {/* USD -> RMB Cross Rate (if RMB used) */}
-                  {isRmbRateRequired ? (
+                  {/* Internal Logistics Cost (LTL only) */}
+                  {cargoType === 'LTL' && (
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold text-foreground">
-                        USD &rarr; RMB Rate <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <Truck className="size-3 text-amber-500" />
+                          <span>{t('internalLogisticsCost') || 'Internal Logistics Cost'}</span>
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          ({t('optional') || 'Optional'})
+                        </span>
                       </label>
-                      <NumberInput
-                        placeholder="7.235"
-                        value={usdRmbRateStr}
-                        onValueChange={(_num, raw) => setUsdRmbRateStr(raw)}
-                        allowDecimals={true}
-                        decimalScale={4}
-                        min={0.0001}
-                        suffix="¥"
-                      />
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <NumberInput
+                            placeholder="0.00"
+                            value={internalLogisticsCostStr}
+                            onValueChange={(_num, raw) => setInternalLogisticsCostStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={2}
+                            min={0}
+                          />
+                        </div>
+                        <Select
+                          value={internalLogisticsCurrency}
+                          onChange={(val) =>
+                            setInternalLogisticsCurrency((val as CurrencyType) || 'USD')
+                          }
+                          allowClear={false}
+                          fullWidth={false}
+                          className="w-24 shrink-0"
+                          aria-label={
+                            t('internalLogisticsCurrency') || 'Internal Logistics Currency'
+                          }
+                          options={CURRENCY_OPTIONS}
+                        />
+                      </div>
                     </div>
-                  ) : null}
+                  )}
                 </div>
+
+                {/* USD -> RMB Cross Rate (if RMB used) */}
+                {isRmbRateRequired ? (
+                  <div className="space-y-1.5 max-w-xs">
+                    <label className="block text-xs font-semibold text-foreground">
+                      USD &rarr; RMB Rate <span className="text-rose-500">*</span>
+                    </label>
+                    <NumberInput
+                      placeholder="7.235"
+                      value={usdRmbRateStr}
+                      onValueChange={(_num, raw) => setUsdRmbRateStr(raw)}
+                      allowDecimals={true}
+                      decimalScale={4}
+                      min={0.0001}
+                      suffix="¥"
+                    />
+                  </div>
+                ) : null}
 
                 {/* Auxiliary Services (Turnkey & Speed Up) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">

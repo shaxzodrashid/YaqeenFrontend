@@ -4,6 +4,8 @@ import {
   cargoRegistrationsApi,
   convertPriceToUsdAndUzs,
   INITIAL_DEMO_RECORDS,
+  getDemoCargoRegistrations,
+  saveDemoCargoRegistrations,
 } from './cargoRegistrations.service';
 import { demoClientsDb } from './clients.service';
 import { demoEmployeesDb } from './employees.service';
@@ -652,7 +654,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
 
 function getStoredConsolidations(): InternalConsolidationRecord[] {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('yaqeen_cargo_consolidations_db');
       if (raw) return JSON.parse(raw);
     }
@@ -664,7 +666,7 @@ function getStoredConsolidations(): InternalConsolidationRecord[] {
 
 function saveStoredConsolidations(records: InternalConsolidationRecord[]) {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem('yaqeen_cargo_consolidations_db', JSON.stringify(records));
     }
   } catch {
@@ -674,10 +676,14 @@ function saveStoredConsolidations(records: InternalConsolidationRecord[]) {
 
 let demoConsolidations = getStoredConsolidations();
 
-// Helper to retrieve live cargo registrations from localStorage or memory
+// Helper to retrieve live cargo registrations from shared store, localStorage or memory
 function getLiveCargoRegistrations(): any[] {
+  if (typeof getDemoCargoRegistrations === 'function') {
+    const list = getDemoCargoRegistrations();
+    if (list && list.length > 0) return list;
+  }
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('yaqeen_cargo_registrations_db');
       if (raw) return JSON.parse(raw);
     }
@@ -688,8 +694,11 @@ function getLiveCargoRegistrations(): any[] {
 }
 
 function saveLiveCargoRegistrations(records: any[]) {
+  if (typeof saveDemoCargoRegistrations === 'function') {
+    saveDemoCargoRegistrations(records);
+  }
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem('yaqeen_cargo_registrations_db', JSON.stringify(records));
     }
   } catch {
@@ -736,7 +745,22 @@ function buildConsolidationResponse(
     totalSellUsd += sellConv.amount_usd;
     totalPurchaseUsd += purConv.amount_usd;
 
-    const netYield = Math.max(0, sellConv.amount_usd - purConv.amount_usd);
+    const addExpAmt = Number(c.additional_expense) || 0;
+    const addExpCurr = c.additional_expense_currency || 'USD';
+    const addExpConv =
+      addExpAmt > 0
+        ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, c.purchase_date, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+    const intLogAmt = Number(c.internal_logistics_cost) || 0;
+    const intLogCurr = c.internal_logistics_currency || 'USD';
+    const intLogConv =
+      intLogAmt > 0
+        ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, c.purchase_date, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+    const cargoTotalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+    const netYield = Math.round((sellConv.amount_usd - cargoTotalOutcomeUsd) * 100) / 100;
 
     const client = demoClientsDb.find((cl) => cl.id === c.client_id);
     const emp = demoEmployeesDb.get(c.employee_id);
@@ -1161,9 +1185,49 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     }
 
     const currentRec = demoConsolidations[recIndex];
+    const agentAmt =
+      body?.agent !== undefined
+        ? Number(body.agent)
+        : body?.total_carrier_cost !== undefined
+          ? Number(body.total_carrier_cost)
+          : (currentRec.agent ?? currentRec.total_carrier_cost);
+    const agentCurr =
+      body?.agent_currency ||
+      body?.carrier_cost_currency ||
+      currentRec.agent_currency ||
+      currentRec.carrier_cost_currency ||
+      'USD';
+
+    const loadedDateVal =
+      body?.loaded_date !== undefined
+        ? body.loaded_date
+        : body?.load_date !== undefined
+          ? body.load_date
+          : currentRec.loaded_date;
+    const loadDateVal =
+      body?.load_date !== undefined
+        ? body.load_date
+        : body?.loaded_date !== undefined
+          ? body.loaded_date
+          : currentRec.load_date;
+
     const updated: InternalConsolidationRecord = {
       ...currentRec,
       ...body,
+      agent: agentAmt,
+      agent_currency: agentCurr,
+      total_carrier_cost: agentAmt,
+      carrier_cost_currency: agentCurr,
+      load_date: loadDateVal,
+      loaded_date: loadedDateVal,
+      border_arrival_date:
+        body?.border_arrival_date !== undefined
+          ? body.border_arrival_date
+          : currentRec.border_arrival_date,
+      tashkent_arrival_date:
+        body?.tashkent_arrival_date !== undefined
+          ? body.tashkent_arrival_date
+          : currentRec.tashkent_arrival_date,
       updated_at: new Date().toISOString(),
     };
 
@@ -1181,7 +1245,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             changed = true;
           }
           if (body.sync_dates_to_cargos) {
-            if (body.loaded_date !== undefined) c.loaded_date = body.loaded_date;
+            const lDate = body.loaded_date !== undefined ? body.loaded_date : body.load_date;
+            if (lDate !== undefined) c.loaded_date = lDate;
             if (body.arrived_date !== undefined) c.arrived_date = body.arrived_date;
             changed = true;
           }
@@ -1656,6 +1721,24 @@ export const cargoConsolidationsApi = {
         c.sell_custom_rate || c.sell_usd_rate,
         c.usd_rmb_rate
       );
+      const addExpAmt = Number(c.additional_expense) || 0;
+      const addExpCurr = c.additional_expense_currency || 'USD';
+      const addExpConv =
+        addExpAmt > 0
+          ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, c.purchase_date, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const intLogAmt = Number(c.internal_logistics_cost) || 0;
+      const intLogCurr = c.internal_logistics_currency || 'USD';
+      const intLogConv =
+        intLogAmt > 0
+          ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, c.purchase_date, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const cargoTotalOutcomeUsd =
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+      const netYield = Math.round((sellConv.amount_usd - cargoTotalOutcomeUsd) * 100) / 100;
+
       const client = demoClientsDb.find((cl) => cl.id === c.client_id);
       const emp = demoEmployeesDb.get(c.employee_id);
 
@@ -1697,7 +1780,7 @@ export const cargoConsolidationsApi = {
           currency: c.sell_currency,
           amount_usd: sellConv.amount_usd,
         },
-        net_yield_usd: Math.max(0, sellConv.amount_usd - purConv.amount_usd),
+        net_yield_usd: netYield,
         status: c.status,
         loaded_date: c.loaded_date,
         arrived_date: c.arrived_date,

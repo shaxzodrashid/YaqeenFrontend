@@ -445,10 +445,21 @@ export function CargoTransactionsTable({
       sellCurr: string,
       purchaseAmount: number,
       purchaseCurr: string,
-      usdRmbRate?: number | null
+      usdRmbRate?: number | null,
+      additionalExpense?: number | null,
+      additionalExpenseCurr?: string | null,
+      internalLogisticsCost?: number | null,
+      internalLogisticsCurrency?: string | null,
+      itemNetYield?: any
     ) => {
-      if (sellCurr === purchaseCurr) {
-        return sellAmount - purchaseAmount;
+      // If sell currency is USD and backend already provided exact calculated net yield USD, prioritize it
+      if (
+        sellCurr === 'USD' &&
+        itemNetYield &&
+        typeof itemNetYield === 'object' &&
+        itemNetYield.amount_usd !== undefined
+      ) {
+        return Number(itemNetYield.amount_usd);
       }
 
       const currentRates = { ...rates };
@@ -460,10 +471,20 @@ export function CargoTransactionsTable({
       const pRate = currentRates[purchaseCurr] || 1;
       const sRate = currentRates[sellCurr] || 1;
 
-      const purchaseInUzs = purchaseAmount * pRate;
-      const purchaseInSellCurrency = purchaseInUzs / sRate;
+      let totalOutcomeInUzs = purchaseAmount * pRate;
 
-      return sellAmount - purchaseInSellCurrency;
+      if (additionalExpense && additionalExpense > 0) {
+        const aeRate = currentRates[additionalExpenseCurr || 'USD'] || 1;
+        totalOutcomeInUzs += additionalExpense * aeRate;
+      }
+
+      if (internalLogisticsCost && internalLogisticsCost > 0) {
+        const ilRate = currentRates[internalLogisticsCurrency || 'USD'] || 1;
+        totalOutcomeInUzs += internalLogisticsCost * ilRate;
+      }
+
+      const outcomeInSellCurrency = totalOutcomeInUzs / sRate;
+      return Math.round((sellAmount - outcomeInSellCurrency) * 100) / 100;
     },
     [rates]
   );
@@ -654,7 +675,12 @@ export function CargoTransactionsTable({
                     item.sell_price?.currency || 'USD',
                     item.purchase_price?.amount ?? 0,
                     item.purchase_price?.currency || 'USD',
-                    item.usd_rmb_rate
+                    item.usd_rmb_rate,
+                    item.additional_expense,
+                    item.additional_expense_currency,
+                    item.cargo_type === 'LTL' ? item.internal_logistics_cost : undefined,
+                    item.cargo_type === 'LTL' ? item.internal_logistics_currency : undefined,
+                    item.net_yield
                   );
                   const isPositive = netYieldVal > 0;
                   const isNegative = netYieldVal < 0;
@@ -804,6 +830,39 @@ export function CargoTransactionsTable({
                             item.purchase_price?.currency || 'USD'
                           )}
                         </div>
+                        {item.cargo_type === 'LTL' &&
+                          item.internal_logistics_cost !== undefined &&
+                          item.internal_logistics_cost !== null &&
+                          item.internal_logistics_cost > 0 && (
+                            <div
+                              className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate flex items-center gap-0.5"
+                              title={`${t('internalLogisticsCost') || 'Internal Logistics'}: ${formatMoney(item.internal_logistics_cost, item.internal_logistics_currency || 'USD')}`}
+                            >
+                              <span>
+                                🚚 +
+                                {formatMoney(
+                                  item.internal_logistics_cost,
+                                  item.internal_logistics_currency || 'USD'
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        {item.additional_expense !== undefined &&
+                          item.additional_expense !== null &&
+                          item.additional_expense > 0 && (
+                            <div
+                              className="text-[10px] text-rose-500 font-semibold truncate flex items-center gap-0.5"
+                              title={`${t('fieldAuxiliaryFees') || 'Additional Expense'}: ${formatMoney(item.additional_expense, item.additional_expense_currency || 'USD')}`}
+                            >
+                              <span>
+                                +{' '}
+                                {formatMoney(
+                                  item.additional_expense,
+                                  item.additional_expense_currency || 'USD'
+                                )}
+                              </span>
+                            </div>
+                          )}
                         <div className="text-[10px] text-muted-foreground font-medium truncate">
                           {t('lblDatePrefix')}{' '}
                           {formatDateDisplay(

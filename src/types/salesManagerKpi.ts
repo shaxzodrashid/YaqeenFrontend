@@ -20,6 +20,9 @@ export interface SalesManagerEvaluation {
   month: string; // YYYY-MM
   career_level: CareerLevel;
   fixed_salary: string | number;
+  settled_salary?: string | number;
+  is_salary_capped?: boolean;
+  tier_max_salary?: number;
   total_sales: string | number;
   deal_count: number;
   average_check: string | number;
@@ -129,6 +132,9 @@ export interface CargoMonitoringMeta {
   career_level?: CareerLevel | string;
   month: string;
   fixed_salary: number;
+  settled_salary?: number;
+  is_salary_capped?: boolean;
+  tier_max_salary?: number;
   total_cargos: number;
   total_buy_price: number;
   total_sell_price: number;

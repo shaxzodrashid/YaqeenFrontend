@@ -136,6 +136,8 @@ export interface CreateCargoRegistrationDto {
   speed_up_currency?: CurrencyType;
   additional_expense?: number;
   additional_expense_currency?: CurrencyType;
+  internal_logistics_cost?: number;
+  internal_logistics_currency?: CurrencyType;
   client_id: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -257,6 +259,8 @@ export interface CargoRegistrationListItem {
   speed_up_currency?: CurrencyType | null;
   additional_expense?: number | null;
   additional_expense_currency?: CurrencyType | null;
+  internal_logistics_cost?: number | null;
+  internal_logistics_currency?: CurrencyType | null;
   client_id?: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -418,6 +422,8 @@ export interface CargoRegistrationDetail {
   speed_up_currency?: CurrencyType | null;
   additional_expense?: number | null;
   additional_expense_currency?: CurrencyType | null;
+  internal_logistics_cost?: number | null;
+  internal_logistics_currency?: CurrencyType | null;
   client_id: string;
   consolidation_id?: string | null;
   consolidation?: {
@@ -533,6 +539,8 @@ interface InternalCargoRegistrationRecord {
   speed_up_currency?: CurrencyType | null;
   additional_expense?: number | null;
   additional_expense_currency?: CurrencyType | null;
+  internal_logistics_cost?: number | null;
+  internal_logistics_currency?: CurrencyType | null;
   client_id: string;
   employee_id: string;
   consolidation_id?: string | null;
@@ -624,6 +632,10 @@ export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     description: 'Fragile items, handle with care',
     load_code: 'LTL-2026-0881',
     is_turnkey: true,
+    additional_expense: 50,
+    additional_expense_currency: 'USD',
+    internal_logistics_cost: 150,
+    internal_logistics_currency: 'USD',
     client_id: 'c-client-1',
     employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
     created_at: '2026-08-05T11:50:00.000Z',
@@ -801,7 +813,7 @@ export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
 
 function getStoredDemoRecords(): InternalCargoRegistrationRecord[] {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('yaqeen_cargo_registrations_db');
       if (raw) return JSON.parse(raw);
     }
@@ -813,7 +825,7 @@ function getStoredDemoRecords(): InternalCargoRegistrationRecord[] {
 
 function saveStoredDemoRecords(records: InternalCargoRegistrationRecord[]) {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem('yaqeen_cargo_registrations_db', JSON.stringify(records));
     }
   } catch {
@@ -822,6 +834,201 @@ function saveStoredDemoRecords(records: InternalCargoRegistrationRecord[]) {
 }
 
 let demoRecords = getStoredDemoRecords();
+
+export function getDemoCargoRegistrations(): InternalCargoRegistrationRecord[] {
+  return demoRecords;
+}
+
+export function saveDemoCargoRegistrations(records: InternalCargoRegistrationRecord[]) {
+  demoRecords = records;
+  saveStoredDemoRecords(records);
+}
+
+export function buildCargoRegistrationDetail(
+  found: InternalCargoRegistrationRecord
+): CargoRegistrationDetail {
+  const client = demoClientsDb.find((c) => c.id === found.client_id);
+  const emp = demoEmployeesDb.get(found.employee_id);
+
+  const purDate = found.purchase_date || found.confirmed_date || found.created_at.slice(0, 10);
+  const sellDate = found.sell_date || found.created_at.slice(0, 10);
+
+  const purConv = convertPriceToUsdAndUzs(
+    found.purchase_price,
+    found.purchase_currency,
+    purDate,
+    found.purchase_custom_rate || found.purchase_usd_rate,
+    found.usd_rmb_rate
+  );
+
+  const sellConv = convertPriceToUsdAndUzs(
+    found.sell_price,
+    found.sell_currency,
+    sellDate,
+    found.sell_custom_rate || found.sell_usd_rate,
+    found.usd_rmb_rate
+  );
+
+  const addExpAmt = Number(found.additional_expense) || 0;
+  const addExpCurr = found.additional_expense_currency || 'USD';
+  const addExpConv =
+    addExpAmt > 0
+      ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, purDate, null, found.usd_rmb_rate)
+      : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+  const isFoundLtl = (found.cargo_type || 'LTL') === 'LTL';
+  const intLogAmt = isFoundLtl ? Number(found.internal_logistics_cost) || 0 : 0;
+  const intLogCurr = found.internal_logistics_currency || 'USD';
+  const intLogConv =
+    intLogAmt > 0
+      ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, found.usd_rmb_rate)
+      : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+  const totalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+  const totalOutcomeUzs = purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs;
+
+  const netUsd = Math.round((sellConv.amount_usd - totalOutcomeUsd) * 100) / 100;
+  const netUzs = Math.round((sellConv.amount_uzs - totalOutcomeUzs) * 100) / 100;
+
+  const origDetail: LocationDetail | null = found.origin_city
+    ? {
+        city: found.origin_city,
+        country: found.origin_country,
+        country_code: found.origin_country_code,
+        geoname_id: found.origin_geoname_id,
+        latitude: found.origin_lat,
+        longitude: found.origin_lng,
+        display_name: found.origin_country_code
+          ? `${found.origin_city} (${found.origin_country_code})`
+          : found.origin_city,
+        google_maps_url: locationsApi.buildPointUrl(
+          found.origin_lat,
+          found.origin_lng,
+          found.origin_city
+        ),
+      }
+    : null;
+
+  const destDetail: LocationDetail | null = found.destination_city
+    ? {
+        city: found.destination_city,
+        country: found.destination_country,
+        country_code: found.destination_country_code,
+        geoname_id: found.destination_geoname_id,
+        latitude: found.destination_lat,
+        longitude: found.destination_lng,
+        display_name: found.destination_country_code
+          ? `${found.destination_city} (${found.destination_country_code})`
+          : found.destination_city,
+        google_maps_url: locationsApi.buildPointUrl(
+          found.destination_lat,
+          found.destination_lng,
+          found.destination_city
+        ),
+      }
+    : null;
+
+  const routeInfo: RouteInfo | null =
+    found.origin_city && found.destination_city
+      ? {
+          origin: found.origin_city,
+          destination: found.destination_city,
+          origin_display: found.origin_country
+            ? `${found.origin_city}, ${found.origin_country}`
+            : found.origin_city,
+          destination_display: found.destination_country
+            ? `${found.destination_city}, ${found.destination_country}`
+            : found.destination_city,
+          google_maps_dir_url: locationsApi.buildRouteUrl(
+            found.origin_lat,
+            found.origin_lng,
+            found.destination_lat,
+            found.destination_lng,
+            found.origin_city,
+            found.destination_city
+          ),
+        }
+      : null;
+
+  return {
+    id: found.id,
+    cargo_type: found.cargo_type,
+    volume: found.volume,
+    weight: found.weight,
+    container_type: found.container_type as ContainerType | null,
+    container_truck_id: found.container_truck_id,
+    agent_name: found.agent_name,
+    cargo: found.cargo,
+    origin: origDetail,
+    destination: destDetail,
+    route: routeInfo,
+    origin_city: found.origin_city,
+    origin_country: found.origin_country,
+    origin_country_code: found.origin_country_code,
+    origin_geoname_id: found.origin_geoname_id,
+    origin_lat: found.origin_lat,
+    origin_lng: found.origin_lng,
+    destination_city: found.destination_city,
+    destination_country: found.destination_country,
+    destination_country_code: found.destination_country_code,
+    destination_geoname_id: found.destination_geoname_id,
+    destination_lat: found.destination_lat,
+    destination_lng: found.destination_lng,
+    confirmed_date: found.confirmed_date,
+    loaded_date: found.loaded_date,
+    arrived_date: found.arrived_date,
+    purchase_price: found.purchase_price,
+    purchase_currency: found.purchase_currency,
+    purchase_date: purDate,
+    purchase_usd_rate: purConv.usd_rate,
+    purchase_custom_rate: found.purchase_custom_rate,
+    purchase_amount_usd: purConv.amount_usd,
+    purchase_amount_uzs: purConv.amount_uzs,
+    sell_price: found.sell_price,
+    sell_currency: found.sell_currency,
+    sell_date: sellDate,
+    sell_usd_rate: sellConv.usd_rate,
+    sell_custom_rate: found.sell_custom_rate,
+    sell_amount_usd: sellConv.amount_usd,
+    sell_amount_uzs: sellConv.amount_uzs,
+    net_yield: netUsd,
+    net_yield_details: {
+      amount_usd: netUsd,
+      amount_uzs: netUzs,
+    },
+    usd_rmb_rate: found.usd_rmb_rate,
+    status: found.status,
+    description: found.description,
+    load_code: found.load_code || null,
+    is_turnkey: Boolean(found.is_turnkey),
+    additional_expense: found.additional_expense ?? null,
+    additional_expense_currency: found.additional_expense_currency ?? null,
+    internal_logistics_cost: isFoundLtl ? (found.internal_logistics_cost ?? null) : null,
+    internal_logistics_currency: isFoundLtl ? (found.internal_logistics_currency ?? null) : null,
+    client_id: found.client_id,
+    client: client
+      ? {
+          id: client.id,
+          first_name: client.first_name,
+          last_name: client.last_name,
+          company_name: client.company_name,
+          phone: client.phone,
+          email: (client as any).email || undefined,
+        }
+      : undefined,
+    employee_id: found.employee_id,
+    employee: emp
+      ? {
+          id: emp.id,
+          first_name: emp.first_name,
+          last_name: emp.last_name,
+          position: emp.department_name || 'Logistics Specialist',
+        }
+      : undefined,
+    created_at: found.created_at,
+    updated_at: found.updated_at,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Offline Demo Mock Handler
@@ -1117,37 +1324,77 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           break;
         }
         case 'net_yield': {
+          const purDateA =
+            a.purchase_date || a.confirmed_date || (a.created_at ? a.created_at.slice(0, 10) : '');
+          const sellDateA = a.sell_date || (a.created_at ? a.created_at.slice(0, 10) : '');
           const convA_pur = convertPriceToUsdAndUzs(
             a.purchase_price,
             a.purchase_currency,
-            a.purchase_date,
+            purDateA,
             a.purchase_custom_rate || a.purchase_usd_rate,
             a.usd_rmb_rate
           );
           const convA_sell = convertPriceToUsdAndUzs(
             a.sell_price,
             a.sell_currency,
-            a.sell_date,
+            sellDateA,
             a.sell_custom_rate || a.sell_usd_rate,
             a.usd_rmb_rate
           );
-          const netA = convA_sell.amount_usd - convA_pur.amount_usd;
+          const addExpAmtA = Number(a.additional_expense) || 0;
+          const addExpCurrA = a.additional_expense_currency || 'USD';
+          const addExpConvA =
+            addExpAmtA > 0
+              ? convertPriceToUsdAndUzs(addExpAmtA, addExpCurrA, purDateA, null, a.usd_rmb_rate)
+              : { amount_usd: 0, amount_uzs: 0, usd_rate: convA_pur.usd_rate };
 
+          const isLtlA = (a.cargo_type || 'LTL') === 'LTL';
+          const intLogAmtA = isLtlA ? Number(a.internal_logistics_cost) || 0 : 0;
+          const intLogCurrA = a.internal_logistics_currency || 'USD';
+          const intLogConvA =
+            intLogAmtA > 0
+              ? convertPriceToUsdAndUzs(intLogAmtA, intLogCurrA, purDateA, null, a.usd_rmb_rate)
+              : { amount_usd: 0, amount_uzs: 0, usd_rate: convA_pur.usd_rate };
+
+          const totalOutcomeA =
+            convA_pur.amount_usd + addExpConvA.amount_usd + intLogConvA.amount_usd;
+          const netA = convA_sell.amount_usd - totalOutcomeA;
+
+          const purDateB =
+            b.purchase_date || b.confirmed_date || (b.created_at ? b.created_at.slice(0, 10) : '');
+          const sellDateB = b.sell_date || (b.created_at ? b.created_at.slice(0, 10) : '');
           const convB_pur = convertPriceToUsdAndUzs(
             b.purchase_price,
             b.purchase_currency,
-            b.purchase_date,
+            purDateB,
             b.purchase_custom_rate || b.purchase_usd_rate,
             b.usd_rmb_rate
           );
           const convB_sell = convertPriceToUsdAndUzs(
             b.sell_price,
             b.sell_currency,
-            b.sell_date,
+            sellDateB,
             b.sell_custom_rate || b.sell_usd_rate,
             b.usd_rmb_rate
           );
-          const netB = convB_sell.amount_usd - convB_pur.amount_usd;
+          const addExpAmtB = Number(b.additional_expense) || 0;
+          const addExpCurrB = b.additional_expense_currency || 'USD';
+          const addExpConvB =
+            addExpAmtB > 0
+              ? convertPriceToUsdAndUzs(addExpAmtB, addExpCurrB, purDateB, null, b.usd_rmb_rate)
+              : { amount_usd: 0, amount_uzs: 0, usd_rate: convB_pur.usd_rate };
+
+          const isLtlB = (b.cargo_type || 'LTL') === 'LTL';
+          const intLogAmtB = isLtlB ? Number(b.internal_logistics_cost) || 0 : 0;
+          const intLogCurrB = b.internal_logistics_currency || 'USD';
+          const intLogConvB =
+            intLogAmtB > 0
+              ? convertPriceToUsdAndUzs(intLogAmtB, intLogCurrB, purDateB, null, b.usd_rmb_rate)
+              : { amount_usd: 0, amount_uzs: 0, usd_rate: convB_pur.usd_rate };
+
+          const totalOutcomeB =
+            convB_pur.amount_usd + addExpConvB.amount_usd + intLogConvB.amount_usd;
+          const netB = convB_sell.amount_usd - totalOutcomeB;
 
           comparison = netA - netB;
           break;
@@ -1252,18 +1499,42 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       gross_sales_revenue.total_usd_equivalent += sellConv.amount_usd;
       gross_sales_revenue.total_uzs_equivalent += sellConv.amount_uzs;
 
-      // Net Yield
-      const itemNetUsd = sellConv.amount_usd - purConv.amount_usd;
-      const itemNetUzs = sellConv.amount_uzs - purConv.amount_uzs;
+      // Net Yield (Total Financial Outcome: P + E + I)
+      const addExpAmt = Number(r.additional_expense) || 0;
+      const addExpCurr = r.additional_expense_currency || 'USD';
+      const addExpConv =
+        addExpAmt > 0
+          ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, purDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const isLtlItem = (r.cargo_type || 'LTL') === 'LTL';
+      const intLogAmt = isLtlItem ? Number(r.internal_logistics_cost) || 0 : 0;
+      const intLogCurr = r.internal_logistics_currency || 'USD';
+      const intLogConv =
+        intLogAmt > 0
+          ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const totalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+      const totalOutcomeUzs = purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs;
+
+      const itemNetUsd = sellConv.amount_usd - totalOutcomeUsd;
+      const itemNetUzs = sellConv.amount_uzs - totalOutcomeUzs;
 
       calculated_net_yield.total_usd += itemNetUsd;
       calculated_net_yield.total_uzs += itemNetUzs;
 
-      if (r.purchase_currency === r.sell_currency) {
-        calculated_net_yield[r.sell_currency] += r.sell_price - r.purchase_price;
-      } else {
+      if (r.sell_currency && calculated_net_yield[r.sell_currency] !== undefined) {
         calculated_net_yield[r.sell_currency] += r.sell_price;
+      }
+      if (r.purchase_currency && calculated_net_yield[r.purchase_currency] !== undefined) {
         calculated_net_yield[r.purchase_currency] -= r.purchase_price;
+      }
+      if (addExpAmt > 0 && addExpCurr && calculated_net_yield[addExpCurr] !== undefined) {
+        calculated_net_yield[addExpCurr] -= addExpAmt;
+      }
+      if (intLogAmt > 0 && intLogCurr && calculated_net_yield[intLogCurr] !== undefined) {
+        calculated_net_yield[intLogCurr] -= intLogAmt;
       }
     });
 
@@ -1307,8 +1578,26 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         r.usd_rmb_rate
       );
 
-      const netYieldUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
-      const netYieldUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
+      const addExpAmt = Number(r.additional_expense) || 0;
+      const addExpCurr = r.additional_expense_currency || 'USD';
+      const addExpConv =
+        addExpAmt > 0
+          ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, purDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const isLtlItem = (r.cargo_type || 'LTL') === 'LTL';
+      const intLogAmt = isLtlItem ? Number(r.internal_logistics_cost) || 0 : 0;
+      const intLogCurr = r.internal_logistics_currency || 'USD';
+      const intLogConv =
+        intLogAmt > 0
+          ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const totalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
+      const totalOutcomeUzs = purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs;
+
+      const netYieldUsd = Math.round((sellConv.amount_usd - totalOutcomeUsd) * 100) / 100;
+      const netYieldUzs = Math.round((sellConv.amount_uzs - totalOutcomeUzs) * 100) / 100;
 
       const origDetail: LocationDetail | null = r.origin_city
         ? {
@@ -1455,6 +1744,12 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         confirmed_date: r.confirmed_date,
         loaded_date: r.loaded_date,
         arrived_date: r.arrived_date,
+        additional_expense: r.additional_expense ?? null,
+        additional_expense_currency: r.additional_expense_currency ?? null,
+        internal_logistics_cost:
+          (r.cargo_type || 'LTL') === 'LTL' ? (r.internal_logistics_cost ?? null) : null,
+        internal_logistics_currency:
+          (r.cargo_type || 'LTL') === 'LTL' ? (r.internal_logistics_currency ?? null) : null,
         created_at: r.created_at,
         updated_at: r.updated_at,
       };
@@ -1529,167 +1824,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       updated_at: new Date().toISOString(),
     };
 
-    const client = demoClientsDb.find((c) => c.id === found.client_id);
-    const emp = demoEmployeesDb.get(found.employee_id);
-
-    const purDate = found.purchase_date || found.confirmed_date || found.created_at.slice(0, 10);
-    const sellDate = found.sell_date || found.created_at.slice(0, 10);
-
-    const purConv = convertPriceToUsdAndUzs(
-      found.purchase_price,
-      found.purchase_currency,
-      purDate,
-      found.purchase_custom_rate || found.purchase_usd_rate,
-      found.usd_rmb_rate
-    );
-
-    const sellConv = convertPriceToUsdAndUzs(
-      found.sell_price,
-      found.sell_currency,
-      sellDate,
-      found.sell_custom_rate || found.sell_usd_rate,
-      found.usd_rmb_rate
-    );
-
-    const netUsd = Math.round((sellConv.amount_usd - purConv.amount_usd) * 100) / 100;
-    const netUzs = Math.round((sellConv.amount_uzs - purConv.amount_uzs) * 100) / 100;
-
-    const origDetail: LocationDetail | null = found.origin_city
-      ? {
-          city: found.origin_city,
-          country: found.origin_country,
-          country_code: found.origin_country_code,
-          geoname_id: found.origin_geoname_id,
-          latitude: found.origin_lat,
-          longitude: found.origin_lng,
-          display_name: found.origin_country_code
-            ? `${found.origin_city} (${found.origin_country_code})`
-            : found.origin_city,
-          google_maps_url: locationsApi.buildPointUrl(
-            found.origin_lat,
-            found.origin_lng,
-            found.origin_city
-          ),
-        }
-      : null;
-
-    const destDetail: LocationDetail | null = found.destination_city
-      ? {
-          city: found.destination_city,
-          country: found.destination_country,
-          country_code: found.destination_country_code,
-          geoname_id: found.destination_geoname_id,
-          latitude: found.destination_lat,
-          longitude: found.destination_lng,
-          display_name: found.destination_country_code
-            ? `${found.destination_city} (${found.destination_country_code})`
-            : found.destination_city,
-          google_maps_url: locationsApi.buildPointUrl(
-            found.destination_lat,
-            found.destination_lng,
-            found.destination_city
-          ),
-        }
-      : null;
-
-    const routeInfo: RouteInfo | null =
-      found.origin_city && found.destination_city
-        ? {
-            origin: found.origin_city,
-            destination: found.destination_city,
-            origin_display: found.origin_country
-              ? `${found.origin_city}, ${found.origin_country}`
-              : found.origin_city,
-            destination_display: found.destination_country
-              ? `${found.destination_city}, ${found.destination_country}`
-              : found.destination_city,
-            google_maps_dir_url: locationsApi.buildRouteUrl(
-              found.origin_lat,
-              found.origin_lng,
-              found.destination_lat,
-              found.destination_lng,
-              found.origin_city,
-              found.destination_city
-            ),
-          }
-        : null;
-
-    const detail: CargoRegistrationDetail = {
-      id: found.id,
-      cargo_type: found.cargo_type,
-      volume: found.volume,
-      weight: found.weight,
-      container_type: found.container_type as ContainerType | null,
-      container_truck_id: found.container_truck_id,
-      agent_name: found.agent_name,
-      cargo: found.cargo,
-      origin: origDetail,
-      destination: destDetail,
-      route: routeInfo,
-      origin_city: found.origin_city,
-      origin_country: found.origin_country,
-      origin_country_code: found.origin_country_code,
-      origin_geoname_id: found.origin_geoname_id,
-      origin_lat: found.origin_lat,
-      origin_lng: found.origin_lng,
-      destination_city: found.destination_city,
-      destination_country: found.destination_country,
-      destination_country_code: found.destination_country_code,
-      destination_geoname_id: found.destination_geoname_id,
-      destination_lat: found.destination_lat,
-      destination_lng: found.destination_lng,
-      confirmed_date: found.confirmed_date,
-      loaded_date: found.loaded_date,
-      arrived_date: found.arrived_date,
-      purchase_price: found.purchase_price,
-      purchase_currency: found.purchase_currency,
-      purchase_date: purDate,
-      purchase_usd_rate: purConv.usd_rate,
-      purchase_custom_rate: found.purchase_custom_rate,
-      purchase_amount_usd: purConv.amount_usd,
-      purchase_amount_uzs: purConv.amount_uzs,
-      sell_price: found.sell_price,
-      sell_currency: found.sell_currency,
-      sell_date: sellDate,
-      sell_usd_rate: sellConv.usd_rate,
-      sell_custom_rate: found.sell_custom_rate,
-      sell_amount_usd: sellConv.amount_usd,
-      sell_amount_uzs: sellConv.amount_uzs,
-      net_yield: netUsd,
-      net_yield_details: {
-        amount_usd: netUsd,
-        amount_uzs: netUzs,
-      },
-      usd_rmb_rate: found.usd_rmb_rate,
-      status: found.status,
-      description: found.description,
-      load_code: found.load_code || null,
-      is_turnkey: Boolean(found.is_turnkey),
-      client_id: found.client_id,
-      client: client
-        ? {
-            id: client.id,
-            first_name: client.first_name,
-            last_name: client.last_name,
-            company_name: client.company_name,
-            phone: client.phone,
-            email: (client as any).email || undefined,
-          }
-        : undefined,
-      employee_id: found.employee_id,
-      employee: emp
-        ? {
-            id: emp.id,
-            first_name: emp.first_name,
-            last_name: emp.last_name,
-            position: emp.department_name || 'Logistics Specialist',
-          }
-        : undefined,
-      created_at: found.created_at,
-      updated_at: found.updated_at,
-    };
-
-    return { handled: true, result: detail };
+    return { handled: true, result: buildCargoRegistrationDetail(found) };
   }
 
   // 3. POST /cargo-registrations (Create)
@@ -1734,6 +1869,15 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       description,
       load_code,
       is_turnkey,
+      turnkey_price,
+      turnkey_currency,
+      is_speed_up,
+      speed_up,
+      speed_up_currency,
+      additional_expense,
+      additional_expense_currency,
+      internal_logistics_cost,
+      internal_logistics_currency,
       client_id,
       employee_id,
     } = body || {};
@@ -1804,7 +1948,13 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       }
     }
 
-    if (purchase_currency === 'RMB' || sell_currency === 'RMB') {
+    const usesRmb =
+      purchase_currency === 'RMB' ||
+      sell_currency === 'RMB' ||
+      additional_expense_currency === 'RMB' ||
+      internal_logistics_currency === 'RMB';
+
+    if (usesRmb) {
       if (!usd_rmb_rate || Number(usd_rmb_rate) <= 0) {
         throw makeApiError(
           path,
@@ -1872,8 +2022,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       sell_date: sell_date || todayStr,
       sell_usd_rate: sCustom ? Number(sCustom) : 11886.72,
       sell_custom_rate: sCustom ? Number(sCustom) : null,
-      usd_rmb_rate:
-        purchase_currency === 'RMB' || sell_currency === 'RMB' ? Number(usd_rmb_rate) : null,
+      usd_rmb_rate: usd_rmb_rate ? Number(usd_rmb_rate) : null,
       status: status || 'Waiting',
       description: description || null,
       load_code:
@@ -1883,6 +2032,25 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             ? String(load_code).trim()
             : null,
       is_turnkey: Boolean(is_turnkey),
+      turnkey_price:
+        turnkey_price !== undefined && turnkey_price !== null ? Number(turnkey_price) : null,
+      turnkey_currency: turnkey_currency || null,
+      is_speed_up: Boolean(is_speed_up),
+      speed_up: speed_up !== undefined && speed_up !== null ? Number(speed_up) : null,
+      speed_up_currency: speed_up_currency || null,
+      additional_expense:
+        additional_expense !== undefined && additional_expense !== null
+          ? Number(additional_expense)
+          : null,
+      additional_expense_currency: additional_expense_currency || 'USD',
+      internal_logistics_cost:
+        cargo_type === 'LTL' &&
+        internal_logistics_cost !== undefined &&
+        internal_logistics_cost !== null
+          ? Number(internal_logistics_cost)
+          : null,
+      internal_logistics_currency:
+        cargo_type === 'LTL' ? internal_logistics_currency || 'USD' : 'USD',
       client_id,
       employee_id: assignedEmpId,
       created_at: nowIso,
@@ -1892,7 +2060,7 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     demoRecords.unshift(newRecord);
     saveStoredDemoRecords(demoRecords);
 
-    return { handled: true, result: newRecord };
+    return { handled: true, result: buildCargoRegistrationDetail(newRecord) };
   }
 
   // 4. PATCH /cargo-registrations/:id (Update)
@@ -1920,6 +2088,30 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           : current.load_code,
       is_turnkey:
         body?.is_turnkey !== undefined ? Boolean(body.is_turnkey) : (current.is_turnkey ?? false),
+      additional_expense:
+        body?.additional_expense !== undefined
+          ? body.additional_expense !== null
+            ? Number(body.additional_expense)
+            : null
+          : current.additional_expense,
+      additional_expense_currency:
+        body?.additional_expense_currency !== undefined
+          ? body.additional_expense_currency
+          : current.additional_expense_currency,
+      internal_logistics_cost:
+        (body?.cargo_type !== undefined ? body.cargo_type : current.cargo_type) === 'LTL'
+          ? body?.internal_logistics_cost !== undefined
+            ? body.internal_logistics_cost !== null
+              ? Number(body.internal_logistics_cost)
+              : null
+            : current.internal_logistics_cost
+          : null,
+      internal_logistics_currency:
+        (body?.cargo_type !== undefined ? body.cargo_type : current.cargo_type) === 'LTL'
+          ? body?.internal_logistics_currency !== undefined
+            ? body.internal_logistics_currency
+            : current.internal_logistics_currency || 'USD'
+          : 'USD',
       purchase_custom_rate: pCustom ? Number(pCustom) : null,
       sell_custom_rate: sCustom ? Number(sCustom) : null,
       updated_at: new Date().toISOString(),
@@ -1960,7 +2152,13 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       updatedState.weight = null;
     }
 
-    if (updatedState.purchase_currency === 'RMB' || updatedState.sell_currency === 'RMB') {
+    const patchUsesRmb =
+      updatedState.purchase_currency === 'RMB' ||
+      updatedState.sell_currency === 'RMB' ||
+      updatedState.additional_expense_currency === 'RMB' ||
+      updatedState.internal_logistics_currency === 'RMB';
+
+    if (patchUsesRmb) {
       if (!updatedState.usd_rmb_rate || Number(updatedState.usd_rmb_rate) <= 0) {
         throw makeApiError(
           path,
@@ -1969,14 +2167,14 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           'USD->RMB rate (> 0) is required when RMB currency is selected'
         );
       }
-    } else {
+    } else if (!body?.usd_rmb_rate) {
       updatedState.usd_rmb_rate = null;
     }
 
     demoRecords[idx] = updatedState;
     saveStoredDemoRecords(demoRecords);
 
-    return { handled: true, result: updatedState };
+    return { handled: true, result: buildCargoRegistrationDetail(updatedState) };
   }
 
   // 5. DELETE /cargo-registrations/:id (Delete)
@@ -2093,8 +2291,37 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         r.sell_usd_rate || 11886.72,
         r.usd_rmb_rate || 7.235
       );
+      const addExpAmt = Number(r.additional_expense) || 0;
+      const addExpCurr = r.additional_expense_currency || 'USD';
+      const addExpConv =
+        addExpAmt > 0
+          ? convertPriceToUsdAndUzs(
+              addExpAmt,
+              addExpCurr,
+              r.purchase_date || '',
+              null,
+              r.usd_rmb_rate || 7.235
+            )
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const isLtlCargo = (r.cargo_type || 'LTL') === 'LTL';
+      const intLogAmt = isLtlCargo ? Number(r.internal_logistics_cost) || 0 : 0;
+      const intLogCurr = r.internal_logistics_currency || 'USD';
+      const intLogConv =
+        intLogAmt > 0
+          ? convertPriceToUsdAndUzs(
+              intLogAmt,
+              intLogCurr,
+              r.purchase_date || '',
+              null,
+              r.usd_rmb_rate || 7.235
+            )
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const totalCargoOutcomeUsd =
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
       managerMap[name].grossUsd += sellConv.amount_usd;
-      managerMap[name].netUsd += Math.max(0, sellConv.amount_usd - purConv.amount_usd);
+      managerMap[name].netUsd += Math.max(0, sellConv.amount_usd - totalCargoOutcomeUsd);
     });
 
     const statsResult: CargoRegistrationsStatsResponse = {
@@ -2328,6 +2555,8 @@ export const cargoRegistrationsApi = {
       speed_up_currency: source.speed_up_currency ?? undefined,
       additional_expense: source.additional_expense ?? undefined,
       additional_expense_currency: source.additional_expense_currency ?? undefined,
+      internal_logistics_cost: source.internal_logistics_cost ?? undefined,
+      internal_logistics_currency: source.internal_logistics_currency ?? undefined,
       client_id: source.client_id,
       employee_id: source.employee_id,
     });

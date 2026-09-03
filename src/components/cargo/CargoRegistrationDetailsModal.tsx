@@ -16,6 +16,7 @@ import {
   Ship,
   Package,
   ShieldCheck,
+  PlusCircle,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { usePermissions } from '../../context/PermissionsContext';
@@ -158,6 +159,22 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
         : Number((item as any).sellPrice || 0);
 
   const sellCurrency = (item as any).sell_price?.currency || (item as any).sell_currency || 'USD';
+
+  // Auxiliary expenses extraction
+  const additionalExpense =
+    (item as any).additional_expense !== undefined && (item as any).additional_expense !== null
+      ? Number((item as any).additional_expense)
+      : null;
+  const additionalExpenseCurrency = (item as any).additional_expense_currency || 'USD';
+
+  const isLtlCargo = (item as any).cargo_type === 'LTL';
+  const internalLogisticsCost =
+    isLtlCargo &&
+    (item as any).internal_logistics_cost !== undefined &&
+    (item as any).internal_logistics_cost !== null
+      ? Number((item as any).internal_logistics_cost)
+      : null;
+  const internalLogisticsCurrency = (item as any).internal_logistics_currency || 'USD';
 
   // Net yield extraction
   const netUsd =
@@ -538,6 +555,35 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                     )}
                 </div>
               </div>
+
+              {/* Additional Expense & Internal Logistics Breakdown */}
+              {((additionalExpense !== null && additionalExpense > 0) ||
+                (internalLogisticsCost !== null && internalLogisticsCost > 0)) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {additionalExpense !== null && additionalExpense > 0 && (
+                    <div className="p-2.5 rounded-xl bg-muted/25 border border-border/60 flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                        <PlusCircle className="size-3.5 text-rose-500" />
+                        <span>{t('fieldAuxiliaryFees') || 'Additional Expense'}:</span>
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(additionalExpense, additionalExpenseCurrency)}
+                      </span>
+                    </div>
+                  )}
+                  {internalLogisticsCost !== null && internalLogisticsCost > 0 && (
+                    <div className="p-2.5 rounded-xl bg-muted/25 border border-border/60 flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                        <Truck className="size-3.5 text-amber-500" />
+                        <span>{t('internalLogisticsCost') || 'Internal Logistics'}:</span>
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(internalLogisticsCost, internalLogisticsCurrency)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Net Yield & Profit Margin */}
               <div

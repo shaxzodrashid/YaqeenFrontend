@@ -65,6 +65,10 @@ Every expense in the system is a **distinct physical record** strictly bound to 
 | `food`            | **Pitanya**        | Staff meals, office tea/coffee, snacks, food supplies  |
 | `declarant`       | **Deklarant**      | Customs declaration processing and declarant fees      |
 
+> [!NOTE]
+> **Internal Logistics (`internal_logistics_cost`)**:
+> Internal logistics is **not** a general operational expense category. It is an individual, occasional expense recorded directly on specific LTL cargo registrations (e.g. factory-to-consolidation-warehouse transit). It flows directly into LTL Cost of Goods Sold (COGS) in the finance summary and reduces the net margin of that specific cargo.
+
 ---
 
 ## 4. Endpoints Overview

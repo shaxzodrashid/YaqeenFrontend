@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 
 export type Locale = 'uz' | 'ru' | 'en';
 
-const translations = {
+export const translations = {
   en: {
     // Nav & Common
     appName: 'Yaqeen',
@@ -1104,6 +1104,18 @@ const translations = {
     fieldCarrierCostLabel: 'Carrier Purchase Cost',
     fieldClientSellPriceLabel: 'Client Sales Price',
     fieldAuxiliaryFees: 'Auxiliary Fees & Additional Services',
+    internalLogisticsCost: 'Internal Logistics Cost',
+    internalLogisticsCurrency: 'Internal Logistics Currency',
+    internalLogisticsHelp:
+      'First-mile domestic pickup or transport cost before warehouse consolidation',
+    effectiveFixedSalary: 'Effective Fixed Salary',
+    settledSalary: 'Settled Salary',
+    salaryCeilingCapped: 'Capped at Tier Max (${max})',
+    tierMaxSalary: 'Tier Max Salary',
+    loadDate: 'Load Date',
+    expenseAgent: 'Agent Freight',
+    expenseCustoms: 'Customs Clearance of Goods',
+    expenseCct: 'CCT Certification',
     lblTurnkeyService: 'Turnkey Service (All-inclusive)',
     lblTurnkeyServiceDesc: 'Complete customs clearance, terminal processing and final delivery',
     lblSpeedUpService: 'Speed Up Expedited Dispatch',
@@ -3444,6 +3456,17 @@ const translations = {
     fieldCarrierCostLabel: 'Себестоимость перевозки (Покупка)',
     fieldClientSellPriceLabel: 'Цена для клиента (Продажа)',
     fieldAuxiliaryFees: 'Дополнительные сборы и услуги',
+    internalLogisticsCost: 'Внутренняя логистика',
+    internalLogisticsCurrency: 'Валюта внутренней логистики',
+    internalLogisticsHelp: 'Стоимость забора груза и перевозки до консолидационного склада',
+    effectiveFixedSalary: 'Действующий оклад',
+    settledSalary: 'Установленный оклад',
+    salaryCeilingCapped: 'Ограничено максимумом уровня (${max})',
+    tierMaxSalary: 'Максимальный оклад уровня',
+    loadDate: 'Дата погрузки',
+    expenseAgent: 'Фрахт агента',
+    expenseCustoms: 'Таможенное оформление товаров',
+    expenseCct: 'Сертификация CCT',
     lblTurnkeyService: 'Услуга «Под ключ» (Всё включено)',
     lblTurnkeyServiceDesc: 'Полная таможенная очистка, терминальная обработка и доставка',
     lblSpeedUpService: 'Ускоренная отправка / Экспресс',
@@ -5784,6 +5807,17 @@ const translations = {
     fieldCarrierCostLabel: 'Tashuvchi xarajati (Sotib olish narxi)',
     fieldClientSellPriceLabel: 'Mijoz uchun narx (Sotish narxi)',
     fieldAuxiliaryFees: "Qo'shimcha to'lovlar va xizmatlar",
+    internalLogisticsCost: 'Ichki logistika xarajati',
+    internalLogisticsCurrency: 'Ichki logistika valyutasi',
+    internalLogisticsHelp: "Omborga konsolidatsiyagacha bo'lgan dastlabki yetkazish xarajati",
+    effectiveFixedSalary: 'Amaldagi oylik maosh',
+    settledSalary: 'Belgilangan oylik maosh',
+    salaryCeilingCapped: 'Daraja maksimumi bilan cheklangan (${max})',
+    tierMaxSalary: "Daraja bo'yicha maksimal maosh",
+    loadDate: 'Yuklash sanasi',
+    expenseAgent: 'Agent fraxti',
+    expenseCustoms: 'Tovarlarni bojxona rasmiylashtiruvi',
+    expenseCct: 'CCT sertifikatsiyasi',
     lblTurnkeyService: '«Tayyor holda» xizmati (Barchasi ichida)',
     lblTurnkeyServiceDesc:
       "To'liq bojxona rasmiylashtiruvi, terminal xizmati va yakuniy yetkazib berish",
