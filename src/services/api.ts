@@ -252,6 +252,18 @@ export { currencyApi, CurrencyApiClient } from './currency.service';
 export { rolesApi } from './roles.service';
 export { tasksService } from './tasks.service';
 export { commercialOffersApi } from './commercialOffers.service';
+export { agentsApi, demoAgentsDb, clearAgentCache } from './agents.service';
+export type {
+  Agent,
+  AgentDropdownItem,
+  AgentSortField,
+  AgentSortOrder,
+  AgentListParams,
+  AgentPaginatedResponse,
+  CreateAgentDto,
+  UpdateAgentDto,
+  DeleteAgentResponse,
+} from '../types/agents';
 
 export type {
   CityOption,
@@ -316,6 +328,7 @@ import { tasksService } from './tasks.service';
 import { commercialOffersApi } from './commercialOffers.service';
 import { dashboardApi } from './dashboard.service';
 import { locationsApi } from './locations.service';
+import { agentsApi } from './agents.service';
 
 // Global API object for complete backward compatibility
 export const api = {
@@ -325,6 +338,7 @@ export const api = {
   employees: employeesApi,
   attachments: attachmentsApi,
   clients: clientsApi,
+  agents: agentsApi,
   cargoKpi: cargoKpiApi,
   cargoRegistrations: cargoRegistrationsApi,
   cargoConsolidations: cargoConsolidationsApi,

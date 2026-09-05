@@ -18,6 +18,7 @@ import { FinancePage } from './finance/FinancePage';
 import { RolesPage } from './roles/RolesPage';
 import { TasksPage } from './tasks/TasksPage';
 import { CommercialOffersPage } from './commercial/CommercialOffersPage';
+import { AgentsPage } from './agents/AgentsPage';
 
 interface DashboardProps {
   userPhone: string;
@@ -34,6 +35,7 @@ const pageTransition = {
 const pageModuleMap: Record<string, string> = {
   employees: 'employees',
   clients: 'clients',
+  agents: 'agents',
   departments: 'departments',
   cargo: 'cargo_kpi',
   kpi: 'cargo_kpi',
@@ -87,6 +89,8 @@ export function Dashboard({
         return <EmployeesPage />;
       case 'clients':
         return <ClientsPage />;
+      case 'agents':
+        return <AgentsPage />;
       case 'departments':
         return <DepartmentsPage />;
       case 'cargo':

@@ -13,6 +13,7 @@ export type ModuleKey =
   | 'clients'
   | 'employees'
   | 'departments'
+  | 'agents'
   | 'cargo_kpi'
   | 'cargo_registrations'
   | 'cargo_consolidations'
@@ -42,6 +43,7 @@ export const FULL_PERMISSIONS: UserPermissions = {
   },
   employees: { create: true, read: true, update: true, delete: true },
   departments: { create: true, read: true, update: true, delete: true },
+  agents: { create: true, read: true, update: true, delete: true },
   cargo_kpi: { create: true, read: true, update: true, delete: true },
   cargo_registrations: {
     create: true,
@@ -152,6 +154,11 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let mod = permissions[module];
     if (!mod && (module === 'cargo_consolidations' || module === 'consolidations')) {
       mod = permissions['cargo_registrations'] || permissions['cargo_kpi'];
+    }
+    if (!mod && module === 'agents') {
+      if (isRop) return true;
+      if (action === 'delete') return false;
+      return true;
     }
     if (!mod) return false;
     return !!mod[action];

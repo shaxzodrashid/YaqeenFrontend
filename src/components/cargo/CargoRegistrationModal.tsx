@@ -51,6 +51,7 @@ import type {
 } from '../../services/api';
 import { EmployeeSelect } from './EmployeeSelect';
 import { ClientSelect } from './ClientSelect';
+import { AgentSelect } from '../agents/AgentSelect';
 import { ConsolidationSelect } from './ConsolidationSelect';
 import { ConsolidationModal } from './ConsolidationModal';
 import { RouteSelector, type RouteState } from './RouteSelector';
@@ -180,6 +181,7 @@ export function CargoRegistrationModal({
 
   // Identifiers & Physical Specs
   const [containerTruckId, setContainerTruckId] = useState<string>(initialContainerTruckId || '');
+  const [agentId, setAgentId] = useState<string>('');
   const [agentName, setAgentName] = useState<string>('SilkRoad Express');
   const [cargo, setCargo] = useState<string>('General Cargo');
   const [volumeStr, setVolumeStr] = useState<string>('10');
@@ -320,7 +322,8 @@ export function CargoRegistrationModal({
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
           setConsolidationId(detail.consolidation_id || (detail.consolidation?.id ?? null));
           setContainerTruckId(detail.container_truck_id || '');
-          setAgentName(detail.agent_name || '');
+          setAgentId((detail as any).agent_id || (detail as any).agent?.id || '');
+          setAgentName(detail.agent_name || (detail as any).agent?.display_name || '');
           setCargo(detail.cargo || '');
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
@@ -421,7 +424,8 @@ export function CargoRegistrationModal({
             copyTruckId = `${detail.container_truck_id}-1`;
           }
           setContainerTruckId(copyTruckId);
-          setAgentName(detail.agent_name || '');
+          setAgentId((detail as any).agent_id || (detail as any).agent?.id || '');
+          setAgentName(detail.agent_name || (detail as any).agent?.display_name || '');
           setCargo(detail.cargo || '');
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
@@ -507,6 +511,7 @@ export function CargoRegistrationModal({
       setContainerTruckId(
         initialContainerTruckId || 'TRK-' + Math.floor(1000 + Math.random() * 9000)
       );
+      setAgentId('');
       setAgentName('SilkRoad Express');
       setCargo('General Cargo');
       setVolumeStr('10');
@@ -728,6 +733,7 @@ export function CargoRegistrationModal({
         weight: cargoType === 'LTL' ? wt : undefined,
         container_type: cargoType === 'FTL' ? containerType : undefined,
         container_truck_id: containerTruckId.trim(),
+        agent_id: agentId || undefined,
         agent_name: agentName.trim(),
         cargo: cargo.trim(),
         origin_city: route.origin_city || undefined,
@@ -975,18 +981,25 @@ export function CargoRegistrationModal({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-foreground mb-1.5">
-                      {t('colCarrier') || 'Carrier / Agent Name'}{' '}
-                      <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
+                    <AgentSelect
+                      value={agentId}
+                      onChange={(selectedId, selectedName) => {
+                        setAgentId(selectedId);
+                        setAgentName(selectedName);
+                      }}
+                      onClear={() => {
+                        setAgentId('');
+                        setAgentName('');
+                      }}
+                      label={t('colCarrier') || 'Carrier / Agent Name'}
                       required
-                      value={agentName}
-                      onChange={(e) => setAgentName(e.target.value)}
-                      placeholder="e.g. SilkRoad Logistics"
-                      className="w-full px-3 py-2 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-semibold focus:ring-2 focus:ring-focus/30"
                     />
+                    {!agentId && agentName && (
+                      <p className="text-[11px] text-muted mt-1 truncate">
+                        Current carrier:{' '}
+                        <span className="font-semibold text-foreground">{agentName}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>

@@ -20,6 +20,7 @@ import {
   FileText,
   Check,
   BarChart3,
+  Truck,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,6 +35,7 @@ export type PageId =
   | 'commercial'
   | 'employees'
   | 'clients'
+  | 'agents'
   | 'departments'
   | 'profile'
   | 'cargo'
@@ -328,6 +330,13 @@ export function Sidebar({
       icon: <UserCheck className="size-5 shrink-0" />,
       label: t('navClients'),
       moduleKey: 'clients',
+      category: 'management',
+    },
+    {
+      id: 'agents',
+      icon: <Truck className="size-5 shrink-0" />,
+      label: t('navAgents'),
+      moduleKey: 'agents',
       category: 'management',
     },
     {
