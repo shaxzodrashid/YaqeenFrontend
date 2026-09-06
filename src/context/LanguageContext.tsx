@@ -1506,6 +1506,17 @@ export const translations = {
       'Permission to batch assign or detach cargo packages to/from consolidation vehicles',
     rolesPermAssignCargoTooltip:
       'Allows batch linking and detaching cargo packages to/from consolidation vehicles',
+    rolesPlanSettable: 'KPI Plan Settable',
+    rolesPlanSettableDesc:
+      'Determines whether employees holding this role are eligible to have monthly KPI plans assigned to them (e.g., Sales Managers, ROP). Non-revenue or operational roles (e.g., Accountants, HR) should have this disabled.',
+    rolesPermPlanSettableTooltip:
+      'Allows employees holding this role to have monthly KPI targets and plans assigned',
+    rolesPlanSettableBadge: 'Plan Eligible',
+    rolesNotPlanSettableBadge: 'No Plans',
+    rolesFilterPlanSettable: 'Plan-Settable',
+    rolesFilterNotPlanSettable: 'Non-Plan',
+    rolesErrorNotPlanSettable:
+      'Cannot set plan for this employee: role is not eligible to receive plans.',
 
     // System Modules Labels & Tooltips
     module_clients: 'Clients Management',
@@ -3919,6 +3930,17 @@ export const translations = {
     rolesAssignCargo: 'Комплектация грузов',
     rolesAssignCargoDesc: 'Право прикреплять и откреплять грузы к консолидационным рейсам',
     rolesPermAssignCargoTooltip: 'Разрешает пакетное прикрепление и открепление грузов к рейсам',
+    rolesPlanSettable: 'Назначение планов KPI',
+    rolesPlanSettableDesc:
+      'Определяет, могут ли сотрудники с этой ролью получать ежемесячные KPI планы (например, менеджеры продаж, РОП). Для некоммерческих и операционных ролей (бухгалтеры, HR) эту опцию следует отключить.',
+    rolesPermPlanSettableTooltip:
+      'Разрешает назначение ежемесячных KPI планов сотрудникам с этой ролью',
+    rolesPlanSettableBadge: 'Доступен для планов',
+    rolesNotPlanSettableBadge: 'Без планов',
+    rolesFilterPlanSettable: 'С планами',
+    rolesFilterNotPlanSettable: 'Без планов',
+    rolesErrorNotPlanSettable:
+      'Нельзя установить план: роль сотрудника не предусматривает выполнение планов.',
 
     // System Modules Labels & Tooltips
     module_clients: 'Управление клиентами',
@@ -6341,6 +6363,17 @@ export const translations = {
       'Yuk paketlarini konsolidatsiya reyslariga biriktirish va ajratish huquqi',
     rolesPermAssignCargoTooltip:
       'Yuk paketlarini konsolidatsiya reyslariga biriktirish va ajratishga ruxsat',
+    rolesPlanSettable: 'KPI rejalarini biriktirish',
+    rolesPlanSettableDesc:
+      'Ushbu roldagi xodimlarga oylik KPI rejalari biriktirilishi mumkinligini belgilaydi (masalan, sotuv menejerlari, ROP). Reja talab qilinmaydigan yoki maʼmuriy rollar (buxgalter, HR) uchun ushbu parametr oʻchirilishi kerak.',
+    rolesPermPlanSettableTooltip:
+      'Ushbu roldagi xodimlarga oylik KPI rejalari va maqsadlarini biriktirishga ruxsat beradi',
+    rolesPlanSettableBadge: 'Rejaga mos',
+    rolesNotPlanSettableBadge: 'Rejasiz',
+    rolesFilterPlanSettable: 'Rejali',
+    rolesFilterNotPlanSettable: 'Rejasiz',
+    rolesErrorNotPlanSettable:
+      "Bu xodimga reja o'rnatib bo'lmaydi: xodimning roli rejalar qabul qilish huquqiga ega emas.",
 
     // System Modules Labels & Tooltips
     module_clients: 'Mijozlarni boshqarish',

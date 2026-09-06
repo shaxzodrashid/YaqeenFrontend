@@ -12,6 +12,7 @@ export interface EmployeeSelectProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  planSettableOnly?: boolean;
 }
 
 export function EmployeeSelect({
@@ -22,6 +23,7 @@ export function EmployeeSelect({
   required = false,
   disabled = false,
   className = '',
+  planSettableOnly = false,
 }: EmployeeSelectProps) {
   const { t } = useTranslation();
   const displayLabel = label ?? (t('colEmployee') || 'Select Employee');
@@ -34,16 +36,17 @@ export function EmployeeSelect({
   const [loading, setLoading] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch employees from backend GET /employees with backend search capability
+  // Fetch employees from backend GET /employees (or /employees/plan-settable) with backend search capability
   const fetchEmployees = useCallback(
     async (query: string) => {
       setLoading(true);
       try {
-        const res = await employeesApi.list({
+        const fetchFn = planSettableOnly ? employeesApi.getPlanSettable : employeesApi.list;
+        const res = await fetchFn({
           search: query.trim() || undefined,
           limit: 20,
         });
-        const items = res?.items || (Array.isArray(res) ? res : []);
+        const items = res?.items || res?.data || (Array.isArray(res) ? res : []);
         setEmployees(items);
 
         // If we have a selected value but no selectedEmployee object yet, resolve it from fetched list or API
@@ -59,7 +62,7 @@ export function EmployeeSelect({
         setLoading(false);
       }
     },
-    [value, selectedEmployee]
+    [value, selectedEmployee, planSettableOnly]
   );
 
   // If value is provided and selectedEmployee is not set or out-of-sync, fetch single employee
@@ -177,9 +180,16 @@ export function EmployeeSelect({
                 )}
               </div>
               <div className="truncate text-left">
-                <span className="text-foreground font-bold text-xs block truncate">
-                  {getEmployeeFullName(selectedEmployee)}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-foreground font-bold text-xs block truncate">
+                    {getEmployeeFullName(selectedEmployee)}
+                  </span>
+                  {(selectedEmployee.role_display_name || selectedEmployee.role_name) && (
+                    <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-semibold bg-brand-gold/15 text-brand-gold border border-brand-gold/25 shrink-0">
+                      {selectedEmployee.role_display_name || selectedEmployee.role_name}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] text-muted-foreground block truncate">
                   {selectedEmployee.department_display_name ||
                     selectedEmployee.department_name ||
@@ -291,9 +301,16 @@ export function EmployeeSelect({
                         )}
                       </div>
                       <div className="truncate">
-                        <span className="font-semibold block truncate text-foreground">
-                          {empNameStr}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold block truncate text-foreground">
+                            {empNameStr}
+                          </span>
+                          {(emp.role_display_name || emp.role_name) && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-semibold bg-brand-gold/15 text-brand-gold border border-brand-gold/25 shrink-0">
+                              {emp.role_display_name || emp.role_name}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-muted-foreground block truncate">
                           {emp.department_display_name || emp.department_name || 'Sales'} •{' '}
                           {emp.phone}

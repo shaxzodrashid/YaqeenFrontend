@@ -10,6 +10,7 @@ import {
   Edit3,
   Trash2,
   Pencil,
+  Target,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import type { Role, SystemModule } from '../../services/roles.service';
@@ -69,6 +70,9 @@ export function RoleDetailDrawer({
     }
   };
 
+  const isRolePlanSettable =
+    role.is_plan_settable ?? role.permissions?.cargo_kpi?.plan_settable ?? false;
+
   return (
     <Modal.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
       <Modal.Container>
@@ -98,7 +102,7 @@ export function RoleDetailDrawer({
                   </code>
                 </div>
 
-                <div className="flex items-center gap-3 mt-2 text-xs text-neutral-300 flex-wrap">
+                <div className="flex items-center gap-2.5 mt-2 text-xs text-neutral-300 flex-wrap">
                   {role.is_system ? (
                     <span className="inline-flex items-center gap-1 font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-md border border-amber-400/30">
                       <Lock className="size-3" /> {t('rolesSystemBadge')}
@@ -106,6 +110,16 @@ export function RoleDetailDrawer({
                   ) : (
                     <span className="inline-flex items-center gap-1 font-bold text-sky-300 bg-sky-500/20 px-2 py-0.5 rounded-md border border-sky-400/30">
                       {t('rolesCustomBadge')}
+                    </span>
+                  )}
+
+                  {isRolePlanSettable ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-400/30">
+                      <Target className="size-3" /> {t('rolesPlanSettableBadge')}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-bold text-neutral-300 bg-white/10 px-2 py-0.5 rounded-md border border-white/20">
+                      <Target className="size-3" /> {t('rolesNotPlanSettableBadge')}
                     </span>
                   )}
 
@@ -256,6 +270,31 @@ export function RoleDetailDrawer({
                           </Tooltip.Content>
                         </Tooltip>
                       </div>
+
+                      {/* Special Permission for Cargo KPI */}
+                      {mod.module === 'cargo_kpi' && (
+                        <div className="pt-2 border-t border-border/30 flex items-center justify-between text-[10px]">
+                          <span className="text-muted font-medium">{t('rolesPlanSettable')}</span>
+                          <Tooltip delay={150} closeDelay={0}>
+                            <Tooltip.Trigger>
+                              <span
+                                className={`px-2 py-0.5 rounded font-bold border cursor-help ${
+                                  (p.plan_settable ?? role.is_plan_settable)
+                                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-300'
+                                    : 'bg-default/20 border-border/30 text-muted/40'
+                                }`}
+                              >
+                                {(p.plan_settable ?? role.is_plan_settable)
+                                  ? t('rolesGranted')
+                                  : t('rolesOff')}
+                              </span>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement="top">
+                              {t('rolesPermPlanSettableTooltip')}
+                            </Tooltip.Content>
+                          </Tooltip>
+                        </div>
+                      )}
 
                       {/* Special Permission for Cargo Registrations */}
                       {mod.module === 'cargo_registrations' && (

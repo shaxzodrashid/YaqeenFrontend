@@ -93,8 +93,8 @@ export function EmployeePlansTab() {
 
   const handleOpenAdd = () => {
     setEditingPlan(null);
-    setSelectedEmpId('b1a2c3d4-e5f6-7890-abcd-ef1234567890');
-    setSelectedEmpName('Jasur Yoldoshev');
+    setSelectedEmpId('');
+    setSelectedEmpName('');
     setLtlTargetStr('100');
     setFtlTargetStr('50000');
     setPlanCurrency('USD');
@@ -180,7 +180,21 @@ export function EmployeePlansTab() {
       setIsModalOpen(false);
       loadPlans();
     } catch (err: any) {
-      showNotification(err?.message || 'Failed to save employee plan', 'error');
+      if (
+        err?.location === 'role_not_plan_settable' ||
+        err?.response?.data?.location === 'role_not_plan_settable' ||
+        err?.code === 'role_not_plan_settable' ||
+        err?.message?.toLowerCase().includes('not eligible to receive plans')
+      ) {
+        showNotification(
+          t('rolesErrorNotPlanSettable') ||
+            err?.message ||
+            'Cannot assign plan to employee with this role: role is not plan-settable.',
+          'error'
+        );
+      } else {
+        showNotification(err?.message || 'Failed to save employee plan', 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1209,14 +1223,18 @@ export function EmployeePlansTab() {
                 {/* Employee Selector */}
                 <div>
                   <EmployeeSelect
-                    label="Employee"
+                    label={t('colEmployee') || 'Employee'}
                     required
+                    planSettableOnly={true}
+                    disabled={Boolean(editingPlan)}
                     value={selectedEmpId}
                     onChange={(id, name) => {
                       setSelectedEmpId(id);
                       if (name) setSelectedEmpName(name);
                     }}
-                    placeholder="Search employee by name or phone..."
+                    placeholder={
+                      t('searchEmployeePlaceholder') || 'Search employee by name or phone...'
+                    }
                   />
                 </div>
 

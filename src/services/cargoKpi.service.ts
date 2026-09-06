@@ -1,6 +1,7 @@
 import { request, requestNoContent, registerDemoHandler, makeApiError } from './httpClient';
 import type { SupportedCurrency } from '../types/currency';
 import { demoEmployeesDb, demoDepartmentsDb, employeesApi } from './employees.service';
+import type { EmployeeListParams, EmployeeListResponse } from './employees.service';
 import { demoClientsDb } from './clients.service';
 import { cargoRegistrationsApi } from './cargoRegistrations.service';
 
@@ -1702,6 +1703,27 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
   }
 
   if (isPath('/cargo-kpi/plans') && method === 'POST') {
+    // Validate that employee has a plan-settable role
+    if (body.employee_id) {
+      const targetEmployee = demoEmployeesDb.get(body.employee_id);
+      if (targetEmployee) {
+        const roleStr = (targetEmployee.role_name || targetEmployee.user_role || '').toLowerCase();
+        if (
+          targetEmployee.is_plan_settable === false ||
+          roleStr.includes('accountant') ||
+          roleStr.includes('hr') ||
+          roleStr.includes('it support')
+        ) {
+          throw makeApiError(
+            path,
+            400,
+            'role_not_plan_settable',
+            `Cannot set plan for employee with role "${targetEmployee.role_display_name || targetEmployee.role_name || 'Non-eligible'}": role is not eligible to receive plans.`
+          );
+        }
+      }
+    }
+
     const period = body.period || body.month || '2026-08';
     const currency: SupportedCurrency = (body.currency as SupportedCurrency) || 'USD';
     const ltlTarget = Number(body.ltl_target_volume ?? body.target_volume ?? 0);
@@ -2723,6 +2745,10 @@ export const cargoKpiApi = {
     }),
 
   // Employee Plans & Progress (Dual Direction: LTL Volume & FTL Financial Value)
+  getEligibleEmployees: async (params?: EmployeeListParams): Promise<EmployeeListResponse> => {
+    return employeesApi.getPlanSettable(params);
+  },
+
   getPlans: async (params?: {
     month?: string;
     period?: string;

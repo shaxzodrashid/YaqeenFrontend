@@ -30,6 +30,7 @@ export type UserPermissions = Record<
     register_for_everyone?: boolean;
     can_work_with_all_clients?: boolean;
     assign_cargo?: boolean;
+    plan_settable?: boolean;
   }
 >;
 
@@ -44,7 +45,7 @@ export const FULL_PERMISSIONS: UserPermissions = {
   employees: { create: true, read: true, update: true, delete: true },
   departments: { create: true, read: true, update: true, delete: true },
   agents: { create: true, read: true, update: true, delete: true },
-  cargo_kpi: { create: true, read: true, update: true, delete: true },
+  cargo_kpi: { create: true, read: true, update: true, delete: true, plan_settable: true },
   cargo_registrations: {
     create: true,
     read: true,
@@ -82,6 +83,7 @@ interface PermissionsContextType {
   canRegisterForEveryone: () => boolean;
   canWorkWithAllClients: () => boolean;
   canAssignCargo: () => boolean;
+  isPlanSettable: () => boolean;
   refreshPermissions: () => Promise<void>;
 }
 
@@ -190,6 +192,12 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return canUpdate('cargo_consolidations');
   };
 
+  const isPlanSettable = (): boolean => {
+    if (isCeo) return true;
+    const kpiPerm = permissions['cargo_kpi'];
+    return !!kpiPerm?.plan_settable;
+  };
+
   return (
     <PermissionsContext.Provider
       value={{
@@ -207,6 +215,7 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         canRegisterForEveryone,
         canWorkWithAllClients,
         canAssignCargo,
+        isPlanSettable,
         refreshPermissions: fetchPermissions,
       }}
     >
