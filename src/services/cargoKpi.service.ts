@@ -10,9 +10,12 @@ import { cargoRegistrationsApi } from './cargoRegistrations.service';
 // ---------------------------------------------------------------------------
 
 // 1. LTL Calculator
+export type LtlRoute = 'yiwu-tashkent' | 'zhongshan-tashkent';
+
 export interface LtlCalculateDto {
   volume: number;
   weight: number;
+  route?: LtlRoute | string;
 }
 
 export interface LtlCalculateResult {
@@ -23,6 +26,7 @@ export interface LtlCalculateResult {
   rate: number;
   unit: string;
   total_price: number;
+  route?: LtlRoute | string;
 }
 
 // 2. LTL KPI Module
@@ -486,57 +490,37 @@ export interface ShipmentsSummaryResponse {
 // Utility Helper Functions for Calculations
 // ---------------------------------------------------------------------------
 
-export function calculateLtlPrice(volume: number, weight: number): LtlCalculateResult {
+export function calculateLtlPrice(
+  volume: number,
+  weight: number,
+  route: LtlRoute | string = 'yiwu-tashkent'
+): LtlCalculateResult {
   const v = Math.max(0, volume);
   const w = Math.max(0, weight);
   const density = v > 0 ? w / v : 0;
 
-  let basis: 'hajm' | 'vazn' = 'hajm';
-  let rate = 0;
-  let unit = 'USD/m3';
-  let totalPrice = 0;
+  const isZhongshan = typeof route === 'string' && route.toLowerCase().includes('zhongshan');
+  const resolvedRoute: LtlRoute = isZhongshan ? 'zhongshan-tashkent' : 'yiwu-tashkent';
 
-  if (density > 1000) {
-    basis = 'vazn';
-    rate = 0.3;
-    unit = 'USD/kg';
-    totalPrice = w * rate;
-  } else if (density > 700) {
-    basis = 'vazn';
-    rate = 0.4;
-    unit = 'USD/kg';
-    totalPrice = w * rate;
-  } else if (density <= 100) {
-    basis = 'hajm';
-    rate = 100;
-    unit = 'USD/m3';
-    totalPrice = v * rate;
+  const basis = 'hajm' as const;
+  const unit = 'USD/m3';
+  let rate = 0;
+
+  if (density <= 100) {
+    rate = isZhongshan ? 110 : 120;
   } else if (density <= 200) {
-    basis = 'hajm';
-    rate = 110;
-    unit = 'USD/m3';
-    totalPrice = v * rate;
+    rate = isZhongshan ? 120 : 130;
   } else if (density <= 300) {
-    basis = 'hajm';
-    rate = 130;
-    unit = 'USD/m3';
-    totalPrice = v * rate;
+    rate = isZhongshan ? 140 : 150;
   } else if (density <= 400) {
-    basis = 'hajm';
-    rate = 140;
-    unit = 'USD/m3';
-    totalPrice = v * rate;
+    rate = isZhongshan ? 150 : 160;
   } else if (density <= 500) {
-    basis = 'hajm';
-    rate = 160;
-    unit = 'USD/m3';
-    totalPrice = v * rate;
+    rate = isZhongshan ? 170 : 180;
   } else {
-    basis = 'hajm';
-    rate = 180;
-    unit = 'USD/m3';
-    totalPrice = v * rate;
+    rate = isZhongshan ? 190 : 200;
   }
+
+  const totalPrice = v * rate;
 
   return {
     volume: v,
@@ -546,6 +530,7 @@ export function calculateLtlPrice(volume: number, weight: number): LtlCalculateR
     rate,
     unit,
     total_price: Math.round(totalPrice * 100) / 100,
+    route: resolvedRoute,
   };
 }
 
@@ -1240,7 +1225,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
 
   // 1. LTL Calc
   if (isPath('/cargo-kpi/ltl/calculate') && method === 'POST') {
-    const result = calculateLtlPrice(Number(body.volume) || 0, Number(body.weight) || 0);
+    const result = calculateLtlPrice(
+      Number(body.volume) || 0,
+      Number(body.weight) || 0,
+      body.route || 'yiwu-tashkent'
+    );
     return { handled: true, result };
   }
 

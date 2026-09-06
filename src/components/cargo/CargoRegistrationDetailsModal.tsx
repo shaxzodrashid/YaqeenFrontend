@@ -498,33 +498,41 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
 
             {/* Financial Ledger Breakdown */}
             <div className="space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Buy Cost */}
-                <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-semibold">{t('colBuyPrice')}:</span>
-                    <span className="font-bold text-foreground font-mono">
-                      {formatMoney(buyAmount, buyCurrency)}
-                    </span>
-                  </div>
-                  {(item as any).purchase_date && (
-                    <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                      <span>{t('purchaseRegDate')}</span>
-                      <span className="font-semibold text-foreground">
-                        {formatDateDisplay((item as any).purchase_date, locale)}
+              <div
+                className={
+                  isLtlCargo ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+                }
+              >
+                {/* Buy Cost - only for non-LTL */}
+                {!isLtlCargo && (
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold">
+                        {t('colBuyPrice')}:
+                      </span>
+                      <span className="font-bold text-foreground font-mono">
+                        {formatMoney(buyAmount, buyCurrency)}
                       </span>
                     </div>
-                  )}
-                  {(item as any).purchase_amount_usd !== undefined &&
-                    (item as any).purchase_amount_usd !== null && (
+                    {(item as any).purchase_date && (
                       <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                        <span>{t('lblEquivalentsUsdUzs')}</span>
-                        <span className="font-semibold text-foreground font-mono">
-                          {formatMoney((item as any).purchase_amount_usd, 'USD')}
+                        <span>{t('purchaseRegDate')}</span>
+                        <span className="font-semibold text-foreground">
+                          {formatDateDisplay((item as any).purchase_date, locale)}
                         </span>
                       </div>
                     )}
-                </div>
+                    {(item as any).purchase_amount_usd !== undefined &&
+                      (item as any).purchase_amount_usd !== null && (
+                        <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                          <span>{t('lblEquivalentsUsdUzs')}</span>
+                          <span className="font-semibold text-foreground font-mono">
+                            {formatMoney((item as any).purchase_amount_usd, 'USD')}
+                          </span>
+                        </div>
+                      )}
+                  </div>
+                )}
 
                 {/* Sell Price */}
                 <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">

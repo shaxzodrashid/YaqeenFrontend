@@ -286,7 +286,7 @@ export function CargoRegistrationModal({
 
   const isRmbRateRequired = useMemo(() => {
     return (
-      purchaseCurrency === 'RMB' ||
+      (cargoType !== 'LTL' && purchaseCurrency === 'RMB') ||
       sellCurrency === 'RMB' ||
       (isTurnkey && turnkeyCurrency === 'RMB') ||
       (isSpeedUp && speedUpCurrency === 'RMB') ||
@@ -576,7 +576,7 @@ export function CargoRegistrationModal({
 
   // Live Multi-Currency Calculations
   const calculatedYield = useMemo(() => {
-    const bp = parseFloat(purchasePriceStr) || 0;
+    const bp = cargoType === 'LTL' ? 0 : parseFloat(purchasePriceStr) || 0;
     const sp = parseFloat(sellPriceStr) || 0;
     const addExp = parseFloat(additionalExpenseStr) || 0;
     const intLog = cargoType === 'LTL' ? parseFloat(internalLogisticsCostStr) || 0 : 0;
@@ -751,9 +751,9 @@ export function CargoRegistrationModal({
         confirmed_date: confirmedDate || undefined,
         loaded_date: loadedDate || undefined,
         arrived_date: arrivedDate || undefined,
-        purchase_price: bp,
-        purchase_currency: purchaseCurrency,
-        purchase_date: purchaseDate || undefined,
+        purchase_price: cargoType === 'LTL' ? 0 : bp,
+        purchase_currency: cargoType === 'LTL' ? 'USD' : purchaseCurrency,
+        purchase_date: cargoType === 'LTL' ? undefined : purchaseDate || undefined,
         sell_price: sp,
         sell_currency: sellCurrency,
         sell_date: sellDate || undefined,
@@ -1172,37 +1172,8 @@ export function CargoRegistrationModal({
                 </div>
 
                 {/* Cost vs Selling Inputs */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Purchase Cost (Buy side) */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-foreground">
-                      {t('fieldCarrierCostLabel') || 'Purchase Cost (Buy)'}{' '}
-                      <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <NumberInput
-                          placeholder="0.00"
-                          value={purchasePriceStr}
-                          onValueChange={(_num, raw) => setPurchasePriceStr(raw)}
-                          allowDecimals={true}
-                          decimalScale={2}
-                          min={0}
-                        />
-                      </div>
-                      <Select
-                        value={purchaseCurrency}
-                        onChange={(val) => setPurchaseCurrency((val as CurrencyType) || 'USD')}
-                        allowClear={false}
-                        fullWidth={false}
-                        className="w-24 shrink-0"
-                        aria-label="Purchase Currency"
-                        options={CURRENCY_OPTIONS}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Selling Charge (Sell side) */}
+                {cargoType === 'LTL' ? (
+                  /* LTL Cargo: Selling price only (Purchase price is hidden) */
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
                       {t('fieldClientSellPriceLabel') || 'Selling Price (Client)'}{' '}
@@ -1230,7 +1201,67 @@ export function CargoRegistrationModal({
                       />
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Purchase Cost (Buy side) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-foreground">
+                        {t('fieldCarrierCostLabel') || 'Purchase Cost (Buy)'}{' '}
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <NumberInput
+                            placeholder="0.00"
+                            value={purchasePriceStr}
+                            onValueChange={(_num, raw) => setPurchasePriceStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={2}
+                            min={0}
+                          />
+                        </div>
+                        <Select
+                          value={purchaseCurrency}
+                          onChange={(val) => setPurchaseCurrency((val as CurrencyType) || 'USD')}
+                          allowClear={false}
+                          fullWidth={false}
+                          className="w-24 shrink-0"
+                          aria-label="Purchase Currency"
+                          options={CURRENCY_OPTIONS}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Selling Charge (Sell side) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-foreground">
+                        {t('fieldClientSellPriceLabel') || 'Selling Price (Client)'}{' '}
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <NumberInput
+                            placeholder="0.00"
+                            value={sellPriceStr}
+                            onValueChange={(_num, raw) => setSellPriceStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={2}
+                            min={0}
+                          />
+                        </div>
+                        <Select
+                          value={sellCurrency}
+                          onChange={(val) => setSellCurrency((val as CurrencyType) || 'USD')}
+                          allowClear={false}
+                          fullWidth={false}
+                          className="w-24 shrink-0"
+                          aria-label="Sell Currency"
+                          options={CURRENCY_OPTIONS}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Additional Expense & Internal Logistics Cost (Internal Logistics is LTL only) */}
                 <div

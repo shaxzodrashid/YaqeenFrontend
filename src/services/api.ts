@@ -48,6 +48,7 @@ export type {
 } from './clients.service';
 
 export type {
+  LtlRoute,
   LtlCalculateDto,
   LtlCalculateResult,
   LtlCargoType,
@@ -244,7 +245,7 @@ export { authApi } from './auth.service';
 export { departmentsApi, employeesApi } from './employees.service';
 export { attachmentsApi } from './attachments.service';
 export { clientsApi } from './clients.service';
-export { cargoKpiApi } from './cargoKpi.service';
+export { cargoKpiApi, calculateLtlPrice } from './cargoKpi.service';
 export { cargoRegistrationsApi } from './cargoRegistrations.service';
 export { cargoConsolidationsApi as consolidationsApi } from './cargoConsolidations.service';
 export { financeApi } from './finance.service';
