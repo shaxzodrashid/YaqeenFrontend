@@ -13,12 +13,14 @@ export interface DashboardFilterParams {
   end_date?: string;
   employee_id?: string;
   client_id?: string;
+  agent_id?: string;
   status?: string;
   cargo_type?: string;
   transport_type?: DashboardTransportType;
   transport_types?: DashboardTransportType[] | string;
   limit?: number;
   currency?: 'UZS' | 'USD' | 'RUB' | 'RMB' | 'CNY' | string;
+  include_cargos?: boolean;
 }
 
 export interface DashboardSalesProgressMeta {
@@ -254,6 +256,58 @@ export interface CreditorCarrierItem {
   orderCount: number;
 }
 
+export interface DebtCargoStatusBreakdownItem {
+  status: string;
+  label: string;
+  count: number;
+  amount: number;
+  percentage: number;
+  color: string;
+  totalVolume?: number;
+  totalWeight?: number;
+}
+
+export interface DebtPaymentStatusBreakdownItem {
+  paymentStatus: string;
+  label: string;
+  count: number;
+  amount: number;
+  percentage: number;
+  color: string;
+}
+
+export interface DebtOverallStatusBreakdownItem {
+  status: string;
+  label: string;
+  count: number;
+  receivableAmount: number;
+  payableAmount: number;
+  netBalance: number;
+  totalAmount: number;
+  percentage: number;
+  color: string;
+}
+
+export interface ScopedCargoItem {
+  id: string;
+  cargo: string;
+  cargoType?: string;
+  containerTruckId?: string;
+  status: string;
+  statusLabel?: string;
+  statusColor?: string;
+  paymentStatus?: string;
+  paymentStatusLabel?: string;
+  paymentStatusColor?: string;
+  clientId?: string;
+  clientName?: string;
+  agentName?: string;
+  sellPrice?: number;
+  purchasePrice?: number;
+  currency?: string;
+  confirmedDate?: string;
+}
+
 export interface DashboardDebtSummaryResponse {
   currency?: string;
   accountsReceivable: number;
@@ -261,6 +315,15 @@ export interface DashboardDebtSummaryResponse {
   netBalance: number;
   debtorClientCount?: number;
   creditorCarrierCount?: number;
+  totalScopedCargos?: number;
+  totalReceivableCargos?: number;
+  totalPayableCargos?: number;
+  receivableStatusBreakdown?: DebtCargoStatusBreakdownItem[];
+  payableStatusBreakdown?: DebtCargoStatusBreakdownItem[];
+  receivablePaymentStatusBreakdown?: DebtPaymentStatusBreakdownItem[];
+  payablePaymentStatusBreakdown?: DebtPaymentStatusBreakdownItem[];
+  overallStatusBreakdown?: DebtOverallStatusBreakdownItem[];
   topDebtorClients?: DebtorClientItem[];
   topCreditorCarriers?: CreditorCarrierItem[];
+  scopedCargos?: ScopedCargoItem[];
 }

@@ -35,7 +35,11 @@ function buildQueryString(params?: DashboardFilterParams): string {
     );
   }
   if (params.currency) searchParams.append('currency', params.currency);
+  if (params.agent_id) searchParams.append('agent_id', params.agent_id);
   if (params.limit !== undefined) searchParams.append('limit', String(params.limit));
+  if (params.include_cargos !== undefined) {
+    searchParams.append('include_cargos', String(params.include_cargos));
+  }
 
   const str = searchParams.toString();
   return str ? `?${str}` : '';
@@ -350,6 +354,144 @@ function getDemoDebtSummary(): DashboardDebtSummaryResponse {
     netBalance: 6700.0,
     debtorClientCount: 8,
     creditorCarrierCount: 5,
+    totalScopedCargos: 12,
+    totalReceivableCargos: 10,
+    totalPayableCargos: 8,
+    receivableStatusBreakdown: [
+      {
+        status: 'On the way',
+        label: 'Yo‘lda (On the way)',
+        count: 5,
+        amount: 12500.0,
+        percentage: 51.02,
+        color: '#3B82F6',
+        totalVolume: 180.5,
+        totalWeight: 25400.0,
+      },
+      {
+        status: 'Arrived',
+        label: 'Yetib kelgan (Arrived)',
+        count: 3,
+        amount: 7500.0,
+        percentage: 30.61,
+        color: '#10B981',
+        totalVolume: 95.0,
+        totalWeight: 14200.0,
+      },
+      {
+        status: 'Waiting',
+        label: 'Kutilmoqda (Waiting)',
+        count: 2,
+        amount: 4500.0,
+        percentage: 18.37,
+        color: '#F59E0B',
+        totalVolume: 45.0,
+        totalWeight: 6800.0,
+      },
+    ],
+    payableStatusBreakdown: [
+      {
+        status: 'On the way',
+        label: 'Yo‘lda (On the way)',
+        count: 4,
+        amount: 10200.0,
+        percentage: 57.3,
+        color: '#3B82F6',
+        totalVolume: 140.0,
+        totalWeight: 21000.0,
+      },
+      {
+        status: 'Arrived',
+        label: 'Yetib kelgan (Arrived)',
+        count: 2,
+        amount: 4600.0,
+        percentage: 25.84,
+        color: '#10B981',
+        totalVolume: 65.0,
+        totalWeight: 9800.0,
+      },
+      {
+        status: 'Waiting',
+        label: 'Kutilmoqda (Waiting)',
+        count: 2,
+        amount: 3000.0,
+        percentage: 16.85,
+        color: '#F59E0B',
+        totalVolume: 45.0,
+        totalWeight: 6800.0,
+      },
+    ],
+    receivablePaymentStatusBreakdown: [
+      {
+        paymentStatus: 'waiting',
+        label: 'Kutilmoqda (Waiting)',
+        count: 7,
+        amount: 16500.0,
+        percentage: 67.35,
+        color: '#F59E0B',
+      },
+      {
+        paymentStatus: 'unpaid',
+        label: 'To‘lanmagan (Unpaid)',
+        count: 3,
+        amount: 8000.0,
+        percentage: 32.65,
+        color: '#EF4444',
+      },
+    ],
+    payablePaymentStatusBreakdown: [
+      {
+        paymentStatus: 'waiting',
+        label: 'Kutilmoqda (Waiting)',
+        count: 6,
+        amount: 13800.0,
+        percentage: 77.53,
+        color: '#F59E0B',
+      },
+      {
+        paymentStatus: 'unpaid',
+        label: 'To‘lanmagan (Unpaid)',
+        count: 2,
+        amount: 4000.0,
+        percentage: 22.47,
+        color: '#EF4444',
+      },
+    ],
+    overallStatusBreakdown: [
+      {
+        status: 'On the way',
+        label: 'Yo‘lda (On the way)',
+        count: 5,
+        receivableAmount: 12500.0,
+        payableAmount: 10200.0,
+        netBalance: 2300.0,
+        totalAmount: 22700.0,
+        percentage: 53.66,
+        color: '#3B82F6',
+      },
+      {
+        status: 'Arrived',
+        label: 'Yetib kelgan (Arrived)',
+        count: 3,
+        receivableAmount: 7500.0,
+        payableAmount: 4600.0,
+        netBalance: 2900.0,
+        totalAmount: 12100.0,
+        percentage: 28.61,
+        color: '#10B981',
+      },
+      {
+        status: 'Waiting',
+        label: 'Kutilmoqda (Waiting)',
+        count: 2,
+        receivableAmount: 4500.0,
+        payableAmount: 3000.0,
+        netBalance: 1500.0,
+        totalAmount: 7500.0,
+        percentage: 17.73,
+        color: '#F59E0B',
+      },
+    ],
     topDebtorClients: [
       {
         clientId: 'cli-1',
@@ -369,6 +511,27 @@ function getDemoDebtSummary(): DashboardDebtSummaryResponse {
     topCreditorCarriers: [
       { agentName: 'Silk Road Logistics', amount: 9500.0, orderCount: 3 },
       { agentName: 'Baytur Turkish', amount: 5200.0, orderCount: 2 },
+    ],
+    scopedCargos: [
+      {
+        id: 'e4468f3a-c8cf-481b-b461-9c6bc7631623',
+        cargo: 'Avtomobil ehtiyot qismlari',
+        cargoType: 'FTL',
+        containerTruckId: 'TRK-9821',
+        status: 'On the way',
+        statusLabel: 'Yo‘lda (On the way)',
+        statusColor: '#3B82F6',
+        paymentStatus: 'waiting',
+        paymentStatusLabel: 'Kutilmoqda (Waiting)',
+        paymentStatusColor: '#F59E0B',
+        clientId: 'c1f8832a-5e2b-4c12-881b-9f93120d5102',
+        clientName: 'OOO Global Express',
+        agentName: 'Silk Road Logistics',
+        sellPrice: 4500.0,
+        purchasePrice: 3200.0,
+        currency: 'USD',
+        confirmedDate: '2026-08-15',
+      },
     ],
   };
 }

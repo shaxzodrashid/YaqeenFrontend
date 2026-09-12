@@ -21,6 +21,7 @@ import {
   Check,
   BarChart3,
   Truck,
+  Sparkles,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -40,6 +41,7 @@ export type PageId =
   | 'profile'
   | 'cargo'
   | 'kpi'
+  | 'kpi-alerts'
   | 'finance'
   | 'roles'
   | 'tasks';
@@ -308,6 +310,13 @@ export function Sidebar({
       id: 'kpi',
       icon: <BarChart3 className="size-5 shrink-0" />,
       label: t('navKpi'),
+      moduleKey: 'cargo_kpi',
+      category: 'operations',
+    },
+    {
+      id: 'kpi-alerts',
+      icon: <Sparkles className="size-5 shrink-0" />,
+      label: t('navKpiAlerts'),
       moduleKey: 'cargo_kpi',
       category: 'operations',
     },

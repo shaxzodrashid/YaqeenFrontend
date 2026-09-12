@@ -19,6 +19,9 @@ import { RolesPage } from './roles/RolesPage';
 import { TasksPage } from './tasks/TasksPage';
 import { CommercialOffersPage } from './commercial/CommercialOffersPage';
 import { AgentsPage } from './agents/AgentsPage';
+import { KpiAlertsPage, MonthEndReviewModal } from './kpiAlerts';
+import { kpiAlertsApi } from '../services/kpiAlerts.service';
+import type { KpiAlertPopupResponse } from '../types/kpiAlerts';
 
 interface DashboardProps {
   userPhone: string;
@@ -39,6 +42,7 @@ const pageModuleMap: Record<string, string> = {
   departments: 'departments',
   cargo: 'cargo_kpi',
   kpi: 'cargo_kpi',
+  'kpi-alerts': 'cargo_kpi',
   finance: 'finance',
   roles: 'roles',
   tasks: 'tasks',
@@ -53,6 +57,8 @@ export function Dashboard({
   const [currentPage, setCurrentPage] = useState<PageId>('overview');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [popupData, setPopupData] = useState<KpiAlertPopupResponse | null>(null);
+  const [autoPopupOpen, setAutoPopupOpen] = useState<boolean>(false);
   const { canRead } = usePermissions();
   const user = tokenStore.getUser();
 
@@ -65,6 +71,22 @@ export function Dashboard({
       setCurrentPage('overview');
     }
   }, [currentPage, canRead]);
+
+  // Check month-end KPI pop-up trigger for CEO & ROP
+  useEffect(() => {
+    if (isAdmin) {
+      kpiAlertsApi
+        .getPopupData()
+        .then((res) => {
+          setPopupData(res);
+          const shown = sessionStorage.getItem('yaqeen_month_end_popup_shown');
+          if (res?.should_popup && shown !== 'true') {
+            setAutoPopupOpen(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAdmin]);
 
   // Fetch departments list globally on load to share with pages
   useEffect(() => {
@@ -97,6 +119,8 @@ export function Dashboard({
         return <CargoPage />;
       case 'kpi':
         return <KpiPage />;
+      case 'kpi-alerts':
+        return <KpiAlertsPage />;
       case 'finance':
         return <FinancePage />;
       case 'roles':
@@ -155,6 +179,35 @@ export function Dashboard({
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Month-End Interactive Pop-up for Executive Review */}
+      <MonthEndReviewModal
+        isOpen={autoPopupOpen}
+        popupData={popupData}
+        onClose={() => {
+          sessionStorage.setItem('yaqeen_month_end_popup_shown', 'true');
+          setAutoPopupOpen(false);
+        }}
+        onDecide={(_s, _action) => {
+          sessionStorage.setItem('yaqeen_month_end_popup_shown', 'true');
+          setAutoPopupOpen(false);
+          setCurrentPage('kpi-alerts');
+        }}
+        onDismiss={async (alertId) => {
+          await kpiAlertsApi.dismissAlert(alertId);
+          if (popupData) {
+            setPopupData({
+              ...popupData,
+              suggestions: popupData.suggestions.filter((s) => s.alert_id !== alertId),
+            });
+          }
+        }}
+        onNavigateToFullPage={() => {
+          sessionStorage.setItem('yaqeen_month_end_popup_shown', 'true');
+          setAutoPopupOpen(false);
+          setCurrentPage('kpi-alerts');
+        }}
+      />
     </div>
   );
 }

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Calculator, Crown, Award, Target } from 'lucide-react';
+import { BarChart3, Calculator, Crown, Award, Target, Sparkles } from 'lucide-react';
 import { T } from '../T';
 import { LtlCalcTab } from './LtlCalcTab';
 import { RopSeoModuleTab } from './RopSeoModuleTab';
 import { EmployeePlansTab } from './EmployeePlansTab';
 import { SalesManagerKpiTab } from './SalesManagerKpiTab';
+import { KpiAlertsPage } from '../kpiAlerts';
 
-export type KpiTabId = 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans';
+export type KpiTabId = 'ltl-calc' | 'rop-seo' | 'sales-manager' | 'plans' | 'alerts';
 
 export function KpiPage() {
   const [activeTab, setActiveTab] = useState<KpiTabId>('ltl-calc');
@@ -17,6 +18,7 @@ export function KpiPage() {
     { id: 'rop-seo', labelKey: 'tabRopKpi', icon: <Crown className="size-4" /> },
     { id: 'sales-manager', labelKey: 'tabSalesManagerKpi', icon: <Award className="size-4" /> },
     { id: 'plans', labelKey: 'tabPlans', icon: <Target className="size-4" /> },
+    { id: 'alerts', labelKey: 'tabKpiAlerts', icon: <Sparkles className="size-4" /> },
   ];
 
   const renderTabContent = () => {
@@ -29,6 +31,8 @@ export function KpiPage() {
         return <SalesManagerKpiTab />;
       case 'plans':
         return <EmployeePlansTab />;
+      case 'alerts':
+        return <KpiAlertsPage />;
       default:
         return <LtlCalcTab />;
     }

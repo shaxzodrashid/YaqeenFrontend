@@ -309,6 +309,10 @@ export type {
   DashboardDeliveryEfficiencyResponse,
   DebtorClientItem,
   CreditorCarrierItem,
+  DebtCargoStatusBreakdownItem,
+  DebtPaymentStatusBreakdownItem,
+  DebtOverallStatusBreakdownItem,
+  ScopedCargoItem,
   DashboardDebtSummaryResponse,
 } from '../types/dashboard';
 
