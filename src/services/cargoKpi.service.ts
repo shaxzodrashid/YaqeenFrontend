@@ -10,7 +10,7 @@ import { cargoRegistrationsApi } from './cargoRegistrations.service';
 // ---------------------------------------------------------------------------
 
 // 1. LTL Calculator
-export type LtlRoute = 'yiwu-tashkent' | 'zhongshan-tashkent';
+export type LtlRoute = 'yiwu-tashkent' | 'guangzhou-tashkent' | 'zhongshan-tashkent';
 
 export interface LtlCalculateDto {
   volume: number;
@@ -499,25 +499,29 @@ export function calculateLtlPrice(
   const w = Math.max(0, weight);
   const density = v > 0 ? w / v : 0;
 
-  const isZhongshan = typeof route === 'string' && route.toLowerCase().includes('zhongshan');
-  const resolvedRoute: LtlRoute = isZhongshan ? 'zhongshan-tashkent' : 'yiwu-tashkent';
+  const isGuangzhou =
+    typeof route === 'string' &&
+    (route.toLowerCase().includes('guangzhou') ||
+      route.toLowerCase().includes('zhongshan') ||
+      route.toLowerCase().includes('zhoushan'));
+  const resolvedRoute: LtlRoute = isGuangzhou ? 'guangzhou-tashkent' : 'yiwu-tashkent';
 
   const basis = 'hajm' as const;
   const unit = 'USD/m3';
   let rate = 0;
 
   if (density <= 100) {
-    rate = isZhongshan ? 110 : 120;
+    rate = isGuangzhou ? 110 : 120;
   } else if (density <= 200) {
-    rate = isZhongshan ? 120 : 130;
+    rate = isGuangzhou ? 120 : 130;
   } else if (density <= 300) {
-    rate = isZhongshan ? 140 : 150;
+    rate = isGuangzhou ? 140 : 150;
   } else if (density <= 400) {
-    rate = isZhongshan ? 150 : 160;
+    rate = isGuangzhou ? 150 : 160;
   } else if (density <= 500) {
-    rate = isZhongshan ? 170 : 180;
+    rate = isGuangzhou ? 170 : 180;
   } else {
-    rate = isZhongshan ? 190 : 200;
+    rate = isGuangzhou ? 190 : 200;
   }
 
   const totalPrice = v * rate;

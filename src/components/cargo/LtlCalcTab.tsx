@@ -26,6 +26,22 @@ interface TierItem {
   desc: string;
 }
 
+const GUANGZHOU_TIERS: TierItem[] = [
+  { minD: 0, maxD: 100, basis: 'hajm', rate: 110, unit: 'USD/m³', desc: '0 - 100 kg/m³' },
+  { minD: 100, maxD: 200, basis: 'hajm', rate: 120, unit: 'USD/m³', desc: '101 - 200 kg/m³' },
+  { minD: 200, maxD: 300, basis: 'hajm', rate: 140, unit: 'USD/m³', desc: '201 - 300 kg/m³' },
+  { minD: 300, maxD: 400, basis: 'hajm', rate: 150, unit: 'USD/m³', desc: '301 - 400 kg/m³' },
+  { minD: 400, maxD: 500, basis: 'hajm', rate: 170, unit: 'USD/m³', desc: '401 - 500 kg/m³' },
+  {
+    minD: 500,
+    maxD: Infinity,
+    basis: 'hajm',
+    rate: 190,
+    unit: 'USD/m³',
+    desc: '501 - 700 kg/m³',
+  },
+];
+
 const ROUTE_TIERS_CONFIG: Record<LtlRoute, TierItem[]> = {
   'yiwu-tashkent': [
     { minD: 0, maxD: 100, basis: 'hajm', rate: 120, unit: 'USD/m³', desc: '0 - 100 kg/m³' },
@@ -42,21 +58,8 @@ const ROUTE_TIERS_CONFIG: Record<LtlRoute, TierItem[]> = {
       desc: '501 - 700 kg/m³',
     },
   ],
-  'zhongshan-tashkent': [
-    { minD: 0, maxD: 100, basis: 'hajm', rate: 110, unit: 'USD/m³', desc: '0 - 100 kg/m³' },
-    { minD: 100, maxD: 200, basis: 'hajm', rate: 120, unit: 'USD/m³', desc: '101 - 200 kg/m³' },
-    { minD: 200, maxD: 300, basis: 'hajm', rate: 140, unit: 'USD/m³', desc: '201 - 300 kg/m³' },
-    { minD: 300, maxD: 400, basis: 'hajm', rate: 150, unit: 'USD/m³', desc: '301 - 400 kg/m³' },
-    { minD: 400, maxD: 500, basis: 'hajm', rate: 170, unit: 'USD/m³', desc: '401 - 500 kg/m³' },
-    {
-      minD: 500,
-      maxD: Infinity,
-      basis: 'hajm',
-      rate: 190,
-      unit: 'USD/m³',
-      desc: '501 - 700 kg/m³',
-    },
-  ],
+  'guangzhou-tashkent': GUANGZHOU_TIERS,
+  'zhongshan-tashkent': GUANGZHOU_TIERS,
 };
 
 export function LtlCalcTab() {
@@ -73,9 +76,9 @@ export function LtlCalcTab() {
         description: 'China (Yiwu) → Uzbekistan (Tashkent)',
       },
       {
-        value: 'zhongshan-tashkent',
-        label: t('routeZhongshanTashkent') || 'Zhongshan — Toshkent',
-        description: 'China (Zhongshan) → Uzbekistan (Tashkent)',
+        value: 'guangzhou-tashkent',
+        label: t('routeGuangzhouTashkent') || 'Guangzhou — Toshkent',
+        description: 'China (Guangzhou) → Uzbekistan (Tashkent)',
       },
     ],
     [t]
@@ -148,7 +151,7 @@ export function LtlCalcTab() {
                 {t('ltlRouteSelect') || 'Transport Route'}
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-brand-gold/15 text-brand-gold font-bold">
-                {selectedRoute === 'zhongshan-tashkent' ? 'ZHONGSHAN' : 'YIWU'}
+                {selectedRoute === 'yiwu-tashkent' ? 'YIWU' : 'GUANGZHOU'}
               </span>
             </label>
             <Select
@@ -240,9 +243,7 @@ export function LtlCalcTab() {
                     {t('cargoTotalPrice')}
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-neutral-200 border border-white/10 font-bold uppercase">
-                    {selectedRoute === 'zhongshan-tashkent'
-                      ? 'Zhongshan → Toshkent'
-                      : 'Yiwu → Toshkent'}
+                    {selectedRoute === 'yiwu-tashkent' ? 'Yiwu → Toshkent' : 'Guangzhou → Toshkent'}
                   </span>
                 </div>
                 <p className="text-xs text-neutral-300 mt-0.5">
