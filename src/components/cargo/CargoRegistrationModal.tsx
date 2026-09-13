@@ -51,6 +51,7 @@ import type {
 } from '../../services/api';
 import { EmployeeSelect } from './EmployeeSelect';
 import { ClientSelect } from './ClientSelect';
+import { AgentSelect } from '../agents/AgentSelect';
 import { ConsolidationSelect } from './ConsolidationSelect';
 import { ConsolidationModal } from './ConsolidationModal';
 import { RouteSelector, type RouteState } from './RouteSelector';
@@ -140,6 +141,7 @@ export interface CargoRegistrationModalProps {
   onSuccess: () => void;
   editingId?: string | null;
   duplicateFromId?: string | null;
+  initialData?: any;
   initialStatus?: CargoRegistrationStatus;
   initialCargoType?: CargoType;
   lockCargoType?: CargoType;
@@ -154,6 +156,7 @@ export function CargoRegistrationModal({
   onSuccess,
   editingId,
   duplicateFromId,
+  initialData,
   initialStatus = 'Waiting',
   initialCargoType = 'LTL',
   lockCargoType,
@@ -180,6 +183,7 @@ export function CargoRegistrationModal({
 
   // Identifiers & Physical Specs
   const [containerTruckId, setContainerTruckId] = useState<string>(initialContainerTruckId || '');
+  const [agentId, setAgentId] = useState<string>('');
   const [agentName, setAgentName] = useState<string>('SilkRoad Express');
   const [cargo, setCargo] = useState<string>('General Cargo');
   const [volumeStr, setVolumeStr] = useState<string>('10');
@@ -219,6 +223,9 @@ export function CargoRegistrationModal({
 
   const [internalLogisticsCostStr, setInternalLogisticsCostStr] = useState<string>('');
   const [internalLogisticsCurrency, setInternalLogisticsCurrency] = useState<CurrencyType>('USD');
+
+  const [certificatePriceStr, setCertificatePriceStr] = useState<string>('');
+  const [certificateCurrency, setCertificateCurrency] = useState<CurrencyType>('USD');
 
   const [isTurnkey, setIsTurnkey] = useState<boolean>(false);
   const [turnkeyPriceStr, setTurnkeyPriceStr] = useState<string>('');
@@ -284,14 +291,15 @@ export function CargoRegistrationModal({
 
   const isRmbRateRequired = useMemo(() => {
     return (
-      purchaseCurrency === 'RMB' ||
+      (cargoType !== 'LTL' && purchaseCurrency === 'RMB') ||
       sellCurrency === 'RMB' ||
       (isTurnkey && turnkeyCurrency === 'RMB') ||
       (isSpeedUp && speedUpCurrency === 'RMB') ||
       additionalExpenseCurrency === 'RMB' ||
       (cargoType === 'LTL' &&
         parseFloat(internalLogisticsCostStr) > 0 &&
-        internalLogisticsCurrency === 'RMB')
+        internalLogisticsCurrency === 'RMB') ||
+      (parseFloat(certificatePriceStr) > 0 && certificateCurrency === 'RMB')
     );
   }, [
     purchaseCurrency,
@@ -304,6 +312,8 @@ export function CargoRegistrationModal({
     cargoType,
     internalLogisticsCostStr,
     internalLogisticsCurrency,
+    certificatePriceStr,
+    certificateCurrency,
   ]);
 
   // Initialize or fetch details
@@ -320,7 +330,8 @@ export function CargoRegistrationModal({
           setSelectedEmpId(detail.employee_id || myEmployeeId || '');
           setConsolidationId(detail.consolidation_id || (detail.consolidation?.id ?? null));
           setContainerTruckId(detail.container_truck_id || '');
-          setAgentName(detail.agent_name || '');
+          setAgentId((detail as any).agent_id || (detail as any).agent?.id || '');
+          setAgentName(detail.agent_name || (detail as any).agent?.display_name || '');
           setCargo(detail.cargo || '');
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
@@ -366,6 +377,11 @@ export function CargoRegistrationModal({
             setInternalLogisticsCostStr('');
             setInternalLogisticsCurrency('USD');
           }
+
+          const certVal =
+            (detail as any).certificate_price ?? (detail as any).certificate ?? (detail as any).cct;
+          setCertificatePriceStr(certVal && certVal > 0 ? String(certVal) : '');
+          setCertificateCurrency((detail as any).certificate_currency || 'USD');
 
           setIsTurnkey(Boolean(detail.is_turnkey));
           setTurnkeyPriceStr(
@@ -421,7 +437,8 @@ export function CargoRegistrationModal({
             copyTruckId = `${detail.container_truck_id}-1`;
           }
           setContainerTruckId(copyTruckId);
-          setAgentName(detail.agent_name || '');
+          setAgentId((detail as any).agent_id || (detail as any).agent?.id || '');
+          setAgentName(detail.agent_name || (detail as any).agent?.display_name || '');
           setCargo(detail.cargo || '');
           setVolumeStr(detail.volume ? String(detail.volume) : '');
           setWeightStr(detail.weight ? String(detail.weight) : '');
@@ -459,6 +476,11 @@ export function CargoRegistrationModal({
             setInternalLogisticsCostStr('');
             setInternalLogisticsCurrency('USD');
           }
+
+          const certVal =
+            (detail as any).certificate_price ?? (detail as any).certificate ?? (detail as any).cct;
+          setCertificatePriceStr(certVal && certVal > 0 ? String(certVal) : '');
+          setCertificateCurrency((detail as any).certificate_currency || 'USD');
 
           setIsTurnkey(Boolean(detail.is_turnkey));
           setTurnkeyPriceStr(
@@ -507,6 +529,7 @@ export function CargoRegistrationModal({
       setContainerTruckId(
         initialContainerTruckId || 'TRK-' + Math.floor(1000 + Math.random() * 9000)
       );
+      setAgentId('');
       setAgentName('SilkRoad Express');
       setCargo('General Cargo');
       setVolumeStr('10');
@@ -527,6 +550,14 @@ export function CargoRegistrationModal({
       setAdditionalExpenseCurrency('USD');
       setInternalLogisticsCostStr('');
       setInternalLogisticsCurrency('USD');
+      if (initialData) {
+        const certVal = initialData.certificate_price ?? initialData.certificate ?? initialData.cct;
+        setCertificatePriceStr(certVal && certVal > 0 ? String(certVal) : '');
+        setCertificateCurrency(initialData.certificate_currency || 'USD');
+      } else {
+        setCertificatePriceStr('');
+        setCertificateCurrency('USD');
+      }
       setIsTurnkey(false);
       setTurnkeyPriceStr('');
       setTurnkeyCurrency('USD');
@@ -560,6 +591,7 @@ export function CargoRegistrationModal({
     isOpen,
     editingId,
     duplicateFromId,
+    initialData,
     initialStatus,
     initialCargoType,
     lockCargoType,
@@ -571,10 +603,11 @@ export function CargoRegistrationModal({
 
   // Live Multi-Currency Calculations
   const calculatedYield = useMemo(() => {
-    const bp = parseFloat(purchasePriceStr) || 0;
+    const bp = cargoType === 'LTL' ? 0 : parseFloat(purchasePriceStr) || 0;
     const sp = parseFloat(sellPriceStr) || 0;
     const addExp = parseFloat(additionalExpenseStr) || 0;
     const intLog = cargoType === 'LTL' ? parseFloat(internalLogisticsCostStr) || 0 : 0;
+    const certPrice = parseFloat(certificatePriceStr) || 0;
     const turnkeyVal = isTurnkey ? parseFloat(turnkeyPriceStr) || 0 : 0;
     const speedUpVal = isSpeedUp ? parseFloat(speedUpStr) || 0 : 0;
     const rate = parseFloat(usdRmbRateStr) || 7.235;
@@ -609,6 +642,14 @@ export function CargoRegistrationModal({
       rate,
       cbuRates
     );
+    const certConv = convertPriceToUsdAndUzs(
+      certPrice,
+      certificateCurrency,
+      purchaseDate,
+      null,
+      rate,
+      cbuRates
+    );
     const sellConv = convertPriceToUsdAndUzs(sp, sellCurrency, sellDate, null, rate, cbuRates);
     const turnkeyConv = convertPriceToUsdAndUzs(
       turnkeyVal,
@@ -633,9 +674,7 @@ export function CargoRegistrationModal({
       (speedUpVal > 0 ? speedUpConv.amount_usd : 0);
 
     const totalOutcomeUsd =
-      purConv.amount_usd +
-      (addExp > 0 ? addExpConv.amount_usd : 0) +
-      (cargoType === 'LTL' && intLog > 0 ? intLogConv.amount_usd : 0);
+      purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
 
     const netProfitUsd = totalIncomeUsd - totalOutcomeUsd;
     const roiPct = totalOutcomeUsd > 0 ? (netProfitUsd / totalOutcomeUsd) * 100 : 0;
@@ -658,6 +697,8 @@ export function CargoRegistrationModal({
     additionalExpenseCurrency,
     internalLogisticsCostStr,
     internalLogisticsCurrency,
+    certificatePriceStr,
+    certificateCurrency,
     isTurnkey,
     turnkeyPriceStr,
     turnkeyCurrency,
@@ -699,6 +740,7 @@ export function CargoRegistrationModal({
     const sp = parseFloat(sellPriceStr) || 0;
     const addExp = parseFloat(additionalExpenseStr) || 0;
     const intLog = cargoType === 'LTL' ? parseFloat(internalLogisticsCostStr) || 0 : 0;
+    const certPrice = parseFloat(certificatePriceStr) || 0;
     const turnkeyVal = isTurnkey ? parseFloat(turnkeyPriceStr) || 0 : 0;
     const speedUpVal = isSpeedUp ? parseFloat(speedUpStr) || 0 : 0;
     const rate = parseFloat(usdRmbRateStr) || 0;
@@ -728,6 +770,7 @@ export function CargoRegistrationModal({
         weight: cargoType === 'LTL' ? wt : undefined,
         container_type: cargoType === 'FTL' ? containerType : undefined,
         container_truck_id: containerTruckId.trim(),
+        agent_id: agentId || undefined,
         agent_name: agentName.trim(),
         cargo: cargo.trim(),
         origin_city: route.origin_city || undefined,
@@ -745,9 +788,9 @@ export function CargoRegistrationModal({
         confirmed_date: confirmedDate || undefined,
         loaded_date: loadedDate || undefined,
         arrived_date: arrivedDate || undefined,
-        purchase_price: bp,
-        purchase_currency: purchaseCurrency,
-        purchase_date: purchaseDate || undefined,
+        purchase_price: cargoType === 'LTL' ? 0 : bp,
+        purchase_currency: cargoType === 'LTL' ? 'USD' : purchaseCurrency,
+        purchase_date: cargoType === 'LTL' ? undefined : purchaseDate || undefined,
         sell_price: sp,
         sell_currency: sellCurrency,
         sell_date: sellDate || undefined,
@@ -756,6 +799,8 @@ export function CargoRegistrationModal({
         internal_logistics_cost: cargoType === 'LTL' && intLog > 0 ? intLog : undefined,
         internal_logistics_currency:
           cargoType === 'LTL' && intLog > 0 ? internalLogisticsCurrency : undefined,
+        certificate_price: certPrice,
+        certificate_currency: certificateCurrency,
         is_turnkey: isTurnkey,
         turnkey_price: isTurnkey ? turnkeyVal : 0,
         turnkey_currency: isTurnkey ? turnkeyCurrency : undefined,
@@ -975,18 +1020,25 @@ export function CargoRegistrationModal({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-foreground mb-1.5">
-                      {t('colCarrier') || 'Carrier / Agent Name'}{' '}
-                      <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
+                    <AgentSelect
+                      value={agentId}
+                      onChange={(selectedId, selectedName) => {
+                        setAgentId(selectedId);
+                        setAgentName(selectedName);
+                      }}
+                      onClear={() => {
+                        setAgentId('');
+                        setAgentName('');
+                      }}
+                      label={t('colCarrier') || 'Carrier / Agent Name'}
                       required
-                      value={agentName}
-                      onChange={(e) => setAgentName(e.target.value)}
-                      placeholder="e.g. SilkRoad Logistics"
-                      className="w-full px-3 py-2 rounded-xl border border-field-border bg-field text-field-foreground text-xs font-semibold focus:ring-2 focus:ring-focus/30"
                     />
+                    {!agentId && agentName && (
+                      <p className="text-[11px] text-muted mt-1 truncate">
+                        Current carrier:{' '}
+                        <span className="font-semibold text-foreground">{agentName}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1159,37 +1211,8 @@ export function CargoRegistrationModal({
                 </div>
 
                 {/* Cost vs Selling Inputs */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Purchase Cost (Buy side) */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-foreground">
-                      {t('fieldCarrierCostLabel') || 'Purchase Cost (Buy)'}{' '}
-                      <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <NumberInput
-                          placeholder="0.00"
-                          value={purchasePriceStr}
-                          onValueChange={(_num, raw) => setPurchasePriceStr(raw)}
-                          allowDecimals={true}
-                          decimalScale={2}
-                          min={0}
-                        />
-                      </div>
-                      <Select
-                        value={purchaseCurrency}
-                        onChange={(val) => setPurchaseCurrency((val as CurrencyType) || 'USD')}
-                        allowClear={false}
-                        fullWidth={false}
-                        className="w-24 shrink-0"
-                        aria-label="Purchase Currency"
-                        options={CURRENCY_OPTIONS}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Selling Charge (Sell side) */}
+                {cargoType === 'LTL' ? (
+                  /* LTL Cargo: Selling price only (Purchase price is hidden) */
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-foreground">
                       {t('fieldClientSellPriceLabel') || 'Selling Price (Client)'}{' '}
@@ -1217,12 +1240,74 @@ export function CargoRegistrationModal({
                       />
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Purchase Cost (Buy side) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-foreground">
+                        {t('fieldCarrierCostLabel') || 'Purchase Cost (Buy)'}{' '}
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <NumberInput
+                            placeholder="0.00"
+                            value={purchasePriceStr}
+                            onValueChange={(_num, raw) => setPurchasePriceStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={2}
+                            min={0}
+                          />
+                        </div>
+                        <Select
+                          value={purchaseCurrency}
+                          onChange={(val) => setPurchaseCurrency((val as CurrencyType) || 'USD')}
+                          allowClear={false}
+                          fullWidth={false}
+                          className="w-24 shrink-0"
+                          aria-label="Purchase Currency"
+                          options={CURRENCY_OPTIONS}
+                        />
+                      </div>
+                    </div>
 
-                {/* Additional Expense & Internal Logistics Cost (Internal Logistics is LTL only) */}
+                    {/* Selling Charge (Sell side) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-foreground">
+                        {t('fieldClientSellPriceLabel') || 'Selling Price (Client)'}{' '}
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <NumberInput
+                            placeholder="0.00"
+                            value={sellPriceStr}
+                            onValueChange={(_num, raw) => setSellPriceStr(raw)}
+                            allowDecimals={true}
+                            decimalScale={2}
+                            min={0}
+                          />
+                        </div>
+                        <Select
+                          value={sellCurrency}
+                          onChange={(val) => setSellCurrency((val as CurrencyType) || 'USD')}
+                          allowClear={false}
+                          fullWidth={false}
+                          className="w-24 shrink-0"
+                          aria-label="Sell Currency"
+                          options={CURRENCY_OPTIONS}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Expense, Internal Logistics Cost & Certificate Price */}
                 <div
                   className={
-                    cargoType === 'LTL' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : 'space-y-1.5'
+                    cargoType === 'LTL'
+                      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+                      : 'grid grid-cols-1 sm:grid-cols-2 gap-4'
                   }
                 >
                   {/* Additional Expense */}
@@ -1300,6 +1385,40 @@ export function CargoRegistrationModal({
                       </div>
                     </div>
                   )}
+
+                  {/* Certificate Price */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Shield className="size-3 text-blue-500" />
+                        <span>{t('certificatePrice') || 'Certificate Price'}</span>
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        ({t('optional') || 'Optional'})
+                      </span>
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <NumberInput
+                          placeholder="0.00"
+                          value={certificatePriceStr}
+                          onValueChange={(_num, raw) => setCertificatePriceStr(raw)}
+                          allowDecimals={true}
+                          decimalScale={2}
+                          min={0}
+                        />
+                      </div>
+                      <Select
+                        value={certificateCurrency}
+                        onChange={(val) => setCertificateCurrency((val as CurrencyType) || 'USD')}
+                        allowClear={false}
+                        fullWidth={false}
+                        className="w-24 shrink-0"
+                        aria-label={t('certificateCurrency') || 'Certificate Currency'}
+                        options={CURRENCY_OPTIONS}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* USD -> RMB Cross Rate (if RMB used) */}

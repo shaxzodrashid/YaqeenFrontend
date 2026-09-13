@@ -176,6 +176,16 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
       : null;
   const internalLogisticsCurrency = (item as any).internal_logistics_currency || 'USD';
 
+  const certificatePrice =
+    (item as any).certificate_price !== undefined && (item as any).certificate_price !== null
+      ? Number((item as any).certificate_price)
+      : (item as any).certificate !== undefined && (item as any).certificate !== null
+        ? Number((item as any).certificate)
+        : (item as any).cct !== undefined && (item as any).cct !== null
+          ? Number((item as any).cct)
+          : null;
+  const certificateCurrency = (item as any).certificate_currency || 'USD';
+
   // Net yield extraction
   const netUsd =
     (item as any).net_yield?.amount_usd !== undefined
@@ -498,33 +508,41 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
 
             {/* Financial Ledger Breakdown */}
             <div className="space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Buy Cost */}
-                <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-semibold">{t('colBuyPrice')}:</span>
-                    <span className="font-bold text-foreground font-mono">
-                      {formatMoney(buyAmount, buyCurrency)}
-                    </span>
-                  </div>
-                  {(item as any).purchase_date && (
-                    <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                      <span>{t('purchaseRegDate')}</span>
-                      <span className="font-semibold text-foreground">
-                        {formatDateDisplay((item as any).purchase_date, locale)}
+              <div
+                className={
+                  isLtlCargo ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+                }
+              >
+                {/* Buy Cost - only for non-LTL */}
+                {!isLtlCargo && (
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold">
+                        {t('colBuyPrice')}:
+                      </span>
+                      <span className="font-bold text-foreground font-mono">
+                        {formatMoney(buyAmount, buyCurrency)}
                       </span>
                     </div>
-                  )}
-                  {(item as any).purchase_amount_usd !== undefined &&
-                    (item as any).purchase_amount_usd !== null && (
+                    {(item as any).purchase_date && (
                       <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-                        <span>{t('lblEquivalentsUsdUzs')}</span>
-                        <span className="font-semibold text-foreground font-mono">
-                          {formatMoney((item as any).purchase_amount_usd, 'USD')}
+                        <span>{t('purchaseRegDate')}</span>
+                        <span className="font-semibold text-foreground">
+                          {formatDateDisplay((item as any).purchase_date, locale)}
                         </span>
                       </div>
                     )}
-                </div>
+                    {(item as any).purchase_amount_usd !== undefined &&
+                      (item as any).purchase_amount_usd !== null && (
+                        <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                          <span>{t('lblEquivalentsUsdUzs')}</span>
+                          <span className="font-semibold text-foreground font-mono">
+                            {formatMoney((item as any).purchase_amount_usd, 'USD')}
+                          </span>
+                        </div>
+                      )}
+                  </div>
+                )}
 
                 {/* Sell Price */}
                 <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">
@@ -556,10 +574,11 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                 </div>
               </div>
 
-              {/* Additional Expense & Internal Logistics Breakdown */}
+              {/* Additional Expense, Internal Logistics & Certificate Price Breakdown */}
               {((additionalExpense !== null && additionalExpense > 0) ||
-                (internalLogisticsCost !== null && internalLogisticsCost > 0)) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                (internalLogisticsCost !== null && internalLogisticsCost > 0) ||
+                (certificatePrice !== null && certificatePrice > 0)) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {additionalExpense !== null && additionalExpense > 0 && (
                     <div className="p-2.5 rounded-xl bg-muted/25 border border-border/60 flex justify-between items-center text-xs">
                       <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
@@ -579,6 +598,17 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                       </span>
                       <span className="font-mono font-bold text-foreground">
                         {formatMoney(internalLogisticsCost, internalLogisticsCurrency)}
+                      </span>
+                    </div>
+                  )}
+                  {certificatePrice !== null && certificatePrice > 0 && (
+                    <div className="p-2.5 rounded-xl bg-muted/25 border border-border/60 flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                        <ShieldCheck className="size-3.5 text-blue-500" />
+                        <span>{t('certificatePrice') || 'Certificate Price'}:</span>
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(certificatePrice, certificateCurrency)}
                       </span>
                     </div>
                   )}

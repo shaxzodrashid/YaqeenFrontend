@@ -8,6 +8,7 @@ export interface ModulePermissions {
   register_for_everyone?: boolean;
   can_work_with_all_clients?: boolean;
   assign_cargo?: boolean;
+  plan_settable?: boolean;
 }
 
 export interface ClientsModulePermissions {
@@ -49,6 +50,7 @@ export interface Role {
   description: string | null;
   permissions: RolePermissions;
   is_system: boolean;
+  is_plan_settable?: boolean;
   user_count: number;
   created_at: string;
   updated_at: string;
@@ -64,6 +66,7 @@ export interface CreateRoleDto {
   name: string;
   display_name: string;
   description?: string;
+  is_plan_settable?: boolean;
   permissions: RolePermissions;
 }
 
@@ -71,6 +74,7 @@ export interface UpdateRoleDto {
   name?: string;
   display_name?: string;
   description?: string;
+  is_plan_settable?: boolean;
   permissions?: Partial<RolePermissions>;
 }
 
@@ -147,7 +151,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       },
       employees: { create: true, read: true, update: true, delete: true },
       departments: { create: true, read: true, update: true, delete: true },
-      cargo_kpi: { create: true, read: true, update: true, delete: true },
+      cargo_kpi: { create: true, read: true, update: true, delete: true, plan_settable: false },
       cargo_registrations: {
         create: true,
         read: true,
@@ -170,6 +174,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       roles: { create: true, read: true, update: true, delete: true },
     },
     is_system: true,
+    is_plan_settable: false,
     user_count: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -189,7 +194,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       },
       employees: { create: false, read: true, update: true, delete: false },
       departments: { create: false, read: true, update: false, delete: false },
-      cargo_kpi: { create: true, read: true, update: true, delete: true },
+      cargo_kpi: { create: true, read: true, update: true, delete: true, plan_settable: true },
       cargo_registrations: {
         create: true,
         read: true,
@@ -212,6 +217,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       roles: { create: false, read: true, update: false, delete: false },
     },
     is_system: true,
+    is_plan_settable: true,
     user_count: 2,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -231,7 +237,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       },
       employees: { create: false, read: true, update: false, delete: false },
       departments: { create: false, read: true, update: false, delete: false },
-      cargo_kpi: { create: false, read: true, update: false, delete: false },
+      cargo_kpi: { create: false, read: true, update: false, delete: false, plan_settable: true },
       cargo_registrations: {
         create: true,
         read: true,
@@ -254,6 +260,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       roles: { create: false, read: false, update: false, delete: false },
     },
     is_system: true,
+    is_plan_settable: true,
     user_count: 12,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -273,7 +280,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       },
       employees: { create: false, read: true, update: false, delete: false },
       departments: { create: false, read: true, update: false, delete: false },
-      cargo_kpi: { create: true, read: true, update: true, delete: true },
+      cargo_kpi: { create: true, read: true, update: true, delete: true, plan_settable: true },
       cargo_registrations: {
         create: true,
         read: true,
@@ -296,6 +303,7 @@ const DEFAULT_DEMO_ROLES: Role[] = [
       roles: { create: false, read: false, update: false, delete: false },
     },
     is_system: false,
+    is_plan_settable: true,
     user_count: 3,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -334,23 +342,44 @@ export const rolesApi = {
   },
 
   create: async (dto: CreateRoleDto): Promise<Role> => {
+    const isPlanSettable =
+      dto.is_plan_settable ?? dto.permissions?.cargo_kpi?.plan_settable ?? false;
+    const synchronizedDto: CreateRoleDto = {
+      ...dto,
+      is_plan_settable: isPlanSettable,
+      permissions: {
+        ...dto.permissions,
+        cargo_kpi: {
+          create: dto.permissions?.cargo_kpi?.create ?? false,
+          read: dto.permissions?.cargo_kpi?.read ?? false,
+          update: dto.permissions?.cargo_kpi?.update ?? false,
+          delete: dto.permissions?.cargo_kpi?.delete ?? false,
+          ...dto.permissions?.cargo_kpi,
+          plan_settable: isPlanSettable,
+        },
+      },
+    };
+
     try {
       return await request<Role>('/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dto),
+        body: JSON.stringify(synchronizedDto),
       });
     } catch (err) {
       console.warn('Backend create failed, simulating fallback create:', err);
       // Construct fallback role
       const normalizedPermissions: RolePermissions = {};
       DEFAULT_SYSTEM_MODULES.forEach((mod) => {
-        const p = dto.permissions[mod.module];
+        const p = synchronizedDto.permissions[mod.module];
         normalizedPermissions[mod.module] = {
           create: p?.create ?? false,
           read: p?.read ?? false,
           update: p?.update ?? false,
           delete: p?.delete ?? false,
+          ...(mod.module === 'cargo_kpi'
+            ? { plan_settable: p?.plan_settable ?? isPlanSettable }
+            : {}),
           ...(mod.module === 'cargo_registrations'
             ? { register_for_everyone: p?.register_for_everyone ?? false }
             : {}),
@@ -365,11 +394,12 @@ export const rolesApi = {
 
       const newRole: Role = {
         id: crypto.randomUUID(),
-        name: dto.name.toUpperCase(),
-        display_name: dto.display_name,
-        description: dto.description || null,
+        name: synchronizedDto.name.toUpperCase(),
+        display_name: synchronizedDto.display_name,
+        description: synchronizedDto.description || null,
         permissions: normalizedPermissions,
         is_system: false,
+        is_plan_settable: isPlanSettable,
         user_count: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -380,24 +410,79 @@ export const rolesApi = {
   },
 
   update: async (id: string, dto: UpdateRoleDto): Promise<Role> => {
+    let synchronizedDto: UpdateRoleDto = { ...dto };
+    if (
+      dto.is_plan_settable !== undefined ||
+      dto.permissions?.cargo_kpi?.plan_settable !== undefined
+    ) {
+      const isPlanSettable =
+        dto.is_plan_settable !== undefined
+          ? dto.is_plan_settable
+          : dto.permissions?.cargo_kpi?.plan_settable;
+      synchronizedDto = {
+        ...synchronizedDto,
+        is_plan_settable: isPlanSettable,
+        ...(synchronizedDto.permissions
+          ? {
+              permissions: {
+                ...synchronizedDto.permissions,
+                cargo_kpi: {
+                  create: false,
+                  read: false,
+                  update: false,
+                  delete: false,
+                  ...synchronizedDto.permissions.cargo_kpi,
+                  plan_settable: isPlanSettable,
+                },
+              },
+            }
+          : {}),
+      };
+    }
+
     try {
       return await request<Role>(`/roles/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dto),
+        body: JSON.stringify(synchronizedDto),
       });
     } catch (err) {
       console.warn('Backend update failed, simulating fallback update:', err);
       const index = fallbackRolesMemory.findIndex((r) => r.id === id);
       if (index !== -1) {
         const existing = fallbackRolesMemory[index];
+        const updatedIsPlanSettable =
+          synchronizedDto.is_plan_settable !== undefined
+            ? synchronizedDto.is_plan_settable
+            : existing.is_plan_settable;
+        const updatedPermissions = synchronizedDto.permissions
+          ? {
+              ...existing.permissions,
+              ...synchronizedDto.permissions,
+              cargo_kpi: {
+                ...(existing.permissions?.cargo_kpi || {
+                  create: false,
+                  read: false,
+                  update: false,
+                  delete: false,
+                }),
+                ...(synchronizedDto.permissions.cargo_kpi || {}),
+                ...(updatedIsPlanSettable !== undefined
+                  ? { plan_settable: updatedIsPlanSettable }
+                  : {}),
+              },
+            }
+          : existing.permissions;
+
         const updated: Role = {
           ...existing,
-          display_name: dto.display_name ?? existing.display_name,
-          description: dto.description !== undefined ? dto.description : existing.description,
-          permissions: dto.permissions
-            ? { ...existing.permissions, ...dto.permissions }
-            : existing.permissions,
+          display_name: synchronizedDto.display_name ?? existing.display_name,
+          description:
+            synchronizedDto.description !== undefined
+              ? synchronizedDto.description
+              : existing.description,
+          permissions: updatedPermissions,
+          is_plan_settable: updatedIsPlanSettable,
           updated_at: new Date().toISOString(),
         };
         fallbackRolesMemory[index] = updated;

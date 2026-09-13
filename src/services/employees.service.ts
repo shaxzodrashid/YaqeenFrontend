@@ -103,6 +103,8 @@ export interface Employee {
   user_status?: string;
   role_id?: string;
   role_name?: string;
+  role_display_name?: string;
+  is_plan_settable?: boolean;
   status?: string;
   permissions?: Record<
     string,
@@ -210,6 +212,7 @@ export const demoEmployeesDb: Map<string, Employee> = new Map([
       color: '#3B82F6',
       picture_url: null,
       is_active: true,
+      is_plan_settable: true,
       total_assigned_employees: 8,
       total_revenue: {
         USD: 55000,
@@ -238,6 +241,35 @@ export const demoEmployeesDb: Map<string, Employee> = new Map([
       mijozlar_count: 8,
       created_at: '2026-07-19T13:22:58.587Z',
       updated_at: '2026-07-19T13:22:58.587Z',
+    },
+  ],
+  [
+    'e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b',
+    {
+      id: 'e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b',
+      first_name: 'Nodira',
+      last_name: 'Azimova',
+      full_name: 'Nodira Azimova',
+      phone: '+998971234567',
+      secondary_phone: null,
+      address: 'Tashkent, Uzbekistan',
+      department_id: '07d223ca-4167-47f7-a929-61d47a3628a7',
+      department_name: 'finance',
+      department_display_name: 'Finance & Accounting',
+      role_name: 'Accountant',
+      role_display_name: 'Accountant',
+      user_role: 'Accountant',
+      user_status: 'Open',
+      status: 'Open',
+      fixed_salary: '1200.00',
+      currency: 'USD',
+      color: '#9333EA',
+      picture_url: null,
+      is_active: true,
+      is_plan_settable: false,
+      total_assigned_employees: 0,
+      created_at: '2026-08-01T10:00:00.000Z',
+      updated_at: '2026-08-01T10:00:00.000Z',
     },
   ],
   [
@@ -849,6 +881,125 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     };
   }
 
+  // GET /employees/plan-settable and aliases (/employees/plan-eligible, /employees/for-plan, /cargo-kpi/plans/eligible-employees)
+  if (
+    (path === '/employees/plan-settable' ||
+      path.startsWith('/employees/plan-settable?') ||
+      path === '/employees/plan-eligible' ||
+      path.startsWith('/employees/plan-eligible?') ||
+      path === '/employees/for-plan' ||
+      path.startsWith('/employees/for-plan?') ||
+      path === '/cargo-kpi/plans/eligible-employees' ||
+      path.startsWith('/cargo-kpi/plans/eligible-employees?') ||
+      path === '/api/v1/employees/plan-settable' ||
+      path.startsWith('/api/v1/employees/plan-settable?')) &&
+    method === 'GET'
+  ) {
+    const urlObj = new URL(path, 'http://localhost');
+    const search = urlObj.searchParams.get('search')?.toLowerCase().trim() || '';
+    const page = parseInt(urlObj.searchParams.get('page') || '1', 10);
+    const limit = parseInt(urlObj.searchParams.get('limit') || '1000', 10);
+    const offsetParam = urlObj.searchParams.get('offset');
+    const departmentId = urlObj.searchParams.get('department_id') || '';
+
+    // Filter active employees whose role has is_plan_settable: true
+    let list = Array.from(demoEmployeesDb.values()).filter((e) => {
+      if (e.is_active === false) return false;
+      if (e.is_plan_settable === false) return false;
+      const roleStr = (e.role_name || e.user_role || '').toLowerCase();
+      if (
+        roleStr.includes('accountant') ||
+        roleStr.includes('hr') ||
+        roleStr.includes('it support')
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    if (departmentId) {
+      list = list.filter((e) => e.department_id === departmentId);
+    }
+    if (search) {
+      list = list.filter(
+        (e) =>
+          `${e.first_name} ${e.last_name}`.toLowerCase().includes(search) ||
+          e.phone.toLowerCase().includes(search) ||
+          (e.department_name && e.department_name.toLowerCase().includes(search)) ||
+          (e.department_display_name && e.department_display_name.toLowerCase().includes(search)) ||
+          (e.role_name && e.role_name.toLowerCase().includes(search))
+      );
+    }
+
+    const total = list.length;
+    const offset = offsetParam !== null ? parseInt(offsetParam, 10) : (page - 1) * limit;
+    const sliceItems = list.slice(offset, offset + limit);
+
+    const data: EmployeeListItem[] = sliceItems.map((emp) => {
+      const fullName = emp.full_name || `${emp.first_name} ${emp.last_name}`.trim();
+      return {
+        ...emp,
+        id: emp.id,
+        full_name: fullName,
+        first_name: emp.first_name,
+        last_name: emp.last_name,
+        phone: emp.phone,
+        secondary_phone: emp.secondary_phone,
+        address: emp.address,
+        role_name: emp.role_name || 'Sales Manager',
+        role_display_name: emp.role_display_name || emp.role_name || 'Sales Manager',
+        department_name: emp.department_display_name || emp.department_name || 'Sales',
+        department_id: emp.department_id,
+        department_display_name: emp.department_display_name,
+        status: emp.status || emp.user_status || 'Open',
+        is_active: true,
+        is_plan_settable: true,
+        total_revenue: emp.total_revenue || {
+          USD: 55000,
+          UZS: 25000000,
+          RUB: 4400000,
+        },
+        plan_completion: emp.plan_completion || {
+          ltl_completion: 90.0,
+          ftl_completion: 110.0,
+        },
+        total_assigned_employees: emp.total_assigned_employees ?? 4,
+        color: emp.color || '#3B82F6',
+        picture_url: emp.picture_url,
+      };
+    });
+
+    const meta: EmployeeListMeta = {
+      total,
+      offset,
+      limit,
+      open_employees: data.length,
+      plan_completed: {
+        ltl_completion: 90.0,
+        ftl_completion: 110.0,
+      },
+      total_revenue: {
+        USD: 125000,
+        UZS: 95000000,
+        RUB: 450000,
+      },
+      totalItems: total,
+      itemCount: data.length,
+      itemsPerPage: limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      currentPage: page,
+    };
+
+    return {
+      handled: true,
+      result: {
+        meta,
+        data,
+        items: data,
+      },
+    };
+  }
+
   // GET /api/v1/employees or GET /employees or GET /employees?search=...
   if (
     (path === '/api/v1/employees' ||
@@ -1193,6 +1344,111 @@ export const employeesApi = {
           item.department?.name ||
           'Sales',
         status: item.status || item.user_status || (item.is_active !== false ? 'Open' : 'Banned'),
+        total_revenue: item.total_revenue || {
+          USD: item.tushum?.amount ? Math.round(item.tushum.amount * 0.011) : 45000,
+          UZS: item.tushum?.amount ? Math.round(item.tushum.amount * 140) : 25000000,
+          RUB: item.tushum?.amount || 120000,
+        },
+        plan_completion: item.plan_completion || {
+          ltl_completion: item.reja_fakt?.percentage || 90.0,
+          ftl_completion: 105.0,
+        },
+        total_assigned_employees: item.total_assigned_employees ?? item.mijozlar_count ?? 1,
+        color: item.color || '#C8A96A',
+      };
+    });
+
+    const normalizedMeta: EmployeeListMeta = {
+      total,
+      offset,
+      limit,
+      open_employees:
+        rawMeta.open_employees ??
+        normalizedData.filter(
+          (e) => (e.status || '').toLowerCase() === 'open' || e.is_active !== false
+        ).length,
+      plan_completed: rawMeta.plan_completed ?? {
+        ltl_completion: 85.5,
+        ftl_completion: 110.0,
+      },
+      total_revenue: rawMeta.total_revenue ?? {
+        USD: 125000,
+        UZS: 95000000,
+        RUB: 450000,
+      },
+      totalItems: total,
+      totalPages,
+      currentPage: page,
+      itemsPerPage: limit,
+    };
+
+    return {
+      meta: normalizedMeta,
+      data: normalizedData,
+      items: normalizedData,
+    };
+  },
+
+  getPlanSettable: async (params?: EmployeeListParams): Promise<EmployeeListResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset !== undefined) searchParams.set('offset', String(params.offset));
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.department_id) searchParams.set('department_id', params.department_id);
+    const query = searchParams.toString();
+
+    let raw: any;
+    try {
+      raw = await request<any>(`/employees/plan-settable${query ? `?${query}` : ''}`, {
+        method: 'GET',
+      });
+    } catch {
+      try {
+        raw = await request<any>(`/cargo-kpi/plans/eligible-employees${query ? `?${query}` : ''}`, {
+          method: 'GET',
+        });
+      } catch {
+        raw = await request<any>(`/employees/plan-eligible${query ? `?${query}` : ''}`, {
+          method: 'GET',
+        });
+      }
+    }
+
+    const rawData = Array.isArray(raw?.data)
+      ? raw.data
+      : Array.isArray(raw?.items)
+        ? raw.items
+        : Array.isArray(raw)
+          ? raw
+          : [];
+
+    const rawMeta = raw?.meta || {};
+    const total = rawMeta.total ?? rawMeta.totalItems ?? rawData.length;
+    const limit = params?.limit || rawMeta.limit || rawMeta.itemsPerPage || 1000;
+    const page = params?.page || rawMeta.currentPage || 1;
+    const offset = rawMeta.offset ?? (page - 1) * limit;
+    const totalPages = rawMeta.totalPages ?? (Math.ceil(total / limit) || 1);
+
+    const normalizedData: EmployeeListItem[] = rawData.map((item: any) => {
+      const firstName = item.first_name || item.full_name?.split(' ')[0] || '';
+      const lastName = item.last_name || item.full_name?.split(' ').slice(1).join(' ') || '';
+      const fullName = item.full_name || `${firstName} ${lastName}`.trim();
+      return {
+        ...item,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: fullName,
+        role_name: item.role_name || item.user_role || 'Sales Manager',
+        role_display_name: item.role_display_name || item.role_name || 'Sales Manager',
+        department_name:
+          item.department_display_name ||
+          item.department_name ||
+          item.department?.display_name ||
+          item.department?.name ||
+          'Sales',
+        status: item.status || item.user_status || (item.is_active !== false ? 'Open' : 'Banned'),
+        is_plan_settable: true,
         total_revenue: item.total_revenue || {
           USD: item.tushum?.amount ? Math.round(item.tushum.amount * 0.011) : 45000,
           UZS: item.tushum?.amount ? Math.round(item.tushum.amount * 140) : 25000000,

@@ -12,6 +12,7 @@ import {
   Trash2,
   Check,
   RotateCcw,
+  Target,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import type {
@@ -31,6 +32,7 @@ interface RoleFormModalProps {
     name: string;
     display_name: string;
     description: string;
+    is_plan_settable?: boolean;
     permissions: RolePermissions;
   }) => Promise<void>;
 }
@@ -47,6 +49,7 @@ export function RoleFormModal({
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
+  const [isPlanSettable, setIsPlanSettable] = useState(false);
   const [permissions, setPermissions] = useState<RolePermissions>({});
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; display_name?: string }>({});
@@ -59,20 +62,55 @@ export function RoleFormModal({
         setName(editingRole.name);
         setDisplayName(editingRole.display_name);
         setDescription(editingRole.description || '');
-        setPermissions(JSON.parse(JSON.stringify(editingRole.permissions || {})));
+        const perms = JSON.parse(JSON.stringify(editingRole.permissions || {}));
+        const planSettable =
+          editingRole.is_plan_settable ?? perms.cargo_kpi?.plan_settable ?? false;
+        setIsPlanSettable(planSettable);
+        if (perms.cargo_kpi) {
+          perms.cargo_kpi.plan_settable = planSettable;
+        }
+        setPermissions(perms);
       } else {
         setName('');
         setDisplayName('');
         setDescription('');
+        setIsPlanSettable(false);
         // Initialize empty permissions matrix for all modules
         const initPerms: RolePermissions = {};
         modules.forEach((mod) => {
-          initPerms[mod.module] = { create: false, read: true, update: false, delete: false };
+          initPerms[mod.module] = {
+            create: false,
+            read: true,
+            update: false,
+            delete: false,
+            ...(mod.module === 'cargo_kpi' ? { plan_settable: false } : {}),
+          };
         });
         setPermissions(initPerms);
       }
     }
   }, [isOpen, editingRole, modules]);
+
+  // Handle plan settable toggle
+  const handleTogglePlanSettable = (checked?: boolean) => {
+    const nextVal = checked !== undefined ? checked : !isPlanSettable;
+    setIsPlanSettable(nextVal);
+    setPermissions((prev) => {
+      const currentKpi = prev['cargo_kpi'] || {
+        create: false,
+        read: false,
+        update: false,
+        delete: false,
+      };
+      return {
+        ...prev,
+        cargo_kpi: {
+          ...currentKpi,
+          plan_settable: nextVal,
+        },
+      };
+    });
+  };
 
   // Toggle single action flag for a module
   const toggleAction = (
@@ -85,6 +123,7 @@ export function RoleFormModal({
       | 'register_for_everyone'
       | 'can_work_with_all_clients'
       | 'assign_cargo'
+      | 'plan_settable'
   ) => {
     setPermissions((prev) => {
       const currentMod = prev[moduleKey] || {
@@ -95,12 +134,17 @@ export function RoleFormModal({
         register_for_everyone: false,
         can_work_with_all_clients: false,
         assign_cargo: false,
+        plan_settable: false,
       };
+      const nextVal = !currentMod[action];
+      if (moduleKey === 'cargo_kpi' && action === 'plan_settable') {
+        setIsPlanSettable(nextVal);
+      }
       return {
         ...prev,
         [moduleKey]: {
           ...currentMod,
-          [action]: !currentMod[action],
+          [action]: nextVal,
         },
       };
     });
@@ -118,8 +162,12 @@ export function RoleFormModal({
         ...(moduleKey === 'cargo_registrations' ? { register_for_everyone: true } : {}),
         ...(moduleKey === 'clients' ? { can_work_with_all_clients: true } : {}),
         ...(moduleKey === 'cargo_consolidations' ? { assign_cargo: true } : {}),
+        ...(moduleKey === 'cargo_kpi' ? { plan_settable: true } : {}),
       },
     }));
+    if (moduleKey === 'cargo_kpi') {
+      setIsPlanSettable(true);
+    }
   };
 
   // Revoke all actions for a specific row
@@ -134,13 +182,20 @@ export function RoleFormModal({
         ...(moduleKey === 'cargo_registrations' ? { register_for_everyone: false } : {}),
         ...(moduleKey === 'clients' ? { can_work_with_all_clients: false } : {}),
         ...(moduleKey === 'cargo_consolidations' ? { assign_cargo: false } : {}),
+        ...(moduleKey === 'cargo_kpi' ? { plan_settable: false } : {}),
       },
     }));
+    if (moduleKey === 'cargo_kpi') {
+      setIsPlanSettable(false);
+    }
   };
 
   // Presets
   const applyPreset = (preset: 'full' | 'readonly' | 'clear') => {
     const updated: RolePermissions = {};
+    const nextPlanSettable = preset === 'full';
+    setIsPlanSettable(nextPlanSettable);
+
     modules.forEach((mod) => {
       if (preset === 'full') {
         updated[mod.module] = {
@@ -151,6 +206,7 @@ export function RoleFormModal({
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: true } : {}),
           ...(mod.module === 'clients' ? { can_work_with_all_clients: true } : {}),
           ...(mod.module === 'cargo_consolidations' ? { assign_cargo: true } : {}),
+          ...(mod.module === 'cargo_kpi' ? { plan_settable: true } : {}),
         };
       } else if (preset === 'readonly') {
         updated[mod.module] = {
@@ -161,6 +217,7 @@ export function RoleFormModal({
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: false } : {}),
           ...(mod.module === 'clients' ? { can_work_with_all_clients: false } : {}),
           ...(mod.module === 'cargo_consolidations' ? { assign_cargo: false } : {}),
+          ...(mod.module === 'cargo_kpi' ? { plan_settable: false } : {}),
         };
       } else {
         updated[mod.module] = {
@@ -171,6 +228,7 @@ export function RoleFormModal({
           ...(mod.module === 'cargo_registrations' ? { register_for_everyone: false } : {}),
           ...(mod.module === 'clients' ? { can_work_with_all_clients: false } : {}),
           ...(mod.module === 'cargo_consolidations' ? { assign_cargo: false } : {}),
+          ...(mod.module === 'cargo_kpi' ? { plan_settable: false } : {}),
         };
       }
     });
@@ -203,7 +261,18 @@ export function RoleFormModal({
         name: name.trim().toUpperCase().replace(/\s+/g, '_'),
         display_name: displayName.trim(),
         description: description.trim(),
-        permissions,
+        is_plan_settable: isPlanSettable,
+        permissions: {
+          ...permissions,
+          cargo_kpi: {
+            create: false,
+            read: false,
+            update: false,
+            delete: false,
+            ...(permissions.cargo_kpi || {}),
+            plan_settable: isPlanSettable,
+          },
+        },
       });
       onOpenChange(false);
     } catch (err) {
@@ -323,6 +392,59 @@ export function RoleFormModal({
                 placeholder="Scope and administrative privileges notes..."
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-field text-field-foreground border border-field-border transition-all focus:outline-none focus:ring-2 focus:ring-focus/30"
               />
+            </div>
+
+            {/* Plan-Settable Eligibility Switch Card */}
+            <div className="p-4 rounded-xl border border-border/40 bg-default/20 dark:bg-night-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2.5 rounded-xl border shrink-0 transition-colors ${
+                    isPlanSettable
+                      ? 'bg-amber-500/15 border-amber-500/30 text-amber-500'
+                      : 'bg-default/30 border-border/40 text-muted'
+                  }`}
+                >
+                  <Target className="size-5" />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-foreground">
+                      {t('rolesPlanSettable')}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isPlanSettable
+                          ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                          : 'bg-default/40 text-muted border-border/40'
+                      }`}
+                    >
+                      {isPlanSettable
+                        ? t('rolesPlanSettableBadge')
+                        : t('rolesNotPlanSettableBadge')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted leading-relaxed max-w-xl">
+                    {t('rolesPlanSettableDesc')}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleTogglePlanSettable()}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out self-start sm:self-center focus:outline-none ${
+                  isPlanSettable ? 'bg-amber-500' : 'bg-default/50 dark:bg-default/30'
+                }`}
+                role="switch"
+                aria-checked={isPlanSettable}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    isPlanSettable ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Permission Matrix Header & Quick Presets */}
@@ -477,6 +599,30 @@ export function RoleFormModal({
                                   {localizedModuleDesc}
                                 </Tooltip.Content>
                               </Tooltip>
+
+                              {mod.module === 'cargo_kpi' && (
+                                <div className="mt-2 pt-1.5 border-t border-border/30">
+                                  <Tooltip delay={150} closeDelay={0}>
+                                    <Tooltip.Trigger>
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleAction(mod.module, 'plan_settable')}
+                                        className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                          modPerms.plan_settable
+                                            ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 shadow-xs'
+                                            : 'bg-default/20 text-muted/60 border border-border/30 hover:border-amber-500/30'
+                                        }`}
+                                      >
+                                        <span>{modPerms.plan_settable ? '✓' : '✕'}</span>
+                                        <span>{t('rolesPlanSettable')}</span>
+                                      </button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content placement="right">
+                                      {t('rolesPermPlanSettableTooltip')}
+                                    </Tooltip.Content>
+                                  </Tooltip>
+                                </div>
+                              )}
 
                               {mod.module === 'cargo_registrations' && (
                                 <div className="mt-2 pt-1.5 border-t border-border/30">

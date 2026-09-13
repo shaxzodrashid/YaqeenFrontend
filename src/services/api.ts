@@ -48,6 +48,7 @@ export type {
 } from './clients.service';
 
 export type {
+  LtlRoute,
   LtlCalculateDto,
   LtlCalculateResult,
   LtlCargoType,
@@ -199,6 +200,7 @@ export type {
   ConsolidationCapacity,
   ConsolidationExpenseItem,
   ConsolidationExpenses,
+  ConsolidationNetMarginCurrencies,
   ConsolidationFinancials,
   ConsolidationCargoItem,
   ConsolidationListItem,
@@ -244,7 +246,7 @@ export { authApi } from './auth.service';
 export { departmentsApi, employeesApi } from './employees.service';
 export { attachmentsApi } from './attachments.service';
 export { clientsApi } from './clients.service';
-export { cargoKpiApi } from './cargoKpi.service';
+export { cargoKpiApi, calculateLtlPrice } from './cargoKpi.service';
 export { cargoRegistrationsApi } from './cargoRegistrations.service';
 export { cargoConsolidationsApi as consolidationsApi } from './cargoConsolidations.service';
 export { financeApi } from './finance.service';
@@ -252,6 +254,18 @@ export { currencyApi, CurrencyApiClient } from './currency.service';
 export { rolesApi } from './roles.service';
 export { tasksService } from './tasks.service';
 export { commercialOffersApi } from './commercialOffers.service';
+export { agentsApi, demoAgentsDb, clearAgentCache } from './agents.service';
+export type {
+  Agent,
+  AgentDropdownItem,
+  AgentSortField,
+  AgentSortOrder,
+  AgentListParams,
+  AgentPaginatedResponse,
+  CreateAgentDto,
+  UpdateAgentDto,
+  DeleteAgentResponse,
+} from '../types/agents';
 
 export type {
   CityOption,
@@ -296,6 +310,10 @@ export type {
   DashboardDeliveryEfficiencyResponse,
   DebtorClientItem,
   CreditorCarrierItem,
+  DebtCargoStatusBreakdownItem,
+  DebtPaymentStatusBreakdownItem,
+  DebtOverallStatusBreakdownItem,
+  ScopedCargoItem,
   DashboardDebtSummaryResponse,
 } from '../types/dashboard';
 
@@ -316,6 +334,7 @@ import { tasksService } from './tasks.service';
 import { commercialOffersApi } from './commercialOffers.service';
 import { dashboardApi } from './dashboard.service';
 import { locationsApi } from './locations.service';
+import { agentsApi } from './agents.service';
 
 // Global API object for complete backward compatibility
 export const api = {
@@ -325,6 +344,7 @@ export const api = {
   employees: employeesApi,
   attachments: attachmentsApi,
   clients: clientsApi,
+  agents: agentsApi,
   cargoKpi: cargoKpiApi,
   cargoRegistrations: cargoRegistrationsApi,
   cargoConsolidations: cargoConsolidationsApi,

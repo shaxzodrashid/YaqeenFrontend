@@ -20,6 +20,8 @@ import {
   FileText,
   Check,
   BarChart3,
+  Truck,
+  Sparkles,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,10 +36,12 @@ export type PageId =
   | 'commercial'
   | 'employees'
   | 'clients'
+  | 'agents'
   | 'departments'
   | 'profile'
   | 'cargo'
   | 'kpi'
+  | 'kpi-alerts'
   | 'finance'
   | 'roles'
   | 'tasks';
@@ -310,6 +314,13 @@ export function Sidebar({
       category: 'operations',
     },
     {
+      id: 'kpi-alerts',
+      icon: <Sparkles className="size-5 shrink-0" />,
+      label: t('navKpiAlerts'),
+      moduleKey: 'cargo_kpi',
+      category: 'operations',
+    },
+    {
       id: 'roles',
       icon: <ShieldCheck className="size-5 shrink-0" />,
       label: t('navRoles'),
@@ -328,6 +339,13 @@ export function Sidebar({
       icon: <UserCheck className="size-5 shrink-0" />,
       label: t('navClients'),
       moduleKey: 'clients',
+      category: 'management',
+    },
+    {
+      id: 'agents',
+      icon: <Truck className="size-5 shrink-0" />,
+      label: t('navAgents'),
+      moduleKey: 'agents',
       category: 'management',
     },
     {

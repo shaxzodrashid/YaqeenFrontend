@@ -21,7 +21,6 @@ import {
   Shield,
   Repeat,
   FileText,
-  Receipt,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -652,12 +651,12 @@ export function ConsolidationDetailsModal({
                 </div>
               </div>
 
-              {/* 3 Expense Categories Detail */}
+              {/* 2 Expense Categories Detail */}
               <div className="space-y-2 pt-1 border-t border-border/50">
                 <span className="text-[11px] font-bold text-foreground block">
-                  {t('operationalCostBreakdown') || 'Expense Line Items (3 categories)'}
+                  {t('operationalCostBreakdown') || 'Expense Line Items (2 categories)'}
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {/* 1. Agent */}
                   <div className="p-2 rounded-xl bg-surface/80 border border-border/50 flex items-center justify-between">
                     <div className="flex items-center gap-1.5 min-w-0">
@@ -694,24 +693,6 @@ export function ConsolidationDetailsModal({
                           0,
                         consolidation.financials?.expenses?.customs_clearance_of_goods?.currency ??
                           consolidation.customs_clearance_of_goods_currency ??
-                          'USD'
-                      )}
-                    </span>
-                  </div>
-
-                  {/* 3. CCT */}
-                  <div className="p-2 rounded-xl bg-surface/80 border border-border/50 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Receipt className="size-3.5 text-purple-500 shrink-0" />
-                      <span className="text-[11px] font-medium text-muted-foreground truncate">
-                        {t('cctCertTitle') || 'CCT / Certificate'}
-                      </span>
-                    </div>
-                    <span className="font-mono text-xs font-bold text-foreground shrink-0 ml-1">
-                      {formatMoney(
-                        consolidation.financials?.expenses?.cct?.amount ?? consolidation.cct ?? 0,
-                        consolidation.financials?.expenses?.cct?.currency ??
-                          consolidation.cct_currency ??
                           'USD'
                       )}
                     </span>

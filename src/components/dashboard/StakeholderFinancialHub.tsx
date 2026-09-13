@@ -19,6 +19,7 @@ import type {
 import { formatMoney } from '../../services/api';
 import { T } from '../T';
 import { useTranslation } from '../../context/LanguageContext';
+import { DebtBreakdownPieCharts } from './DebtBreakdownPieCharts';
 
 interface StakeholderFinancialHubProps {
   topPerformers: DashboardTopPerformersResponse | null;
@@ -479,6 +480,9 @@ export const StakeholderFinancialHub: React.FC<StakeholderFinancialHubProps> = R
               <T k="ovLargestUnpaidBalances" />
             </span>
           </div>
+
+          {/* 2 Primary Pie Charts: Receivables & Payables Status Breakdown */}
+          <DebtBreakdownPieCharts debtData={debtSummary} currency={currency} loading={loading} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* 1. Top Debtor Clients */}

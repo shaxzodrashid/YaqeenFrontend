@@ -450,7 +450,9 @@ export function CargoTransactionsTable({
       additionalExpenseCurr?: string | null,
       internalLogisticsCost?: number | null,
       internalLogisticsCurrency?: string | null,
-      itemNetYield?: any
+      itemNetYield?: any,
+      certificatePrice?: number | null,
+      certificateCurrency?: string | null
     ) => {
       // If sell currency is USD and backend already provided exact calculated net yield USD, prioritize it
       if (
@@ -481,6 +483,11 @@ export function CargoTransactionsTable({
       if (internalLogisticsCost && internalLogisticsCost > 0) {
         const ilRate = currentRates[internalLogisticsCurrency || 'USD'] || 1;
         totalOutcomeInUzs += internalLogisticsCost * ilRate;
+      }
+
+      if (certificatePrice && certificatePrice > 0) {
+        const certRate = currentRates[certificateCurrency || 'USD'] || 1;
+        totalOutcomeInUzs += certificatePrice * certRate;
       }
 
       const outcomeInSellCurrency = totalOutcomeInUzs / sRate;
@@ -670,6 +677,17 @@ export function CargoTransactionsTable({
                 </tr>
               ) : (
                 data.data.map((item) => {
+                  const certCost =
+                    item.certificate_price !== undefined && item.certificate_price !== null
+                      ? Number(item.certificate_price)
+                      : (item as any).certificate !== undefined &&
+                          (item as any).certificate !== null
+                        ? Number((item as any).certificate)
+                        : (item as any).cct !== undefined && (item as any).cct !== null
+                          ? Number((item as any).cct)
+                          : null;
+                  const certCurrency = item.certificate_currency || 'USD';
+
                   const netYieldVal = getNetYield(
                     item.sell_price?.amount ?? 0,
                     item.sell_price?.currency || 'USD',
@@ -680,7 +698,9 @@ export function CargoTransactionsTable({
                     item.additional_expense_currency,
                     item.cargo_type === 'LTL' ? item.internal_logistics_cost : undefined,
                     item.cargo_type === 'LTL' ? item.internal_logistics_currency : undefined,
-                    item.net_yield
+                    item.net_yield,
+                    certCost,
+                    certCurrency
                   );
                   const isPositive = netYieldVal > 0;
                   const isNegative = netYieldVal < 0;
@@ -863,6 +883,14 @@ export function CargoTransactionsTable({
                               </span>
                             </div>
                           )}
+                        {certCost !== null && certCost > 0 && (
+                          <div
+                            className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate flex items-center gap-0.5"
+                            title={`${t('certificatePrice') || 'Certificate Price'}: ${formatMoney(certCost, certCurrency)}`}
+                          >
+                            <span>📜 + {formatMoney(certCost, certCurrency)}</span>
+                          </div>
+                        )}
                         <div className="text-[10px] text-muted-foreground font-medium truncate">
                           {t('lblDatePrefix')}{' '}
                           {formatDateDisplay(

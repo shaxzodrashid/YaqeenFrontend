@@ -14,6 +14,7 @@ import {
   Shield,
   AlertTriangle,
   Layers,
+  Target,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
 import { T } from '../T';
@@ -55,12 +56,14 @@ export function RolesPage() {
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [modules, setModules] = useState<SystemModule[]>(DEFAULT_SYSTEM_MODULES);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<true | false>(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'system' | 'custom'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'system' | 'custom' | 'plan_settable'>(
+    'all'
+  );
 
   // Modal / Drawer States
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -124,7 +127,9 @@ export function RolesPage() {
       const matchesType =
         filterType === 'all' ||
         (filterType === 'system' && role.is_system) ||
-        (filterType === 'custom' && !role.is_system);
+        (filterType === 'custom' && !role.is_system) ||
+        (filterType === 'plan_settable' &&
+          (role.is_plan_settable ?? role.permissions?.cargo_kpi?.plan_settable));
 
       return matchesSearch && matchesType;
     });
@@ -134,6 +139,9 @@ export function RolesPage() {
   const totalRolesCount = roles.length;
   const systemRolesCount = roles.filter((r) => r.is_system).length;
   const customRolesCount = roles.filter((r) => !r.is_system).length;
+  const planSettableRolesCount = roles.filter(
+    (r) => r.is_plan_settable ?? r.permissions?.cargo_kpi?.plan_settable
+  ).length;
   const totalAssignedUsers = roles.reduce((sum, r) => sum + (r.user_count || 0), 0);
 
   // Open Handlers
@@ -166,6 +174,7 @@ export function RolesPage() {
     name: string;
     display_name: string;
     description: string;
+    is_plan_settable?: boolean;
     permissions: Record<string, any>;
   }) => {
     try {
@@ -173,6 +182,7 @@ export function RolesPage() {
         const dto: UpdateRoleDto = {
           display_name: data.display_name,
           description: data.description,
+          is_plan_settable: data.is_plan_settable,
           permissions: data.permissions,
         };
         const updated = await rolesApi.update(editingRole.id, dto);
@@ -183,6 +193,7 @@ export function RolesPage() {
           name: data.name,
           display_name: data.display_name,
           description: data.description,
+          is_plan_settable: data.is_plan_settable,
           permissions: data.permissions,
         };
         const created = await rolesApi.create(dto);
@@ -413,6 +424,16 @@ export function RolesPage() {
           >
             <T k="rolesFilterCustom" /> ({customRolesCount})
           </button>
+          <button
+            onClick={() => setFilterType('plan_settable')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              filterType === 'plan_settable'
+                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold'
+                : 'text-muted hover:text-foreground'
+            }`}
+          >
+            <T k="rolesFilterPlanSettable" /> ({planSettableRolesCount})
+          </button>
         </div>
       </div>
 
@@ -496,9 +517,18 @@ export function RolesPage() {
                             <h3 className="text-base font-bold font-serif text-foreground truncate group-hover:text-brand-gold transition-colors">
                               {getRoleDisplayName(role, t)}
                             </h3>
-                            <code className="text-[11px] font-mono text-brand-gold bg-brand-gold/10 border border-brand-gold/20 px-2 py-0.5 rounded w-fit mt-0.5">
-                              {role.name}
-                            </code>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <code className="text-[11px] font-mono text-brand-gold bg-brand-gold/10 border border-brand-gold/20 px-2 py-0.5 rounded w-fit">
+                                {role.name}
+                              </code>
+                              {(role.is_plan_settable ??
+                                role.permissions?.cargo_kpi?.plan_settable) && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded">
+                                  <Target className="size-2.5" />
+                                  <span>{t('rolesPlanSettableBadge')}</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
