@@ -2540,7 +2540,8 @@ export const translations = {
     daysPlanActual: 'Days (Plan / Actual)',
     ltlRouteSelect: 'Transport Route',
     routeYiwuTashkent: 'Yiwu — Toshkent',
-    routeZhongshanTashkent: 'Zhongshan — Toshkent',
+    routeGuangzhouTashkent: 'Guangzhou — Tashkent',
+    routeZhongshanTashkent: 'Guangzhou — Tashkent',
     ltlPriceNote:
       'Prices include warehouse expenses in China. Customs clearance and company services are billed separately.',
     ltlValidityNote: 'Rates valid until 30.11.2026',
@@ -5154,7 +5155,8 @@ export const translations = {
     daysPlanActual: 'Дни (План / Факт)',
     ltlRouteSelect: 'Маршрут перевозки',
     routeYiwuTashkent: 'Иу — Ташкент',
-    routeZhongshanTashkent: 'Чжуншань — Ташкент',
+    routeGuangzhouTashkent: 'Гуанчжоу — Ташкент',
+    routeZhongshanTashkent: 'Гуанчжоу — Ташкент',
     ltlPriceNote:
       'Цена включает складские расходы в Китае. Таможенное оформление и услуги компании рассчитываются отдельно.',
     ltlValidityNote: 'Цены действительны до 30.11.2026',
@@ -7779,7 +7781,8 @@ export const translations = {
     daysPlanActual: 'Kunlar (Reja / Fakt)',
     ltlRouteSelect: 'Tashish yo‘nalishi',
     routeYiwuTashkent: 'Yiwu — Toshkent',
-    routeZhongshanTashkent: 'Zhongshan — Toshkent',
+    routeGuangzhouTashkent: 'Guangzhou — Toshkent',
+    routeZhongshanTashkent: 'Guangzhou — Toshkent',
     ltlPriceNote:
       'Narx Xitoydagi omborxona xarajatlarini o‘z ichiga oladi. Bojxona rasmiylashtiruvi va firma xizmatlari alohida hisob-kitob qilinadi.',
     ltlValidityNote: 'Narx 30.11.2026 gacha amal qiladi',
