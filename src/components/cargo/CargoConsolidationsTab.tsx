@@ -885,23 +885,15 @@ export function CargoConsolidationsTab() {
                         </span>
                       )}
                     </div>
-                    {((c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0) ||
-                      (c.cct && c.cct > 0)) && (
+                    {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
                       <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground ml-auto">
-                        {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
-                          <span title={t('expenseCustoms') || 'Customs'}>
-                            Cust:{' '}
-                            {formatMoney(
-                              c.customs_clearance_of_goods,
-                              c.customs_clearance_of_goods_currency || 'USD'
-                            )}
-                          </span>
-                        )}
-                        {c.cct && c.cct > 0 && (
-                          <span title={t('expenseCct') || 'CCT'}>
-                            CCT: {formatMoney(c.cct, c.cct_currency || 'USD')}
-                          </span>
-                        )}
+                        <span title={t('expenseCustoms') || 'Customs'}>
+                          Cust:{' '}
+                          {formatMoney(
+                            c.customs_clearance_of_goods,
+                            c.customs_clearance_of_goods_currency || 'USD'
+                          )}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -1152,28 +1144,17 @@ export function CargoConsolidationsTab() {
                           <div>
                             {formatMoney(carrierCostAmount || carrierCostUsd, carrierCostCurrency)}
                           </div>
-                          {((c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0) ||
-                            (c.cct && c.cct > 0)) && (
+                          {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
                             <div className="text-[10px] font-normal text-muted-foreground flex flex-col gap-0.5 mt-0.5">
-                              {c.customs_clearance_of_goods && c.customs_clearance_of_goods > 0 && (
-                                <span
-                                  title={`${t('expenseCustoms') || 'Customs'}: ${formatMoney(c.customs_clearance_of_goods, c.customs_clearance_of_goods_currency || 'USD')}`}
-                                >
-                                  {t('expenseCustoms') || 'Cust'}:{' '}
-                                  {formatMoney(
-                                    c.customs_clearance_of_goods,
-                                    c.customs_clearance_of_goods_currency || 'USD'
-                                  )}
-                                </span>
-                              )}
-                              {c.cct && c.cct > 0 && (
-                                <span
-                                  title={`${t('expenseCct') || 'CCT'}: ${formatMoney(c.cct, c.cct_currency || 'USD')}`}
-                                >
-                                  {t('expenseCct') || 'CCT'}:{' '}
-                                  {formatMoney(c.cct, c.cct_currency || 'USD')}
-                                </span>
-                              )}
+                              <span
+                                title={`${t('expenseCustoms') || 'Customs'}: ${formatMoney(c.customs_clearance_of_goods, c.customs_clearance_of_goods_currency || 'USD')}`}
+                              >
+                                {t('expenseCustoms') || 'Cust'}:{' '}
+                                {formatMoney(
+                                  c.customs_clearance_of_goods,
+                                  c.customs_clearance_of_goods_currency || 'USD'
+                                )}
+                              </span>
                             </div>
                           )}
                         </td>

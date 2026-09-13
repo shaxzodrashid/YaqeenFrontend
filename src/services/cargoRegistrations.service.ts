@@ -138,6 +138,10 @@ export interface CreateCargoRegistrationDto {
   additional_expense_currency?: CurrencyType;
   internal_logistics_cost?: number;
   internal_logistics_currency?: CurrencyType;
+  certificate_price?: number;
+  certificate_currency?: CurrencyType;
+  certificate?: number;
+  cct?: number;
   client_id: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -261,6 +265,8 @@ export interface CargoRegistrationListItem {
   additional_expense_currency?: CurrencyType | null;
   internal_logistics_cost?: number | null;
   internal_logistics_currency?: CurrencyType | null;
+  certificate_price?: number | null;
+  certificate_currency?: CurrencyType | null;
   client_id?: string;
   employee_id?: string;
   consolidation_id?: string | null;
@@ -424,6 +430,8 @@ export interface CargoRegistrationDetail {
   additional_expense_currency?: CurrencyType | null;
   internal_logistics_cost?: number | null;
   internal_logistics_currency?: CurrencyType | null;
+  certificate_price?: number | null;
+  certificate_currency?: CurrencyType | null;
   client_id: string;
   consolidation_id?: string | null;
   consolidation?: {
@@ -541,6 +549,8 @@ interface InternalCargoRegistrationRecord {
   additional_expense_currency?: CurrencyType | null;
   internal_logistics_cost?: number | null;
   internal_logistics_currency?: CurrencyType | null;
+  certificate_price?: number | null;
+  certificate_currency?: CurrencyType | null;
   client_id: string;
   employee_id: string;
   consolidation_id?: string | null;
@@ -632,10 +642,14 @@ export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     description: 'Fragile items, handle with care',
     load_code: 'LTL-2026-0881',
     is_turnkey: true,
+    turnkey_price: 300,
+    turnkey_currency: 'USD',
     additional_expense: 50,
     additional_expense_currency: 'USD',
     internal_logistics_cost: 150,
     internal_logistics_currency: 'USD',
+    certificate_price: 200,
+    certificate_currency: 'USD',
     client_id: 'c-client-1',
     employee_id: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890',
     created_at: '2026-08-05T11:50:00.000Z',
@@ -804,6 +818,10 @@ export const INITIAL_DEMO_RECORDS: InternalCargoRegistrationRecord[] = [
     usd_rmb_rate: 7.22,
     status: 'Arrived',
     description: 'Successfully delivered to client warehouse',
+    internal_logistics_cost: 120,
+    internal_logistics_currency: 'USD',
+    certificate_price: 150,
+    certificate_currency: 'USD',
     client_id: 'c-client-1',
     employee_id: '11111111-2222-3333-4444-555555555555',
     created_at: '2026-06-20T12:00:00.000Z',
@@ -884,11 +902,37 @@ export function buildCargoRegistrationDetail(
       ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, found.usd_rmb_rate)
       : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-  const totalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
-  const totalOutcomeUzs = purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs;
+  const certAmt = Number(found.certificate_price) || 0;
+  const certCurr = found.certificate_currency || 'USD';
+  const certConv =
+    certAmt > 0
+      ? convertPriceToUsdAndUzs(certAmt, certCurr, purDate, null, found.usd_rmb_rate)
+      : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-  const netUsd = Math.round((sellConv.amount_usd - totalOutcomeUsd) * 100) / 100;
-  const netUzs = Math.round((sellConv.amount_uzs - totalOutcomeUzs) * 100) / 100;
+  const totalOutcomeUsd =
+    purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
+  const totalOutcomeUzs =
+    purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs + certConv.amount_uzs;
+
+  const turnkeyAmt = Boolean(found.is_turnkey) ? Number(found.turnkey_price) || 0 : 0;
+  const turnkeyCurr = found.turnkey_currency || found.sell_currency || 'USD';
+  const turnkeyConv =
+    turnkeyAmt > 0
+      ? convertPriceToUsdAndUzs(turnkeyAmt, turnkeyCurr, sellDate, null, found.usd_rmb_rate)
+      : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+  const speedUpAmt = Boolean(found.is_speed_up) ? Number(found.speed_up) || 0 : 0;
+  const speedUpCurr = found.speed_up_currency || found.sell_currency || 'USD';
+  const speedUpConv =
+    speedUpAmt > 0
+      ? convertPriceToUsdAndUzs(speedUpAmt, speedUpCurr, sellDate, null, found.usd_rmb_rate)
+      : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+  const totalIncomeUsd = sellConv.amount_usd + turnkeyConv.amount_usd + speedUpConv.amount_usd;
+  const totalIncomeUzs = sellConv.amount_uzs + turnkeyConv.amount_uzs + speedUpConv.amount_uzs;
+
+  const netUsd = Math.round((totalIncomeUsd - totalOutcomeUsd) * 100) / 100;
+  const netUzs = Math.round((totalIncomeUzs - totalOutcomeUzs) * 100) / 100;
 
   const origDetail: LocationDetail | null = found.origin_city
     ? {
@@ -1001,10 +1045,17 @@ export function buildCargoRegistrationDetail(
     description: found.description,
     load_code: found.load_code || null,
     is_turnkey: Boolean(found.is_turnkey),
+    turnkey_price: found.turnkey_price ?? null,
+    turnkey_currency: found.turnkey_currency ?? null,
+    is_speed_up: Boolean(found.is_speed_up),
+    speed_up: found.speed_up ?? null,
+    speed_up_currency: found.speed_up_currency ?? null,
     additional_expense: found.additional_expense ?? null,
     additional_expense_currency: found.additional_expense_currency ?? null,
     internal_logistics_cost: isFoundLtl ? (found.internal_logistics_cost ?? null) : null,
     internal_logistics_currency: isFoundLtl ? (found.internal_logistics_currency ?? null) : null,
+    certificate_price: found.certificate_price ?? null,
+    certificate_currency: found.certificate_currency ?? null,
     client_id: found.client_id,
     client: client
       ? {
@@ -1492,14 +1543,37 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         r.usd_rmb_rate
       );
 
+      const turnkeyAmt = Boolean(r.is_turnkey) ? Number(r.turnkey_price) || 0 : 0;
+      const turnkeyCurr = r.turnkey_currency || r.sell_currency || 'USD';
+      const turnkeyConv =
+        turnkeyAmt > 0
+          ? convertPriceToUsdAndUzs(turnkeyAmt, turnkeyCurr, sellDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const speedUpAmt = Boolean(r.is_speed_up) ? Number(r.speed_up) || 0 : 0;
+      const speedUpCurr = r.speed_up_currency || r.sell_currency || 'USD';
+      const speedUpConv =
+        speedUpAmt > 0
+          ? convertPriceToUsdAndUzs(speedUpAmt, speedUpCurr, sellDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const totalIncomeUsd = sellConv.amount_usd + turnkeyConv.amount_usd + speedUpConv.amount_usd;
+      const totalIncomeUzs = sellConv.amount_uzs + turnkeyConv.amount_uzs + speedUpConv.amount_uzs;
+
       // Accumulate itemized revenue
       if (r.sell_currency && gross_sales_revenue[r.sell_currency] !== undefined) {
         gross_sales_revenue[r.sell_currency] += r.sell_price;
       }
-      gross_sales_revenue.total_usd_equivalent += sellConv.amount_usd;
-      gross_sales_revenue.total_uzs_equivalent += sellConv.amount_uzs;
+      if (turnkeyAmt > 0 && turnkeyCurr && gross_sales_revenue[turnkeyCurr] !== undefined) {
+        gross_sales_revenue[turnkeyCurr] += turnkeyAmt;
+      }
+      if (speedUpAmt > 0 && speedUpCurr && gross_sales_revenue[speedUpCurr] !== undefined) {
+        gross_sales_revenue[speedUpCurr] += speedUpAmt;
+      }
+      gross_sales_revenue.total_usd_equivalent += totalIncomeUsd;
+      gross_sales_revenue.total_uzs_equivalent += totalIncomeUzs;
 
-      // Net Yield (Total Financial Outcome: P + E + I)
+      // Net Yield (Total Financial Outcome: P + E + I + C)
       const addExpAmt = Number(r.additional_expense) || 0;
       const addExpCurr = r.additional_expense_currency || 'USD';
       const addExpConv =
@@ -1515,17 +1589,32 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, r.usd_rmb_rate)
           : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-      const totalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
-      const totalOutcomeUzs = purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs;
+      const certAmt = Number(r.certificate_price) || 0;
+      const certCurr = r.certificate_currency || 'USD';
+      const certConv =
+        certAmt > 0
+          ? convertPriceToUsdAndUzs(certAmt, certCurr, purDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-      const itemNetUsd = sellConv.amount_usd - totalOutcomeUsd;
-      const itemNetUzs = sellConv.amount_uzs - totalOutcomeUzs;
+      const totalOutcomeUsd =
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
+      const totalOutcomeUzs =
+        purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs + certConv.amount_uzs;
+
+      const itemNetUsd = totalIncomeUsd - totalOutcomeUsd;
+      const itemNetUzs = totalIncomeUzs - totalOutcomeUzs;
 
       calculated_net_yield.total_usd += itemNetUsd;
       calculated_net_yield.total_uzs += itemNetUzs;
 
       if (r.sell_currency && calculated_net_yield[r.sell_currency] !== undefined) {
         calculated_net_yield[r.sell_currency] += r.sell_price;
+      }
+      if (turnkeyAmt > 0 && turnkeyCurr && calculated_net_yield[turnkeyCurr] !== undefined) {
+        calculated_net_yield[turnkeyCurr] += turnkeyAmt;
+      }
+      if (speedUpAmt > 0 && speedUpCurr && calculated_net_yield[speedUpCurr] !== undefined) {
+        calculated_net_yield[speedUpCurr] += speedUpAmt;
       }
       if (r.purchase_currency && calculated_net_yield[r.purchase_currency] !== undefined) {
         calculated_net_yield[r.purchase_currency] -= r.purchase_price;
@@ -1535,6 +1624,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       }
       if (intLogAmt > 0 && intLogCurr && calculated_net_yield[intLogCurr] !== undefined) {
         calculated_net_yield[intLogCurr] -= intLogAmt;
+      }
+      if (certAmt > 0 && certCurr && calculated_net_yield[certCurr] !== undefined) {
+        calculated_net_yield[certCurr] -= certAmt;
       }
     });
 
@@ -1593,11 +1685,37 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, r.usd_rmb_rate)
           : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-      const totalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
-      const totalOutcomeUzs = purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs;
+      const certAmt = Number(r.certificate_price) || 0;
+      const certCurr = r.certificate_currency || 'USD';
+      const certConv =
+        certAmt > 0
+          ? convertPriceToUsdAndUzs(certAmt, certCurr, purDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-      const netYieldUsd = Math.round((sellConv.amount_usd - totalOutcomeUsd) * 100) / 100;
-      const netYieldUzs = Math.round((sellConv.amount_uzs - totalOutcomeUzs) * 100) / 100;
+      const totalOutcomeUsd =
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
+      const totalOutcomeUzs =
+        purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs + certConv.amount_uzs;
+
+      const turnkeyAmt = Boolean(r.is_turnkey) ? Number(r.turnkey_price) || 0 : 0;
+      const turnkeyCurr = r.turnkey_currency || r.sell_currency || 'USD';
+      const turnkeyConv =
+        turnkeyAmt > 0
+          ? convertPriceToUsdAndUzs(turnkeyAmt, turnkeyCurr, sellDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const speedUpAmt = Boolean(r.is_speed_up) ? Number(r.speed_up) || 0 : 0;
+      const speedUpCurr = r.speed_up_currency || r.sell_currency || 'USD';
+      const speedUpConv =
+        speedUpAmt > 0
+          ? convertPriceToUsdAndUzs(speedUpAmt, speedUpCurr, sellDate, null, r.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const totalIncomeUsd = sellConv.amount_usd + turnkeyConv.amount_usd + speedUpConv.amount_usd;
+      const totalIncomeUzs = sellConv.amount_uzs + turnkeyConv.amount_uzs + speedUpConv.amount_uzs;
+
+      const netYieldUsd = Math.round((totalIncomeUsd - totalOutcomeUsd) * 100) / 100;
+      const netYieldUzs = Math.round((totalIncomeUzs - totalOutcomeUzs) * 100) / 100;
 
       const origDetail: LocationDetail | null = r.origin_city
         ? {
@@ -1739,6 +1857,11 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
         description: r.description,
         load_code: r.load_code || null,
         is_turnkey: Boolean(r.is_turnkey),
+        turnkey_price: r.turnkey_price ?? null,
+        turnkey_currency: r.turnkey_currency ?? null,
+        is_speed_up: Boolean(r.is_speed_up),
+        speed_up: r.speed_up ?? null,
+        speed_up_currency: r.speed_up_currency ?? null,
         client_id: r.client_id,
         employee_id: r.employee_id,
         confirmed_date: r.confirmed_date,
@@ -1750,6 +1873,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           (r.cargo_type || 'LTL') === 'LTL' ? (r.internal_logistics_cost ?? null) : null,
         internal_logistics_currency:
           (r.cargo_type || 'LTL') === 'LTL' ? (r.internal_logistics_currency ?? null) : null,
+        certificate_price: r.certificate_price ?? null,
+        certificate_currency: r.certificate_currency ?? null,
         created_at: r.created_at,
         updated_at: r.updated_at,
       };
@@ -1948,11 +2073,25 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       }
     }
 
+    const rawCertPrice =
+      body?.certificate_price !== undefined
+        ? body.certificate_price
+        : body?.certificate !== undefined
+          ? body.certificate
+          : body?.cct !== undefined
+            ? body.cct
+            : undefined;
+    const certificate_price =
+      rawCertPrice !== undefined && rawCertPrice !== null ? Number(rawCertPrice) : null;
+    const certificate_currency: CurrencyType = body?.certificate_currency || 'USD';
+
     const usesRmb =
       purchase_currency === 'RMB' ||
       sell_currency === 'RMB' ||
       additional_expense_currency === 'RMB' ||
-      internal_logistics_currency === 'RMB';
+      internal_logistics_currency === 'RMB' ||
+      (certificate_price !== null && certificate_currency === 'RMB') ||
+      body?.certificate_currency === 'RMB';
 
     if (usesRmb) {
       if (!usd_rmb_rate || Number(usd_rmb_rate) <= 0) {
@@ -2051,6 +2190,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
           : null,
       internal_logistics_currency:
         cargo_type === 'LTL' ? internal_logistics_currency || 'USD' : 'USD',
+      certificate_price: certificate_price,
+      certificate_currency:
+        certificate_price !== null ? certificate_currency : body?.certificate_currency || 'USD',
       client_id,
       employee_id: assignedEmpId,
       created_at: nowIso,
@@ -2112,6 +2254,22 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             ? body.internal_logistics_currency
             : current.internal_logistics_currency || 'USD'
           : 'USD',
+      certificate_price:
+        (body?.certificate_price !== undefined
+          ? body.certificate_price
+          : body?.certificate !== undefined
+            ? body.certificate
+            : body?.cct !== undefined
+              ? body.cct
+              : undefined) !== undefined
+          ? (body?.certificate_price ?? body?.certificate ?? body?.cct) !== null
+            ? Number(body?.certificate_price ?? body?.certificate ?? body?.cct)
+            : null
+          : current.certificate_price,
+      certificate_currency:
+        body?.certificate_currency !== undefined
+          ? body.certificate_currency
+          : current.certificate_currency || 'USD',
       purchase_custom_rate: pCustom ? Number(pCustom) : null,
       sell_custom_rate: sCustom ? Number(sCustom) : null,
       updated_at: new Date().toISOString(),
@@ -2156,7 +2314,9 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       updatedState.purchase_currency === 'RMB' ||
       updatedState.sell_currency === 'RMB' ||
       updatedState.additional_expense_currency === 'RMB' ||
-      updatedState.internal_logistics_currency === 'RMB';
+      updatedState.internal_logistics_currency === 'RMB' ||
+      (updatedState.certificate_price !== null && updatedState.certificate_currency === 'RMB') ||
+      updatedState.certificate_currency === 'RMB';
 
     if (patchUsesRmb) {
       if (!updatedState.usd_rmb_rate || Number(updatedState.usd_rmb_rate) <= 0) {
@@ -2254,6 +2414,21 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       }
     > = {};
 
+    const summaryGrossRevenue = {
+      UZS: 0,
+      USD: 0,
+      RUB: 0,
+      RMB: 0,
+      total_usd_equivalent: 0,
+      total_uzs_equivalent: 0,
+    };
+    const summaryNetYield = {
+      USD: 0,
+      UZS: 0,
+      total_usd: 0,
+      total_uzs: 0,
+    };
+
     list.forEach((r) => {
       const emp = demoEmployeesDb.get(r.employee_id);
       const name = emp
@@ -2318,28 +2493,95 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
             )
           : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
+      const certAmt = Number(r.certificate_price) || 0;
+      const certCurr = r.certificate_currency || 'USD';
+      const certConv =
+        certAmt > 0
+          ? convertPriceToUsdAndUzs(
+              certAmt,
+              certCurr,
+              r.purchase_date || '',
+              null,
+              r.usd_rmb_rate || 7.235
+            )
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
       const totalCargoOutcomeUsd =
-        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
-      managerMap[name].grossUsd += sellConv.amount_usd;
-      managerMap[name].netUsd += Math.max(0, sellConv.amount_usd - totalCargoOutcomeUsd);
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
+      const totalCargoOutcomeUzs =
+        purConv.amount_uzs + addExpConv.amount_uzs + intLogConv.amount_uzs + certConv.amount_uzs;
+
+      const turnkeyAmt = Boolean(r.is_turnkey) ? Number(r.turnkey_price) || 0 : 0;
+      const turnkeyCurr = r.turnkey_currency || r.sell_currency || 'USD';
+      const turnkeyConv =
+        turnkeyAmt > 0
+          ? convertPriceToUsdAndUzs(
+              turnkeyAmt,
+              turnkeyCurr,
+              r.sell_date || '',
+              null,
+              r.usd_rmb_rate || 7.235
+            )
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const speedUpAmt = Boolean(r.is_speed_up) ? Number(r.speed_up) || 0 : 0;
+      const speedUpCurr = r.speed_up_currency || r.sell_currency || 'USD';
+      const speedUpConv =
+        speedUpAmt > 0
+          ? convertPriceToUsdAndUzs(
+              speedUpAmt,
+              speedUpCurr,
+              r.sell_date || '',
+              null,
+              r.usd_rmb_rate || 7.235
+            )
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const totalCargoIncomeUsd =
+        sellConv.amount_usd + turnkeyConv.amount_usd + speedUpConv.amount_usd;
+      const totalCargoIncomeUzs =
+        sellConv.amount_uzs + turnkeyConv.amount_uzs + speedUpConv.amount_uzs;
+
+      const cargoNetYieldUsd = totalCargoIncomeUsd - totalCargoOutcomeUsd;
+      const cargoNetYieldUzs = totalCargoIncomeUzs - totalCargoOutcomeUzs;
+
+      managerMap[name].grossUsd += totalCargoIncomeUsd;
+      managerMap[name].netUsd += Math.max(0, cargoNetYieldUsd);
+
+      if (r.sell_currency && summaryGrossRevenue[r.sell_currency] !== undefined) {
+        summaryGrossRevenue[r.sell_currency] += r.sell_price;
+      }
+      if (turnkeyAmt > 0 && turnkeyCurr && summaryGrossRevenue[turnkeyCurr] !== undefined) {
+        summaryGrossRevenue[turnkeyCurr] += turnkeyAmt;
+      }
+      if (speedUpAmt > 0 && speedUpCurr && summaryGrossRevenue[speedUpCurr] !== undefined) {
+        summaryGrossRevenue[speedUpCurr] += speedUpAmt;
+      }
+      summaryGrossRevenue.total_usd_equivalent += totalCargoIncomeUsd;
+      summaryGrossRevenue.total_uzs_equivalent += totalCargoIncomeUzs;
+
+      summaryNetYield.total_usd += cargoNetYieldUsd;
+      summaryNetYield.total_uzs += cargoNetYieldUzs;
+      if (r.sell_currency === 'USD') summaryNetYield.USD += cargoNetYieldUsd;
+      if (r.sell_currency === 'UZS') summaryNetYield.UZS += cargoNetYieldUzs;
     });
 
     const statsResult: CargoRegistrationsStatsResponse = {
       summary: {
         total_cargos: list.length,
         gross_sales_revenue: {
-          UZS: 120000000,
-          USD: 450000,
-          RUB: 350000,
-          RMB: 80000,
-          total_usd_equivalent: 472500.0,
-          total_uzs_equivalent: 6071625000.0,
+          UZS: Math.round(summaryGrossRevenue.UZS * 100) / 100,
+          USD: Math.round(summaryGrossRevenue.USD * 100) / 100,
+          RUB: Math.round(summaryGrossRevenue.RUB * 100) / 100,
+          RMB: Math.round(summaryGrossRevenue.RMB * 100) / 100,
+          total_usd_equivalent: Math.round(summaryGrossRevenue.total_usd_equivalent * 100) / 100,
+          total_uzs_equivalent: Math.round(summaryGrossRevenue.total_uzs_equivalent * 100) / 100,
         },
         calculated_net_yield: {
-          USD: 75000.0,
-          UZS: 963750000.0,
-          total_usd: 75000.0,
-          total_uzs: 963750000.0,
+          USD: Math.round(summaryNetYield.USD * 100) / 100,
+          UZS: Math.round(summaryNetYield.UZS * 100) / 100,
+          total_usd: Math.round(summaryNetYield.total_usd * 100) / 100,
+          total_uzs: Math.round(summaryNetYield.total_uzs * 100) / 100,
         },
       },
       ltl_statistics: {
@@ -2557,6 +2799,8 @@ export const cargoRegistrationsApi = {
       additional_expense_currency: source.additional_expense_currency ?? undefined,
       internal_logistics_cost: source.internal_logistics_cost ?? undefined,
       internal_logistics_currency: source.internal_logistics_currency ?? undefined,
+      certificate_price: source.certificate_price ?? undefined,
+      certificate_currency: source.certificate_currency ?? undefined,
       client_id: source.client_id,
       employee_id: source.employee_id,
     });

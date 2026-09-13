@@ -16,7 +16,6 @@ import {
   Ship,
   Package,
   Loader2,
-  Receipt,
   Calculator,
 } from 'lucide-react';
 import { useTranslation } from '../../context/LanguageContext';
@@ -233,15 +232,12 @@ export function ConsolidationModal({
   const [tashkentArrivalDate, setTashkentArrivalDate] = useState<string>('');
   const [arrivedDate, setArrivedDate] = useState<string>('');
 
-  // 3 Operational expenses
+  // Operational expenses (agent freight & customs clearance)
   const [agentStr, setAgentStr] = useState<string>('');
   const [agentCurrency, setAgentCurrency] = useState<CurrencyType>('USD');
 
   const [customsClearanceStr, setCustomsClearanceStr] = useState<string>('');
   const [customsClearanceCurrency, setCustomsClearanceCurrency] = useState<CurrencyType>('USD');
-
-  const [cctStr, setCctStr] = useState<string>('');
-  const [cctCurrency, setCctCurrency] = useState<CurrencyType>('USD');
 
   const [status, setStatus] = useState<ConsolidationStatus>('Waiting');
   const [description, setDescription] = useState<string>('');
@@ -255,26 +251,16 @@ export function ConsolidationModal({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [loadingEditDetails, setLoadingEditDetails] = useState<boolean>(false);
 
-  // Calculate live USD sum of all 3 expenses
+  // Calculate live USD sum of operational expenses (agent + customs clearance)
   const calculatedExpensesTotalUsd = useMemo(() => {
     const aAmt = parseFloat(agentStr) || 0;
     const ccAmt = parseFloat(customsClearanceStr) || 0;
-    const cctAmt = parseFloat(cctStr) || 0;
 
     const aConv = convertPriceToUsdAndUzs(aAmt, agentCurrency, departureDate);
     const ccConv = convertPriceToUsdAndUzs(ccAmt, customsClearanceCurrency, departureDate);
-    const cctConv = convertPriceToUsdAndUzs(cctAmt, cctCurrency, departureDate);
 
-    return Math.round((aConv.amount_usd + ccConv.amount_usd + cctConv.amount_usd) * 100) / 100;
-  }, [
-    agentStr,
-    agentCurrency,
-    customsClearanceStr,
-    customsClearanceCurrency,
-    cctStr,
-    cctCurrency,
-    departureDate,
-  ]);
+    return Math.round((aConv.amount_usd + ccConv.amount_usd) * 100) / 100;
+  }, [agentStr, agentCurrency, customsClearanceStr, customsClearanceCurrency, departureDate]);
 
   // Populate form from any consolidation object
   const populateForm = useCallback((data: any) => {
@@ -340,21 +326,6 @@ export function ConsolidationModal({
     } else {
       setCustomsClearanceStr('');
       setCustomsClearanceCurrency('USD');
-    }
-
-    // 3. CCT
-    if (data.cct !== undefined && data.cct !== null) {
-      setCctStr(String(data.cct));
-      setCctCurrency(data.cct_currency || 'USD');
-    } else if (data.financials?.expenses?.cct) {
-      const cctExp = data.financials.expenses.cct;
-      setCctStr(
-        cctExp.amount !== undefined ? String(cctExp.amount) : String(cctExp.amount_usd || '')
-      );
-      setCctCurrency(cctExp.currency || 'USD');
-    } else {
-      setCctStr('');
-      setCctCurrency('USD');
     }
 
     setStatus(data.status || 'Waiting');
@@ -424,8 +395,6 @@ export function ConsolidationModal({
       setAgentCurrency('USD');
       setCustomsClearanceStr('');
       setCustomsClearanceCurrency('USD');
-      setCctStr('');
-      setCctCurrency('USD');
       setStatus('Waiting');
       setDescription('');
       setTransportTypes(['auto']);
@@ -475,7 +444,6 @@ export function ConsolidationModal({
     const maxWt = parseFloat(maxWeightStr) || 0;
     const agentAmt = parseFloat(agentStr) || 0;
     const customsClearanceAmt = parseFloat(customsClearanceStr) || 0;
-    const cctAmt = parseFloat(cctStr) || 0;
 
     if (maxVol <= 0) {
       showNotification('Maximum volume capacity must be greater than 0 m³', 'warning');
@@ -506,8 +474,6 @@ export function ConsolidationModal({
           agent_currency: agentCurrency,
           customs_clearance_of_goods: customsClearanceAmt,
           customs_clearance_of_goods_currency: customsClearanceCurrency,
-          cct: cctAmt,
-          cct_currency: cctCurrency,
           total_carrier_cost: agentAmt,
           carrier_cost_currency: agentCurrency,
           status,
@@ -544,8 +510,6 @@ export function ConsolidationModal({
           agent_currency: agentCurrency,
           customs_clearance_of_goods: customsClearanceAmt,
           customs_clearance_of_goods_currency: customsClearanceCurrency,
-          cct: cctAmt,
-          cct_currency: cctCurrency,
           total_carrier_cost: agentAmt,
           carrier_cost_currency: agentCurrency,
           status,
@@ -941,10 +905,10 @@ export function ConsolidationModal({
                 </div>
               </div>
 
-              {/* 3 Operational Expense Inputs */}
+              {/* 2 Operational Expense Inputs */}
               <div className="space-y-3 pt-2 border-t border-border/50">
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  {t('operationalCostBreakdown') || 'Operational Cost Breakdown (3 categories)'}
+                  {t('operationalCostBreakdown') || 'Expense Line Items (2 categories)'}
                 </p>
 
                 {/* 1. Agent / Line-haul */}
@@ -1014,41 +978,6 @@ export function ConsolidationModal({
                       }
                       allowClear={false}
                       aria-label="Customs Clearance Currency"
-                      options={CURRENCY_SELECT_OPTIONS}
-                    />
-                  </div>
-                </div>
-
-                {/* 3. CCT */}
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 rounded-xl bg-surface/60 border border-border/50">
-                  <div className="sm:col-span-5 flex items-center gap-2">
-                    <Receipt className="size-4 text-purple-500 shrink-0" />
-                    <div>
-                      <span className="text-xs font-bold text-foreground block">
-                        {t('cctCertTitle') || 'CCT / Certificate'}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {t('cctCertSubtitle') || 'Cargo container terminal & cert'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="sm:col-span-4">
-                    <NumberInput
-                      size="sm"
-                      placeholder="0.00"
-                      value={cctStr}
-                      onValueChange={(_num, raw) => setCctStr(raw)}
-                      allowDecimals={true}
-                      decimalScale={2}
-                      min={0}
-                    />
-                  </div>
-                  <div className="sm:col-span-3">
-                    <Select
-                      value={cctCurrency}
-                      onChange={(val) => setCctCurrency((val as CurrencyType) || 'USD')}
-                      allowClear={false}
-                      aria-label="CCT Currency"
                       options={CURRENCY_SELECT_OPTIONS}
                     />
                   </div>

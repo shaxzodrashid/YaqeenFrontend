@@ -67,7 +67,7 @@ export interface ConsolidationExpenseItem {
 export interface ConsolidationExpenses {
   agent: ConsolidationExpenseItem;
   customs_clearance_of_goods: ConsolidationExpenseItem;
-  cct: ConsolidationExpenseItem;
+  cct?: ConsolidationExpenseItem;
   total_usd: number;
 }
 
@@ -86,6 +86,7 @@ export interface ConsolidationFinancials {
   outcome?: number;
   outcome_usd?: number;
   total_outcome_usd?: number;
+  total_expenses_usd?: number;
   total_purchase_usd: number;
   expenses?: ConsolidationExpenses;
   carrier_cost?: ConsolidationExpenseItem;
@@ -94,6 +95,7 @@ export interface ConsolidationFinancials {
     currency: CurrencyType;
   };
   consolidated_net_margin_usd?: number;
+  consolidated_net_margin_currencies?: ConsolidationNetMarginCurrencies;
   net_margin_usd?: number;
   net_profit_usd?: number;
   total_purchase_cost_usd?: number;
@@ -176,8 +178,18 @@ export function getTotalConsolidationExpensesUsd(
   financials?: ConsolidationFinancials | null
 ): number {
   if (!financials) return 0;
-  if (financials.expenses?.total_usd !== undefined) {
-    return Number(financials.expenses.total_usd) || 0;
+  if (financials.expenses) {
+    const agentUsd =
+      Number(financials.expenses.agent?.amount_usd ?? financials.expenses.agent?.amount) || 0;
+    const customsUsd =
+      Number(
+        financials.expenses.customs_clearance_of_goods?.amount_usd ??
+          financials.expenses.customs_clearance_of_goods?.amount
+      ) || 0;
+    return Math.round((agentUsd + customsUsd) * 100) / 100;
+  }
+  if (financials.total_expenses_usd !== undefined) {
+    return Number(financials.total_expenses_usd) || 0;
   }
   if (financials.total_outcome_usd !== undefined) {
     return Number(financials.total_outcome_usd) || 0;
@@ -222,6 +234,19 @@ export interface ConsolidationCargoItem {
   agent_name?: string | null;
   load_code?: string | null;
   is_turnkey?: boolean;
+  turnkey_price?: number | null;
+  turnkey_currency?: CurrencyType | null;
+  is_speed_up?: boolean;
+  speed_up?: number | null;
+  speed_up_currency?: CurrencyType | null;
+  additional_expense?: number | null;
+  additional_expense_currency?: CurrencyType | null;
+  internal_logistics_cost?: number | null;
+  internal_logistics_currency?: CurrencyType | null;
+  certificate_price?: number | null;
+  certificate_currency?: CurrencyType | null;
+  total_income_usd?: number;
+  total_outcome_usd?: number;
   client_id?: string;
   client_name?: string;
   client?: {
@@ -414,6 +439,8 @@ export interface ConsolidationMeta {
   total_capacity_volume_m3?: number;
   total_assigned_volume_m3?: number;
   total_net_margin_usd?: number;
+  total_expenses_usd?: number;
+  total_income_usd?: number;
 }
 
 export interface ConsolidationPaginatedResponse {
@@ -504,7 +531,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     agent_currency: 'USD',
     customs_clearance_of_goods: 400.0,
     customs_clearance_of_goods_currency: 'USD',
-    cct: 100.0,
+    cct: 0,
     cct_currency: 'USD',
     total_carrier_cost: 3500,
     carrier_cost_currency: 'USD',
@@ -551,7 +578,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     agent_currency: 'USD',
     customs_clearance_of_goods: 500.0,
     customs_clearance_of_goods_currency: 'USD',
-    cct: 120.0,
+    cct: 0,
     cct_currency: 'USD',
     total_carrier_cost: 4500,
     carrier_cost_currency: 'USD',
@@ -595,7 +622,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     agent_currency: 'USD',
     customs_clearance_of_goods: 350.0,
     customs_clearance_of_goods_currency: 'USD',
-    cct: 90.0,
+    cct: 0,
     cct_currency: 'USD',
     total_carrier_cost: 3600,
     carrier_cost_currency: 'USD',
@@ -639,7 +666,7 @@ const INITIAL_DEMO_CONSOLIDATIONS: InternalConsolidationRecord[] = [
     agent_currency: 'USD',
     customs_clearance_of_goods: 450.0,
     customs_clearance_of_goods_currency: 'USD',
-    cct: 100.0,
+    cct: 0,
     cct_currency: 'USD',
     total_carrier_cost: 4100,
     carrier_cost_currency: 'USD',
@@ -656,7 +683,17 @@ function getStoredConsolidations(): InternalConsolidationRecord[] {
   try {
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('yaqeen_cargo_consolidations_db');
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((rec: any) => {
+            if (rec && typeof rec.id === 'string' && rec.id.startsWith('cns-demo-')) {
+              return { ...rec, cct: 0 };
+            }
+            return rec;
+          });
+        }
+      }
     }
   } catch {
     // Ignore storage error
@@ -720,6 +757,7 @@ function buildConsolidationResponse(
   let assignedWeight = 0;
   let totalSellUsd = 0;
   let totalPurchaseUsd = 0;
+  let totalAttachedIncomeUsd = 0;
 
   const cargosList: ConsolidationCargoItem[] = assignedCargoRecords.map((c) => {
     const vol = Number(c.volume) || 0;
@@ -727,17 +765,21 @@ function buildConsolidationResponse(
     assignedVol += vol;
     assignedWeight += wt;
 
+    const purDate =
+      c.purchase_date || c.confirmed_date || (c.created_at ? c.created_at.slice(0, 10) : undefined);
+    const sellDate = c.sell_date || (c.created_at ? c.created_at.slice(0, 10) : undefined);
+
     const purConv = convertPriceToUsdAndUzs(
       c.purchase_price,
       c.purchase_currency,
-      c.purchase_date,
+      purDate,
       c.purchase_custom_rate || c.purchase_usd_rate,
       c.usd_rmb_rate
     );
     const sellConv = convertPriceToUsdAndUzs(
       c.sell_price,
       c.sell_currency,
-      c.sell_date,
+      sellDate,
       c.sell_custom_rate || c.sell_usd_rate,
       c.usd_rmb_rate
     );
@@ -749,18 +791,49 @@ function buildConsolidationResponse(
     const addExpCurr = c.additional_expense_currency || 'USD';
     const addExpConv =
       addExpAmt > 0
-        ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, c.purchase_date, null, c.usd_rmb_rate)
+        ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, purDate, null, c.usd_rmb_rate)
         : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-    const intLogAmt = Number(c.internal_logistics_cost) || 0;
+    const isLtl = (c.cargo_type || 'LTL') === 'LTL';
+    const intLogAmt = isLtl ? Number(c.internal_logistics_cost) || 0 : 0;
     const intLogCurr = c.internal_logistics_currency || 'USD';
     const intLogConv =
       intLogAmt > 0
-        ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, c.purchase_date, null, c.usd_rmb_rate)
+        ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, c.usd_rmb_rate)
         : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
-    const cargoTotalOutcomeUsd = purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
-    const netYield = Math.round((sellConv.amount_usd - cargoTotalOutcomeUsd) * 100) / 100;
+    const certAmt = Number(c.certificate_price ?? c.certificate ?? c.cct) || 0;
+    const certCurr = c.certificate_currency || 'USD';
+    const certConv =
+      certAmt > 0
+        ? convertPriceToUsdAndUzs(certAmt, certCurr, purDate, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+    const cargoTotalOutcomeUsd =
+      purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
+
+    const isTurnkey = Boolean(c.is_turnkey);
+    const turnkeyAmt = isTurnkey ? Number(c.turnkey_price) || 0 : 0;
+    const turnkeyCurr = c.turnkey_currency || c.sell_currency || 'USD';
+    const turnkeyConv =
+      turnkeyAmt > 0
+        ? convertPriceToUsdAndUzs(turnkeyAmt, turnkeyCurr, sellDate, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+    const isSpeedUp = Boolean(c.is_speed_up);
+    const speedUpAmt = isSpeedUp ? Number(c.speed_up) || 0 : 0;
+    const speedUpCurr = c.speed_up_currency || c.sell_currency || 'USD';
+    const speedUpConv =
+      speedUpAmt > 0
+        ? convertPriceToUsdAndUzs(speedUpAmt, speedUpCurr, sellDate, null, c.usd_rmb_rate)
+        : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+    const cargoTotalIncomeUsd =
+      sellConv.amount_usd + turnkeyConv.amount_usd + speedUpConv.amount_usd;
+
+    totalAttachedIncomeUsd += cargoTotalIncomeUsd;
+
+    const netYield = Math.round((cargoTotalIncomeUsd - cargoTotalOutcomeUsd) * 100) / 100;
 
     const client = demoClientsDb.find((cl) => cl.id === c.client_id);
     const emp = demoEmployeesDb.get(c.employee_id);
@@ -775,7 +848,20 @@ function buildConsolidationResponse(
       container_truck_id: c.container_truck_id || record.container_truck_id,
       agent_name: c.agent_name,
       load_code: (c as any).load_code || null,
-      is_turnkey: Boolean((c as any).is_turnkey),
+      is_turnkey: isTurnkey,
+      turnkey_price: turnkeyAmt,
+      turnkey_currency: turnkeyCurr,
+      is_speed_up: isSpeedUp,
+      speed_up: speedUpAmt,
+      speed_up_currency: speedUpCurr,
+      additional_expense: addExpAmt,
+      additional_expense_currency: addExpCurr,
+      internal_logistics_cost: intLogAmt,
+      internal_logistics_currency: intLogCurr,
+      certificate_price: certAmt,
+      certificate_currency: certCurr,
+      total_income_usd: Math.round(cargoTotalIncomeUsd * 100) / 100,
+      total_outcome_usd: Math.round(cargoTotalOutcomeUsd * 100) / 100,
       client: client
         ? {
             id: client.id,
@@ -822,7 +908,7 @@ function buildConsolidationResponse(
   const volUtilPct = maxVol > 0 ? (assignedVol / maxVol) * 100 : 0;
   const wtUtilPct = maxWt > 0 ? (assignedWeight / maxWt) * 100 : 0;
 
-  // Convert all 5 expenses
+  // Convert expenses: strictly agent (carrier fee) and customs clearance
   const agentAmt =
     record.agent !== undefined ? Number(record.agent) : Number(record.total_carrier_cost) || 0;
   const agentCurr = record.agent_currency || record.carrier_cost_currency || 'USD';
@@ -841,9 +927,9 @@ function buildConsolidationResponse(
   const cctCurr = record.cct_currency || 'USD';
   const cctConv = convertPriceToUsdAndUzs(cctAmt, cctCurr, record.departure_date);
 
-  const totalExpensesUsd =
-    Math.round((agentConv.amount_usd + customsConv.amount_usd + cctConv.amount_usd) * 100) / 100;
-  const totalIncomeUsd = Math.round(totalSellUsd * 100) / 100;
+  // Operational expenses consist strictly of agent (line-haul) and customs clearance (CCT removed from consolidation expense totals)
+  const totalExpensesUsd = Math.round((agentConv.amount_usd + customsConv.amount_usd) * 100) / 100;
+  const totalIncomeUsd = Math.round(totalAttachedIncomeUsd * 100) / 100;
   const netMarginUsd = Math.round((totalIncomeUsd - totalExpensesUsd) * 100) / 100;
 
   const expensesObj: ConsolidationExpenses = {
@@ -857,11 +943,15 @@ function buildConsolidationResponse(
       currency: customsCurr,
       amount_usd: Math.round(customsConv.amount_usd * 100) / 100,
     },
-    cct: {
-      amount: Math.round(cctAmt * 100) / 100,
-      currency: cctCurr,
-      amount_usd: Math.round(cctConv.amount_usd * 100) / 100,
-    },
+    ...(cctAmt > 0
+      ? {
+          cct: {
+            amount: Math.round(cctAmt * 100) / 100,
+            currency: cctCurr,
+            amount_usd: Math.round(cctConv.amount_usd * 100) / 100,
+          },
+        }
+      : {}),
     total_usd: totalExpensesUsd,
   };
 
@@ -984,6 +1074,7 @@ function buildConsolidationResponse(
       outcome: totalExpensesUsd,
       outcome_usd: totalExpensesUsd,
       total_outcome_usd: totalExpensesUsd,
+      total_expenses_usd: totalExpensesUsd,
       total_purchase_usd: 0,
       expenses: expensesObj,
       carrier_cost: expensesObj.agent,
@@ -992,6 +1083,12 @@ function buildConsolidationResponse(
         currency: 'USD',
       },
       consolidated_net_margin_usd: netMarginUsd,
+      consolidated_net_margin_currencies: {
+        USD: netMarginUsd,
+        UZS: Math.round(netMarginUsd * 12850),
+        RUB: Math.round(netMarginUsd * 88.62 * 100) / 100,
+        RMB: Math.round(netMarginUsd * 7.08 * 100) / 100,
+      },
       net_margin_usd: netMarginUsd,
       net_profit_usd: netMarginUsd,
       total_purchase_cost_usd: 0,
@@ -1481,12 +1578,16 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
     let totalCapVol = 0;
     let totalAssignedVol = 0;
     let totalMargin = 0;
+    let totalExpensesUsd = 0;
+    let totalIncomeUsd = 0;
     let activeCount = 0;
 
     demoConsolidations.forEach((rec) => {
       const full = buildConsolidationResponse(rec, true);
       totalCapVol += full.capacity.max_volume_m3;
       totalAssignedVol += full.capacity.assigned_volume_m3;
+      totalIncomeUsd += getTotalConsolidationIncomeUsd(full.financials);
+      totalExpensesUsd += getTotalConsolidationExpensesUsd(full.financials);
       totalMargin += getConsolidatedNetMargin(full.financials);
       if (rec.status !== 'Arrived') activeCount++;
     });
@@ -1512,6 +1613,8 @@ registerDemoHandler((path: string, options: RequestInit, body: any) => {
       total_capacity_volume_m3: Math.round(totalCapVol * 100) / 100,
       total_assigned_volume_m3: Math.round(totalAssignedVol * 100) / 100,
       total_net_margin_usd: totalMarginUsd,
+      total_expenses_usd: Math.round(totalExpensesUsd * 100) / 100,
+      total_income_usd: Math.round(totalIncomeUsd * 100) / 100,
     };
 
     return {
@@ -1707,17 +1810,23 @@ export const cargoConsolidationsApi = {
     }
 
     return filtered.map((c) => {
+      const purDate =
+        c.purchase_date ||
+        c.confirmed_date ||
+        (c.created_at ? c.created_at.slice(0, 10) : undefined);
+      const sellDate = c.sell_date || (c.created_at ? c.created_at.slice(0, 10) : undefined);
+
       const purConv = convertPriceToUsdAndUzs(
         c.purchase_price,
         c.purchase_currency,
-        c.purchase_date,
+        purDate,
         c.purchase_custom_rate || c.purchase_usd_rate,
         c.usd_rmb_rate
       );
       const sellConv = convertPriceToUsdAndUzs(
         c.sell_price,
         c.sell_currency,
-        c.sell_date,
+        sellDate,
         c.sell_custom_rate || c.sell_usd_rate,
         c.usd_rmb_rate
       );
@@ -1725,19 +1834,46 @@ export const cargoConsolidationsApi = {
       const addExpCurr = c.additional_expense_currency || 'USD';
       const addExpConv =
         addExpAmt > 0
-          ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, c.purchase_date, null, c.usd_rmb_rate)
+          ? convertPriceToUsdAndUzs(addExpAmt, addExpCurr, purDate, null, c.usd_rmb_rate)
           : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
       const intLogAmt = Number(c.internal_logistics_cost) || 0;
       const intLogCurr = c.internal_logistics_currency || 'USD';
       const intLogConv =
         intLogAmt > 0
-          ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, c.purchase_date, null, c.usd_rmb_rate)
+          ? convertPriceToUsdAndUzs(intLogAmt, intLogCurr, purDate, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
+
+      const certAmt = Number(c.certificate_price ?? c.certificate ?? c.cct) || 0;
+      const certCurr = c.certificate_currency || 'USD';
+      const certConv =
+        certAmt > 0
+          ? convertPriceToUsdAndUzs(certAmt, certCurr, purDate, null, c.usd_rmb_rate)
           : { amount_usd: 0, amount_uzs: 0, usd_rate: purConv.usd_rate };
 
       const cargoTotalOutcomeUsd =
-        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd;
-      const netYield = Math.round((sellConv.amount_usd - cargoTotalOutcomeUsd) * 100) / 100;
+        purConv.amount_usd + addExpConv.amount_usd + intLogConv.amount_usd + certConv.amount_usd;
+
+      const isTurnkey = Boolean(c.is_turnkey);
+      const turnkeyAmt = isTurnkey ? Number(c.turnkey_price) || 0 : 0;
+      const turnkeyCurr = c.turnkey_currency || c.sell_currency || 'USD';
+      const turnkeyConv =
+        turnkeyAmt > 0
+          ? convertPriceToUsdAndUzs(turnkeyAmt, turnkeyCurr, sellDate, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const isSpeedUp = Boolean(c.is_speed_up);
+      const speedUpAmt = isSpeedUp ? Number(c.speed_up) || 0 : 0;
+      const speedUpCurr = c.speed_up_currency || c.sell_currency || 'USD';
+      const speedUpConv =
+        speedUpAmt > 0
+          ? convertPriceToUsdAndUzs(speedUpAmt, speedUpCurr, sellDate, null, c.usd_rmb_rate)
+          : { amount_usd: 0, amount_uzs: 0, usd_rate: sellConv.usd_rate };
+
+      const cargoTotalIncomeUsd =
+        sellConv.amount_usd + turnkeyConv.amount_usd + speedUpConv.amount_usd;
+
+      const netYield = Math.round((cargoTotalIncomeUsd - cargoTotalOutcomeUsd) * 100) / 100;
 
       const client = demoClientsDb.find((cl) => cl.id === c.client_id);
       const emp = demoEmployeesDb.get(c.employee_id);
@@ -1752,7 +1888,20 @@ export const cargoConsolidationsApi = {
         container_truck_id: c.container_truck_id,
         agent_name: c.agent_name,
         load_code: (c as any).load_code || null,
-        is_turnkey: Boolean((c as any).is_turnkey),
+        is_turnkey: isTurnkey,
+        turnkey_price: turnkeyAmt,
+        turnkey_currency: turnkeyCurr,
+        is_speed_up: isSpeedUp,
+        speed_up: speedUpAmt,
+        speed_up_currency: speedUpCurr,
+        additional_expense: addExpAmt,
+        additional_expense_currency: addExpCurr,
+        internal_logistics_cost: intLogAmt,
+        internal_logistics_currency: intLogCurr,
+        certificate_price: certAmt,
+        certificate_currency: certCurr,
+        total_income_usd: Math.round(cargoTotalIncomeUsd * 100) / 100,
+        total_outcome_usd: Math.round(cargoTotalOutcomeUsd * 100) / 100,
         client: client
           ? {
               id: client.id,

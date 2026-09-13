@@ -200,6 +200,7 @@ export type {
   ConsolidationCapacity,
   ConsolidationExpenseItem,
   ConsolidationExpenses,
+  ConsolidationNetMarginCurrencies,
   ConsolidationFinancials,
   ConsolidationCargoItem,
   ConsolidationListItem,

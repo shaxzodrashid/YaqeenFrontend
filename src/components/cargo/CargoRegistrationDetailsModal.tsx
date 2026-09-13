@@ -176,6 +176,16 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
       : null;
   const internalLogisticsCurrency = (item as any).internal_logistics_currency || 'USD';
 
+  const certificatePrice =
+    (item as any).certificate_price !== undefined && (item as any).certificate_price !== null
+      ? Number((item as any).certificate_price)
+      : (item as any).certificate !== undefined && (item as any).certificate !== null
+        ? Number((item as any).certificate)
+        : (item as any).cct !== undefined && (item as any).cct !== null
+          ? Number((item as any).cct)
+          : null;
+  const certificateCurrency = (item as any).certificate_currency || 'USD';
+
   // Net yield extraction
   const netUsd =
     (item as any).net_yield?.amount_usd !== undefined
@@ -564,10 +574,11 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                 </div>
               </div>
 
-              {/* Additional Expense & Internal Logistics Breakdown */}
+              {/* Additional Expense, Internal Logistics & Certificate Price Breakdown */}
               {((additionalExpense !== null && additionalExpense > 0) ||
-                (internalLogisticsCost !== null && internalLogisticsCost > 0)) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                (internalLogisticsCost !== null && internalLogisticsCost > 0) ||
+                (certificatePrice !== null && certificatePrice > 0)) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {additionalExpense !== null && additionalExpense > 0 && (
                     <div className="p-2.5 rounded-xl bg-muted/25 border border-border/60 flex justify-between items-center text-xs">
                       <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
@@ -587,6 +598,17 @@ export const CargoRegistrationDetailsModal: React.FC<CargoRegistrationDetailsMod
                       </span>
                       <span className="font-mono font-bold text-foreground">
                         {formatMoney(internalLogisticsCost, internalLogisticsCurrency)}
+                      </span>
+                    </div>
+                  )}
+                  {certificatePrice !== null && certificatePrice > 0 && (
+                    <div className="p-2.5 rounded-xl bg-muted/25 border border-border/60 flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                        <ShieldCheck className="size-3.5 text-blue-500" />
+                        <span>{t('certificatePrice') || 'Certificate Price'}:</span>
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatMoney(certificatePrice, certificateCurrency)}
                       </span>
                     </div>
                   )}

@@ -295,7 +295,17 @@ export function LtlCargoRegistrationsList({
       }
 
       totalSellUsd += Number(c.sell_price?.amount_usd ?? c.sell_price?.amount ?? 0);
-      totalNetYieldUsd += Number(c.net_yield?.amount_usd ?? c.net_yield?.amount ?? 0);
+      const rowYield =
+        c.net_yield?.amount_usd !== undefined && c.net_yield?.amount_usd !== null
+          ? Number(c.net_yield.amount_usd)
+          : c.net_yield?.amount !== undefined && c.net_yield?.amount !== null
+            ? Number(c.net_yield.amount)
+            : Number(c.sell_price?.amount_usd ?? c.sell_price?.amount ?? 0) -
+              (Number(c.purchase_price?.amount_usd ?? c.purchase_price?.amount ?? 0) +
+                Number(c.additional_expense ?? 0) +
+                Number(c.internal_logistics_cost ?? 0) +
+                Number(c.certificate_price ?? (c as any).certificate ?? (c as any).cct ?? 0));
+      totalNetYieldUsd += rowYield;
     });
 
     const totalCount = data?.meta?.total ?? items.length;
@@ -816,6 +826,27 @@ export function LtlCargoRegistrationsList({
                               </span>
                             </div>
                           )}
+                        {((c.certificate_price !== undefined &&
+                          c.certificate_price !== null &&
+                          c.certificate_price > 0) ||
+                          Number((c as any).certificate) > 0 ||
+                          Number((c as any).cct) > 0) && (
+                          <div
+                            className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate flex items-center gap-0.5"
+                            title={`${t('certificatePrice') || 'Certificate Price'}: ${formatMoney(
+                              c.certificate_price ?? (c as any).certificate ?? (c as any).cct,
+                              c.certificate_currency || 'USD'
+                            )}`}
+                          >
+                            <span>
+                              📜 +{' '}
+                              {formatMoney(
+                                c.certificate_price ?? (c as any).certificate ?? (c as any).cct,
+                                c.certificate_currency || 'USD'
+                              )}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Sell Price */}
@@ -826,7 +857,31 @@ export function LtlCargoRegistrationsList({
                       {/* Net Margin */}
                       <td className="p-3.5 font-mono text-xs font-extrabold">
                         {(() => {
-                          const val = c.net_yield?.amount_usd ?? c.net_yield?.amount ?? 0;
+                          const certCost = Number(
+                            c.certificate_price ?? (c as any).certificate ?? (c as any).cct ?? 0
+                          );
+                          let val: number;
+                          if (
+                            c.net_yield?.amount_usd !== undefined &&
+                            c.net_yield?.amount_usd !== null
+                          ) {
+                            val = Number(c.net_yield.amount_usd);
+                          } else if (
+                            c.net_yield?.amount !== undefined &&
+                            c.net_yield?.amount !== null
+                          ) {
+                            val = Number(c.net_yield.amount);
+                          } else {
+                            const sellUsd = Number(
+                              c.sell_price?.amount_usd ?? c.sell_price?.amount ?? 0
+                            );
+                            const buyUsd = Number(
+                              c.purchase_price?.amount_usd ?? c.purchase_price?.amount ?? 0
+                            );
+                            const addExp = Number(c.additional_expense ?? 0);
+                            const intLog = Number(c.internal_logistics_cost ?? 0);
+                            val = sellUsd - (buyUsd + addExp + intLog + certCost);
+                          }
                           return (
                             <span
                               className={
@@ -835,7 +890,8 @@ export function LtlCargoRegistrationsList({
                                   : 'text-rose-500'
                               }
                             >
-                              +{formatMoney(val, 'USD')}
+                              {val >= 0 ? '+' : ''}
+                              {formatMoney(val, 'USD')}
                             </span>
                           );
                         })()}
